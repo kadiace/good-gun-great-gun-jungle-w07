@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb161d3f5f09f24418ccc53de7703e71, type: 3}
+  m_Name: Module_FireRate
+  m_EditorClassIdentifier: 
+  codeId: 9b18b219018266c4a90db0f81b293ced
+  displayName: "\uC5F0\uC0AC"
+  description: "\uC774 \uBAA8\uB4C8\uC744 \uD1B5\uACFC\uD558\uB294 \uCD1D\uAD6C\uC758
+    \uBC1C\uC0AC \uBE48\uB3C4\uB97C \uB192\uC774\uB294 \uBAA8\uB4C8\uC785\uB2C8\uB2E4."
+  color: {r: 1, g: 0.85, b: 0.09999997, a: 1}
+  useModuleCredits: 0
+  initiallyLocked: 0
+  moduleCreditCost: 0
+  moduleType: 1
+  buyPrice: 100
+  bonuses:
+  - type: 1
+    amount: 1
+  - type: 11
+    amount: 1
+  - type: 15
+    amount: 1
+  prefab: {fileID: 6867133603038035152, guid: 5c6bcf4ea33dcc545a3963bc51d13125, type: 3}

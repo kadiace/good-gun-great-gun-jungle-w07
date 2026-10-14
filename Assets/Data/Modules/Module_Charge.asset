@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb161d3f5f09f24418ccc53de7703e71, type: 3}
+  m_Name: Module_Charge
+  m_EditorClassIdentifier: 
+  codeId: bf4a63288b8e9694787904964ba8acd4
+  displayName: "\uCC28\uC9C0"
+  description: "\uBC1C\uC0AC \uC785\uB825\uC744 \uC720\uC9C0\uD574 \uD798\uC744 \uBAA8\uC558\uB2E4\uAC00
+    \uB193\uC73C\uBA74 \uBC1C\uC0AC\uD558\uB294 \uBAA8\uB4C8\uC785\uB2C8\uB2E4."
+  color: {r: 1, g: 0.29999998, b: 0.7, a: 1}
+  useModuleCredits: 1
+  initiallyLocked: 1
+  moduleCreditCost: 50
+  moduleType: 4
+  buyPrice: 300
+  bonuses:
+  - type: 4
+    amount: 1
+  - type: 11
+    amount: 1
+  prefab: {fileID: 7264100628704927193, guid: 90398fc685bfef4448252a1f6bb844f3, type: 3}

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e83f1e44e27118645b7be3b98c7bc353, type: 3}
+  m_Name: DaySetting
+  m_EditorClassIdentifier: 
+  timing:
+  - period: 0
+    startsAtGuestCount: 0
+    rotationX: 50
+  - period: 1
+    startsAtGuestCount: 1
+    rotationX: 20
+  - period: 2
+    startsAtGuestCount: 2
+    rotationX: -15
+  - period: 3
+    startsAtGuestCount: 4
+    rotationX: -50
+  payPerGuest: 100

@@ -1,0 +1,984 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace WeaponWorkshop
+{
+    public sealed partial class DestructibleTarget : MonoBehaviour
+    {
+        public static event System.Action<DestructibleTarget> PartDestroyed;
+        public bool DamageProtected { get; set; }
+        [SerializeField, Tooltip("차량/몹에 붙은 부품은 코어 파괴 전까지 건물 지지 계산에서 제외합니다.")]
+        private bool attachedToMovingBody;
+        internal bool AttachedToMovingBody => attachedToMovingBody;
+        [SerializeField, Tooltip("독립 소품은 건물 전체의 지지 연결과 자동 붕괴 판정에서 제외합니다. 피격 파괴는 유지합니다.")]
+        private bool standaloneProp;
+        internal bool ParticipatesInStructuralSupport => !attachedToMovingBody && !standaloneProp;
+        [SerializeField, Tooltip("파괴할 메시와 콜라이더가 있는 자식 오브젝트. 비어 있으면 자식 메시를 찾습니다.")]
+        private MeshFilter targetMesh;
+        [SerializeField, Tooltip("빌드에도 포함할 투명 GPU 인스턴싱 파편 머테리얼.")]
+        private Material debrisMaterial;
+        private Transform CellRoot => targetMesh.transform;
+        [SerializeField, Min(0.01f), Tooltip("월드 좌표 기준 조각 한 변의 길이(m). 가장자리 잔여 조각은 더 작을 수 있습니다.")]
+        private float partSize = 0.2f;
+        [SerializeField, Min(0f), Tooltip("관통력이 이 값 이상이면 한 번 관통/파괴. 관통한 덩어리마다 이 값을 차감.")]
+        private float penetrationResistance = 1f;
+        [SerializeField, Min(0f), Tooltip("폭발 파괴 기준과 한 칸(Part Size) 이동할 때 차감하는 폭발력.")]
+        private float explosionResistance = 1f;
+        [SerializeField, Min(0.01f), Tooltip("구형 폭발 반경의 초당 증가량(m/s). 착탄 표적 설정을 폭발 전체에 적용.")]
+        private float explosionExpansionSpeed = 10f;
+        [SerializeField, Min(0.01f), Tooltip("폭발 검사 및 저항 차감 구간의 월드 거리(m). Part Size와 무관.")]
+        private float explosionCheckDistance = 0.2f;
+        public float ExplosionExpansionSpeed => Mathf.Max(0.01f, explosionExpansionSpeed);
+        public float ExplosionCheckDistance => Mathf.Max(0.01f, explosionCheckDistance);
+        [SerializeField, Tooltip("태그 SO의 수치 하한을 저항으로 사용. 무게·스코프·중력·상한은 제외.")]
+        private WeaponTypeData resistanceSource;
+        [SerializeField, Min(0f)] private float heatResistance;
+        [SerializeField, Min(0f)] private float waterResistance;
+        public float PenetrationResistance => Mathf.Max(0f, penetrationResistance);
+        public float HeatResistance => Mathf.Max(0f, heatResistance);
+        public float WaterResistance => Mathf.Max(0f, waterResistance);
+
+        public void ApplyResistanceSource()
+        {
+            if (resistanceSource == null) return;
+            penetrationResistance = explosionResistance = heatResistance = waterResistance = 0f;
+            foreach (var condition in resistanceSource.Conditions)
+            {
+                if (condition.comparison != WeaponTypeData.Comparison.AtLeast) continue;
+                float value = Mathf.Max(0f, condition.value);
+                switch (condition.stat)
+                {
+                    case StatType.Penetration: penetrationResistance = Mathf.Max(penetrationResistance, value); break;
+                    case StatType.Explosion: explosionResistance = Mathf.Max(explosionResistance, value); break;
+                    case StatType.Heat: heatResistance = Mathf.Max(heatResistance, value); break;
+                    case StatType.Water: waterResistance = Mathf.Max(waterResistance, value); break;
+                }
+            }
+        }
+
+
+        public void ConfigureCustom(Vector3 size, float penetration, float explosion, float heat, float water)
+        {
+            resistanceSource = null;
+            penetrationResistance = Mathf.Max(0f, penetration);
+            explosionResistance = Mathf.Max(0f, explosion);
+            heatResistance = Mathf.Max(0f, heat);
+            waterResistance = Mathf.Max(0f, water);
+            if (targetMesh == null) targetMesh = GetComponentInChildren<MeshFilter>(true);
+            targetMesh.transform.localScale = size;
+            targetMesh.transform.localPosition = new Vector3(0f, size.y * 0.5f, 0f);
+        }
+
+        internal static readonly HashSet<DestructibleTarget> ActiveDebrisObstacles = new HashSet<DestructibleTarget>();
+        internal bool TryDebrisBounds(out Bounds bounds)
+        {
+            bounds = default;
+            if (!isActiveAndEnabled || targetMesh == null || targetMesh.sharedMesh == null || (subdivided && grid.Count == 0)) return false;
+            var local = targetMesh.sharedMesh.bounds;
+            var matrix = CellRoot.localToWorldMatrix;
+            var x = matrix.MultiplyVector(Vector3.right * local.extents.x);
+            var y = matrix.MultiplyVector(Vector3.up * local.extents.y);
+            var z = matrix.MultiplyVector(Vector3.forward * local.extents.z);
+            bounds = new Bounds(matrix.MultiplyPoint3x4(local.center), new Vector3(
+                Mathf.Abs(x.x) + Mathf.Abs(y.x) + Mathf.Abs(z.x),
+                Mathf.Abs(x.y) + Mathf.Abs(y.y) + Mathf.Abs(z.y),
+                Mathf.Abs(x.z) + Mathf.Abs(y.z) + Mathf.Abs(z.z)) * 2f);
+            return true;
+        }
+
+        // Read current occupied cells without creating physics objects or forcing subdivision.
+        private readonly HashSet<Vector3Int> debrisVisited = new HashSet<Vector3Int>();
+        private void CheckDebrisCell(Vector3Int coordinate, Vector3 a, Vector3 b, Vector3 padding,
+            ref float time, ref Vector3 normal, ref Vector3 point)
+        {
+            if (!grid.TryGetValue(coordinate, out var cell)) return;
+            var bounds = new Bounds(cell.localPosition, cell.localScale + padding * 2f);
+            if (!DebrisWallCache.SweepBounds(bounds, a, b, out float t, out var n, out var hit) || t >= time) return;
+            time = t; normal = n; point = hit;
+        }
+        internal bool SweepDebris(Vector3 from, Vector3 to, float radius, out float time, out Vector3 normal, out Vector3 point)
+        {
+            time = 2f; normal = point = default;
+            if (targetMesh == null || targetMesh.sharedMesh == null || (subdivided && grid.Count == 0)) return false;
+            var root = CellRoot;
+            var a = root.InverseTransformPoint(from);
+            var b = root.InverseTransformPoint(to);
+            var scale = root.lossyScale;
+            var padding = new Vector3(radius / Mathf.Max(Mathf.Abs(scale.x), .00001f),
+                radius / Mathf.Max(Mathf.Abs(scale.y), .00001f), radius / Mathf.Max(Mathf.Abs(scale.z), .00001f));
+            var outer = targetMesh.sharedMesh.bounds;
+            outer.Expand(padding * 2f);
+            if (!DebrisWallCache.SweepBounds(outer, a, b, out _, out _, out _)) return false;
+            if (!subdivided)
+                DebrisWallCache.SweepBounds(outer, a, b, out time, out normal, out point);
+            else
+            {
+                var low = Vector3.Min(a, b) - padding;
+                var high = Vector3.Max(a, b) + padding;
+                var min = new Vector3Int(); var max = new Vector3Int();
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    min[axis] = Mathf.Max(0, Mathf.FloorToInt((low[axis] - gridOrigin[axis]) / gridStep[axis]));
+                    max[axis] = Mathf.Min(divisions[axis] - 1, Mathf.FloorToInt((high[axis] - gridOrigin[axis]) / gridStep[axis]));
+                }
+                // Include boundary neighbours even for a zero-radius ray crossing an exact edge/corner.
+                var neighborhood = new Vector3Int(Mathf.Max(1, Mathf.CeilToInt(padding.x / gridStep.x)),
+                    Mathf.Max(1, Mathf.CeilToInt(padding.y / gridStep.y)), Mathf.Max(1, Mathf.CeilToInt(padding.z / gridStep.z)));
+                long boxCost = (long)(max.x - min.x + 1) * (max.y - min.y + 1) * (max.z - min.z + 1);
+                long pathCost = (long)(Mathf.Abs(max.x - min.x) + Mathf.Abs(max.y - min.y) + Mathf.Abs(max.z - min.z) + 1)
+                    * (neighborhood.x * 2 + 1) * (neighborhood.y * 2 + 1) * (neighborhood.z * 2 + 1);
+                // Small/axis-aligned sweeps are cheaper as a compact box. DDA is for sparse diagonal corridors.
+                if (boxCost <= pathCost)
+                {
+                    for (int x = min.x; x <= max.x; x++) for (int y = min.y; y <= max.y; y++) for (int z = min.z; z <= max.z; z++)
+                        CheckDebrisCell(new Vector3Int(x, y, z), a, b, padding, ref time, ref normal, ref point);
+                }
+                else if (DebrisWallCache.ClipBounds(outer, a, b, out float enter, out float exit))
+                {
+                    debrisVisited.Clear();
+                    var start = Vector3.LerpUnclamped(a, b, enter);
+                    var end = Vector3.LerpUnclamped(a, b, exit);
+                    var delta = end - start;
+                    var coordinate = new Vector3Int(); var finish = new Vector3Int(); var step = new Vector3Int();
+                    var next = Vector3.zero; var increment = Vector3.zero;
+                    for (int axis = 0; axis < 3; axis++)
+                    {
+                        coordinate[axis] = Mathf.FloorToInt((start[axis] - gridOrigin[axis]) / gridStep[axis]);
+                        finish[axis] = Mathf.FloorToInt((end[axis] - gridOrigin[axis]) / gridStep[axis]);
+                        step[axis] = delta[axis] > 0f ? 1 : delta[axis] < 0f ? -1 : 0;
+                        increment[axis] = step[axis] == 0 ? float.PositiveInfinity : gridStep[axis] / Mathf.Abs(delta[axis]);
+                        next[axis] = step[axis] == 0 ? float.PositiveInfinity :
+                            (gridOrigin[axis] + (coordinate[axis] + (step[axis] > 0 ? 1 : 0)) * gridStep[axis] - start[axis]) / delta[axis];
+                    }
+                    int remaining = Mathf.Abs(finish.x - coordinate.x) + Mathf.Abs(finish.y - coordinate.y) + Mathf.Abs(finish.z - coordinate.z) + 1;
+                    while (remaining-- > 0)
+                    {
+                        for (int x = Mathf.Max(min.x, coordinate.x - neighborhood.x); x <= Mathf.Min(max.x, coordinate.x + neighborhood.x); x++)
+                            for (int y = Mathf.Max(min.y, coordinate.y - neighborhood.y); y <= Mathf.Min(max.y, coordinate.y + neighborhood.y); y++)
+                                for (int z = Mathf.Max(min.z, coordinate.z - neighborhood.z); z <= Mathf.Min(max.z, coordinate.z + neighborhood.z); z++)
+                                {
+                                    var key = new Vector3Int(x, y, z);
+                                    if (debrisVisited.Add(key)) CheckDebrisCell(key, a, b, padding, ref time, ref normal, ref point);
+                                }
+                        if (coordinate == finish) break;
+                        int axis = next.x <= next.y && next.x <= next.z ? 0 : next.y <= next.z ? 1 : 2;
+                        coordinate[axis] += step[axis]; next[axis] += increment[axis];
+                    }
+                }
+            }
+            if (time > 1f) return false;
+            normal = root.localToWorldMatrix.inverse.transpose.MultiplyVector(normal).normalized;
+            point = root.TransformPoint(point);
+            return true;
+        }
+
+        private void OnValidate() => ApplyResistanceSource();
+
+        public bool AllowsImpact(ProjectileStats stats)
+        {
+            return !DamageProtected && stats.heat >= heatResistance && stats.water >= waterResistance;
+        }
+
+        public void BreakAttributeImpact(ProjectileStats stats, Vector3 center, Quaternion rotation, Vector3 halfExtents)
+        {
+            bool water = stats.water > 0f && waterResistance > 0f && stats.water >= waterResistance;
+            bool heat = stats.water <= 0f && stats.heat > 0f && heatResistance > 0f && stats.heat >= heatResistance;
+            if (!enabled || !AllowsImpact(stats) || !(water || heat)) return;
+            if (!subdivided) Subdivide(false);
+            var removed = CollectParticleCells(center, rotation, halfExtents);
+            foreach (var cell in removed) Detach(cell);
+            if (removed.Count > 0) structureDirty = true;
+            UpdateCollisionRuns();
+        }
+
+        private Vector3 gridOrigin, gridStep;
+        private int totalCellCount;
+        private VisualDebrisCloud debrisCloud;
+        [SerializeField, Min(0.1f), Tooltip("중력탄 파편이 피격 지점으로 줄어들며 사라지는 시간.")]
+        private float gravityAbsorptionDuration = 0.8f;
+        [SerializeField, Min(0f)] private float gravitySpreadDistance = 0.35f;
+        [SerializeField, Range(0.05f, 0.8f)] private float gravitySpreadFraction = 0.25f;
+        private bool gravityImpact;
+        private Vector3 gravityImpactCenter;
+
+        public void BeginGravityImpact(Vector3 center)
+        {
+            if (DamageProtected) return;
+            gravityImpact = true;
+            gravityImpactCenter = center;
+            debrisCloud?.SetAbsorptionEmission(true, center, gravityAbsorptionDuration, gravitySpreadDistance, gravitySpreadFraction);
+        }
+
+        public void EndGravityImpact()
+        {
+            if (gravityImpact && structureDirty)
+            {
+                structureDirty = false;
+                ResolveSupport();
+                UpdateCollisionRuns();
+            }
+            gravityImpact = false;
+            debrisCloud?.SetAbsorptionEmission(false, Vector3.zero, gravityAbsorptionDuration);
+        }
+        private bool structureDirty;
+        private sealed class Cell
+        {
+            public Transform root;
+            public int slot;
+            public Vector3 localPosition, localScale;
+            public Quaternion localRotation = Quaternion.identity;
+            public Cell transform => this;
+            public Vector3 position => root.TransformPoint(localPosition);
+            public Quaternion rotation => root.rotation * localRotation;
+            public Vector3 lossyScale => Vector3.Scale(root.lossyScale, localScale);
+            public Vector3 TransformVector(Vector3 vector) => root.TransformVector(Vector3.Scale(localScale, vector));
+            public VisualDebrisCloud.Piece Snapshot => new VisualDebrisCloud.Piece { position = position, rotation = rotation, scale = lossyScale };
+        }
+        private List<BoxCollider>[] collisionColumns;
+        private bool[] dirtyColumnFlags;
+        private readonly List<int> dirtyColumns = new List<int>();
+        private bool allColumnsDirty = true;
+        private readonly List<Cell> impactCells = new List<Cell>();
+        private readonly HashSet<Vector3Int> supportedCells = new HashSet<Vector3Int>();
+        private readonly HashSet<Vector3Int> fallingCoordinates = new HashSet<Vector3Int>();
+        private readonly Queue<Vector3Int> supportQueue = new Queue<Vector3Int>();
+        private readonly List<Cell> fallingCells = new List<Cell>();
+        private Vector3Int divisions;
+        private bool collisionDirty;
+        private readonly List<VisualDebrisCloud.Piece> groupPieces = new List<VisualDebrisCloud.Piece>();
+        private readonly List<Cell> preparedCells = new List<Cell>();
+        private readonly Dictionary<Cell, Vector3> cellPositions = new Dictionary<Cell, Vector3>();
+        private readonly Dictionary<Cell, Vector3> cellSizes = new Dictionary<Cell, Vector3>();
+
+        private bool renderDirty;
+        private Material instancedMaterial;
+        private Mesh cellMesh;
+        [SerializeField, Min(0.1f)] private float debrisLifetime = 2f;
+        private readonly List<Cell> cells = new List<Cell>();
+        [SerializeField, Min(0.01f), Tooltip("파편 크기를 유지한 채 투명해지며 사라지는 시간.")]
+        private float debrisFadeDuration = 0.2f;
+        [SerializeField, Min(0f)] private float debrisFloorBounce = 0.25f;
+        [SerializeField, Min(0f)] private float debrisFloorFriction = 0.8f;
+        private readonly Dictionary<Vector3Int, Cell> grid = new Dictionary<Vector3Int, Cell>();
+        private readonly Dictionary<Cell, Vector3Int> coordinates = new Dictionary<Cell, Vector3Int>();
+        private static readonly Vector3Int[] neighbors = { Vector3Int.right, Vector3Int.left,
+            Vector3Int.up, Vector3Int.down, Vector3Int.forward, Vector3Int.back };
+        private bool subdivided;
+        private Vector3 initialPosition;
+        private Quaternion initialRotation;
+        private Vector3 initialScale;
+        private Renderer originalRenderer;
+        private readonly Dictionary<Collider, bool> originalColliders = new Dictionary<Collider, bool>();
+
+        private void Awake()
+        {
+            ApplyResistanceSource();
+            initialPosition = transform.localPosition;
+            initialRotation = transform.localRotation;
+            initialScale = transform.localScale;
+            if (targetMesh == null) targetMesh = GetComponentInChildren<MeshFilter>(true);
+            if (targetMesh == null || targetMesh.sharedMesh == null)
+            {
+                Debug.LogError("DestructibleTarget에 파괴할 Target Mesh를 연결하세요.", this);
+                enabled = false;
+                return;
+            }
+            originalRenderer = targetMesh.GetComponent<Renderer>();
+            Bounds bounds = targetMesh.sharedMesh.bounds;
+            float size = Mathf.Max(0.01f, partSize);
+            Vector3 worldSize = new Vector3(CellRoot.TransformVector(Vector3.right).magnitude * bounds.size.x,
+                CellRoot.TransformVector(Vector3.up).magnitude * bounds.size.y,
+                CellRoot.TransformVector(Vector3.forward).magnitude * bounds.size.z);
+            totalCellCount = Mathf.Max(1, Mathf.CeilToInt(worldSize.x / size - 0.00001f))
+                * Mathf.Max(1, Mathf.CeilToInt(worldSize.y / size - 0.00001f))
+                * Mathf.Max(1, Mathf.CeilToInt(worldSize.z / size - 0.00001f));
+            foreach (Collider collider in targetMesh.GetComponents<Collider>())
+                originalColliders.Add(collider, collider.enabled);
+            StructuralSupportGraph.Register(this);
+        }
+
+        private void OnEnable()
+        {
+            debrisIndexed = false;
+            ActiveDebrisObstacles.Add(this); RefreshDebrisIndex();
+            if (originalRenderer != null) StructuralSupportGraph.Register(this);
+        }
+
+        // Re-bin only when the transform moved or the target is subdivided (cells can empty it);
+        // untouched static walls skip the bounds math entirely.
+        private bool debrisIndexed;
+        internal void RefreshDebrisIndex()
+        {
+            Transform root = targetMesh != null ? targetMesh.transform : null;
+            if (debrisIndexed && !subdivided && root != null && !root.hasChanged) return;
+            if (root != null) root.hasChanged = false;
+            DebrisTargetIndex.Update(this);
+            debrisIndexed = true;
+        }
+
+        private void LateUpdate()
+        {
+            RefreshDebrisIndex();
+            if (structureDirty)
+            {
+                structureDirty = false;
+                ResolveSupport();
+            }
+            if (!subdivided) return;
+            BreakSmallRemnant();
+            UpdateCollisionRuns();
+            DrawRemainingChunks();
+        }
+
+        public float PenetrationStepDistance => Mathf.Max(0.01f, partSize);
+
+        // Compatibility for older callers; active bullets pass their actual forward segment.
+        public float Penetrate(float penetration, Vector3 center, Quaternion rotation, Vector3 halfExtents,
+            out bool penetrated, out float resistance)
+            => PenetrateAlongLine(penetration, center, rotation, halfExtents, 0f, out penetrated, out resistance);
+
+        public float PenetrateAlongLine(float penetration, Vector3 start, Quaternion rotation, Vector3 halfExtents,
+            float distance, out bool penetrated, out float resistance)
+            => PenetrateAlongLine(penetration, start, rotation, halfExtents, distance,
+                out penetrated, out resistance, out _);
+
+        public float PenetrateAlongLine(float penetration, Vector3 start, Quaternion rotation, Vector3 halfExtents,
+            float distance, out bool penetrated, out float resistance, out bool penetratedMaterial)
+        {
+            penetrated = false;
+            penetratedMaterial = false;
+            resistance = Mathf.Max(0f, penetrationResistance);
+            bool zeroImpact = penetration == 0f && resistance == 0f;
+            if (DamageProtected || !isActiveAndEnabled || (!zeroImpact && penetration <= resistance)) return 0f;
+            if (!subdivided) Subdivide(false);
+            distance = Mathf.Clamp(distance, 0f, PenetrationStepDistance);
+            Vector3 direction = rotation * Vector3.forward;
+            Vector3 center = start + direction * (distance * 0.5f);
+            Vector3 sweptExtents = halfExtents;
+            sweptExtents.z += distance * 0.5f;
+            // Sweeping an OBB along its forward axis is exactly an elongated OBB.
+            var removed = CollectParticleCells(center, rotation, sweptExtents);
+            if (removed.Count == 0)
+            {
+                // Attribute damage or an earlier shot may already have opened this gap.
+                // Empty space does not consume penetration or trigger the stopped payload.
+                UpdateCollisionRuns();
+                penetrated = true;
+                return penetration;
+            }
+            if (zeroImpact)
+            {
+                // With no power and no resistance, chip only the nearest touched voxel.
+                Cell nearest = removed[0];
+                float nearestDistance = (nearest.position - start).sqrMagnitude;
+                for (int i = 1; i < removed.Count; i++)
+                {
+                    float candidateDistance = (removed[i].position - start).sqrMagnitude;
+                    if (candidateDistance >= nearestDistance) continue;
+                    nearest = removed[i]; nearestDistance = candidateDistance;
+                }
+                removed.Clear(); removed.Add(nearest);
+            }
+            foreach (Cell cell in removed)
+            {
+                if (gravityImpact) Detach(cell);
+                else RemoveCell(cell);
+            }
+            structureDirty = true;
+            UpdateCollisionRuns();
+            penetrated = !zeroImpact;
+            penetratedMaterial = true;
+            return Mathf.Max(0f, penetration - resistance);
+        }
+
+        private static Vector3 Absolute(Vector3 value)
+            => new Vector3(Mathf.Abs(value.x), Mathf.Abs(value.y), Mathf.Abs(value.z));
+
+        private List<Cell> CollectParticleCells(Vector3 center, Quaternion rotation, Vector3 halfExtents)
+        {
+            impactCells.Clear();
+            // Transform the bullet OBB into the grid's local space, then use a conservative AABB.
+            // Keep the existing exact intersection test for the few grid cells inside that bound.
+            Transform root = CellRoot;
+            Vector3 localCenter = root.InverseTransformPoint(center);
+            Vector3 extent = Absolute(root.InverseTransformVector(rotation * Vector3.right * halfExtents.x))
+                + Absolute(root.InverseTransformVector(rotation * Vector3.up * halfExtents.y))
+                + Absolute(root.InverseTransformVector(rotation * Vector3.forward * halfExtents.z));
+            Vector3 tolerance = Absolute(root.InverseTransformVector(Vector3.right * 0.00001f))
+                + Absolute(root.InverseTransformVector(Vector3.up * 0.00001f))
+                + Absolute(root.InverseTransformVector(Vector3.forward * 0.00001f));
+            Vector3 min = localCenter - extent - tolerance - gridOrigin;
+            Vector3 max = localCenter + extent + tolerance - gridOrigin;
+            int x0 = Mathf.Max(0, Mathf.FloorToInt(min.x / gridStep.x));
+            int y0 = Mathf.Max(0, Mathf.FloorToInt(min.y / gridStep.y));
+            int z0 = Mathf.Max(0, Mathf.FloorToInt(min.z / gridStep.z));
+            int x1 = Mathf.Min(divisions.x - 1, Mathf.FloorToInt(max.x / gridStep.x));
+            int y1 = Mathf.Min(divisions.y - 1, Mathf.FloorToInt(max.y / gridStep.y));
+            int z1 = Mathf.Min(divisions.z - 1, Mathf.FloorToInt(max.z / gridStep.z));
+            for (int x = x0; x <= x1; x++)
+                for (int y = y0; y <= y1; y++)
+                    for (int z = z0; z <= z1; z++)
+                        if (grid.TryGetValue(new Vector3Int(x, y, z), out Cell cell)
+                            && IntersectsParticle(cell, center, rotation, halfExtents)) impactCells.Add(cell);
+            return impactCells;
+        }
+
+        private static bool Separated(Vector3 axis, Vector3 offset, Vector3 a, Vector3 b, Vector3 c,
+            Vector3 x, Vector3 y, Vector3 z)
+        {
+            float extent = Mathf.Abs(Vector3.Dot(axis, a)) + Mathf.Abs(Vector3.Dot(axis, b))
+                + Mathf.Abs(Vector3.Dot(axis, c)) + Mathf.Abs(Vector3.Dot(axis, x))
+                + Mathf.Abs(Vector3.Dot(axis, y)) + Mathf.Abs(Vector3.Dot(axis, z));
+            return Mathf.Abs(Vector3.Dot(axis, offset)) > extent + axis.magnitude * 0.00001f;
+        }
+
+        private static bool IntersectsParticle(Cell cell, Vector3 center, Quaternion rotation, Vector3 halfExtents)
+        {
+            Vector3 a = rotation * Vector3.right * halfExtents.x;
+            Vector3 b = rotation * Vector3.up * halfExtents.y;
+            Vector3 c = rotation * Vector3.forward * halfExtents.z;
+            Vector3 x = cell.TransformVector(Vector3.right * 0.5f);
+            Vector3 y = cell.TransformVector(Vector3.up * 0.5f);
+            Vector3 z = cell.TransformVector(Vector3.forward * 0.5f);
+            Vector3 offset = cell.position - center;
+            return !Separated(Vector3.Cross(a, b), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(b, c), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(c, a), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(x, y), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(y, z), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(z, x), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(a, x), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(a, y), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(a, z), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(b, x), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(b, y), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(b, z), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(c, x), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(c, y), offset, a, b, c, x, y, z)
+                && !Separated(Vector3.Cross(c, z), offset, a, b, c, x, y, z);
+        }
+
+        // Legacy movement compatibility; active projectiles use the shared sphere payload below.
+        public void Explode(float power, Vector3 point, Vector3 normal,
+            Quaternion shotRotation, Vector3 particleHalfExtents)
+            => ExplodeSphere(power, point, 0.5f * Mathf.Pow(Mathf.Max(0f, power), 1f / 3f));
+
+        public void ExplodeSphere(float power, Vector3 center, float radius)
+        {
+            if (DamageProtected) return;
+            float resistance = Mathf.Max(0f, explosionResistance);
+            if (!isActiveAndEnabled || power <= 0f || power < resistance || radius <= 0f) return;
+            if (!subdivided) Subdivide();
+            // One shell is one voxel width. Charge resistance once per destroyed shell,
+            // rather than per voxel or per angular direction; empty shells cost nothing.
+            var shells = new SortedDictionary<int, List<Cell>>();
+            Vector3 localCenter = CellRoot.InverseTransformPoint(center);
+            float radiusSquared = radius * radius;
+            float step = Mathf.Max(0.01f, partSize);
+            foreach (Cell cell in cells)
+            {
+                Vector3 min = cell.localPosition - cell.localScale * 0.5f;
+                Vector3 max = cell.localPosition + cell.localScale * 0.5f;
+                Vector3 nearest = new Vector3(Mathf.Clamp(localCenter.x, min.x, max.x),
+                    Mathf.Clamp(localCenter.y, min.y, max.y), Mathf.Clamp(localCenter.z, min.z, max.z));
+                float distanceSquared = (CellRoot.TransformPoint(nearest) - center).sqrMagnitude;
+                if (distanceSquared > radiusSquared) continue;
+                int shell = Mathf.Max(0, Mathf.CeilToInt(Mathf.Sqrt(distanceSquared) / step - 0.00001f) - 1);
+                if (!shells.TryGetValue(shell, out var layer)) shells[shell] = layer = new List<Cell>();
+                layer.Add(cell);
+            }
+            bool changed = false;
+            float remainingPower = power;
+            foreach (var shell in shells)
+            {
+                if (remainingPower <= 0f || remainingPower < resistance) break;
+                foreach (Cell cell in shell.Value)
+                {
+                    Vector3 offset = cell.position - center;
+                    Detach(cell, offset.normalized * remainingPower + Vector3.up * (remainingPower * 0.05f));
+                }
+                changed = true;
+                remainingPower = Mathf.Max(0f, remainingPower - resistance);
+            }
+            if (changed) structureDirty = true;
+            UpdateCollisionRuns();
+        }
+
+        // 회전된 박스 안에 중심이 든 칸을 저항과 무관하게 모두 파괴(탱크 압착용). 파괴한 칸 수를 반환.
+        private readonly List<Cell> boxBreakCells = new List<Cell>();
+        public int BreakInBox(Vector3 center, Quaternion rotation, Vector3 halfExtents, float debrisSpeed)
+        {
+            if (DamageProtected) return 0;
+            if (!isActiveAndEnabled) return 0;
+            if (!subdivided) Subdivide();
+            Quaternion inverse = Quaternion.Inverse(rotation);
+            boxBreakCells.Clear();
+            foreach (Cell cell in cells)
+            {
+                Vector3 local = inverse * (cell.position - center);
+                if (Mathf.Abs(local.x) <= halfExtents.x && Mathf.Abs(local.y) <= halfExtents.y &&
+                    Mathf.Abs(local.z) <= halfExtents.z) boxBreakCells.Add(cell);
+            }
+            foreach (Cell cell in boxBreakCells)
+                Detach(cell, (cell.position - center).normalized * debrisSpeed + Vector3.up);
+            int count = boxBreakCells.Count;
+            if (count > 0) { structureDirty = true; UpdateCollisionRuns(); }
+            return count;
+        }
+
+        public float ExplosionResistance => Mathf.Max(0f, explosionResistance);
+
+        public void ApplyFallImpact(float power, Vector3 contactPoint, float distanceStep)
+        {
+            if (DamageProtected) return;
+            float resistance = ExplosionResistance;
+            if (!isActiveAndEnabled || power <= 0f || power <= resistance + 0.00001f) return;
+            if (!subdivided) Subdivide();
+            float bottom = float.PositiveInfinity;
+            foreach (var cell in cells)
+            {
+                float halfHeight = Mathf.Abs(cell.TransformVector(Vector3.right * 0.5f).y)
+                    + Mathf.Abs(cell.TransformVector(Vector3.up * 0.5f).y)
+                    + Mathf.Abs(cell.TransformVector(Vector3.forward * 0.5f).y);
+                bottom = Mathf.Min(bottom, cell.position.y - halfHeight);
+            }
+            var layers = new SortedDictionary<int, List<Cell>>();
+            float step = Mathf.Max(0.01f, distanceStep);
+            foreach (var cell in cells)
+            {
+                float halfHeight = Mathf.Abs(cell.TransformVector(Vector3.right * 0.5f).y)
+                    + Mathf.Abs(cell.TransformVector(Vector3.up * 0.5f).y)
+                    + Mathf.Abs(cell.TransformVector(Vector3.forward * 0.5f).y);
+                int layer = Mathf.Max(0, Mathf.FloorToInt((cell.position.y - halfHeight - bottom) / step + 0.00001f));
+                if (!layers.TryGetValue(layer, out var list)) layers[layer] = list = new List<Cell>();
+                list.Add(cell);
+            }
+            bool changed = false;
+            foreach (var layer in layers)
+            {
+                if (power <= 0f || power + 0.00001f < resistance) break;
+                foreach (var cell in layer.Value)
+                {
+                    Vector3 offset = cell.position - contactPoint;
+                    Vector3 outward = new Vector3(offset.x, 0f, offset.z).normalized;
+                    Detach(cell, outward * Mathf.Min(power, 3f) + Vector3.up * Mathf.Min(power * 0.15f, 1f));
+                }
+                power = Mathf.Max(0f, power - resistance);
+                changed = true;
+            }
+            if (changed) structureDirty = true;
+            UpdateCollisionRuns();
+        }
+
+        public void CollectExplosionPieces(Vector3 center, float radius, float step, List<ExpandingExplosion.Piece> output)
+        {
+            if (DamageProtected) return;
+            if (!isActiveAndEnabled || targetMesh == null) return;
+            if (!subdivided) Subdivide();
+            Vector3 localCenter = CellRoot.InverseTransformPoint(center);
+            foreach (var cell in cells)
+            {
+                Vector3 min = cell.localPosition - cell.localScale * 0.5f;
+                Vector3 max = cell.localPosition + cell.localScale * 0.5f;
+                Vector3 nearest = new Vector3(Mathf.Clamp(localCenter.x, min.x, max.x),
+                    Mathf.Clamp(localCenter.y, min.y, max.y), Mathf.Clamp(localCenter.z, min.z, max.z));
+                float distance = Vector3.Distance(CellRoot.TransformPoint(nearest), center);
+                if (distance > radius) continue;
+                output.Add(new ExpandingExplosion.Piece
+                {
+                    target = this,
+                    coordinate = coordinates[cell],
+                    position = cell.position,
+                    distance = distance,
+                    direction = ExpandingExplosion.DirectionBin(cell.position - center),
+                    shell = Mathf.Max(0, Mathf.FloorToInt(distance / step))
+                });
+            }
+        }
+        public bool DestroyExplosionPiece(Vector3Int coordinate, Vector3 center, float force)
+        {
+            if (DamageProtected) return false;
+            if (!isActiveAndEnabled || !grid.TryGetValue(coordinate, out var cell)) return false;
+            Vector3 direction = (cell.position - center).normalized;
+            Detach(cell, direction * force + Vector3.up * (force * 0.05f));
+            structureDirty = true;
+            return true;
+        }
+        public void FinishExplosionStep() => UpdateCollisionRuns();
+
+        // 월드 좌표를 메시 범위로 당겨 해당 칸이 아직 붙어 있는지 확인. 분할 전에는 온전한 상태로 본다.
+        public bool HasCellAt(Vector3 worldPoint)
+        {
+            if (!subdivided) return true;
+            var bounds = targetMesh.sharedMesh.bounds;
+            var local = CellRoot.InverseTransformPoint(worldPoint);
+            local = Vector3.Max(bounds.min, Vector3.Min(bounds.max, local));
+            var coordinate = new Vector3Int();
+            for (int axis = 0; axis < 3; axis++)
+                coordinate[axis] = Mathf.Clamp(Mathf.FloorToInt((local[axis] - gridOrigin[axis]) / gridStep[axis]), 0, divisions[axis] - 1);
+            return grid.ContainsKey(coordinate);
+        }
+
+        public bool IsDestroyed => subdivided && cells.Count == 0 && (debrisCloud == null || debrisCloud.IntactGroupCount == 0);
+        public int InitialCellCount => totalCellCount;
+        public int RemainingCellCount => !subdivided ? totalCellCount
+            : cells.Count + (debrisCloud != null ? debrisCloud.IntactCellCount : 0);
+        // Cells still attached to this target; detached debris chunks are not counted.
+        public int AttachedCellCount => !subdivided ? totalCellCount : cells.Count;
+
+        public void AbsorbSphere(Vector3 center, float radius)
+        {
+            if (DamageProtected) return;
+            if (!isActiveAndEnabled || targetMesh == null || radius <= 0f) return;
+            if (!subdivided) Subdivide(false);
+            BeginGravityImpact(center);
+            var removed = new List<Cell>();
+            Vector3 localCenter = CellRoot.InverseTransformPoint(center);
+            float radiusSquared = radius * radius;
+            foreach (Cell cell in cells)
+            {
+                Vector3 min = cell.localPosition - cell.localScale * 0.5f;
+                Vector3 max = cell.localPosition + cell.localScale * 0.5f;
+                Vector3 nearest = new Vector3(Mathf.Clamp(localCenter.x, min.x, max.x),
+                    Mathf.Clamp(localCenter.y, min.y, max.y), Mathf.Clamp(localCenter.z, min.z, max.z));
+                if ((CellRoot.TransformPoint(nearest) - center).sqrMagnitude <= radiusSquared) removed.Add(cell);
+            }
+            foreach (Cell cell in removed) Detach(cell);
+            // Sphere deletion is immediate; detached unsupported chunks use the same suction animation.
+            if (removed.Count > 0) structureDirty = true;
+            EndGravityImpact();
+            UpdateCollisionRuns();
+        }
+
+        // Called after an external hit-condition component approves destruction.
+        public void BreakAll(Vector3 point, Vector3 direction)
+        {
+            if (DamageProtected) return;
+            if (!isActiveAndEnabled || targetMesh == null) return;
+            if (!subdivided) Subdivide(false);
+            if (cells.Count == 0) return;
+            WorkshopSoundEffects.RaiseBlockFragmented(transform.position);
+            foreach (Cell cell in new List<Cell>(cells))
+            {
+                Vector3 outward = (cell.transform.position - point).normalized;
+                Detach(cell, outward * 1.5f + direction.normalized * 0.5f + Vector3.up * 0.5f);
+            }
+            structureDirty = false;
+            UpdateCollisionRuns();
+        }
+
+        public void ClearRemaining()
+        {
+            // Keep the reusable cells for Restart, but remove their visuals and collisions now.
+            if (!subdivided) Subdivide();
+            cells.Clear();
+            grid.Clear();
+            InvalidateAllCollisionColumns();
+            UpdateCollisionRuns();
+            debrisCloud?.ClearDebris();
+            structureDirty = false;
+            renderDirty = true;
+            InvalidateRenderChunks();
+        }
+
+        public TargetWorldSave CaptureSave()
+        {
+            return new TargetWorldSave
+            {
+                exists = true,
+                subdivided = subdivided,
+                meshSize = targetMesh.transform.localScale,
+                penetration = penetrationResistance,
+                explosion = explosionResistance,
+                heat = heatResistance,
+                water = waterResistance,
+                position = transform.localPosition,
+                rotation = transform.localRotation,
+                scale = transform.localScale,
+                remaining = new List<Vector3Int>(grid.Keys).ToArray()
+            };
+        }
+        public void RestoreSave(TargetWorldSave state)
+        {
+            if (state == null || !state.exists || !enabled) return;
+            if (state.subdivided)
+            {
+                if (!subdivided) Subdivide();
+                ResetTarget();
+                var keep = new HashSet<Vector3Int>(state.remaining ?? System.Array.Empty<Vector3Int>());
+                foreach (var cell in new List<Cell>(cells))
+                    if (!keep.Contains(coordinates[cell])) { RemoveCell(cell); }
+                structureDirty = false; renderDirty = true;
+            }
+            transform.localPosition = state.position; transform.localRotation = state.rotation; transform.localScale = state.scale;
+            StructuralSupportGraph.Changed(this);
+        }
+
+        public void ResetTarget()
+        {
+            if (!subdivided) return;
+            debrisCloud?.ClearDebris();
+            cells.Clear();
+            grid.Clear();
+            transform.localPosition = initialPosition;
+            transform.localRotation = initialRotation;
+            transform.localScale = initialScale;
+            foreach (Cell cell in preparedCells)
+            {
+
+
+                cell.transform.localPosition = cellPositions[cell];
+                cell.transform.localRotation = Quaternion.identity;
+                cell.transform.localScale = cellSizes[cell];
+
+
+                cell.slot = cells.Count;
+                cells.Add(cell);
+                grid.Add(coordinates[cell], cell);
+            }
+            InvalidateRenderChunks();
+            supportValidated = false; changedBoundary.Clear(); removedGroundSupport = false;
+            structureDirty = false; externallyHeld = false;
+            InvalidateAllCollisionColumns();
+            UpdateCollisionRuns();
+
+        }
+
+        private void Detach(Cell cell, Vector3 velocity = default)
+        {
+            EnsureDebrisCloud();
+            RemoveCell(cell);
+            debrisCloud.Emit(cell.Snapshot, velocity, debrisLifetime, debrisFadeDuration);
+            PartDestroyed?.Invoke(this);
+
+        }
+
+        private void RemoveCell(Cell cell)
+        {
+            if (coordinates.TryGetValue(cell, out Vector3Int coordinate))
+            {
+                RecordSupportRemoval(cell, coordinate);
+                MarkRenderChunk(coordinate);
+                grid.Remove(coordinate);
+                MarkCollisionColumn(coordinate.x * divisions.y + coordinate.y);
+            }
+            int slot = cell.slot;
+            Cell last = cells[cells.Count - 1];
+            cells[slot] = last;
+            last.slot = slot;
+            cells.RemoveAt(cells.Count - 1);
+            cell.slot = -1;
+            renderDirty = true;
+        }
+
+        private void DropUnsupported()
+        {
+            CollectExternalSupport();
+            // Newly created/moved cell bounds must be current before checking floor support.
+            var supported = supportedCells; supported.Clear();
+            var pending = supportQueue; pending.Clear();
+            // Ground reach first; anything added by neighbor support afterwards is held externally.
+            foreach (var entry in grid)
+                if (CellBottom(entry.Value) <= transform.position.y + 0.001f && supported.Add(entry.Key)) pending.Enqueue(entry.Key);
+            FloodSupport();
+            int groundReach = supported.Count;
+            foreach (var entry in grid)
+                if (HasExternalSupport(entry.Value) && supported.Add(entry.Key)) pending.Enqueue(entry.Key);
+            FloodSupport();
+            externallyHeld = supported.Count > groundReach;
+            var falling = fallingCoordinates; falling.Clear();
+            foreach (var entry in grid)
+                if (!supported.Contains(entry.Key)) falling.Add(entry.Key);
+            while (falling.Count > 0)
+            {
+                Vector3Int seed = default;
+                foreach (Vector3Int coordinate in falling) { seed = coordinate; break; }
+                var group = fallingCells; group.Clear();
+                pending.Enqueue(seed);
+                falling.Remove(seed);
+                while (pending.Count > 0)
+                {
+                    Vector3Int coordinate = pending.Dequeue();
+                    group.Add(grid[coordinate]);
+                    foreach (Vector3Int direction in neighbors)
+                        if (falling.Remove(coordinate + direction)) pending.Enqueue(coordinate + direction);
+                }
+                groupPieces.Clear();
+                foreach (Cell cell in group) groupPieces.Add(cell.Snapshot);
+                EnsureDebrisCloud();
+                debrisCloud.EmitGroup(groupPieces, debrisLifetime, debrisFadeDuration);
+                foreach (Cell cell in group) { RemoveCell(cell); }
+            }
+        }
+
+        private void FloodSupport()
+        {
+            while (supportQueue.Count > 0)
+            {
+                Vector3Int coordinate = supportQueue.Dequeue();
+                foreach (Vector3Int direction in neighbors)
+                {
+                    Vector3Int next = coordinate + direction;
+                    if (grid.ContainsKey(next) && supportedCells.Add(next)) supportQueue.Enqueue(next);
+                }
+            }
+        }
+
+        private void Subdivide(bool createCollisions = true)
+        {
+            if (subdivided) return;
+            subdivided = true;
+            Material material = originalRenderer.sharedMaterial;
+            instancedMaterial = new Material(material) { enableInstancing = true };
+            foreach (Collider collider in originalColliders.Keys) collider.enabled = false;
+            originalRenderer.enabled = false;
+            Bounds bounds = targetMesh.sharedMesh.bounds;
+            Vector3 axisScale = new Vector3(CellRoot.TransformVector(Vector3.right).magnitude,
+                CellRoot.TransformVector(Vector3.up).magnitude, CellRoot.TransformVector(Vector3.forward).magnitude);
+            float size = Mathf.Max(0.01f, partSize);
+            Vector3 step = new Vector3(size / Mathf.Max(axisScale.x, 0.00001f),
+                size / Mathf.Max(axisScale.y, 0.00001f), size / Mathf.Max(axisScale.z, 0.00001f));
+            gridOrigin = bounds.min;
+            gridStep = step;
+            divisions = new Vector3Int(Mathf.Max(1, Mathf.CeilToInt(bounds.size.x / step.x - 0.00001f)),
+                Mathf.Max(1, Mathf.CeilToInt(bounds.size.y / step.y - 0.00001f)),
+                Mathf.Max(1, Mathf.CeilToInt(bounds.size.z / step.z - 0.00001f)));
+            totalCellCount = divisions.x * divisions.y * divisions.z;
+            if (cellMesh == null)
+            {
+                var primitive = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                primitive.SetActive(false);
+                cellMesh = primitive.GetComponent<MeshFilter>().sharedMesh;
+                Destroy(primitive);
+            }
+            for (int x = 0; x < divisions.x; x++)
+                for (int y = 0; y < divisions.y; y++)
+                    for (int z = 0; z < divisions.z; z++)
+                    {
+                        Vector3 offset = new Vector3(x * step.x, y * step.y, z * step.z);
+                        Vector3 cellSize = Vector3.Min(step, bounds.size - offset);
+                        Cell cell = new Cell { root = CellRoot, localPosition = bounds.min + offset + cellSize * 0.5f, localScale = cellSize };
+                        cell.slot = cells.Count;
+                        cell.slot = cells.Count;
+                        cells.Add(cell);
+                        preparedCells.Add(cell);
+                        cellPositions.Add(cell, cell.transform.localPosition);
+                        cellSizes.Add(cell, cell.transform.localScale);
+                        grid.Add(new Vector3Int(x, y, z), cell);
+                        coordinates.Add(cell, new Vector3Int(x, y, z));
+                    }
+            EnsureDebrisCloud();
+            renderDirty = true;
+            InvalidateAllCollisionColumns();
+            if (createCollisions) UpdateCollisionRuns();
+        }
+
+        // Collider identities stay within their X/Y column; a hole only rebuilds that column.
+        private void InvalidateAllCollisionColumns()
+        {
+            collisionDirty = true; allColumnsDirty = true; dirtyColumns.Clear();
+            if (dirtyColumnFlags != null) System.Array.Clear(dirtyColumnFlags, 0, dirtyColumnFlags.Length);
+        }
+        private void MarkCollisionColumn(int column)
+        {
+            collisionDirty = true;
+            if (allColumnsDirty) return;
+            if (!dirtyColumnFlags[column])
+            { dirtyColumnFlags[column] = true; dirtyColumns.Add(column); }
+        }
+        private void UpdateCollisionRuns()
+        {
+            using (collisionMarker.Auto()) UpdateCollisionRunsCore();
+        }
+        private void UpdateCollisionRunsCore()
+        {
+            if (!subdivided || !collisionDirty) return;
+            if (collisionColumns == null)
+            {
+                collisionColumns = new List<BoxCollider>[divisions.x * divisions.y];
+                dirtyColumnFlags = new bool[collisionColumns.Length];
+                allColumnsDirty = true;
+            }
+            if (allColumnsDirty)
+                for (int column = 0; column < collisionColumns.Length; column++) UpdateCollisionColumn(column);
+            else
+                foreach (int column in dirtyColumns) UpdateCollisionColumn(column);
+            foreach (int column in dirtyColumns) dirtyColumnFlags[column] = false;
+            dirtyColumns.Clear(); allColumnsDirty = false; collisionDirty = false;
+            // Required before the same bullet queries the newly opened hole.
+            Physics.SyncTransforms();
+            StructuralSupportGraph.Changed(this);
+        }
+        private void UpdateCollisionColumn(int column)
+        {
+            var runs = collisionColumns[column];
+            if (runs == null) collisionColumns[column] = runs = new List<BoxCollider>();
+            int x = column / divisions.y, y = column % divisions.y, used = 0;
+            for (int z = 0; z < divisions.z; z++)
+            {
+                if (!grid.TryGetValue(new Vector3Int(x, y, z), out Cell first)) continue;
+                Cell last = first;
+                while (z + 1 < divisions.z && grid.TryGetValue(new Vector3Int(x, y, z + 1), out Cell next))
+                { last = next; z++; }
+                if (used == runs.Count) runs.Add(CellRoot.gameObject.AddComponent<BoxCollider>());
+                BoxCollider box = runs[used++];
+                Vector3 min = first.localPosition - first.localScale * 0.5f;
+                Vector3 max = last.localPosition + last.localScale * 0.5f;
+                Vector3 center = (min + max) * 0.5f, size = max - min;
+                if (!box.center.Equals(center)) box.center = center;
+                if (!box.size.Equals(size)) box.size = size;
+                if (!box.enabled) box.enabled = true;
+            }
+            for (int i = used; i < runs.Count; i++) if (runs[i].enabled) runs[i].enabled = false;
+        }
+
+        private void BreakSmallRemnant()
+        {
+            if (totalCellCount <= 0) return;
+            int remaining = RemainingCellCount;
+            // Already emitted individual debris is excluded; intact falling chunks still count.
+            if (remaining <= 0 || (long)remaining * 10 > totalCellCount) return;
+            WorkshopSoundEffects.RaiseBlockFragmented(transform.position);
+            while (cells.Count > 0) Detach(cells[cells.Count - 1], Vector3.up * 0.3f);
+            debrisCloud?.BreakIntactGroups();
+            structureDirty = false;
+        }
+
+        private void EnsureDebrisCloud()
+        {
+            if (debrisCloud != null) return;
+            debrisCloud = PoolManager.RentComponent<VisualDebrisCloud>(transform.position);
+            debrisCloud.gameObject.layer = gameObject.layer;
+            debrisCloud.BindOwner(this);
+            debrisCloud.Initialize(cellMesh, originalRenderer.sharedMaterial, debrisFloorBounce, debrisFloorFriction, transform, debrisMaterial);
+            debrisCloud.SetAbsorptionEmission(gravityImpact, gravityImpactCenter, gravityAbsorptionDuration, gravitySpreadDistance, gravitySpreadFraction);
+            debrisCloud.gameObject.SetActive(true);
+        }
+        internal void ForgetDebrisCloud(VisualDebrisCloud cloud)
+        {
+            if (debrisCloud == cloud) debrisCloud = null;
+        }
+        private void OnDisable()
+        {
+            debrisIndexed = false;
+            ActiveDebrisObstacles.Remove(this); DebrisTargetIndex.Remove(this);
+            StructuralSupportGraph.Unregister(this);
+            if (debrisCloud != null) PoolManager.Release(debrisCloud.gameObject);
+        }
+
+        private void OnDestroy()
+        {
+            if (instancedMaterial != null) Destroy(instancedMaterial);
+            foreach (var chunk in renderChunks.Values) if (chunk.mesh != null) Destroy(chunk.mesh);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+

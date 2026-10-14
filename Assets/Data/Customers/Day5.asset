@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f2d3afbfd817454eb6a2905328832c2, type: 3}
+  m_Name: Day5
+  m_EditorClassIdentifier: 
+  day: 5
+  rent: 1650
+  customers:
+  - {fileID: 11400000, guid: f4e6e6c50ca7d574f8fe2e7cd530a4f6, type: 2}
+  - {fileID: 11400000, guid: 1cd9be92bac19b246923e91f6cf077e7, type: 2}
+  - {fileID: 11400000, guid: 3fe84f1ef3ba7c645b20fad83564cada, type: 2}
+  - {fileID: 11400000, guid: 2d9afc0f00161344c98c8238201fb8ca, type: 2}
+  - {fileID: 11400000, guid: f88c397ed1f539f4a961604044e93feb, type: 2}
+  - {fileID: 11400000, guid: a0a2b26fb940de64c88d341032fefb96, type: 2}
+  - {fileID: 11400000, guid: 346ffc96cc977c64a8a3730e146a6ad0, type: 2}
+  - {fileID: 11400000, guid: 5867799c1021bd247bdc32c3246d757f, type: 2}
+  - {fileID: 11400000, guid: bb35f40bd3aa17e4f831ca8946978d4b, type: 2}
+  useRequestPool: 1
+  extraGenerated: 1
+  minRequests: 2
+  maxRequests: 3

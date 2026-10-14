@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D3_2_QuadShotgun
+  m_EditorClassIdentifier: 
+  lines:
+  - "산탄총 태그에, 4방향 분할로 네 갈래를 내주세요!"
+  endsClear: 1
+  archetypes:
+  - {fileID: 11400000, guid: 70d86a3c50472dd47b261b990ddd9210, type: 2}
+  conditions:
+  - measure: 5
+    stat: 0
+    min: 1
+    max: 999
+  happyLine: "\uAFC8\uC774... \uC774\uB8E8\uC5B4\uC84C\uC5B4\uC694...!"
+  angryLine: "\uC774\uAC8C \uC544\uB2C8\uB780 \uB9D0\uC774\uB2E4\uC557!!!!"
+  price: 400
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 1d3e091061225b44b9ed9f8fddce384a, type: 3}

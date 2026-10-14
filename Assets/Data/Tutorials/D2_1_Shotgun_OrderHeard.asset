@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ce3e4a6a1e6121439c99c064236ddef, type: 3}
+  m_Name: D2_1_Shotgun_OrderHeard
+  m_EditorClassIdentifier: 
+  steps:
+  - id: D2_1_Shotgun_OrderHeard_1
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uCD1D\uAE30 \uD0DC\uADF8: \uACF5\uBC29\uC5D0\uC11C \uCD1D\uC744
+      \uC870\uB9BD\uD558\uBA74 \uD654\uBA74\uC5D0 \uC9C0\uAE08 \uCD1D\uC5D0 \uBD99\uC740
+      \uD0DC\uADF8(\uC0F7\uAC74, \uC800\uACA9\uCD1D \uB4F1)\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4."
+    objective: 
+    completion: 0
+    requiredSignal: 
+    allowedActions: []
+  - id: D2_1_Shotgun_OrderHeard_2
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "'\uC0F7\uAC74'\uCC98\uB7FC \uCD1D \uC885\uB958\uB97C \uC8FC\uBB38\uD558\uB294
+      \uC190\uB2D8\uC740 \uADF8 \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC744 \uC6D0\uD569\uB2C8\uB2E4.
+      \uD0DC\uADF8\uB294 \uB4E4\uC5B4\uAC04 \uBAA8\uB4C8\uACFC \uC2A4\uD0EF \uC870\uD569\uC73C\uB85C
+      \uC815\uD574\uC9C0\uB2C8, \uC6D0\uD558\uB294 \uD0DC\uADF8\uAC00 \uB730 \uB54C\uAE4C\uC9C0
+      \uBAA8\uB4C8\uC744 \uC870\uC815\uD558\uC138\uC694."
+    objective: 
+    completion: 0
+    requiredSignal: 
+    allowedActions: []

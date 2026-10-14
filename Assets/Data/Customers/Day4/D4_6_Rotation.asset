@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D4_6_Rotation
+  m_EditorClassIdentifier: 
+  lines:
+  - "\uB3CC\uB824 \uB3CC\uB824 \uB3CC\uB9BC\uD310~"
+  - "회전 태그가 붙으면 좋겠어요!"
+  endsClear: 1
+  archetypes:
+  - {fileID: 11400000, guid: 60c861d406fb6fd48a48e2649ddcb52b, type: 2}
+  conditions: []
+  happyLine: "\uC544~ \uB9C8\uC640\uB808 \uB9C8\uC640\uB808 \uB9C8\uC640\uB808 \uB9C8\uC640\uB808
+    \uB9C8\uC640\uB808 \uCE74\uB808-\uB2C8 \uCE74\uBCA4 \uCE58\uB77C\uC2A4\uC694-\uB2C8"
+  angryLine: "\uCD1D\uC54C\uC774 \uC548\uB3C4\uB2C8 \uC0AC\uC7A5\uB2D8\uC774\uB77C\uB3C4
+    \uB3CC\uB824\uB4DC\uB9B4\uAE4C\uC694? \uC81C \uB3C8\uC774\uB098 \uB3CC\uB824\uC8FC\uC138\uC694"
+  price: 600
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 7b8a4071e0dd9464ab6c47865b7f5af1, type: 3}

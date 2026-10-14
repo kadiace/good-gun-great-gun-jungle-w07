@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ce3e4a6a1e6121439c99c064236ddef, type: 3}
+  m_Name: D2_2_Sniper_OrderHeard
+  m_EditorClassIdentifier: 
+  steps:
+  - id: D2_2_Sniper_OrderHeard_1
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uC800\uACA9\uCD1D\uB3C4 \uB9C8\uCC2C\uAC00\uC9C0\uC785\uB2C8\uB2E4.
+      \uACF5\uBC29 \uD654\uBA74\uC5D0 '\uC800\uACA9\uCD1D' \uD0DC\uADF8\uAC00 \uB5B4\uB294\uC9C0
+      \uD655\uC778\uD55C \uB4A4 \uD310\uB9E4\uD558\uC138\uC694."
+    objective: 
+    completion: 0
+    requiredSignal: 
+    allowedActions: []

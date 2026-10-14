@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D5_11_RicsMonkey
+  m_EditorClassIdentifier: 
+  lines:
+  - "\uC6B0 \uC6B0 \uC6B0 \uC300\uC300\uC300"
+  - "\uC2DD\uB2F9\uC73C\uB85C \uBE44\uC720\uD558\uC790\uBA74 \uC571\uC194\uCE7C\uB9AC\uBC84\uB97C
+    4\uAC1C\uC6D4 \uB300\uC5EC\uD574\uB2EC\uB77C\uB294\uAC70\uC784"
+  endsClear: 0
+  archetypes: []
+  conditions: []
+  happyLine: "\uC774\uD574\uAC00 \uC3D9\uC3D9 \uB418\uC796\uC544"
+  angryLine: "\uC2DD\uB2F9\uC73C\uB85C \uBE44\uC720\uD558\uC790\uBA74 \uC9C4\uC0C1\uC774
+    \uD589\uD328 \uBD80\uB9AC\uB294 \uAC70\r\n\uC606\uC5D0 \uC788\uB358 \uC190\uB2D8\uC774
+    \uC2DD\uB2F9 \uC8FC\uC778 \uAC00\uBA74 \uC4F0\uACE0 \uB300\uC2E0 \uC695\uD574\uC92C\uB354\uB2C8\r\n\uADF8
+    \uC190\uB2D8\uC744 \uACE0\uC18C\uD558\uB294 \uAC70\uC784"
+  price: 700
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 50776c8b486984d4d88a79f6eb34eae3, type: 3}

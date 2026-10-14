@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f2d3afbfd817454eb6a2905328832c2, type: 3}
+  m_Name: Day6
+  m_EditorClassIdentifier: 
+  day: 6
+  rent: 2000
+  customers:
+  - {fileID: 11400000, guid: d5629a5fb5df7874ebefe9e24bd959af, type: 2}
+  - {fileID: 11400000, guid: 0c5e735d8c860654eb79844236b27b63, type: 2}
+  - {fileID: 11400000, guid: 8f30edea593b9824c88aaa4606b9c50b, type: 2}
+  - {fileID: 11400000, guid: 78f7371a5c003d44393acb6a85257afb, type: 2}
+  - {fileID: 11400000, guid: c13e2f3309d85a942a71852dc0edb95d, type: 2}
+  - {fileID: 11400000, guid: 0a8af4ee73848804a9693aa05665fb80, type: 2}
+  - {fileID: 11400000, guid: 9f6cc4a608cdb4e4bbe4dcd2b1d6167d, type: 2}
+  useRequestPool: 1
+  extraGenerated: 1
+  minRequests: 2
+  maxRequests: 3

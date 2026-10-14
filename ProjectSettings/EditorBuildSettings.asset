@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Start_Scene.unity
+    guid: adad6f32ccc54de4da002e73c1a8794e
+  - enabled: 1
+    path: Assets/Scenes/SampleScene.unity
+    guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 0
+    path: Assets/Scenes/Time_Scene.unity
+    guid: e48fdee68f60284448ff1af7244d29f0
+  - enabled: 0
+    path: Assets/Scenes/Map/NightRaid_Airport.unity
+    guid: df1bcc7c283aaa645bdb8059fc992a0b
+  - enabled: 0
+    path: Assets/Scenes/Map/NightRaid_Explosion.unity
+    guid: a0c6f8de43449b04a8773cceb2385353
+  - enabled: 0
+    path: Assets/Scenes/Map/NightRaid_Fire.unity
+    guid: d6aded25b61977c44bf68175c3714114
+  - enabled: 0
+    path: Assets/Scenes/Map/NightRaid_Penetration.unity
+    guid: cf6803b19b5770349a5f60da2618a53f
+  - enabled: 1
+    path: Assets/Scenes/Map/NightRaid_Tower.unity
+    guid: bf7bd97e75ad9804d8ef7208a9fa05d0
+  - enabled: 0
+    path: Assets/Scenes/Map/NightRaid_Water.unity
+    guid: 728e36c2f34392746935fab1c3b2a9a3
+  - enabled: 1
+    path: Assets/Scenes/Map/NightRaid_WoodenHouse.unity
+    guid: f8d8874c03846b143953276a7fd4de69
+  - enabled: 1
+    path: Assets/Scenes/Map/NightRaid_Millitary_base.unity
+    guid: 2d39d493e5cc4df44afc29ff57645944
+  - enabled: 1
+    path: Assets/Scenes/Map/NightRaid_JungleCampus.unity
+    guid: 62d83eff23eee4e42952354ad582cf0d
+  - enabled: 0
+    path: Assets/Scenes/Map/NightRaid_Bank.unity
+    guid: 4e682cfa88d6dc94d9ee41bc1ece146b
+  - enabled: 1
+    path: Assets/Scenes/Map/NightRaid_BankGrand.unity
+    guid: 95cdda1f17bc4564ba6f0df132ea7d4e
+  - enabled: 1
+    path: Assets/Scenes/Map/Tutorial_WoodenHouse.unity
+    guid: b2b481f13ce06a8459dcc061e264d063
+  m_configObjects:
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_UseUCBPForAssetBundles: 0

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb161d3f5f09f24418ccc53de7703e71, type: 3}
+  m_Name: Module_Color
+  m_EditorClassIdentifier: 
+  codeId: d557014a75723774da9948844f570e45
+  displayName: "\uCEEC\uB7EC"
+  description: "\uC774 \uACBD\uB85C\uC5D0\uC11C \uBC1C\uC0AC\uB418\uB294 \uD0C4\uD658\uC758
+    \uC0C9\uC0C1\uC744 \uBC14\uAFB8\uB294 \uBAA8\uB4C8\uC785\uB2C8\uB2E4. \uC5EC\uB7EC
+    \uAC1C\uC758 \uC0C9\uC0C1\uC740 \uC11E\uC5EC \uC801\uC6A9\uB429\uB2C8\uB2E4."
+  color: {r: 1, g: 1, b: 1, a: 1}
+  useModuleCredits: 0
+  initiallyLocked: 0
+  moduleCreditCost: 0
+  moduleType: 14
+  buyPrice: 10
+  bonuses:
+  - type: 14
+    amount: 1
+  - type: 11
+    amount: 1
+  prefab: {fileID: 6867133603038035152, guid: 5141a59d92ee21542bf2a84a6bd65ce4, type: 3}

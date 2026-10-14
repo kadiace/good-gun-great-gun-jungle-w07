@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D2_5_BigMac
+  m_EditorClassIdentifier: 
+  lines:
+  - "\uC5EC\uAE30 \uBE45\uB9E5 \uC138\uD2B8 \uD558\uB098\uC694."
+  - "\uAC10\uC790\uD280\uAE40\uC740 \uB77C\uC9C0\uB85C\uC694. \uCF5C\uB77C\uB294
+    \uC81C\uB85C\uB85C."
+  endsClear: 0
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
+  conditions: []
+  happyLine: "!! \uBC14\uB85C \uC774 \uD14C\uC774\uC2A4\uD2B8\uC57C!!"
+  angryLine: "\uD53C\uD074 \uBE7C\uB2EC\uB77C\uACE0 \uD588\uC796\uC544\uC694!"
+  price: 0
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: d34a5ee6d891a4a4ba3b44d232ae123a, type: 3}

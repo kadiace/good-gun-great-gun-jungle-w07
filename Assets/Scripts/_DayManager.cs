@@ -1,0 +1,678 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using WeaponWorkshop;
+
+public class _DayManager : MonoBehaviour
+{
+    [SerializeField] private DaySettings settings;
+    [SerializeField] private SetTimer timerController;
+    [SerializeField] private GameManager gameManager;
+    [SerializeField] private Bell customerBell;
+    [SerializeField, Tooltip("일차 번호로 조회할 CustomerDay 에셋 목록")] private CustomerDay[] customerDays;
+    [SerializeField] private CustomerDay tutorialDay;
+    [SerializeField, Min(0), Tooltip("0은 튜토리얼 일차. 내용 작성 전에는 기존 1일차 시작을 유지합니다.")]
+    private int startingDay = 1;
+    [SerializeField] private bool askToSkipTutorial;
+    public CustomerDay CurrentCustomerDay { get; private set; }
+    [SerializeField, Min(1), Tooltip("정해진 일차가 끝난 뒤 무한 모드의 하루 손님 수")] private int endlessGuestsPerDay = 8;
+    // 무한 모드 대기열: 한 바퀴 다 나올 때까지 같은 손님이 다시 나오지 않음.
+    private readonly List<CustomerProfile> endlessBag = new List<CustomerProfile>();
+    private readonly List<CustomerProfile> deferredCustomers = new List<CustomerProfile>();
+    private PlayerModuleUnlocks ModuleUnlocks => wallet != null ? wallet.GetComponent<PlayerModuleUnlocks>() : null;
+    [SerializeField, Tooltip("일반 손님을 만드는 요구사항 조합표 (1~7일차 일반 손님 자리 + 무한 모드). 비우면 기존 손님 그대로")] private CustomerRequestPool endlessRequests;
+    [SerializeField, Range(0f, 1f), Tooltip("무한 모드에서 조합 손님이 나올 확률. 나머지는 '예?'/진상 손님")] private float generatedRatio = 0.5f;
+    public bool HasNextDay => FindCustomerDay(DayNumber + 1) != null || HasAnyCustomer();
+    private int dailyGuestCount;
+    public int CompletedGuests { get; private set; }
+    public int DissatisfiedGuests { get; private set; }
+    public int KilledGuests { get; private set; }
+    private PlayerWallet wallet;
+    public int Money => wallet != null ? wallet.Balance : 0;
+    public int ModuleCredits => wallet != null ? wallet.ModuleCredits : 0;
+    public int TodayIncome { get; private set; }
+    public int TodayRent { get; private set; }
+    [SerializeField, Min(0), Tooltip("무한 모드 첫날 월세")] private int endlessRent = 2000;
+    [SerializeField, Min(0), Tooltip("무한 모드 하루마다 오르는 월세")] private int endlessRentGrowth = 50;
+    public int DayNumber { get; private set; } = 1;
+    public bool IsNight { get; private set; }
+    public bool IsAwaitingOpening => !IsNight && customerBell != null && !customerBell.DayStarted;
+    public bool IsSettlementOpen { get; private set; }
+    public bool CanStartNextDay { get; private set; }
+    public bool IsBankrupt { get; private set; }
+    public setTimer CurrentPeriod { get; private set; }
+    public event Action Changed;
+    public event Action<int> DayAdvanced;
+    private bool hasCurrentPeriod;
+    private bool isSettled;
+    private bool returningToStart;
+    private bool bankruptcyResultOpen;
+    private bool startedDayInDebt;
+
+    private void Awake()
+    {
+        IsNight = false;
+        IsSettlementOpen = false;
+        CanStartNextDay = false;
+        IsBankrupt = false;
+        bankruptcyResultOpen = false;
+        isSettled = false;
+        startedDayInDebt = false;
+        hasCurrentPeriod = false;
+        CompletedGuests = 0;
+        DissatisfiedGuests = 0;
+        KilledGuests = 0;
+        TodayIncome = 0;
+        TodayRent = 0;
+        wallet = PlayerWallet.ForScene(this);
+        DayNumber = startingDay;
+        CurrentCustomerDay = null;
+        dailyGuestCount = 0;
+        CurrentPeriod = setTimer.morning;
+    }
+    private void OnEnable()
+    {
+        if (wallet == null) wallet = PlayerWallet.ForScene(this);
+        if (wallet != null) wallet.Changed += OnWalletChanged;
+    }
+    private void OnWalletChanged() => Changed?.Invoke();
+
+    private void OnDisable()
+    {
+        if (wallet != null) wallet.Changed -= OnWalletChanged;
+    }
+    private void Start()
+    {
+        if (!HasRequiredReferences()) return;
+        if (askToSkipTutorial && GameSaveFiles.PendingLoad == null && !NightRaidTransfer.HasPendingReturn)
+        {
+            DayNumber = 0;
+            if (!ApplyCustomerDay(PrepareDay(0))) return;
+            gameManager.SetNight(false); ApplyMorning(); Changed?.Invoke();
+            var tutorial = TutorialManager.Instance;
+            if (tutorial != null) tutorial.BeginDayZero(this);
+            else BeginFirstBusinessDay();
+            return;
+        }
+        if (!ApplyCustomerDay(PrepareDay(DayNumber))) return;
+        gameManager.SetNight(false);
+        ApplyMorning();
+        Changed?.Invoke();
+        if (TutorialManager.TrainingReturnPending) return;
+        TutorialManager.Run(CurrentCustomerDay.startTutorial, this);
+    }
+    public void BeginFirstBusinessDay()
+    {
+        if (DayNumber != 0 || !HasRequiredReferences()) return;
+        customerBell?.EndDay();
+        if (!ApplyCustomerDay(PrepareDay(1))) return;
+        DayNumber = 1;
+        CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodayRent = 0;
+        isSettled = IsNight = IsSettlementOpen = CanStartNextDay = false;
+        startedDayInDebt = wallet != null && Money < 0;
+        ApplyMorning(); gameManager.SetNight(false); Changed?.Invoke();
+        DayAdvanced?.Invoke(DayNumber);
+    }
+
+    // Submission pays now; departure only advances the guest/day count.
+    public void ReceivePayment(int payment)
+    {
+        if (!isActiveAndEnabled || IsNight || isSettled || !HasRequiredReferences()) return;
+        int income = Mathf.Max(0, payment);
+        TodayIncome += income;
+        wallet?.Credit(income);
+        Changed?.Invoke();
+    }
+
+    // 실제 판매금액이 없는 호출은 설정된 고정 단가를 사용합니다.
+    public void CompletedGuest() => CompletedGuest(settings != null ? settings.payPerGuest : 0);
+    public void CompletedGuest(int payment, bool dissatisfied = false, bool killed = false)
+    {
+        if (!isActiveAndEnabled || IsNight || isSettled || !HasRequiredReferences()) return;
+        CompletedGuests++;
+        // 퇴장 결과만 집계. 판매 후 사망한 손님도 살해로 한 번만 분류합니다.
+        if (killed) KilledGuests++;
+        else if (dissatisfied) DissatisfiedGuests++;
+        int income = Mathf.Max(0, payment);
+        TodayIncome += income;
+        wallet?.Credit(income);
+        if (dailyGuestCount > 0 && CompletedGuests >= dailyGuestCount) { CloseShop(); return; }
+        UpdatePeriod();
+        if (!IsNight) Changed?.Invoke();
+    }
+    private void ApplyMorning()
+    {
+        CurrentPeriod = setTimer.morning;
+        hasCurrentPeriod = true;
+        SetTimerData morning = settings.timing?.Find(t => t != null && t.period == setTimer.morning);
+        if (morning != null) timerController.SetImmediately(morning);
+        else Debug.LogWarning("DaySettings에 morning 시간대를 추가하세요.", this);
+    }
+    private void UpdatePeriod()
+    {
+        SetTimerData timing = FindTiming(CompletedGuests);
+        if (timing == null || (hasCurrentPeriod && CurrentPeriod == timing.period)) return;
+        CurrentPeriod = timing.period;
+        hasCurrentPeriod = true;
+        timerController.Apply(timing);
+        if (CurrentPeriod == setTimer.night) SettleDay();
+    }
+    private SetTimerData FindTiming(int guestCount)
+    {
+        SetTimerData selected = null;
+        if (settings.timing == null) return null;
+        // 일차별 마지막 손님을 처리했을 때 밤 정산을 시작합니다.
+        if (CurrentCustomerDay != null && CurrentCustomerDay.day != 0 && guestCount >= dailyGuestCount)
+            return settings.timing.Find(t => t != null && t.period == setTimer.night);
+        foreach (SetTimerData timing in settings.timing)
+            if (timing != null && (CurrentCustomerDay == null || timing.period != setTimer.night) &&
+                guestCount >= timing.startsAtGuestCount &&
+                (selected == null || timing.startsAtGuestCount > selected.startsAtGuestCount))
+                selected = timing;
+        return selected;
+    }
+    public void CloseShop()
+    {
+        if (IsNight || IsAwaitingOpening || isSettled || !HasRequiredReferences()) return;
+        CurrentPeriod = setTimer.night;
+        hasCurrentPeriod = true;
+        var night = settings.timing?.Find(t => t != null && t.period == setTimer.night);
+        if (night != null) timerController.SetImmediately(night);
+        SettleDay();
+    }
+
+    public void SettleDay()
+    {
+        if (isSettled || CurrentPeriod != setTimer.night) return;
+        isSettled = true;
+        IsNight = true;
+        WorkshopSoundEffects.RaiseBusinessEnded();
+        customerBell?.EndDay();
+        TodayRent = CurrentCustomerDay != null ? CurrentCustomerDay.rent : 0;
+        if (wallet != null && wallet.Balance < TodayRent)
+        {
+            IsBankrupt = true;
+            CanStartNextDay = false;
+            IsSettlementOpen = true;
+            gameManager.SetNight(true);
+            Changed?.Invoke();
+            return;
+        }
+        wallet?.Debit(TodayRent);
+        IsSettlementOpen = true;
+        gameManager.SetNight(true);
+        CanStartNextDay = HasNextDay && !(TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero);
+        Changed?.Invoke();
+        // Stay at night until the player chooses a raid or the next morning.
+    }
+    public void DeclineNextDay()
+    {
+        if (!IsNight || !IsSettlementOpen || !HasRequiredReferences()) return;
+        if (IsBankrupt)
+        {
+            if (bankruptcyResultOpen) return;
+            var resultUI = gameManager.UI != null ? gameManager.UI.RaidUI : null;
+            if (resultUI == null) { Debug.LogError("자릿세 게임오버 결과 UI가 연결되지 않았습니다.", this); return; }
+            bankruptcyResultOpen = true;
+            gameManager.SetDialogue(true);
+            IsSettlementOpen = false;
+            Changed?.Invoke();
+            resultUI.ShowBankruptcyResult(ReturnAfterBankruptcy);
+            return;
+        }
+        IsSettlementOpen = false;
+        gameManager.SetNight(false);
+        Changed?.Invoke();
+    }
+    private void ReturnAfterBankruptcy()
+    {
+        if (returningToStart) return;
+        returningToStart = true;
+        NightRaidTransfer.Abandon();
+        TutorialManager.AbandonTraining();
+        GameSaveFiles.PendingLoad = null;
+        GameSaveFiles.ClearRaidRecovery();
+        PoolManager.ClearActive();
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        SceneManager.LoadSceneAsync("Start_Scene", LoadSceneMode.Single);
+    }
+    // Explicit hook for the authored tutorial's eventual completion; an empty day never auto-advances.
+    public void CompleteTutorialDay()
+    {
+        if (DayNumber != 0 || IsNight || !HasRequiredReferences()) return;
+        CurrentPeriod = setTimer.night;
+        SettleDay();
+        StartNextDay();
+    }
+
+    public bool OpenShop()
+    {
+        if (!IsAwaitingOpening || GameManager.GameplayBlocked || !HasRequiredReferences()) return false;
+        // 모듈재화 판정은 영업 시작 시점 기준. 대기열을 다시 넣는 것이라 종 시작 전에 해야 함.
+        if (DayNumber != 0 && CurrentCustomerDay != null && CurrentCustomerDay.customers != null)
+        {
+            ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday);
+            if (!ApplyCustomerDay(CurrentCustomerDay)) return false;
+        }
+        if (!customerBell.StartBusiness()) return false;
+        Changed?.Invoke();
+        return true;
+    }
+
+    public void HideSettlementForRaid()
+    {
+        if (!IsNight) return;
+        IsSettlementOpen = false;
+        Changed?.Invoke();
+    }
+
+    public void ShowSettlement()
+    {
+        if (!IsNight || IsSettlementOpen || !HasRequiredReferences()) return;
+        IsSettlementOpen = true;
+        gameManager.SetNight(true);
+        Changed?.Invoke();
+    }
+
+    public void StartNextDay(bool skippedNightRaid = false)
+    {
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return;
+        if (returningToStart || !IsNight || !CanStartNextDay || !HasRequiredReferences()) return;
+        if (wallet != null && startedDayInDebt && Money < 0)
+        {
+            if (!Application.CanStreamedLevelBeLoaded("Start_Scene"))
+            {
+                Debug.LogError("게임오버 복귀 씬 Start_Scene을 빌드 목록에 등록하세요.", this);
+                return;
+            }
+            returningToStart = true;
+            CanStartNextDay = false;
+            IsSettlementOpen = false;
+            gameManager.SetNight(true);
+            NightRaidTransfer.Abandon();
+            GameSaveFiles.PendingLoad = null;
+            GameSaveFiles.ClearRaidRecovery();
+            PoolManager.ClearActive();
+            Time.timeScale = 1f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            Changed?.Invoke();
+            SceneManager.LoadSceneAsync("Start_Scene", LoadSceneMode.Single);
+            return;
+        }
+        CustomerDay nextDay = PrepareDay(DayNumber + 1);
+        if (!ApplyCustomerDay(nextDay)) return;
+        startedDayInDebt = wallet != null && Money < 0;
+        DayNumber = nextDay.day;
+        CompletedGuests = 0;
+        DissatisfiedGuests = 0;
+        KilledGuests = 0;
+        TodayIncome = 0;
+        TodayRent = 0;
+        isSettled = false;
+        IsNight = false;
+        IsSettlementOpen = false;
+        CanStartNextDay = false;
+        // 임시 지원: 습격 대신 다음 날 아침을 선택한 경우에만 지급합니다.
+        if (skippedNightRaid) wallet?.CreditModuleCredits(100);
+        ApplyMorning();
+        gameManager.SetNight(false);
+        Changed?.Invoke();
+        DayAdvanced?.Invoke(DayNumber);
+        TutorialManager.Run(CurrentCustomerDay.startTutorial, this);
+    }
+    public void CaptureSave(GameSaveData data)
+    {
+        data.completed = CompletedGuests; data.dissatisfied = DissatisfiedGuests; data.killed = KilledGuests;
+        data.income = TodayIncome; data.period = (int)CurrentPeriod; data.night = IsNight;
+        data.settlement = IsSettlementOpen; data.timer = timerController.CaptureSave();
+        data.startedDayInDebt = startedDayInDebt;
+        customerBell.CaptureSave(data);
+        if (CurrentCustomerDay != null)
+        {
+            data.dailyOrders = Array.ConvertAll(CurrentCustomerDay.customers, CaptureOrder);
+            data.dailyRent = CurrentCustomerDay.rent;
+        }
+        data.deferredCustomers = deferredCustomers.ConvertAll(CaptureOrder).ToArray();
+    }
+
+    public bool CanRestoreSave(GameSaveData data)
+    {
+        if (data == null) return false;
+        if (data.dailyOrders != null)
+        {
+            if (!HasRequiredReferences() || customerBell == null || data.dailyOrders.Length == 0 ||
+                Array.Exists(data.dailyOrders, order => !CanRestoreOrder(order)) ||
+                (data.deferredCustomers != null && Array.Exists(data.deferredCustomers,
+                    order => order == null || FindSavedProfile(order) == null))) return false;
+            if (data.completed < 0 || data.nextCustomer < 0 || data.nextCustomer > data.dailyOrders.Length ||
+                data.currentCustomer < -1 || data.currentCustomer >= data.dailyOrders.Length) return false;
+            if (data.currentCustomer < 0) return true;
+            var order = data.dailyOrders[data.currentCustomer];
+            var profile = FindSavedProfile(order);
+            var lines = profile != null ? profile.lines : order.lines;
+            return data.customer != null && (data.customer.stage != 2 ||
+                (lines != null && data.customer.line >= 0 && data.customer.line < lines.Length));
+        }
+        var day = data.travelCustomerDay != null ? data.travelCustomerDay : FindCustomerDay(data.day);
+        return HasRequiredReferences() && customerBell != null && day != null && day.customers != null &&
+            data.completed >= 0 && data.nextCustomer >= 0 && data.nextCustomer <= day.customers.Length &&
+            data.currentCustomer >= -1 && data.currentCustomer < day.customers.Length &&
+            (data.currentCustomer < 0 || (data.customer != null && day.customers[data.currentCustomer] != null &&
+                (data.customer.stage != 2 || (day.customers[data.currentCustomer].lines != null &&
+                data.customer.line < day.customers[data.currentCustomer].lines.Length))));
+    }
+
+    public void RestoreSavedState(GameSaveData data)
+    {
+        if (!CanRestoreSave(data)) return;
+        deferredCustomers.Clear();
+        endlessBag.Clear();
+        if (data.deferredCustomers != null)
+            foreach (var order in data.deferredCustomers)
+            {
+                var profile = FindSavedProfile(order);
+                if (profile != null && !deferredCustomers.Contains(profile)) deferredCustomers.Add(profile);
+            }
+        CustomerDay restoredDay;
+        if (data.dailyOrders != null)
+        {
+            restoredDay = ScriptableObject.CreateInstance<CustomerDay>();
+            restoredDay.day = data.day;
+            restoredDay.rent = data.dailyRent;
+            restoredDay.customers = Array.ConvertAll(data.dailyOrders, RestoreOrder);
+        }
+        else
+        {
+            restoredDay = Instantiate(data.travelCustomerDay != null ? data.travelCustomerDay : FindCustomerDay(data.day));
+            restoredDay.customers = (CustomerProfile[])restoredDay.customers.Clone();
+        }
+        for (int i = 0; i < restoredDay.customers.Length; i++)
+        {
+            bool currentOrder = i == data.currentCustomer && data.customer != null && data.customer.stage < 3;
+            if (i < data.nextCustomer && !currentOrder) continue;
+            var profile = restoredDay.customers[i];
+            if (CanServe(profile, data.day)) continue;
+            if (TryFindProfile(profile, out _, out _) && !deferredCustomers.Contains(profile)) deferredCustomers.Add(profile);
+            restoredDay.customers[i] = CreateCombination(data.day, restoredDay.minRequests, restoredDay.maxRequests);
+            if (currentOrder)
+            {
+                data.customer = new CustomerSave { stage = data.customer.stage == 0 ? 0 : 1, position = data.customer.position };
+                data.confirmation = false;
+            }
+        }
+        if (!ApplyCustomerDay(restoredDay)) return;
+        DayNumber = data.day; CompletedGuests = data.completed; DissatisfiedGuests = data.dissatisfied;
+        KilledGuests = data.killed; TodayIncome = data.income; CurrentPeriod = (setTimer)data.period;
+        hasCurrentPeriod = true; isSettled = IsNight = data.night; IsSettlementOpen = data.settlement;
+        startedDayInDebt = data.startedDayInDebt;
+        // The saved wallet already includes rent; restore its display without charging again.
+        TodayRent = IsNight ? CurrentCustomerDay.rent : 0;
+        CanStartNextDay = IsNight && HasNextDay;
+        timerController.RestoreSave(data.timer);
+        gameManager.SetNight(data.night && data.settlement);
+        customerBell.RestoreSave(data);
+        if (data.confirmation && customerBell.Current != null && SaleConfirmationUI.Instance != null)
+            SaleConfirmationUI.Instance.UseCustomer(customerBell.Current, wallet.GetComponent<WeaponHolder>());
+        Changed?.Invoke();
+    }
+
+    private CustomerDay FindCustomerDay(int day)
+    {
+        if (day == 0 && tutorialDay != null) return tutorialDay;
+        if (customerDays == null) return null;
+        foreach (CustomerDay candidate in customerDays)
+            if (candidate != null && candidate.day == day) return candidate;
+        return null;
+    }
+
+    private bool TryFindProfile(CustomerProfile profile, out int sourceDay, out int sourceSlot)
+    {
+        if (tutorialDay != null && tutorialDay.customers != null)
+        {
+            int tutorialSlot = Array.IndexOf(tutorialDay.customers, profile);
+            if (tutorialSlot >= 0) { sourceDay = 0; sourceSlot = tutorialSlot; return true; }
+        }
+        if (customerDays != null)
+            foreach (var day in customerDays)
+            {
+                if (day == null || day.customers == null) continue;
+                int slot = Array.IndexOf(day.customers, profile);
+                if (slot < 0) continue;
+                sourceDay = day.day; sourceSlot = slot; return true;
+            }
+        sourceDay = 0; sourceSlot = -1; return false;
+    }
+
+    private CustomerProfile FindSavedProfile(CustomerOrderSave order)
+    {
+        if (order == null || order.sourceSlot < 0) return null;
+        var day = FindCustomerDay(order.sourceDay);
+        return day != null && day.customers != null && order.sourceSlot < day.customers.Length
+            ? day.customers[order.sourceSlot] : null;
+    }
+
+    private CustomerOrderSave CaptureOrder(CustomerProfile profile)
+    {
+        if (TryFindProfile(profile, out int sourceDay, out int slot))
+            return new CustomerOrderSave { sourceDay = sourceDay, sourceSlot = slot };
+        var indices = new List<int>();
+        if (profile.archetypes != null)
+            foreach (var archetype in profile.archetypes)
+                indices.Add(endlessRequests != null && endlessRequests.requests != null
+                    ? Array.IndexOf(endlessRequests.requests, archetype) : -1);
+        return new CustomerOrderSave { requests = indices.ToArray(), lines = profile.lines,
+            happyLine = profile.happyLine, angryLine = profile.angryLine, price = profile.price,
+            portrait = endlessRequests != null && endlessRequests.portraits != null
+                ? Array.IndexOf(endlessRequests.portraits, profile.portrait) : -1 };
+    }
+
+    private bool CanRestoreOrder(CustomerOrderSave order)
+    {
+        if (order == null) return false;
+        if (order.sourceSlot >= 0) return FindSavedProfile(order) != null;
+        if (order.lines == null || order.lines.Length == 0 || order.requests == null || order.price < 0) return false;
+        foreach (int index in order.requests)
+            if (endlessRequests == null || endlessRequests.requests == null || index < 0 ||
+                index >= endlessRequests.requests.Length || endlessRequests.requests[index] == null) return false;
+        return true;
+    }
+
+    private CustomerProfile RestoreOrder(CustomerOrderSave order)
+    {
+        var authored = FindSavedProfile(order);
+        if (authored != null) return authored;
+        var profile = ScriptableObject.CreateInstance<CustomerProfile>();
+        profile.name = "RestoredCombination";
+        profile.lines = order.lines;
+        profile.archetypes = Array.ConvertAll(order.requests, index => endlessRequests.requests[index]);
+        profile.conditions = Array.Empty<GunCondition>();
+        profile.happyLine = order.happyLine; profile.angryLine = order.angryLine; profile.price = order.price;
+        if (endlessRequests != null && endlessRequests.portraits != null && order.portrait >= 0 &&
+            order.portrait < endlessRequests.portraits.Length) profile.portrait = endlessRequests.portraits[order.portrait];
+        return profile;
+    }
+
+    private bool CanServe(CustomerProfile profile, int day)
+        => CustomerModuleRequirements.Allows(profile, ModuleUnlocks,
+            endlessRequests != null ? endlessRequests.CoreStats : default, day);
+
+    // 손님 한 명 처리(판매 퇴장·사망) 후 남은 손님을 현재 모듈재화로 재판정. 부족한 손님은 미루고 조합 손님으로 대체.
+    public void RefreshRemainingCustomers()
+    {
+        if (DayNumber == 0 || IsNight || CurrentCustomerDay == null || CurrentCustomerDay.customers == null || customerBell == null) return;
+        ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday, customerBell.NextCustomerIndex);
+        customerBell.ReplaceRemaining(CurrentCustomerDay.customers);
+    }
+
+    // 영업 시작 시점 판정: 해금 + 필요한 모듈 재화를 지금 보유하고 있는지. 부족하면 미루고 조합 손님으로 대체.
+    private bool CanServeToday(CustomerProfile profile, int day)
+        => CanServe(profile, day) && CustomerModuleRequirements.CreditCost(profile, ModuleUnlocks,
+            endlessRequests != null ? endlessRequests.CoreStats : default) <= ModuleCredits;
+
+    private CustomerProfile CreateCombination(int day, int min = -1, int max = -1)
+        => endlessRequests == null ? ScriptableObject.CreateInstance<CustomerProfile>()
+            : endlessRequests.Create(day,
+                min < 0 ? endlessRequests.minRequests : min,
+                max < 0 ? endlessRequests.maxRequests : max,
+                ModuleUnlocks, ModuleCredits);
+
+    private CustomerDay PrepareDay(int dayNumber)
+    {
+        var day = PrepareFixedDay(FindCustomerDay(dayNumber)) ?? BuildEndlessDay(dayNumber);
+        if (dayNumber != 0 && day != null && day.customers != null) ApplyDeferrals(day, dayNumber, CanServe);
+        return day;
+    }
+
+    // 못 받는 손님은 미루고 조합 손님으로 대체, 미뤄둔 손님 중 받을 수 있게 된 손님은 조합 손님 자리로 복귀.
+    private void ApplyDeferrals(CustomerDay day, int dayNumber, Func<CustomerProfile, int, bool> canServe, int from = 0)
+    {
+        var pending = deferredCustomers.ToArray();
+        for (int i = from; i < day.customers.Length; i++)
+        {
+            var profile = day.customers[i];
+            if (profile == null || canServe(profile, dayNumber)) continue;
+            if (TryFindProfile(profile, out _, out _) && !deferredCustomers.Contains(profile)) deferredCustomers.Add(profile);
+            day.customers[i] = CreateCombination(dayNumber, day.minRequests, day.maxRequests);
+        }
+        foreach (var profile in pending)
+        {
+            if (!canServe(profile, dayNumber)) continue;
+            if (Array.IndexOf(day.customers, profile, from) >= 0) { deferredCustomers.Remove(profile); continue; }
+            for (int i = from; i < day.customers.Length; i++)
+            {
+                if (day.customers[i] == null || TryFindProfile(day.customers[i], out _, out _)) continue;
+                day.customers[i] = profile;
+                deferredCustomers.Remove(profile);
+                break;
+            }
+        }
+    }
+
+    // 정해진 일차: '예?'/진상은 그대로, 일반 손님 자리만 그 일차 해금 범위의 요구사항 조합 손님으로 교체한 복사본.
+    private CustomerDay PrepareFixedDay(CustomerDay source)
+    {
+        if (source == null) return null;
+        var day = Instantiate(source);
+        if (source.customers == null) return day;
+        day.customers = (CustomerProfile[])source.customers.Clone();
+        if (source.day == 0 || endlessRequests == null || !source.useRequestPool) return day;
+        var specials = new List<CustomerProfile>();
+        int generated = source.extraGenerated;
+        foreach (CustomerProfile profile in source.customers)
+            if (profile != null && !IsSpecial(profile)) generated++;
+            else specials.Add(profile); // null도 그대로 넘겨 ApplyCustomerDay가 에러를 띄우게 함
+        int total = specials.Count + generated;
+        var customers = new CustomerProfile[total];
+        int next = 0;
+        for (int t = 0; t < total; t++)
+        {
+            // '예?' 손님을 목록 순서대로 하루 전체에 고르게 펼침. 첫 손님은 조합 손님이 오도록.
+            bool special = next < specials.Count && (t + 1) * specials.Count / total > t * specials.Count / total;
+            customers[t] = special ? specials[next++] : endlessRequests.Create(source.day, source.minRequests, source.maxRequests,
+                ModuleUnlocks, ModuleCredits);
+        }
+        day.customers = customers;
+        return day;
+    }
+
+    // 정해진 일차 이후: 모든 일차 손님을 섞어 대기열에서 꺼냄. 비면 다시 채움(오늘 이미 나온 손님 제외).
+    private CustomerDay BuildEndlessDay(int dayNumber)
+    {
+        var today = new List<CustomerProfile>();
+        endlessBag.RemoveAll(profile => deferredCustomers.Contains(profile));
+        foreach (var profile in deferredCustomers)
+            if (today.Count < endlessGuestsPerDay && CanServe(profile, dayNumber)) today.Add(profile);
+        while (today.Count < endlessGuestsPerDay)
+        {
+            // 일반 손님은 요구사항 조합으로 새로 만들고, '예?'/진상 손님은 대기열에서 꺼냄.
+            if (endlessRequests != null && UnityEngine.Random.value < generatedRatio)
+            { today.Add(CreateCombination(dayNumber)); continue; }
+            if (endlessBag.Count == 0 && !RefillEndlessBag(today))
+            {
+                if (endlessRequests == null) break;
+                today.Add(CreateCombination(dayNumber));
+                continue;
+            }
+            int last = endlessBag.Count - 1;
+            today.Add(endlessBag[last]);
+            endlessBag.RemoveAt(last);
+        }
+        if (today.Count == 0) return null;
+        var day = ScriptableObject.CreateInstance<CustomerDay>();
+        day.day = dayNumber;
+        day.minRequests = endlessRequests != null ? endlessRequests.minRequests : 1;
+        day.maxRequests = endlessRequests != null ? endlessRequests.maxRequests : 1;
+        int firstEndlessDay = 1;
+        if (customerDays != null) foreach (CustomerDay fixedDay in customerDays) if (fixedDay != null) firstEndlessDay = Mathf.Max(firstEndlessDay, fixedDay.day + 1);
+        day.rent = endlessRent + endlessRentGrowth * Mathf.Max(0, dayNumber - firstEndlessDay);
+        day.customers = today.ToArray();
+        return day;
+    }
+
+    private bool RefillEndlessBag(List<CustomerProfile> exclude)
+    {
+        var seen = new HashSet<CustomerProfile>(exclude);
+        seen.UnionWith(deferredCustomers);
+        if (customerDays != null)
+            foreach (CustomerDay day in customerDays)
+                if (day != null && day.customers != null)
+                    foreach (CustomerProfile profile in day.customers)
+                        if (profile != null && (endlessRequests == null || IsSpecial(profile)) && seen.Add(profile)) endlessBag.Add(profile);
+        for (int i = endlessBag.Count - 1; i > 0; i--)
+        {
+            int j = UnityEngine.Random.Range(0, i + 1);
+            CustomerProfile swap = endlessBag[i];
+            endlessBag[i] = endlessBag[j];
+            endlessBag[j] = swap;
+        }
+        return endlessBag.Count > 0;
+    }
+
+    // '예?'를 눌러야 말하는 손님 또는 진상. 일반 손님은 무한 모드에서 조합으로 대체됨.
+    private static bool IsSpecial(CustomerProfile profile)
+        => !profile.endsClear || (profile.lines != null && profile.lines.Length > 1);
+
+    private bool HasAnyCustomer()
+    {
+        if (customerDays != null)
+            foreach (CustomerDay day in customerDays)
+                if (day != null && day.customers != null && day.customers.Length > 0) return true;
+        return false;
+    }
+
+    private bool ApplyCustomerDay(CustomerDay day)
+    {
+        if (day == null)
+        {
+            Debug.LogWarning($"{DayNumber + (IsNight ? 1 : 0)}일차 CustomerDay 에셋을 DayManager에 연결하세요.", this);
+            return false;
+        }
+        if (customerBell == null || day.customers == null || (day.customers.Length == 0 && day.day != 0))
+        {
+            Debug.LogError($"{day.day}일차의 손님 목록 또는 Bell 연결이 없습니다.", this);
+            return false;
+        }
+        foreach (CustomerProfile profile in day.customers)
+            if (profile == null)
+            {
+                Debug.LogError($"{day.day}일차 손님 목록에 비어 있는 항목이 있습니다.", this);
+                return false;
+            }
+        CurrentCustomerDay = day;
+        dailyGuestCount = day.customers.Length;
+        customerBell.SetPaymentSettings(settings);
+        customerBell.SetCustomers(day.customers);
+        return true;
+    }
+
+    private bool HasRequiredReferences()
+    {
+        if (settings != null && timerController != null && gameManager != null) return true;
+        Debug.LogError("_DayManager에 DaySettings, SetTimer, GameManager를 연결하세요.", this);
+        return false;
+    }
+}

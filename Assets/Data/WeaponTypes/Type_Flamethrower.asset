@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
+  m_Name: Type_Flamethrower
+  m_EditorClassIdentifier: 
+  displayName: "\uD654\uC5FC\uBC29\uC0AC"
+  tagColor: {r: 0.77254903, g: 0.29803923, b: 0.13333334, a: 1}
+  conditions:
+  - stat: 6
+    comparison: 0
+    value: 1
+    source: 1
+  - stat: 1
+    comparison: 0
+    value: 1
+    source: 0
+  sellMultiplier: 1

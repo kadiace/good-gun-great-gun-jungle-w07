@@ -1,0 +1,126 @@
+using UnityEngine;
+
+namespace WeaponWorkshop
+{
+    // 무엇을 잴지: 발사 경로 기준 스탯/모듈 수, 총 전체 스탯, 총 전체 스탯 모듈 수.
+    public enum GunMeasure
+    {
+        MuzzleStat,   // 발사되는 총구 중 가장 높은 스탯 (코어 기본 + 그 경로의 모듈). 관통·연사 등
+        WeaponStat,   // 총 전체 스탯 (작업대 표시와 같은 값). 무게 등
+        PathModules,  // 발사 경로 하나에 달린 해당 모듈 최대 개수 (ModuleCounter.MaxPathCount)
+        TotalModules, // 총에 달린 스탯 모듈 전체 개수 (stat 무시)
+        SplitTwoBlocks,  // 총에 달린 2방향 분할 블록 개수 (stat 무시)
+        SplitFourBlocks, // 총에 달린 4방향 분할 블록 개수 (stat 무시)
+        Muzzles          // 실제로 발사되는 총구(경로) 수 (stat 무시)
+    }
+
+    [System.Serializable]
+    public sealed class GunCondition
+    {
+        public GunMeasure measure;
+        public StatType stat;
+        public float min = 0f;
+        public float max = 999f;
+
+        public bool IsMet(EquipableWeapon weapon)
+        {
+            float value = Measure(weapon, measure, stat);
+            return value >= min && value <= max;
+        }
+
+        public static float Measure(EquipableWeapon weapon, GunMeasure measure, StatType stat)
+        {
+            if (weapon == null) return 0f;
+            switch (measure)
+            {
+                case GunMeasure.PathModules:
+                    return ModuleCounter.MaxPathCount(weapon, stat);
+                case GunMeasure.Muzzles:
+                {
+                    CubeAssembly assembly = weapon.GetComponentInChildren<CubeAssembly>(true);
+                    return assembly != null ? assembly.GetProjectilePaths().Count : 0;
+                }
+                case GunMeasure.SplitTwoBlocks:
+                    return CountBlocks(weapon, BlockKind.SplitTwo);
+                case GunMeasure.SplitFourBlocks:
+                    return CountBlocks(weapon, BlockKind.SplitFour);
+                case GunMeasure.TotalModules:
+                    int total = 0;
+                    foreach (var entry in ModuleCounter.TotalCounts(weapon.GetComponentInChildren<CubeAssembly>(true)))
+                        if (ModuleCounter.IsStatModule(entry.Key)) total += entry.Value;
+                    return total;
+                case GunMeasure.WeaponStat:
+                    {
+                        PowerCore core = weapon.GetComponentInChildren<PowerCore>(true);
+                        return core != null ? core.GetCurrentStats().Get(stat) : 0f;
+                    }
+                default:
+                    {
+                        PowerCore core = weapon.GetComponentInChildren<PowerCore>(true);
+                        CubeAssembly assembly = weapon.GetComponentInChildren<CubeAssembly>(true);
+                        if (core == null) return 0f;
+                        var paths = assembly != null ? assembly.GetProjectilePaths() : null;
+                        if (paths == null) return core.GetMuzzleStats(new PlacedBlock[0]).Get(stat);
+                        float best = 0f;
+                        foreach (var muzzle in paths) best = Mathf.Max(best, core.GetMuzzleStats(muzzle.path).Get(stat));
+                        return best;
+                    }
+            }
+        }
+
+        private static int CountBlocks(EquipableWeapon weapon, BlockKind kind)
+        {
+            CubeAssembly assembly = weapon != null ? weapon.GetComponentInChildren<CubeAssembly>(true) : null;
+            if (assembly == null) return 0;
+            int count = 0;
+            foreach (PlacedBlock block in assembly.GetComponentsInChildren<PlacedBlock>())
+                if (block.transform.parent == assembly.transform && block.Kind == kind) count++;
+            return count;
+        }
+
+        public static bool AllMet(GunCondition[] conditions, EquipableWeapon weapon)
+        {
+            if (conditions == null) return true;
+            foreach (GunCondition condition in conditions)
+                if (!condition.IsMet(weapon)) return false;
+            return true;
+        }
+    }
+
+    [CreateAssetMenu(menuName = "Weapon Workshop/Customer Profile")]
+    public sealed class CustomerProfile : ScriptableObject
+    {
+        [TextArea, Tooltip("순서대로 말하는 대사. 마지막 줄 외에는 전부 '예?' 버튼.")]
+        public string[] lines = { "총 하나 주세요." };
+        [Tooltip("켜면 마지막 줄 버튼이 '알겠습니다!'. 끄면 끝까지 헛소리 → 마지막도 '예?'로 나감.")]
+        public bool endsClear = true;
+        [Tooltip("이 손님이 첫 차례인 영업 시작 뒤 실행할 안내 데이터")]
+        public TutorialSequence callTutorialSequence;
+        [Tooltip("처음 주문을 다 들은 뒤 실행할 안내 데이터")]
+        public TutorialSequence orderTutorialSequence;
+        [Tooltip("원하는 총 종류 (권총, 산탄총...). 전부 만족해야 함. 최소조건만 보므로 다른 모듈을 더 달아도 통과")]
+        public GunArchetype[] archetypes;
+        [Tooltip("종류 외 추가 조건")]
+        public GunCondition[] conditions;
+        [TextArea, Tooltip("조건에 맞는 총을 받았을 때")] public string happyLine;
+        [TextArea, Tooltip("조건에 안 맞는 총을 받았을 때")] public string angryLine;
+        [Min(0)] public int price = 100;
+        [Tooltip("비우면 종의 기본 손님 프리팹 사용")] public Customer prefab;
+        [Tooltip("손님 그림. 비우면 프리팹의 기본 그림")] public Sprite portrait;
+
+        public string Reaction(bool satisfied)
+        {
+            string line = satisfied ? happyLine : angryLine;
+            return !string.IsNullOrEmpty(line) ? line : satisfied ? "좋네요! 감사합니다." : "이거 제가 말한 거 아닌데요...";
+        }
+
+        public bool Check(EquipableWeapon weapon)
+        {
+            if (weapon == null) return false;
+            if (archetypes != null)
+                foreach (GunArchetype archetype in archetypes)
+                    if (archetype != null && !archetype.Check(weapon)) return false;
+            return GunCondition.AllMet(conditions, weapon);
+        }
+    }
+}

@@ -1,0 +1,283 @@
+using System.Collections;
+using UnityEngine;
+
+namespace WeaponWorkshop
+{
+    public sealed class Customer : MonoBehaviour, IInteractable
+    {
+        private const string Okay = "알겠습니다!";
+        private const string Huh = "예?";
+        [SerializeField, Min(0.1f)] private float walkSpeed = 4f;
+        [SerializeField] private CustomerProfile profile;
+        [SerializeField, Tooltip("손님 2D 그림. 프로필에 그림이 있으면 교체")] private SpriteRenderer portrait;
+        [SerializeField, Min(0f), Tooltip("걸을 때 통통 튀는 높이(m)")] private float bobHeight = 0.08f;
+        [SerializeField, Min(0f), Tooltip("초당 튀는 횟수")] private float bobRate = 3f;
+        [SerializeField, Min(0f), Tooltip("그림 크기(PPU)와 상관없이 이 높이(m)로 맞춤. 0이면 원본 크기")] private float portraitHeight = 2f;
+        [SerializeField, Min(0f), Tooltip("가로로 넓은 그림은 이 너비(m)를 넘지 않게 줄임 (매대 구멍 2m). 0이면 제한 없음")] private float portraitMaxWidth = 1.8f;
+        private DaySettings paymentSettings;
+        private Vector3 exitPoint;
+        private Vector3 portraitRest;
+        private int saveStage, dialogueIndex, soldPrice;
+
+        public CustomerSave CaptureSave() => new CustomerSave { stage = saveStage, line = dialogueIndex,
+            price = soldPrice, talked = HasTalked, satisfied = SaleSatisfied, position = transform.position };
+
+        public void RestoreSave(CustomerSave state, CustomerProfile savedProfile, Vector3 counter, Vector3 exit, DaySettings settings)
+        {
+            Arrive(savedProfile, counter, exit, settings);
+            StopAllCoroutines();
+            transform.position = state.position;
+            HasTalked = state.talked; SaleSatisfied = state.satisfied; soldPrice = state.price;
+            saveStage = state.stage; dialogueIndex = state.line; atCounter = state.stage == 1 || state.stage == 2;
+            if (state.stage == 0) StartCoroutine(WalkTo(counter, () => { atCounter = true; saveStage = 1; }));
+            else if (state.stage == 2) { talking = true; ShowLine(state.line); }
+            else if (state.stage == 3) ShowSaleReaction(state.price);
+            else if (state.stage == 4) LeaveAfterSale(state.price);
+        }
+        private bool atCounter;
+        private bool talking;
+        private bool outcomeReported;
+        private bool deathStarted;
+        [SerializeField] private GameObject deathSmokePrefab;
+        private Coroutine hitReaction;
+        private Color portraitColor;
+        private void Awake()
+        {
+            if (portrait == null) return;
+            portraitColor = portrait.color;
+        }
+        public event System.Action<int> SaleCompleted;
+        public event System.Action<int> SaleAccepted;
+        public event System.Action CustomerKilled;
+        public CustomerProfile Profile => profile;
+        public bool HasTalked { get; private set; }
+        public bool SaleSatisfied { get; private set; }
+        public Transform OutlineRoot => transform;
+
+        public void Arrive(CustomerProfile customerProfile, Vector3 counterPoint, Vector3 exit, DaySettings saleSettings = null)
+        {
+            if (portrait != null) portraitRest = portrait.transform.localPosition;
+            if (customerProfile != null) profile = customerProfile;
+            if (portrait != null && profile != null && profile.portrait != null) portrait.sprite = profile.portrait;
+            FitPortrait();
+            saveStage = 0;
+            paymentSettings = saleSettings;
+            exitPoint = exit;
+            StartCoroutine(WalkTo(counterPoint, () => { atCounter = true; saveStage = 1; }));
+        }
+
+        public bool CanInteract(Interaction interactor) => atCounter;
+        public bool Interact(Interaction interactor)
+        {
+            if (interactor == null || interactor.Player == null) return false;
+            WeaponHolder holder = interactor.Player.GetComponent<WeaponHolder>();
+            return SaleConfirmationUI.Instance != null
+                ? SaleConfirmationUI.Instance.UseCustomer(this, holder) : Use(holder);
+        }
+
+        // 처음이면 대화(총 들고 있어도), 대화 후 총을 들고 오면 판매. 빈손이면 다시 대화.
+        public bool Use(WeaponHolder holder)
+        {
+            if (!atCounter || talking || profile == null) return false;
+            if (HasTalked && holder != null && holder.EquippedWeapon != null) return Sell(holder);
+            Talk();
+            return true;
+        }
+
+        // 요구 조건 체크. 판매 전에 외부(UI 등)에서도 호출 가능.
+        public bool CheckWeapon(EquipableWeapon weapon) => profile != null && profile.Check(weapon);
+
+        public bool Sell(WeaponHolder holder)
+        {
+            if (!atCounter || talking || profile == null || holder == null || holder.EquippedWeapon == null) return false;
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero && !CheckWeapon(holder.EquippedWeapon))
+            { FeedbackUI.For(this)?.ShowNotification("손님이 요청한 조건에 맞춰 무기를 완성하세요."); return false; }
+            EquipableWeapon weapon = holder.TakeWeapon();
+            bool satisfied = CheckWeapon(weapon);
+            SaleSatisfied = satisfied;
+            // 만족은 실제 낸 제작비 × (1 + 태그비율 × 요청 태그 수) + 손님 보상(profile.price), 불만족은 제작비의 80%.
+            int cost = weapon != null ? weapon.PaidConstructionCost : 0;
+            int tagCount = 0;
+            if (profile.archetypes != null)
+                foreach (GunArchetype archetype in profile.archetypes)
+                    if (archetype != null) tagCount++;
+            float tagRatio = paymentSettings != null ? paymentSettings.tagBonusRatio : 0.5f;
+            int price = satisfied ? Mathf.RoundToInt(cost * (1f + tagRatio * tagCount)) + Mathf.Max(0, profile.price)
+                : cost / 5 * 4;
+            Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
+            Destroy(weapon.gameObject);
+            atCounter = false;
+            SaleAccepted?.Invoke(price);
+            WorkshopSoundEffects.RaiseWeaponSold(transform.position);
+            // 조건 만족 여부에 따라 손님별 반응 대사 → 확인 누르면 퇴장.
+            ShowSaleReaction(price);
+            return true;
+        }
+
+        private void ShowSaleReaction(int price)
+        {
+            saveStage = 3; soldPrice = price; talking = true;
+            bool satisfied = SaleSatisfied;
+            DialogueUI.Instance.Show(profile.Reaction(satisfied), satisfied ? "감사합니다!" : "...죄송합니다", () =>
+            {
+                talking = false;
+                DialogueUI.Instance.Hide();
+                LeaveAfterSale(price);
+            });
+        }
+
+        private void LeaveAfterSale(int price)
+        {
+            saveStage = 4; soldPrice = price;
+            if (!outcomeReported)
+            {
+                outcomeReported = true;
+                SaleCompleted?.Invoke(price);
+            }
+            StartCoroutine(WalkTo(exitPoint, () =>
+            {
+                Destroy(gameObject);
+            }));
+        }
+
+        public void Kill()
+        {
+            if (deathStarted) return;
+            if (TutorialManager.Instance != null && TutorialManager.Instance.HandleCustomerHit(this))
+            {
+                if (hitReaction != null) StopCoroutine(hitReaction);
+                hitReaction = StartCoroutine(ReactToHit(false));
+                return;
+            }
+            // 여러 투사체가 같은 프레임에 맞아도 하루 집계는 한 번만 합니다.
+            bool reportKill = !outcomeReported;
+            deathStarted = true;
+            outcomeReported = true;
+            atCounter = false;
+            StopAllCoroutines();
+            if (talking && DialogueUI.Instance != null) DialogueUI.Instance.Hide();
+            talking = false;
+            foreach (var collider in GetComponentsInChildren<Collider>()) collider.enabled = false;
+            StartCoroutine(ReactToHit(true, reportKill));
+        }
+
+        private IEnumerator ReactToHit(bool dying, bool reportKill = false)
+        {
+            const float duration = .45f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float shake = Mathf.Sin(t * Mathf.PI * 6f) * (1f - t);
+                if (portrait != null)
+                {
+                    float redness = dying ? 1f : 1f - t;
+                    portrait.color = Color.Lerp(portraitColor, new Color(1f, .25f, .25f, portraitColor.a), redness);
+                    portrait.transform.localPosition = portraitRest + Vector3.right * shake * .045f +
+                        (dying ? Vector3.down * .3f * t + Vector3.back * .15f * t : Vector3.zero);
+                }
+                yield return null;
+            }
+            hitReaction = null;
+            if (!dying)
+            {
+                if (portrait != null)
+                {
+                    portrait.color = portraitColor;
+                    portrait.transform.localPosition = portraitRest;
+                }
+                yield break;
+            }
+            float smokeDuration = 0f;
+            GameObject smoke = null;
+            if (deathSmokePrefab != null)
+            {
+                Vector3 position = portrait != null ? portrait.bounds.center : transform.position + Vector3.up;
+                smoke = Instantiate(deathSmokePrefab, position, Quaternion.identity);
+                smoke.SetActive(true);
+                foreach (var particles in smoke.GetComponentsInChildren<ParticleSystem>(true))
+                {
+                    particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    var main = particles.main;
+                    main.loop = false; main.duration = .35f;
+                    main.useUnscaledTime = true;
+                    main.startColor = Color.white;
+                    var lifetimeColor = particles.colorOverLifetime;
+                    lifetimeColor.enabled = true;
+                    var whiteSmoke = new Gradient();
+                    whiteSmoke.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                        new[] { new GradientAlphaKey(.7f, 0f), new GradientAlphaKey(0f, 1f) });
+                    lifetimeColor.color = whiteSmoke;
+                    smokeDuration = Mathf.Max(smokeDuration, (main.duration + main.startLifetime.constantMax) / Mathf.Max(.01f, main.simulationSpeed));
+                    particles.Play();
+                }
+            }
+            if (portrait != null) portrait.enabled = false;
+            if (reportKill) CustomerKilled?.Invoke();
+            if (smokeDuration > 0f) yield return new WaitForSecondsRealtime(smokeDuration);
+            if (smoke != null) Destroy(smoke);
+            Destroy(gameObject);
+        }
+
+        private void FitPortrait()
+        {
+            if (portrait == null || portrait.sprite == null || portraitHeight <= 0f) return;
+            Vector2 size = portrait.sprite.bounds.size;
+            if (size.y <= 0f) return;
+            float scale = portraitHeight / size.y;
+            if (portraitMaxWidth > 0f && size.x * scale > portraitMaxWidth) scale = portraitMaxWidth / size.x;
+            portrait.transform.localScale = Vector3.one * scale;
+        }
+
+        private void Bob(float height)
+        {
+            if (portrait != null) portrait.transform.localPosition = portraitRest + Vector3.up * height;
+        }
+
+        private void Talk()
+        {
+            saveStage = 2;
+            talking = true;
+            ShowLine(0);
+        }
+
+        private void ShowLine(int index)
+        {
+            dialogueIndex = index;
+            bool last = index >= profile.lines.Length - 1;
+            string answer = last && profile.endsClear ? Okay : Huh;
+            DialogueUI.Instance.Show(profile.lines[index], answer, () =>
+            {
+                if (!last) { ShowLine(index + 1); return; }
+                // 튜토리얼은 처음 주문을 들었을 때만.
+                TutorialManager.Run(HasTalked ? null : profile.orderTutorialSequence, this, () =>
+                {
+                    talking = false;
+                    HasTalked = true;
+                    saveStage = 1;
+                    DialogueUI.Instance.Hide();
+                    if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
+                });
+            });
+        }
+
+        private void OnDestroy()
+        {
+            TutorialManager.Instance?.Cancel(this);
+            if (talking && DialogueUI.Instance != null) DialogueUI.Instance.Hide();
+        }
+
+        private IEnumerator WalkTo(Vector3 target, System.Action arrived)
+        {
+            while ((transform.position - target).sqrMagnitude > 0.0001f)
+            {
+                transform.position = Vector3.MoveTowards(transform.position, target, walkSpeed * Time.deltaTime);
+                Bob(Mathf.Abs(Mathf.Sin(Time.time * bobRate * Mathf.PI)) * bobHeight);
+                yield return null;
+            }
+            Bob(0f);
+            arrived();
+        }
+    }
+}

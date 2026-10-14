@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D5_3_Student
+  m_EditorClassIdentifier: 
+  lines:
+  - "\uC120\uC0DD\uB2D8! \uC5C4\uCCAD \uAC15\uD55C \uCD1D \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694!
+    \uD3ED\uBC1C \uBAA8\uB4C8 2\uAC1C\uB294 \uB2EC\uC544\uC57C \uC138\uB2E4\uACE0
+    \uB4E4\uC5C8\uC5B4\uC694!"
+  endsClear: 1
+  archetypes: []
+  conditions:
+  - measure: 2
+    stat: 2
+    min: 2
+    max: 999
+  happyLine: "\uC6B0\uC640! \uC120\uC0DD\uB2D8 \uCD5C\uACE0\uC608\uC694! \uBC14\uB85C
+    \uC368\uBCFC\uAC8C\uC694!"
+  angryLine: "\uC120\uC0DD\uB2D8... \uC774\uAC78\uB85C\uB294 \uC544\uBB34\uB3C4 \uBABB
+    \uC9C0\uCF1C\uC694..."
+  price: 600
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: b260ae8862bd47c4fa8852ece7e90963, type: 3}

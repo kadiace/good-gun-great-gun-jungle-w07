@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D2_3_Rifle
+  m_EditorClassIdentifier: 
+  lines:
+  - "평범한 자동소총이요. 돌격소총 태그 붙은 걸로 부탁해요."
+  endsClear: 1
+  archetypes:
+  - {fileID: 11400000, guid: a953407380ff6594a942af751bf23efb, type: 2}
+  conditions: []
+  happyLine: "\uD558\uC544.. \uC774 \uC11C\uB298\uD55C \uAC10\uAC01.... 12\uB144\uB9CC\uC774\uAD6C\uB9CC"
+  angryLine: "\uD3C9\uBC94\uD55C \uAC8C \uC81C\uC77C \uC5B4\uB824\uC6B4 \uAC70 \uC544\uC2DC\uC8E0? "
+  price: 300
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 81415ad55cd42654b86bafa68b433826, type: 3}

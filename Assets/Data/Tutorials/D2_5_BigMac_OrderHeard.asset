@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ce3e4a6a1e6121439c99c064236ddef, type: 3}
+  m_Name: D2_5_BigMac_OrderHeard
+  m_EditorClassIdentifier: 
+  steps:
+  - id: D2_5_BigMac_OrderHeard_1
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "'\uC608?'\uB97C \uB20C\uB7EC\uB3C4 \uB05D\uAE4C\uC9C0 \uC694\uAD6C\uC0AC\uD56D\uC744
+      \uB9D0\uD558\uC9C0 \uC54A\uB294 \uC190\uB2D8\uC740 \uC9C4\uC0C1\uC785\uB2C8\uB2E4!
+      \uCD1D\uC744 \uB9CC\uB4E4\uC5B4 \uC904 \uD544\uC694\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."
+    objective: 
+    completion: 0
+    requiredSignal: 
+    allowedActions: []
+  - id: D2_5_BigMac_OrderHeard_2
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uCD1D\uC744 \uC190\uC5D0 \uB4E4\uACE0 \uC9C4\uC0C1 \uC190\uB2D8\uC744
+      \uC870\uC900\uD574 \uC88C\uD074\uB9AD\uC73C\uB85C \uC3F4 \uBC84\uB9AC\uC138\uC694.
+      \uC9C4\uC0C1\uC744 \uCC98\uB9AC\uD558\uC9C0 \uC54A\uC73C\uBA74 \uB2E4\uC74C
+      \uC190\uB2D8\uC774 \uC624\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
+    objective: 
+    completion: 0
+    requiredSignal: 
+    allowedActions: []

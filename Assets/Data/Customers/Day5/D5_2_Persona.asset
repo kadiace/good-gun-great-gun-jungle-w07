@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D5_2_Persona
+  m_EditorClassIdentifier: 
+  lines:
+  - "\uD398\uB974\uC18C\uB098\uB97C \uC18C\uD658\uD560 \uC218 \uC788\uB294 \uCD1D
+    \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694."
+  - "권총 태그에 도탄 태그도 붙여주세요."
+  endsClear: 1
+  archetypes:
+  - {fileID: 11400000, guid: afce91ece9f68f44b92e48a1652ea36b, type: 2}
+  - {fileID: 11400000, guid: fdd2d5a8251468842be3744e7dba689f, type: 2}
+  conditions: []
+  happyLine: "\uCBD4\uC544\uC544\uC544\uC557 \uC624\uB974\uD398\uC6B0\uC2A4!    (\uB2E4\uD589\uC774\uB3C4
+    \uBA38\uB9AC\uC5D0 \uB300\uAE30\uB9CC \uD55C\uB2E4.)"
+  angryLine: "\uC544\uBB34\uAC83\uB3C4 \uC18C\uD658\uB418\uC9C0 \uC54A\uC558\uB2E4..."
+  price: 700
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 6444a929bcaf6a94b8b584b20ef516fc, type: 3}

@@ -1,0 +1,6 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Unity scenes and prefabs use semantic merging; do not silently choose a side.
+*.unity text eol=lf merge=unityyaml
+*.prefab text eol=lf merge=unityyaml

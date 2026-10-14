@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D4_1_HangarCQC
+  m_EditorClassIdentifier: 
+  lines:
+  - "\uACA9\uB0A9\uACE0 \uB0B4\uBD80 CQC\uB2E4."
+  - "권총 태그 붙여서 작게 만들어."
+  endsClear: 1
+  archetypes:
+  - {fileID: 11400000, guid: afce91ece9f68f44b92e48a1652ea36b, type: 2}
+  conditions: []
+  happyLine: "...\uC774 \uC815\uB3C4\uBA74 \uACA9\uB0A9\uACE0\uC5D0\uC11C \uC368\uB3C4
+    \uB418\uACA0\uAD70. (\uB2F4\uBC30 \uC5F0\uAE30)"
+  angryLine: "\uAC70 \uCD1D \uD55C\uBC88 \uB4A4\uC9C0\uAC8C \uCD08\uC9DC\uAC19\uB124...."
+  price: 600
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 45ba01f02d224f347b2ddf08086cc33f, type: 3}

@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4003026282851079695
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4249823253879724298}
+  - component: {fileID: 5061286899813351224}
+  m_Layer: 0
+  m_Name: PoolManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4249823253879724298
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4003026282851079695}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5061286899813351224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4003026282851079695}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63507406ce17af34b9ffb1ff7cecf415, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefabPools:
+  - prefab: {fileID: 2186906845289652269, guid: 7917d2b867868734e8811c190ed91282, type: 3}
+    prewarm: 512
+    maximumRetained: 2048
+  - prefab: {fileID: 459443210191927072, guid: 550ff6ba8a0c65a479be32433003b3be, type: 3}
+    prewarm: 64
+    maximumRetained: 256
+  - prefab: {fileID: 4257989255277805165, guid: c61790d0949d4d04292a6dafed05922e, type: 3}
+    prewarm: 64
+    maximumRetained: 256
+  - prefab: {fileID: 4840759381029339404, guid: 3eec1d12330113f46ab52a9609983b8c, type: 3}
+    prewarm: 64
+    maximumRetained: 256
+  - prefab: {fileID: 6742165640623218982, guid: fe06e9e959e1bfd41b1cf7fe2e901ea1, type: 3}
+    prewarm: 64
+    maximumRetained: 256
+  - prefab: {fileID: 7798876503126878251, guid: 04881270e33d69947a04c8a29f6ab66a, type: 3}
+    prewarm: 64
+    maximumRetained: 256
+  - prefab: {fileID: 8569093796842296735, guid: 849aa7da9759b5544b37142779119192, type: 3}
+    prewarm: 64
+    maximumRetained: 256
+  explosionPrewarm: 32
+  gravityPrewarm: 32
+  maximumRetainedWaves: 128
+  defaultMaximumRetained: 256
+  debrisPrewarm: 16
+  maximumRetainedDebris: 64
+  debrisFragmentCapacity: 4096
+  maximumCachedDebrisGroups: 8
+  debrisRollingFriction: 3
+  debrisBounceMultiplier: 0.4
+  debrisMotionMultiplier: 0.65
+  debrisWallSearchRadius: 12
+  activeCount: 0
+  cachedCount: 0
+  maximumDebrisWallChecksPerFrame: 512

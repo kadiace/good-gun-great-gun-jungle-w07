@@ -1,0 +1,97 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee68b037caa31374e970b6ea584fdd33, type: 3}
+  m_Name: ProjectileTuning
+  m_EditorClassIdentifier: 
+  maximumTravelDistance: 1000
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 819
+  muzzleFlashEffect: {fileID: 3318018436952283046, guid: 97b79d0929b545e485dbe8b963558888, type: 3}
+  shotgunBasePellets: 3
+  pelletsPerShotgunPoint: 1
+  shotgunSpreadDegrees: 10
+  chargeSecondsPerLevel: 0.5
+  chargeBaseStages: 3
+  chargeStagesPerExtraModule: 1
+  chargeFirstStageMultiplier: 1.1
+  chargeStageStep: 0.2
+  chargeMultiplierPerExtraModule: 0.1
+  chargeMaxStageBonus: 0.3
+  chargeEffect: {fileID: 2758758016587575475, guid: 7a68471177a262040abf09b8c861a998, type: 3}
+  chargeShakeDistance: 0.012
+  flameRange: 6
+  flameRangePerExtraPoint: 2
+  flameConeAngle: 30
+  flameDamagePerSecondPerPoint: 20
+  flameTickInterval: 0.1
+  flameEffect: {fileID: 8722897144600339791, guid: fbcf330f86d508947be297b74c45c67c, type: 3}
+  gravityRadiusPerPoint: 0.5
+  gravityPullPerPoint: 3
+  gravityPenetrationBonus: 0.5
+  gravityDuration: 1.5
+  gravityEffect: {fileID: 6964877525366863501, guid: 3eec1d12330113f46ab52a9609983b8c, type: 3}
+  gravityDistortionPrefab: {fileID: 6742165640623218982, guid: fe06e9e959e1bfd41b1cf7fe2e901ea1, type: 3}
+  homingRange: 6
+  homingAccelerationPerPoint: 40
+  homingMaxSpeedMultiplier: 2
+  homingTurnRatePerPoint: 180
+  moduleSpinDegreesPerSecond: 180
+  spinFireRateBonus: 0.5
+  explosionRadiusPerPoint: 0.5
+  explosionVisualScaleMultiplier: 2
+  explosionExpansionSpeed: 10
+  explosionCheckDistance: 0.2
+  explosionDebrisPushPerPower: 2.5
+  explosionEffect: {fileID: 3290960303918576955, guid: c61790d0949d4d04292a6dafed05922e, type: 3}
+  heatPentagonDegrees: 4
+  heatColor: {r: 1, g: 0.45, b: 0.1, a: 0.8}
+  heatTrailEffect: {fileID: 8143382136366539027, guid: 04881270e33d69947a04c8a29f6ab66a, type: 3}
+  heatDamagePerSecondPerPoint: 5
+  heatDuration: 3
+  burnMaxStacks: 5
+  burnEffect: {fileID: 1962887500064563976, guid: 0851bbd087dd6ec4790123aff5c4af54, type: 3}
+  areaPayloadInterval: 0.5
+  waterStopsPenetration: 1
+  waterColor: {r: 0.15, g: 0.55, b: 1, a: 0.7}
+  steamEffect: {fileID: 5741113254113495377, guid: 849aa7da9759b5544b37142779119192, type: 3}
+  steamColor: {r: 0.9, g: 0.95, b: 1, a: 0.6}
+  flameBaseTargets: 3
+  flameConePerShotgun: 15
+  flameConePerSpin: 10
+  flameHomingAnglePerPoint: 30
+  flameMaxRicochets: 3
+  flameChargeGrowthPerLevel: 0.25
+  flameBurstDamagePerLevel: 30
+  flameEmissionPerExtraPoint: 0.5
+  flameSizePerExtraPoint: 0.2
+  fireRateMultiplierPerModule: 3
+  spreadPerShot: 1
+  spreadMaxBloom: 8
+  spreadRecoveryDelay: 0.1
+  spreadRecoveryPerSecond: 15
+  spreadReductionPerWeight: 0.3
+  spreadMaxDegrees: 30
+  verticalRecoilDegreesPerShot: 4.5
+  verticalRecoilDegreesPerRouteModule: 0.06
+  verticalRecoilDegreesPerPenetration: 0.08
+  verticalRecoilDegreesPerExplosion: 0.12
+  verticalRecoilDegreesPerShotgunPoint: 0.25
+  verticalRecoilShotgunMultiplier: 2
+  verticalRecoilChargeMultiplier: 2
+  verticalRecoilReductionPerWeight: 0.06
+  verticalRecoilMaximumDegrees: 178
+  verticalRecoilSmoothTime: 0.08
+  speedBonusPerModule: 1
+  scopeMagnificationPerModule: 2
+  scopeZoomDuration: 0.15
+  scopeScalesSensitivity: 1

@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5270263843698290360
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6804858307027091802}
+  - component: {fileID: 5595850750318366456}
+  - component: {fileID: 1929462466736166469}
+  m_Layer: 0
+  m_Name: TutorialManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6804858307027091802
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5270263843698290360}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5595850750318366456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5270263843698290360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e38948a67397aeb4eb305be0388a2870, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dialogue: {fileID: 0}
+  selection: {fileID: 0}
+  dayTransition: {fileID: 0}
+  shutter: {fileID: 0}
+  customerBell: {fileID: 0}
+  mainCoreDispenser: {fileID: 0}
+  workbench: {fileID: 0}
+  shootingTargetPrefab: {fileID: 4944565464144789825, guid: e13413e1a4b72de42b95d709c65547bd, type: 3}
+  shootingSpawnPoint: {fileID: 0}
+  customerWarning: "\uC800\uAE30, \uC870\uC2EC \uC880 \uD558\uC2DC\uC8E0!"
+  warningTurnDuration: 0.25
+  blockedInteractionMessage: "\uD29C\uD1A0\uB9AC\uC5BC \uC911\uC5D0\uB294 \uC548\uB0B4\uB41C
+    \uB300\uC0C1\uACFC\uB9CC \uC0C1\uD638\uC791\uC6A9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+  practiceMoney: 5000
+  practiceModuleCredits: 200
+--- !u!114 &1929462466736166469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5270263843698290360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42cea1c84fb24c844a8333464632206f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  previewMaterial: {fileID: 2100000, guid: 2244735490d61c14c8f8442ee35a6429, type: 2}
+  pulsePeriod: 2

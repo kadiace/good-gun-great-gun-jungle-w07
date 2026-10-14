@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
+  m_Name: D1_4_MoreMuzzles
+  m_EditorClassIdentifier: 
+  lines:
+  - "\uCD1D\uAD6C\uAC00 8\uAC1C \uC774\uC0C1\uC778 \uCD1D \uBD80\uD0C1\uB4DC\uB824\uC694.
+    \uC0F7\uAC74 \uBAA8\uB4C8 \uB9D0\uACE0, 4\uBC29\uD5A5 \uBD84\uD560\uB85C\uC694!"
+  endsClear: 1
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
+  conditions:
+  - measure: 5
+    stat: 0
+    min: 2
+    max: 999
+  happyLine: "\uCD1D\uAD6C\uAC00 \uC6B0\uC218\uC218! \uB9C8\uC74C\uC5D0 \uB4E4\uC5B4\uC694."
+  angryLine: "\uCD1D\uAD6C\uAC00 \uBAA8\uC790\uB77C\uC796\uC544..!!! \uB354 \uB9CE\uC740
+    \uCD1D\uC54C.!!!!"
+  price: 200
+  prefab: {fileID: 0}
+  portrait: {fileID: 21300000, guid: eb722f529dfe0a943a2b8e571a6b76e9, type: 3}
