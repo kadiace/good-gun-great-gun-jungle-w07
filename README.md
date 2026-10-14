@@ -144,6 +144,7 @@
 - RaidTank 공용 프리팹의 사격 범위는20m. 범위 밖 플레이어 접근 로직 유지.
 - FirstPersonPlayer 걷기3m/s, 기존 Player/Sprint 액션(왼쪽 Shift)을 누르는 동안 달리기10m/s. 공용 Player 프리팹과 인스펙터에서 속도 설정. 점프는 야간 습격 중에만 허용.
 - Player/F1 디버그 액션은 초기 잠금 모듈을 전부 해제하고 잔액과 모듈 크레딧을 각각 9,999,999로 설정.
+- 에디터 Tools/Weapon Workshop/Add Money 아래 1000·10000·100000은 플레이 모드에서 활성 플레이어 한 명의 소지금을 선택한 액수만큼 추가한다(재료/당일 수입 집계는 변경하지 않음).
 - 목조주택·공항 씬의 DestructibleTerrain(잔디 표면·흙층)은 비파괴 지형. 메시·콜라이더 유지, 건물 바닥 파괴 유지. 다른 맵의 지형 설정은 기존대로.
 
 - Main 공방·사격장: Customer의 SommelierInterior/SommelierRange 장식과 Sommelier 재질을 적용. 기존 작업대·종·SpawnPoint·콜라이더 위치, DEV 모듈 UI·저장 관리자·야간 지도 연결 유지. 신규 장식은 개별 오브젝트이며 저장 ID/바인딩 포함; 시각 장식으로 물리 기능 없음.
