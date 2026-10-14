@@ -10,8 +10,9 @@ namespace WeaponWorkshop
         [SerializeField] private UIManager uiManager;
         private NightRaidUI ui => uiManager != null ? uiManager.RaidUI : null;
         [SerializeField] private GameSaveController workshopSave;
-        [SerializeField] private string[] regionScenes;
-        public string RegionScene(int index) => regionScenes != null && index >= 0 && index < regionScenes.Length ? regionScenes[index] : null;
+        // 목적지 목록은 스테이지 테이블에서 읽는다. 씬마다 목적지 배열을 따로 두지 않는다.
+        public int RegionCount => TableManager.Instance.RaidMap.Count();
+        public string RegionScene(int index) => TableManager.Instance.RaidMap.SceneAt(index);
         [SerializeField] private EquipableWeapon carriedWeaponPrefab;
         [SerializeField] private string standaloneWorkshopScene = "Main";
         public static NightRaidController Instance { get; private set; }
@@ -115,7 +116,7 @@ namespace WeaponWorkshop
             mapOpen = transitioning = inRaid = returnOpen = entryRestoreFailed = false;
             resultOpen = returningAfterDeath = false;
             CancelExtraction();
-            ui.ShowMap(false); ui.ShowReturn(false); ui.Bind(this);
+            ui.Bind(this); ui.ShowMap(false); ui.ShowReturn(false);
         }
         private void OnDestroy()
         {
@@ -174,11 +175,12 @@ namespace WeaponWorkshop
         }
         public void EnterRegion(int index)
         {
-            if (!mapOpen || transitioning || index < 0 || index >= regionScenes.Length) return;
+            if (!mapOpen || transitioning || index < 0 || index >= RegionCount) return;
             var tutorial = TutorialManager.Instance;
             if (tutorial != null && !tutorial.AllowsRaidRegion(index)) return;
             bool training = tutorial != null && tutorial.IsGuidedDayZero;
-            string regionScene = training ? TutorialManager.TrainingScene : regionScenes[index];
+            string regionScene = training ? TutorialManager.TrainingScene : RegionScene(index);
+            if (string.IsNullOrEmpty(regionScene)) return;
             if (!Application.CanStreamedLevelBeLoaded(regionScene))
             { ui.ShowError("습격 씬이 빌드 목록에 없습니다."); return; }
             player = uiManager.Player; if (player == null) return;

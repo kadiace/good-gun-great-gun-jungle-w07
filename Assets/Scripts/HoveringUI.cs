@@ -172,7 +172,7 @@ namespace WeaponWorkshop
                 var unlocks = interaction != null && interaction.Player != null ? interaction.Player.GetComponent<PlayerModuleUnlocks>() : null;
                 if (unlocks != null && !unlocks.IsUnlocked(id))
                 {
-                    Show(entry.displayName, "잠긴 모듈\n" + RaidMapData.Current.Locations(entry.data));
+                    Show(entry.displayName, "잠긴 모듈\n" + TableManager.Instance.RaidMap.Locations(entry.data));
                     if (title != null) title.color = entry.color;
                     if (description != null) description.color = bodyColor;
                 }

@@ -66,6 +66,7 @@ namespace WeaponWorkshop
         public static PoolManager Ensure(PoolManager preferred = null)
         {
             if (instance != null) return instance;
+            // 레거시 테이블: Resources 경로로 프리팹을 찾는다. 매니저 연결은 씬·프리팹 배치가 정본이다.
             if (preferred == null) preferred = Resources.Load<PoolManager>("PoolManager");
             instance = FindFirstObjectByType<PoolManager>();
             if (instance == null)

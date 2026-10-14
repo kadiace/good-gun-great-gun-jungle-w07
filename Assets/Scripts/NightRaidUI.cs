@@ -38,8 +38,8 @@ namespace WeaponWorkshop
             if (regionInfo == null || controller == null) return;
             hoveredRegion = index;
             var player = GameManager.Instance != null && GameManager.Instance.UI != null ? GameManager.Instance.UI.Player : null;
-            var region = RaidMapData.Current.Find(controller.RegionScene(index));
-            regionInfo.text = region != null ? region.Describe(moduleCatalog, player != null ? player.GetComponent<PlayerModuleUnlocks>() : null) : "이 구역의 정보가 아직 등록되지 않았습니다.";
+            var region = TableManager.Instance.RaidMap.Find(controller.RegionScene(index));
+            regionInfo.text = region.Describe(moduleCatalog, player != null ? player.GetComponent<PlayerModuleUnlocks>() : null);
         }
         public void ClearRegionInfo(int index)
         {
@@ -92,8 +92,16 @@ namespace WeaponWorkshop
             ClearRegionInfo(hoveredRegion);
             if (show) mapPanel.transform.SetAsLastSibling();
             if(statusText!=null)statusText.gameObject.SetActive(false);
+            int listedCount = controller != null ? controller.RegionCount : regionButtons.Length;
             for (int i = 0; i < regionButtons.Length; i++)
-                regionButtons[i].interactable = show && (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(i));
+            {
+                if (regionButtons[i] == null) continue;
+                // 테이블에 없는 칸은 계속 꺼 둠으로써 표의 행 수가 지도의 칸 수를 결정하게 한다.
+                bool listed = i < listedCount;
+                if (!listed) regionButtons[i].gameObject.SetActive(false);
+                regionButtons[i].interactable = show && listed &&
+                    (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(i));
+            }
         }
         private void OnDisable() => FeedbackUI.For(this)?.CancelChoice(this);
         public void ShowReturn(bool show)

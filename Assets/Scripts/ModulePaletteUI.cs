@@ -521,6 +521,7 @@ namespace WeaponWorkshop
             customLimitToast.gameObject.SetActive(false);
         }
 
+        // 레거시 테이블: Resources 폴더를 스캔해 목록을 만든다. 스티커 목록은 테이블로 승격하기 전까지 이 경로를 유지한다.
         private void ResolveStickerTextures()
         {
             stickerTextures.Clear();
@@ -529,6 +530,7 @@ namespace WeaponWorkshop
                 System.StringComparison.OrdinalIgnoreCase));
         }
 
+        // 레거시 테이블: Resources 폴더를 스캔해 목록을 만든다. 열쇠고리 목록은 테이블로 승격하기 전까지 이 경로를 유지한다.
         private void ResolveKeyringModels()
         {
             keyringModels.Clear();

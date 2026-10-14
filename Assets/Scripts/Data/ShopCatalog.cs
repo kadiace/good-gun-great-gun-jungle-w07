@@ -6,6 +6,7 @@ namespace WeaponWorkshop
     // 상점 판매 목록과 판매가 계산.
     // 판매가 = 모듈 구매가 합 × 판매 배율 × 태그 배율 합(태그가 없으면 noTagMultiplier).
     [CreateAssetMenu(fileName = "ShopCatalog", menuName = "Weapon Workshop/Shop Catalog")]
+    [System.Obsolete("레거시 테이블 저장소(스크립터블오브젝트). 참조 테이블은 Resources/X.json -> XData -> TableManager 3층으로 승격하며, 새로 만들거나 고치는 기능은 TableManager.Instance.~~로 읽는다.")]
     public sealed class ShopCatalog : ScriptableObject
     {
         [SerializeField] private ModuleData[] modules = new ModuleData[0];
