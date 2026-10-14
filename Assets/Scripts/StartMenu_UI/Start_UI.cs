@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 public sealed class Start_UI : MonoBehaviour
 {
     [SerializeField] private GameObject menuPanel;
-    [SerializeField] private string gameSceneName = "SampleScene";
+    [SerializeField] private string gameSceneName = "Main";
     [SerializeField] private WeaponWorkshop.SaveSlotsUI loadSlotsUI;
     [SerializeField] private UnityEngine.UI.Button keepStartGameButton;
     private bool loading;

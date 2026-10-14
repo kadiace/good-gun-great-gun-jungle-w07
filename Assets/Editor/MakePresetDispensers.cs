@@ -10,7 +10,7 @@ public static class MakePresetDispensers
 {
     public static string Main()
     {
-        const string scenePath = "Assets/Scenes/PreSet.unity";
+        const string scenePath = "Assets/Scenes/Test/PreSet.unity";
         Scene scene = SceneManager.GetSceneByPath(scenePath);
         bool opened = !scene.isLoaded;
         if (opened) scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);

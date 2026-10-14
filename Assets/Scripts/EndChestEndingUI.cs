@@ -14,7 +14,7 @@ namespace WeaponWorkshop
         [SerializeField] private CanvasGroup buttonsGroup;
         [SerializeField] private Button continueButton;
         [SerializeField] private Button quitButton;
-        [SerializeField] private string mainMenuScene = "Start_Scene";
+        [SerializeField] private string mainMenuScene = "Intro";
         private bool leaving;
 
         // 씬에 저장된 활성 상태와 무관하게 전부 숨긴 상태로 시작한다.

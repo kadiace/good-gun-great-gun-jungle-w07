@@ -16,12 +16,13 @@ namespace WeaponWorkshop.EditorTools
             var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
             if (asset == null) throw new InvalidOperationException("RaidMapData.json이 없습니다.");
             var data = JsonUtility.FromJson<RaidMapData>(asset.text);
-            string unlockGuid = AssetDatabase.AssetPathToGUID("Assets/Scripts/ModuleUnlockCrateSpawner.cs");
-            string creditGuid = AssetDatabase.AssetPathToGUID("Assets/Scripts/ModuleCreditCrateSpawner.cs");
-            string enemyGuid = AssetDatabase.AssetPathToGUID("Assets/Scripts/RaidEnemySpawnManager.cs");
+            // 상자의 스크립트를 파일 경로가 아니라 타입으로 특정한다.
+            string unlockGuid = ScriptGuid<ModuleUnlockCrateSpawner>();
+            string creditGuid = ScriptGuid<ModuleCreditCrateSpawner>();
+            string enemyGuid = ScriptGuid<RaidEnemySpawnManager>();
             foreach (var region in data.regions)
             {
-                string scene = File.ReadAllText("Assets/Scenes/Map/" + region.scene + ".unity");
+                string scene = File.ReadAllText(RaidExitPrefabAuthoring.RaidScenesFolder + "/" + region.scene + ".unity");
                 var codes = new HashSet<string>();
                 int credits = 0;
                 foreach (Match match in Regex.Matches(scene, @"(?m)^  m_Script:.*guid: (" + unlockGuid + "|" + creditGuid + @"),.*$"))
@@ -60,6 +61,17 @@ namespace WeaponWorkshop.EditorTools
             }
             File.WriteAllText(path, JsonUtility.ToJson(data, true));
             AssetDatabase.ImportAsset(path);
+        }
+        // 스크립트 파일의 GUID를 타입으로 찾는다. Assets/Scripts 아래에서 파일명이 같고 타입이 일치하는 것을 고르므로
+        // 스크립트를 하위 폴더로 옮겨도壊리지 않는다.
+        private static string ScriptGuid<T>()
+        {
+            foreach (string guid in AssetDatabase.FindAssets("t:MonoScript " + typeof(T).Name, new[] { "Assets/Scripts" }))
+            {
+                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(AssetDatabase.GUIDToAssetPath(guid));
+                if (script != null && script.GetClass() == typeof(T)) return guid;
+            }
+            throw new InvalidOperationException(typeof(T).Name + " 스크립트를 찾지 못했습니다.");
         }
         private static string ArrayField(string block, string field) => Regex.Match(block,
             @"(?m)^  " + field + @":\r?\n((?:  -[^\r\n]*(?:\r?\n|\z))*)").Groups[1].Value;

@@ -31,8 +31,8 @@ namespace WeaponWorkshop.Editor
                     AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
                 if (!File.Exists("Library/MilitaryBaseSetupComplete.txt"))
                 {
-                    ConnectWorkshop("Assets/Scenes/SampleScene.unity");
-                    ConnectWorkshop("Assets/Scenes/Time_Scene.unity");
+                    ConnectWorkshop("Assets/Scenes/Main.unity");
+                    ConnectWorkshop("Assets/Scenes/Test/Time_Scene.unity");
                 }
                 File.Delete(pending);
                 File.WriteAllText("Library/MilitaryBaseSetupComplete.txt", "Dense military base assets imported; map button 1 connection retained.");

@@ -75,7 +75,6 @@ namespace WeaponWorkshop
         private int lastState = int.MinValue;
         private int selectedPaintMaterial = -1;
         private int paintMaterialPage;
-        private bool confirmingCustom;
         private bool confirmingCustomRemoval;
         private bool wasCustomMode;
         private bool customColorSelected;
@@ -172,7 +171,6 @@ namespace WeaponWorkshop
         {
             CancelDrag();
             ClearHover();
-            confirmingCustom = false;
             confirmingCustomRemoval = false;
             wasCustomMode = false;
             customColorMode = false;
@@ -218,7 +216,6 @@ namespace WeaponWorkshop
                 customButtonRoot.gameObject.SetActive(active && builder.CanStartCustom);
             if (!active)
             {
-                confirmingCustom = false;
                 confirmingCustomRemoval = false;
                 FeedbackUI.For(this)?.CancelChoice(this);
             }
@@ -1403,14 +1400,12 @@ namespace WeaponWorkshop
         {
             if (builder == null || !builder.CanStartCustom) return;
             confirmingCustomRemoval = false;
-            confirmingCustom = true;
             if (FeedbackUI.For(this)?.ShowChoice(this, "커스텀 제거 전까진 총기 수정이 불가합니다.\n그래도 하시겠습니까?", ConfirmCustom, CancelCustomConfirmation) != true) CancelCustomConfirmation();
         }
 
         private void OpenCustomRemovalConfirmation()
         {
             if (builder == null || !builder.IsCustomMode) return;
-            confirmingCustom = false;
             confirmingCustomRemoval = true;
             if (FeedbackUI.For(this)?.ShowChoice(this, "커스텀을 제거하시겠습니까?\n제거하면 총기를 다시 수정할 수 있습니다", ConfirmCustom, CancelCustomConfirmation) != true) CancelCustomConfirmation();
         }
@@ -1418,7 +1413,6 @@ namespace WeaponWorkshop
         private void ConfirmCustom()
         {
             bool removeCustom = confirmingCustomRemoval;
-            confirmingCustom = false;
             confirmingCustomRemoval = false;
             if (removeCustom)
             {
@@ -1456,7 +1450,6 @@ namespace WeaponWorkshop
 
         private void CancelCustomConfirmation()
         {
-            confirmingCustom = false;
             confirmingCustomRemoval = false;
         }
 

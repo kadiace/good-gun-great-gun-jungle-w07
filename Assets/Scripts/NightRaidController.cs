@@ -12,7 +12,7 @@ namespace WeaponWorkshop
         [SerializeField] private string[] regionScenes;
         public string RegionScene(int index) => regionScenes != null && index >= 0 && index < regionScenes.Length ? regionScenes[index] : null;
         [SerializeField] private EquipableWeapon carriedWeaponPrefab;
-        [SerializeField] private string standaloneWorkshopScene = "SampleScene";
+        [SerializeField] private string standaloneWorkshopScene = "Main";
         public static NightRaidController Instance { get; private set; }
         public bool IsBusy => mapOpen || transitioning || inRaid;
         public bool IsInRaid => inRaid;

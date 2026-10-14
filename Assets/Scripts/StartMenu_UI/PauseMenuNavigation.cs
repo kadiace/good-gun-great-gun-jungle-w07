@@ -5,7 +5,7 @@ namespace WeaponWorkshop
 {
     public sealed class PauseMenuNavigation : MonoBehaviour
     {
-        [SerializeField] private string mainMenuScene = "Start_Scene";
+        [SerializeField] private string mainMenuScene = "Intro";
         private bool leaving;
 
         public void ExitToMainMenu()

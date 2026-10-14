@@ -237,7 +237,7 @@ public class _DayManager : MonoBehaviour
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        SceneManager.LoadSceneAsync("Start_Scene", LoadSceneMode.Single);
+        SceneManager.LoadSceneAsync("Intro", LoadSceneMode.Single);
     }
     // Explicit hook for the authored tutorial's eventual completion; an empty day never auto-advances.
     public void CompleteTutorialDay()
@@ -283,9 +283,9 @@ public class _DayManager : MonoBehaviour
         if (returningToStart || !IsNight || !CanStartNextDay || !HasRequiredReferences()) return;
         if (wallet != null && startedDayInDebt && Money < 0)
         {
-            if (!Application.CanStreamedLevelBeLoaded("Start_Scene"))
+            if (!Application.CanStreamedLevelBeLoaded("Intro"))
             {
-                Debug.LogError("게임오버 복귀 씬 Start_Scene을 빌드 목록에 등록하세요.", this);
+                Debug.LogError("게임오버 복귀 씬 Intro를 빌드 목록에 등록하세요.", this);
                 return;
             }
             returningToStart = true;
@@ -300,7 +300,7 @@ public class _DayManager : MonoBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             Changed?.Invoke();
-            SceneManager.LoadSceneAsync("Start_Scene", LoadSceneMode.Single);
+            SceneManager.LoadSceneAsync("Intro", LoadSceneMode.Single);
             return;
         }
         CustomerDay nextDay = PrepareDay(DayNumber + 1);

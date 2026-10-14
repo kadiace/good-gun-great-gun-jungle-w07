@@ -48849,7 +48849,7 @@ MonoBehaviour:
   - NightRaid_Millitary_base
   - NightRaid_JungleCampus
   carriedWeaponPrefab: {fileID: 1139247510883965995, guid: 322a9cb9f297faa479b02c16e2e4a9ac, type: 3}
-  standaloneWorkshopScene: SampleScene
+  standaloneWorkshopScene: Main
 --- !u!1 &1001160755
 GameObject:
   m_ObjectHideFlags: 0

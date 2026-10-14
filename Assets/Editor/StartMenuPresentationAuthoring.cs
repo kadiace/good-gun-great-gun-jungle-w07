@@ -15,7 +15,7 @@ namespace WeaponWorkshop.EditorTools
         {
             if (EditorApplication.isPlaying) throw new System.InvalidOperationException("Exit Play mode before editing the start scene.");
             StyleMenu();
-            string path = "Assets/Scenes/Start_Scene.unity";
+            string path = "Assets/Scenes/Intro.unity";
             var scene = SceneManager.GetSceneByPath(path);
             bool close = !scene.IsValid() || !scene.isLoaded;
             if (close) scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);

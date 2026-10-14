@@ -9,10 +9,12 @@ namespace WeaponWorkshop.EditorTools
 {
     public static class RaidExitPrefabAuthoring
     {
-        public const string PrefabPath = "Assets/Prefabs/NightRaidExit.prefab";
-        private const string MeshPath = "Assets/Prefabs/NightRaidExitSymbol.asset";
-        private const string WhitePath = "Assets/Prefabs/NightRaidExitSymbol.mat";
-        private const string GreenPath = "Assets/Prefabs/NightRaidExitSign.mat";
+        public const string PrefabPath = "Assets/Prefabs/NightRaid/NightRaidExit.prefab";
+        private const string MeshPath = "Assets/Meshes/NightRaid/NightRaidExitSymbol.asset";
+        private const string WhitePath = "Assets/Materials/NightRaid/NightRaidExitSymbol.mat";
+        private const string GreenPath = "Assets/Materials/NightRaid/NightRaidExitSign.mat";
+        // 습격 씬은 Assets/Scenes/NightRaid 아래에 있다. 경로를 옮기면 이곳만 바꾸면 된다.
+        public const string RaidScenesFolder = "Assets/Scenes/NightRaid";
 
         public static string Apply()
         {
@@ -21,7 +23,7 @@ namespace WeaponWorkshop.EditorTools
             if (mesh == null) { mesh = BuildSymbol(); AssetDatabase.CreateAsset(mesh, MeshPath); }
             var white = MaterialAt(WhitePath, Color.white);
             var green = MaterialAt(GreenPath, new Color(.015f, .32f, .12f));
-            var sourcePath = "Assets/Scenes/Map/NightRaid_WoodenHouse.unity";
+            var sourcePath = RaidScenesFolder + "/NightRaid_WoodenHouse.unity";
             var source = SceneManager.GetSceneByPath(sourcePath);
             bool closeSource = !source.IsValid() || !source.isLoaded;
             if (closeSource) source = EditorSceneManager.OpenScene(sourcePath, OpenSceneMode.Additive);
@@ -51,7 +53,7 @@ namespace WeaponWorkshop.EditorTools
 
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             var report = new List<string>();
-            var paths = AssetDatabase.FindAssets("t:Scene", new[] { "Assets/Scenes/Map" })
+            var paths = AssetDatabase.FindAssets("t:Scene", new[] { RaidScenesFolder })
                 .Select(AssetDatabase.GUIDToAssetPath).Where(p => System.IO.Path.GetFileName(p).StartsWith("NightRaid_") || p.EndsWith("Tutorial_WoodenHouse.unity")).ToArray();
             foreach (var path in paths)
             {

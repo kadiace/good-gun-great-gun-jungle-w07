@@ -28,7 +28,7 @@ public static class SetupRaidObjectives
         if (font == null) throw new InvalidOperationException("Workshop UI font missing.");
         foreach (string name in new[] { "WoodenHouse", "BankGrand", "Millitary_base", "JungleCampus" })
         {
-            string path = "Assets/Scenes/Map/NightRaid_" + name + ".unity";
+            string path = "Assets/Scenes/NightRaid/NightRaid_" + name + ".unity";
             Scene scene = SceneManager.GetSceneByPath(path);
             bool opened = !scene.IsValid() || !scene.isLoaded;
             if (!opened && scene.isDirty) throw new InvalidOperationException("Unsaved scene: " + path);

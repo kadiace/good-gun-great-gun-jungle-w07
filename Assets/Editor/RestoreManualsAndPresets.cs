@@ -13,9 +13,9 @@ public static class RestoreManualsAndPresets
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Edit mode required.");
         var input = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/InputSystem_Actions.inputactions");
-        EditPrefab("Assets/Prefabs/Player.prefab", root => AddReader(root, input));
+        EditPrefab("Assets/Prefabs/Player/Player.prefab", root => AddReader(root, input));
         foreach (string name in new[] { "WorkshopManual", "RangeManual" })
-            EditPrefab("Assets/Prefabs/" + name + ".prefab", root =>
+            EditPrefab(ManualPath(name), root =>
             {
                 foreach (var text in root.GetComponentsInChildren<TMPro.TMP_Text>(true))
                     text.fontSize = .16f; // Restore the authored scene override from the original manual.
@@ -38,7 +38,7 @@ public static class RestoreManualsAndPresets
         {
             for (int z = 3; z <= 6; z++) Replace(assembly, new Vector3Int(0,0,z), 6);
         });
-        EditScene("Assets/Scenes/PreSet.unity", scene =>
+        EditScene("Assets/Scenes/Test/PreSet.unity", scene =>
         {
             foreach (var player in Find<FirstPersonPlayer>(scene)) AddReader(player.gameObject, input);
             foreach (var dispenser in Find<CoreDispenser>(scene))
@@ -65,7 +65,7 @@ public static class RestoreManualsAndPresets
 
     private static void RestoreManualScene(InputActionAsset input)
     {
-        EditScene("Assets/Scenes/SampleScene.unity", scene =>
+        EditScene("Assets/Scenes/Main.unity", scene =>
         {
             var transforms = Find<Transform>(scene);
             var workspace = transforms.Single(t => t.name == "WorkSpace");
@@ -84,7 +84,7 @@ public static class RestoreManualsAndPresets
     {
         var manual = parent.GetComponentsInChildren<WorkshopManual>(true).FirstOrDefault(m => m.name == name);
         if (manual == null)
-            manual = ((GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/"+name+".prefab"), parent)).GetComponent<WorkshopManual>();
+            manual = ((GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(ManualPath(name)), parent)).GetComponent<WorkshopManual>();
         manual.transform.localPosition = position;
         manual.transform.localRotation = Quaternion.Euler(0,yaw,0);
         manual.transform.localScale = Vector3.one;
@@ -111,6 +111,8 @@ public static class RestoreManualsAndPresets
         saveData.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    // 매뉴얼 프리팹은 작업대/사격장 폴더로 나뉘어 있다.
+    private static string ManualPath(string name) => "Assets/Prefabs/" + (name == "RangeManual" ? "Range" : "Workbench") + "/" + name + ".prefab";
     private static void EditPreset(string name, Action<CubeAssembly> edit)
     {
         EditPrefab("Assets/Prefabs/Presets/Preset_" + name + ".prefab", root =>

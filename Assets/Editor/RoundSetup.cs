@@ -50,9 +50,10 @@ namespace WeaponWorkshop.Editor
             return card;
         }
         private static void Set(SerializedObject so, string field, Object value) => so.FindProperty(field).objectReferenceValue = value;
+        private const string InputReferenceFolder = "Assets/Data/Input";
         private static InputActionReference Reference(InputActionAsset asset, string action)
         {
-            string path = "Assets/UI/" + action.Replace('/', '_') + ".asset";
+            string path = InputReferenceFolder + "/" + action.Replace('/', '_') + ".asset";
             var reference = AssetDatabase.LoadAssetAtPath<InputActionReference>(path);
             if (reference == null) { reference = InputActionReference.Create(asset.FindAction(action, true)); AssetDatabase.CreateAsset(reference, path); }
             return reference;
@@ -122,7 +123,11 @@ namespace WeaponWorkshop.Editor
             if (old != null) Object.DestroyImmediate(old);
             var module = eventSystem.GetComponent<InputSystemUIInputModule>();
             if (module == null) module = eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
-            if (!AssetDatabase.IsValidFolder("Assets/UI")) AssetDatabase.CreateFolder("Assets", "UI");
+            if (!AssetDatabase.IsValidFolder(InputReferenceFolder))
+            {
+                if (!AssetDatabase.IsValidFolder("Assets/Data")) AssetDatabase.CreateFolder("Assets", "Data");
+                AssetDatabase.CreateFolder("Assets/Data", "Input");
+            }
             module.actionsAsset = input;
             module.point = Reference(input, "UI/Point"); module.leftClick = Reference(input, "UI/Click");
             module.rightClick = Reference(input, "UI/RightClick"); module.middleClick = Reference(input, "UI/MiddleClick");

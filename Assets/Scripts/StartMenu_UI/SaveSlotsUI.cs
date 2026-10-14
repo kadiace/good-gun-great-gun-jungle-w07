@@ -21,8 +21,6 @@ namespace WeaponWorkshop
         [SerializeField] private Button[] deleteButtons;
         [SerializeField] private Button autoSaveDeleteButton;
         [SerializeField] private bool confirmDelete = true;
-        private int deleteSlot = -1;
-        private int overwriteSlot = -1;
         private void Awake()
         {
             ResolveStartMenu();
@@ -55,7 +53,6 @@ namespace WeaponWorkshop
                 FeedbackUI.For(this)?.ShowNotification("공방에 귀환한 뒤 저장하세요.");
                 return;
             }
-            overwriteSlot = -1; deleteSlot = -1;
             if (title != null) title.text = saveController != null ? "게임 저장" : "게임 불러오기";
             if (panel != null) panel.SetActive(true);
             Canvas.ForceUpdateCanvases();
@@ -68,7 +65,6 @@ namespace WeaponWorkshop
         public void Close()
         {
             FeedbackUI.For(this)?.CancelChoice(this);
-            overwriteSlot = -1; deleteSlot = -1;
             if (panel != null) panel.SetActive(false);
             if (mainPanel != null) mainPanel.SetActive(true);
             if (openSaveSlotsButton != null) openSaveSlotsButton.SetActive(true);
@@ -342,20 +338,17 @@ namespace WeaponWorkshop
             try
             {
                 GameSaveFiles.Delete(slot);
-                deleteSlot = -1;
                 Refresh();
                 if (startMenu != null) startMenu.RefreshSaveAvailability();
                 FeedbackUI.For(this)?.ShowNotification($"슬롯 {slot + 1}을 삭제했습니다.");
             }
             catch (Exception e) when (e is System.IO.IOException || e is UnauthorizedAccessException)
             {
-                deleteSlot = -1;
                 FeedbackUI.For(this)?.ShowNotification("저장 파일을 삭제하지 못했습니다. " + e.Message);
             }
         }
         public void SelectSlot(int slot)
         {
-            deleteSlot = -1;
             if (slot < 0 || slot >= GameSaveFiles.SlotCount) return;
             if (saveController == null) { if (startMenu != null) startMenu.LoadSlot(slot); return; }
             if (saveController.ConfirmOverwrite && GameSaveFiles.Exists(slot))
@@ -369,7 +362,7 @@ namespace WeaponWorkshop
         {
             if (saveController.Save(slot, out string error))
             {
-                overwriteSlot = -1; Refresh();
+                Refresh();
                 FeedbackUI.For(this)?.ShowNotification($"슬롯 {slot + 1}에 저장했습니다.");
             }
             else FeedbackUI.For(this)?.ShowNotification(error);

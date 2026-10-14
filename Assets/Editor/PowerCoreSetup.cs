@@ -10,7 +10,7 @@ namespace WeaponWorkshop.Editor
         public static void SetUp()
         {
             if (EditorApplication.isPlaying) throw new System.InvalidOperationException("Exit Play mode first.");
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnergyCube.prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Workbench/EnergyCube.prefab");
             if (prefab == null) throw new System.InvalidOperationException("Projectile prefab missing.");
             foreach (PowerCore core in Object.FindObjectsByType<PowerCore>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {

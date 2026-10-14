@@ -2176,7 +2176,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   menuPanel: {fileID: 7840412093013178710}
-  gameSceneName: SampleScene
+  gameSceneName: Main
   loadSlotsUI: {fileID: 4309508258198459080}
   keepStartGameButton: {fileID: 558916436041450561}
 --- !u!1 &4802272850449599696
