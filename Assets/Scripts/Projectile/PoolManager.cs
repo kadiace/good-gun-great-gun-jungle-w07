@@ -5,6 +5,7 @@ using UnityEngine;
 namespace WeaponWorkshop
 {
     // Scene-owned pools. Retention limits affect idle storage, never the number of live shots.
+    [DefaultExecutionOrder(-999)]
     public sealed class PoolManager : MonoBehaviour
     {
         [Serializable] public sealed class PrefabPool
@@ -44,6 +45,9 @@ namespace WeaponWorkshop
         private readonly Dictionary<Type, Pool> components = new Dictionary<Type, Pool>();
         private readonly HashSet<PooledCombatObject> active = new HashSet<PooledCombatObject>();
         private readonly HashSet<VisualDebrisCloud> activeDebris = new HashSet<VisualDebrisCloud>();
+        private readonly List<DestructibleTarget> explosionDirty = new List<DestructibleTarget>();
+        private readonly HashSet<DestructibleTarget> explosionDirtySet = new HashSet<DestructibleTarget>();
+        private int explosionFlushFrame = -1;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void PrepareAtSceneStart() => Ensure();
         private int wallCheckFrame = -1, wallChecks;
@@ -171,6 +175,34 @@ namespace WeaponWorkshop
             if (member != null && member.Manager != null) member.Manager.Return(member);
             else { go.SetActive(false); Destroy(go); }
         }
+        internal static void QueueExplosionFinish(HashSet<DestructibleTarget> targets)
+        {
+            if (targets.Count == 0) return;
+            var manager = Ensure();
+            if (manager.explosionFlushFrame == Time.frameCount)
+            {
+                DestructibleTarget.FinishExplosionStep(targets);
+                return;
+            }
+            foreach (var target in targets)
+                if (target != null && manager.explosionDirtySet.Add(target)) manager.explosionDirty.Add(target);
+        }
+
+        internal static void FlushExplosionFinish()
+        {
+            if (instance == null || instance.explosionDirty.Count == 0) return;
+            instance.explosionFlushFrame = Time.frameCount;
+            DestructibleTarget.FinishExplosionStep(instance.explosionDirty);
+            instance.explosionDirty.Clear();
+            instance.explosionDirtySet.Clear();
+        }
+
+        private void Update()
+        {
+            FlushExplosionFinish();
+            explosionFlushFrame = Time.frameCount;
+        }
+
         private void Return(PooledCombatObject member)
         {
             if (!active.Remove(member)) return;
@@ -198,6 +230,11 @@ namespace WeaponWorkshop
             instance.active.CopyTo(snapshot);
             foreach (var member in snapshot) if (member != null) instance.Return(member);
         }
-        private void OnDestroy() { if (instance == this) instance = null; }
+        private void OnDestroy()
+        {
+            if (instance != this) return;
+            if (explosionDirty.Count > 0) DestructibleTarget.FinishExplosionStep(explosionDirty);
+            instance = null;
+        }
     }
 }
