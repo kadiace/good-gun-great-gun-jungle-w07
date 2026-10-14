@@ -352,6 +352,17 @@ namespace WeaponWorkshop
             if (current == null || current.owner != owner) return;
             ReleaseDialogue(); current = null; StepIndex = 0; Changed?.Invoke(); BeginNext();
         }
+#if UNITY_EDITOR
+        public void DebugEndTutorial()
+        {
+            if (!IsTutorialActive && (selection == null || !selection.IsOpen)) return;
+            EndPractice();
+            ClearShootingTarget();
+            if (selection != null) { selection.enabled = false; selection.enabled = true; }
+            enabled = false;
+            enabled = true;
+        }
+#endif
         private void OnDisable()
         {
             if (warningTurn != null) StopCoroutine(warningTurn);

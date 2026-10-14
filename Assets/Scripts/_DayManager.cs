@@ -324,6 +324,42 @@ public class _DayManager : MonoBehaviour
         DayAdvanced?.Invoke(DayNumber);
         TutorialManager.Run(CurrentCustomerDay.startTutorial, this);
     }
+#if UNITY_EDITOR
+    public bool DebugJumpToDay(int day, bool night)
+    {
+        if (day < 1 || day > 7 || !isActiveAndEnabled || !HasRequiredReferences() || customerBell == null) return false;
+        var transition = gameManager.UI != null ? gameManager.UI.GetComponent<DayTransitionUI>() : null;
+        if (transition != null && transition.IsTransitioning) return false;
+        TutorialManager.Instance?.DebugEndTutorial();
+        deferredCustomers.Clear();
+        endlessBag.Clear();
+        CustomerDay target = PrepareDay(day);
+        if (target == null || target.customers == null || target.customers.Length == 0 ||
+            Array.Exists(target.customers, profile => profile == null)) return false;
+
+        customerBell.EndDay();
+        if (!ApplyCustomerDay(target)) return false;
+        DayNumber = day;
+        CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodayRent = 0;
+        isSettled = IsNight = night;
+        IsSettlementOpen = IsBankrupt = bankruptcyResultOpen = returningToStart = startedDayInDebt = false;
+        CanStartNextDay = night && HasNextDay;
+        if (night)
+        {
+            CurrentPeriod = setTimer.night;
+            hasCurrentPeriod = true;
+            var nightTiming = settings.timing?.Find(t => t != null && t.period == setTimer.night);
+            if (nightTiming != null) timerController.SetImmediately(nightTiming);
+            TodayRent = target.rent;
+            customerBell.EndDay();
+        }
+        else ApplyMorning();
+        gameManager.SetDialogue(false);
+        gameManager.SetNight(false);
+        Changed?.Invoke();
+        return true;
+    }
+#endif
     public void CaptureSave(GameSaveData data)
     {
         data.completed = CompletedGuests; data.dissatisfied = DissatisfiedGuests; data.killed = KilledGuests;
