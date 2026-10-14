@@ -574,22 +574,44 @@ namespace WeaponWorkshop
         {
             if (DamageProtected) return;
             if (!isActiveAndEnabled || targetMesh == null) return;
+            if (!subdivided && originalRenderer != null &&
+                originalRenderer.bounds.SqrDistance(center) > radius * radius) return;
             if (!subdivided) Subdivide();
-            Vector3 localCenter = CellRoot.InverseTransformPoint(center);
-            foreach (var cell in cells)
+            Transform root = CellRoot;
+            Vector3 localCenter = root.InverseTransformPoint(center);
+            Vector3 localRadius = Absolute(root.InverseTransformVector(Vector3.right * radius))
+                + Absolute(root.InverseTransformVector(Vector3.up * radius))
+                + Absolute(root.InverseTransformVector(Vector3.forward * radius));
+            Vector3 minBound = localCenter - localRadius - gridOrigin;
+            Vector3 maxBound = localCenter + localRadius - gridOrigin;
+            int x0 = Mathf.Max(0, Mathf.FloorToInt(minBound.x / gridStep.x) - 1);
+            int y0 = Mathf.Max(0, Mathf.FloorToInt(minBound.y / gridStep.y) - 1);
+            int z0 = Mathf.Max(0, Mathf.FloorToInt(minBound.z / gridStep.z) - 1);
+            int x1 = Mathf.Min(divisions.x - 1, Mathf.FloorToInt(maxBound.x / gridStep.x) + 1);
+            int y1 = Mathf.Min(divisions.y - 1, Mathf.FloorToInt(maxBound.y / gridStep.y) + 1);
+            int z1 = Mathf.Min(divisions.z - 1, Mathf.FloorToInt(maxBound.z / gridStep.z) + 1);
+            impactCells.Clear();
+            for (int x = x0; x <= x1; x++)
+                for (int y = y0; y <= y1; y++)
+                    for (int z = z0; z <= z1; z++)
+                    {
+                        var coordinate = new Vector3Int(x, y, z);
+                        if (grid.TryGetValue(coordinate, out Cell cell)) impactCells.Add(cell);
+                    }
+            // Preserve the pre-existing cell order for equally timed debris emission.
+            impactCells.Sort((a, b) => a.slot.CompareTo(b.slot));
+            foreach (Cell cell in impactCells)
             {
+                Vector3Int coordinate = coordinates[cell];
                 Vector3 min = cell.localPosition - cell.localScale * 0.5f;
                 Vector3 max = cell.localPosition + cell.localScale * 0.5f;
                 Vector3 nearest = new Vector3(Mathf.Clamp(localCenter.x, min.x, max.x),
                     Mathf.Clamp(localCenter.y, min.y, max.y), Mathf.Clamp(localCenter.z, min.z, max.z));
-                float distance = Vector3.Distance(CellRoot.TransformPoint(nearest), center);
+                float distance = Vector3.Distance(root.TransformPoint(nearest), center);
                 if (distance > radius) continue;
                 output.Add(new ExpandingExplosion.Piece
                 {
-                    target = this,
-                    coordinate = coordinates[cell],
-                    position = cell.position,
-                    distance = distance,
+                    target = this, coordinate = coordinate, position = cell.position, distance = distance,
                     direction = ExpandingExplosion.DirectionBin(cell.position - center),
                     shell = Mathf.Max(0, Mathf.FloorToInt(distance / step))
                 });
@@ -604,7 +626,16 @@ namespace WeaponWorkshop
             structureDirty = true;
             return true;
         }
-        public void FinishExplosionStep() => UpdateCollisionRuns();
+        public static void FinishExplosionStep(IEnumerable<DestructibleTarget> targets)
+        {
+            bool changed = false;
+            foreach (var target in targets)
+                if (target != null) changed |= target.UpdateCollisionRunsCore();
+            if (!changed) return;
+            Physics.SyncTransforms();
+            foreach (var target in targets)
+                if (target != null) StructuralSupportGraph.Changed(target);
+        }
 
         // 월드 좌표를 메시 범위로 당겨 해당 칸이 아직 붙어 있는지 확인. 분할 전에는 온전한 상태로 본다.
         public bool HasCellAt(Vector3 worldPoint)
@@ -888,11 +919,17 @@ namespace WeaponWorkshop
         }
         private void UpdateCollisionRuns()
         {
-            using (collisionMarker.Auto()) UpdateCollisionRunsCore();
+            if (!UpdateCollisionRunsCore()) return;
+            Physics.SyncTransforms();
+            StructuralSupportGraph.Changed(this);
         }
-        private void UpdateCollisionRunsCore()
+        private bool UpdateCollisionRunsCore()
         {
-            if (!subdivided || !collisionDirty) return;
+            using (collisionMarker.Auto()) return RebuildCollisionRuns();
+        }
+        private bool RebuildCollisionRuns()
+        {
+            if (!subdivided || !collisionDirty) return false;
             if (collisionColumns == null)
             {
                 collisionColumns = new List<BoxCollider>[divisions.x * divisions.y];
@@ -905,9 +942,7 @@ namespace WeaponWorkshop
                 foreach (int column in dirtyColumns) UpdateCollisionColumn(column);
             foreach (int column in dirtyColumns) dirtyColumnFlags[column] = false;
             dirtyColumns.Clear(); allColumnsDirty = false; collisionDirty = false;
-            // Required before the same bullet queries the newly opened hole.
-            Physics.SyncTransforms();
-            StructuralSupportGraph.Changed(this);
+            return true;
         }
         private void UpdateCollisionColumn(int column)
         {

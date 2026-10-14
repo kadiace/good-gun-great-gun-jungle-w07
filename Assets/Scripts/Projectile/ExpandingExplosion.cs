@@ -167,7 +167,7 @@ namespace WeaponWorkshop
                 energy[first.direction] = blocked ? 0f : Mathf.Max(0f, incoming - cost);
                 nextLayer = end;
             }
-            foreach (var target in dirty) target.FinishExplosionStep();
+            DestructibleTarget.FinishExplosionStep(dirty);
             while (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius)
             {
                 var hit = healthHits[nextHealth++];

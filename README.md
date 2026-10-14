@@ -1,5 +1,7 @@
 # 무기 공방 — 에이전트 메모
 
+- 폭발 복셀 후보는 원본 메시 범위 밖이면 최초 분할을 생략하고, 범위 내 격자만 조회한 뒤 기존 거리·방향·거리층과 셀 순서로 판정한다. 폭발 파괴의 콜라이더 변경은 파동별로 갱신한 뒤 물리 동기화를 한 번 수행한다. 관통 충돌 갱신은 즉시 유지한다.
+
 - 저장소 구조: 씬은 `Assets/Scenes/Intro`(메인메뉴·StartUI_Manager), `Assets/Scenes/Main`(공방·사격장), `Assets/Scenes/NightRaid`(습격·튜토리얼), `Assets/Scenes/Test`(시험). 씬 이름 문자열(`LoadSceneAsync`, `mainMenuScene`, `gameSceneName`, `standaloneWorkshopScene`, 에디터 스크립트 경로)는 실재 이름 Intro·Main과 NightRaid 폴더로 통일했다.
 - 자산 배치: 에디터 전용 도구는 `Assets/Editor`(플레이어 빌드에서 제외되어야 하므로 `Assets/Scripts`에 두지 않는다). `Prefabs` 루트는 `Player`·`Workbench`·`Range`·`Shop`·`NightRaid`로 나누고, NightRaid 출구 재질은 `Materials/NightRaid`, 출구 심볼 메시는 `Meshes/NightRaid`, 입력 액션 참조는 `Data/Input`, 배경 이미지는 `Textures/Backgrounds`에 둔다. URP 템플릿 잔재(`TutorialInfo`, `Readme.asset`, `Assets/Temp`)는 제거했다.
 - 경로 제약: `Resources/Sound/BGM|SFX`(SoundManager), `Resources/Stickers`·`Resources/Keyrings`(ModulePaletteUI), `Resources/RaidMapData.json`, `Prefabs/Managers/Resources/PoolManager.prefab`(PoolManager), `Assets/InputSystem_Actions.inputactions`(루트 유지)는 코드에 경로가 박혀 있어 옮길 때는 해당 로더와 에디터 스크립트의 경로를 함께 바꾼다. 프리팹/씬 참조는 `.meta`와 함께 이동하면 GUID가 보존된다.
