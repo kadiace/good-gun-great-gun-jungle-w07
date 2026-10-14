@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 304d169ecb89ea74b87a8f3e6e3a832f, type: 3}
+  m_Name: Test_wide-targets
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.ShootingTestData
+  testId: wide-targets
+  displayName: "\uB113\uAC8C \uD769\uC5B4\uC9C4 \uD45C\uC801 \uD14C\uC2A4\uD2B8"
+  instructions: "\uC88C\uC6B0 \uCD08\uB85D \uD45C\uC801 3\uAC1C\uB97C \uD30C\uAD34\uD558\uC138\uC694.
+    \uCD1D\uC5F4 \uBC30\uCE58\xB7\uBD84\uAE30\xB7\uC0B0\uD0C4\xB7\uD68C\uC804\uC744
+    \uD65C\uC6A9\uD574 \uBCF4\uC138\uC694."
+  failureHint: "\uD45C\uC801 \uC0AC\uC774 \uAC04\uACA9\uC774 \uB113\uC2B5\uB2C8\uB2E4.
+    \uCD1D\uAD6C \uC704\uCE58\xB7\uBD84\uAE30\xB7\uC0B0\uD0C4 \uBC94\uC704\uB97C
+    \uC870\uC808\uD558\uAC70\uB098 \uBD88\uD544\uC694\uD55C \uD30C\uCE20\uB97C \uC904\uC5EC
+    \uBCF4\uC138\uC694."
+  layoutPrefab: {fileID: 6359976648980756560, guid: 070acd3ee5e991e4ba058664e14a6c13, type: 3}
+  timeLimit: 30
+  requiredDestruction: 0.7

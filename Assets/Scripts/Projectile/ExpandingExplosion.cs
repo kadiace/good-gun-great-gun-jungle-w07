@@ -37,6 +37,7 @@ namespace WeaponWorkshop
         private ProjectileTuning tuning;
         private int nextLayer, nextHealth;
         private float checkDistance;
+        public Transform WeaponSource { get; private set; }
 
         // Fixed angular bins, independent of target dimensions and voxel size.
         public static int DirectionBin(Vector3 offset)
@@ -59,6 +60,7 @@ namespace WeaponWorkshop
             var wave = PoolManager.RentComponent<ExpandingExplosion>(center);
             var root = wave.gameObject;
             wave.ResetWave();
+            wave.WeaponSource = weapon;
             wave.maximumRadius = maximumRadius;
             wave.stats = stats; wave.impactStats = ProjectileStats.FromWeapon(stats); wave.tuning = source.Tuning; wave.baseDamage = source.BaseDamage;
             wave.speed = Mathf.Max(0.01f, wave.tuning.explosionExpansionSpeed);
@@ -132,6 +134,7 @@ namespace WeaponWorkshop
             layers.Clear(); healthHits.Clear(); dirty.Clear(); targets.Clear(); nearest.Clear();
             pieces.Clear(); grouped.Clear(); radius = 0f; nextLayer = nextHealth = 0;
             tuning = null; stats = default; impactStats = default;
+            WeaponSource = null;
         }
         private void OnDisable() => ResetWave();
 

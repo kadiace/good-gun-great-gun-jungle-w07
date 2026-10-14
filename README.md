@@ -1,5 +1,7 @@
 # 무기 공방 — 에이전트 메모
 
+- 시간제한 사격 프로토타입: TargetBell 기존 무제한/커스텀 소환 유지, 별도3종(장애물 뒤·넓게 흩어진·엄폐 뒤) 선택. Data/ShootingTests SO에 시간·파괴율·힌트, Prefabs/Range/ShootingTests에 개별 편집 배치. 임시 기본30초·초록 목표별70% 파괴, 붉은 보호 표적 일부 파괴 시 즉시 실패. ShootingRange/TimedTestPoint 생성·HUD 시간/파괴율/비전방 총구 경고(로컬 방향, 경고만). 실패 시 회차 표적·사용 총의 남은 공격 정리·타이머 초기화, 테이블3m 안에서 기존 F로 시선 없이 재시도(PlayerShootingTest), 실패 화면 Esc 종료. 성공 즉시 종료·4초 후 HUD 숨김. scaled time·시작 숨김, 밤/재시작/불러오기/비활성화 취소. 시험 배치·진행은 저장 제외. NPC 조건·통과 태그·프리셋 인증 미연결, 플레이 미확인.
+
 - 저장소 구조: 씬은 `Assets/Scenes/Intro`(메인메뉴·StartUI_Manager), `Assets/Scenes/Main`(공방·사격장), `Assets/Scenes/NightRaid`(습격·튜토리얼), `Assets/Scenes/Test`(시험). 씬 이름 문자열(`LoadSceneAsync`, `mainMenuScene`, `gameSceneName`, `standaloneWorkshopScene`, 에디터 스크립트 경로)는 실재 이름 Intro·Main과 NightRaid 폴더로 통일했다.
 - 자산 배치: 에디터 전용 도구는 `Assets/Editor`(플레이어 빌드에서 제외되어야 하므로 `Assets/Scripts`에 두지 않는다). `Prefabs` 루트는 `Player`·`Workbench`·`Range`·`Shop`·`NightRaid`로 나누고, NightRaid 출구 재질은 `Materials/NightRaid`, 출구 심볼 메시는 `Meshes/NightRaid`, 입력 액션 참조는 `Data/Input`, 배경 이미지는 `Textures/Backgrounds`에 둔다. URP 템플릿 잔재(`TutorialInfo`, `Readme.asset`, `Assets/Temp`)는 제거했다.
 - 경로 제약: `Resources/Sound/BGM|SFX`(SoundManager), `Resources/Stickers`·`Resources/Keyrings`(ModulePaletteUI), `Resources/RaidMapData.json`, `Prefabs/Managers/Resources/PoolManager.prefab`(PoolManager), `Assets/InputSystem_Actions.inputactions`(루트 유지)는 코드에 경로가 박혀 있어 옮길 때는 해당 로더와 에디터 스크립트의 경로를 함께 바꾼다. 프리팹/씬 참조는 `.meta`와 함께 이동하면 GUID가 보존된다.

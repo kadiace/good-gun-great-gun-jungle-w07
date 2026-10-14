@@ -6,11 +6,13 @@ namespace WeaponWorkshop
         [SerializeField] private DestructibleTarget targetPrefab;
         [SerializeField] private Transform spawnPoint;
         [SerializeField] private TargetSelectionUI selectionUI;
+        [SerializeField] private ShootingTestController testController;
+        public ShootingTestController TestController => testController;
         public string SpawnFailureReason { get; private set; }
         [SerializeField, Min(0.01f), Tooltip("기본 허용 높이와 폭발저항 1당 추가 허용 높이(m). 소환 표적에 적용. 허용 높이 = (폭발저항 + 1) × 이 값.")]
         private float fallMetersPerPower = 5f;
 
-        private bool IsSpawnBlocked(GameObject prefab)
+        internal bool IsSpawnBlocked(GameObject prefab, Transform point)
         {
             Bounds localBounds = default;
             bool found = false;
@@ -40,11 +42,12 @@ namespace WeaponWorkshop
                 }
             if (!found) return false;
             Vector3 scale = prefab.transform.localScale;
-            Vector3 center = spawnPoint.position + spawnPoint.rotation * Vector3.Scale(localBounds.center,scale);
+            scale = Vector3.Scale(scale, point.lossyScale);
+            Vector3 center = point.position + point.rotation * Vector3.Scale(localBounds.center,scale);
             Vector3 extents = Vector3.Scale(localBounds.extents,new Vector3(Mathf.Abs(scale.x),Mathf.Abs(scale.y),Mathf.Abs(scale.z)));
             extents = Vector3.Max(Vector3.one*0.001f,extents-Vector3.one*0.001f);
             Physics.SyncTransforms();
-            return Physics.CheckBox(center,extents,spawnPoint.rotation,~LayerMask.GetMask("Energy"),QueryTriggerInteraction.Ignore);
+            return Physics.CheckBox(center,extents,point.rotation,~LayerMask.GetMask("Energy"),QueryTriggerInteraction.Ignore);
         }
         private Transform spawnedRoot;
         private readonly System.Collections.Generic.Dictionary<DestructibleTarget, int> spawnedPrefabs = new System.Collections.Generic.Dictionary<DestructibleTarget, int>();
@@ -95,7 +98,7 @@ namespace WeaponWorkshop
         }
         public Transform OutlineRoot => transform;
         public bool CanInteract(Interaction interactor) => isActiveAndEnabled &&
-            !GameManager.GameplayBlocked && spawnPoint != null;
+            !GameManager.GameplayBlocked && spawnPoint != null && (testController == null || !testController.IsActive);
         public bool Interact(Interaction interactor)
         {
             if (!CanInteract(interactor)) return false;
@@ -107,7 +110,8 @@ namespace WeaponWorkshop
         {
             if (!isActiveAndEnabled || spawnPoint == null || prefab == null) return false;
             SpawnFailureReason = null;
-            if (IsSpawnBlocked(prefab)) { SpawnFailureReason = "스폰 공간에 물체가 있습니다."; return false; }
+            testController?.Cancel();
+            if (IsSpawnBlocked(prefab, spawnPoint)) { SpawnFailureReason = "스폰 공간에 물체가 있습니다."; return false; }
             EnsureSpawnedRoot();
             var instance = Instantiate(prefab,spawnPoint.position,spawnPoint.rotation);
             instance.transform.SetParent(spawnedRoot,true);
@@ -137,6 +141,7 @@ namespace WeaponWorkshop
 
         public void ClearSpawned()
         {
+            testController?.Cancel();
             spawnedPrefabs.Clear();
             if (spawnedRoot == null) return;
             for (int i=spawnedRoot.childCount-1;i>=0;i--)
@@ -148,8 +153,19 @@ namespace WeaponWorkshop
         }
         private void OnDestroy()
         {
+            testController?.Cancel();
             if (spawnedRoot != null) Destroy(spawnedRoot.gameObject);
         }
         public GameObject DefaultTargetPrefab => targetPrefab != null ? targetPrefab.gameObject : null;
+        public bool PrepareTest(ShootingTestData data, FirstPersonPlayer player)
+        {
+            SpawnFailureReason = null;
+            if (!isActiveAndEnabled || testController == null)
+            { SpawnFailureReason = "이 표적 버튼에는 시간제한 테스트가 연결되지 않았습니다."; return false; }
+            bool ready = testController.Prepare(data, player, out var error);
+            SpawnFailureReason = error;
+            return ready;
+        }
+        private void OnDisable() => testController?.Cancel();
     }
 }

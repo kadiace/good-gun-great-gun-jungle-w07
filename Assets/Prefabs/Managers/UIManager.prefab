@@ -39949,6 +39949,7 @@ GameObject:
   - component: {fileID: 222953280783131434}
   - component: {fileID: 3873522102171416751}
   - component: {fileID: 168025221607617201}
+  - component: {fileID: 3604027792697482491}
   m_Layer: 5
   m_Name: UIManager
   m_TagString: Untagged
@@ -40190,6 +40191,10 @@ MonoBehaviour:
   - "\uBB3C\uCD1D \uAC80\uC99D"
   - "\uC18C\uD615\uD575 \uAC80\uC99D"
   - "\uBB34\uC800\uD56D \uD050\uBE0C"
+  timedTests:
+  - {fileID: 11400000, guid: 527bbe369f1ef17419971d4c2d6d6770, type: 2}
+  - {fileID: 11400000, guid: ba34a227fc04f3f4e870ef35b98e406f, type: 2}
+  - {fileID: 11400000, guid: 17cecd800eec9a748bfedd2bbaeffed1, type: 2}
   customTargetPrefab: {fileID: 8077227969123137866, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
 --- !u!114 &836000009
 MonoBehaviour:
@@ -40468,6 +40473,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cover: {fileID: 4007731675243716017}
+--- !u!114 &3604027792697482491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5513238841504740859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1d019a94e8582c4390719c8b2a3b194, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.ShootingTestHUD
+  font: {fileID: 11400000, guid: b558a1489b608a94f827418e48391377, type: 2}
 --- !u!1 &5516421202325576129
 GameObject:
   m_ObjectHideFlags: 0
