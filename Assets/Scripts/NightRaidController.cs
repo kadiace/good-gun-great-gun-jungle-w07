@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using LogKit;
 namespace WeaponWorkshop
 {
     public sealed class NightRaidController : MonoBehaviour
@@ -69,6 +70,7 @@ namespace WeaponWorkshop
             }
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             returningAfterDeath = died;
+            GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog { scene = gameObject.scene.name, survived = !died });
             ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(), () =>
             { returnOpen = true; ReturnHome(); });
         }
@@ -128,6 +130,7 @@ namespace WeaponWorkshop
             player = uiManager.Player;
             playerHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
             inRaid = true;
+            GameLogger.Data("Info", "NightRaid", "습격 시작", new SceneBootLog { scene = gameObject.scene.name });
             WorkshopSoundEffects.RaiseNightRaidStarted();
             if (player == null || area.SpawnPoint == null)
             { ui.ShowError("습격 플레이어 또는 시작 위치 연결이 없습니다."); return; }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using LogKit;
 
 namespace WeaponWorkshop
 {
@@ -43,6 +44,7 @@ namespace WeaponWorkshop
             InDialogue = false;
             InTargetSelection = false;
             InManual = false;
+            GameLogger.Data("Info", "System", "씬 시작", new SceneBootLog { scene = gameObject.scene.name });
             if (inputActions == null) return;
             controls = inputActions.FindActionMap("Game", true).Clone();
             controls.FindAction("Pause", true).performed += _ => TogglePause();
@@ -90,6 +92,7 @@ namespace WeaponWorkshop
             if (IsNight) return;
             IsPaused = !IsPaused;
             Time.timeScale = IsPaused ? 0f : 1f;
+            GameLogger.Info("Game", IsPaused ? "일시정지" : "일시정지 해제");
             uiManager?.Refresh(this);
             RestoreCursor();
             if (!IsPaused)

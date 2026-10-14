@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using LogKit;
 
 namespace WeaponWorkshop
 {
@@ -105,6 +106,9 @@ namespace WeaponWorkshop
             int price = satisfied ? Mathf.RoundToInt(cost * (1f + tagRatio * tagCount)) + Mathf.Max(0, profile.price)
                 : cost / 5 * 4;
             Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
+            GameLogger.Data("Info", "Shop", "총 판매", new WeaponSaleLog { price = price, satisfied = satisfied, tagCount = tagCount });
+            GameLogger.Count("WeaponSold");
+            GameLogger.Measure("SalePrice", price);
             Destroy(weapon.gameObject);
             atCounter = false;
             SaleAccepted?.Invoke(price);
