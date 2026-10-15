@@ -22,7 +22,7 @@ MonoBehaviour:
   initiallyLocked: 0
   moduleCreditCost: 0
   moduleType: 0
-  buyPrice: 2000
+  buyPrice: 500
   bonuses:
   - type: 0
     amount: 2
