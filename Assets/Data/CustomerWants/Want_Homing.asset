@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Homing
   m_EditorClassIdentifier: 
-  displayName: "\uC720\uB3C4"
-  request: "\uC720\uB3C4 \uD0DC\uADF8 (\uC720\uB3C4 \uBAA8\uB4C8 1\uAC1C \uC774\uC0C1)"
+  tableId: a577397affb1dba46a5ab05ee475eec6
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: 7d95d7b383516df44830a4c7b34f3568, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 5
-  requiredModules:
-  - {fileID: 11400000, guid: 0277d45126374004b802798d93561da2, type: 2}
+  unlockDay: 0
+  requiredModules: []

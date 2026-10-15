@@ -12,17 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D6_6_Everything
   m_EditorClassIdentifier: 
+  profileId: 64bbf60094050bb4492d018a6e417617
+  requestIds:
+  - c45e9713dbf2ac3469b4a59283112118
+  - 48aeae95d13c1f643817498a6dae1573
+  - 6bfd82587bbb4a640a1dcc436cacd347
+  - 60c861d406fb6fd48a48e2649ddcb52b
+  - a577397affb1dba46a5ab05ee475eec6
+  - db5262cea8401e542a56f9a2812196a3
   lines:
   - "\uC774 \uAC00\uAC8C\uC5D0\uC11C \uC81C\uC77C \uC88B\uC740 \uAC70 \uB2E4 \uB123\uC5B4\uC8FC\uC138\uC694."
-  - "화염방사·물총·중력건·회전·유도·차지 태그를 전부 붙여주세요."
+  - "\uD654\uC5FC\uBC29\uC0AC\xB7\uBB3C\uCD1D\xB7\uC911\uB825\uAC74\xB7\uD68C\uC804\xB7\uC720\uB3C4\xB7\uCC28\uC9C0
+    \uD0DC\uADF8\uB97C \uC804\uBD80 \uBD99\uC5EC\uC8FC\uC138\uC694."
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: c45e9713dbf2ac3469b4a59283112118, type: 2}
-  - {fileID: 11400000, guid: 48aeae95d13c1f643817498a6dae1573, type: 2}
-  - {fileID: 11400000, guid: 6bfd82587bbb4a640a1dcc436cacd347, type: 2}
-  - {fileID: 11400000, guid: 60c861d406fb6fd48a48e2649ddcb52b, type: 2}
-  - {fileID: 11400000, guid: a577397affb1dba46a5ab05ee475eec6, type: 2}
-  - {fileID: 11400000, guid: db5262cea8401e542a56f9a2812196a3, type: 2}
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
   happyLine: "\uC774\uAC8C \uBC14\uB85C \uAD81\uADF9\uC758 \uCD1D...!"
   angryLine: "\uD558\uB098\uB77C\uB3C4 \uBE60\uC9C0\uBA74 \uC548 \uB41C\uB2E4\uACE0

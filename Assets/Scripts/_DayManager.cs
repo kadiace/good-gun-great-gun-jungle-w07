@@ -469,14 +469,16 @@ public class _DayManager : MonoBehaviour
     {
         if (tutorialDay != null && tutorialDay.customers != null)
         {
-            int tutorialSlot = Array.IndexOf(tutorialDay.customers, profile);
+            int tutorialSlot = Array.FindIndex(tutorialDay.customers, p => p == profile ||
+                (!string.IsNullOrEmpty(profile.ProfileId) && p != null && p.ProfileId == profile.ProfileId));
             if (tutorialSlot >= 0) { sourceDay = 0; sourceSlot = tutorialSlot; return true; }
         }
         if (customerDays != null)
             foreach (var day in customerDays)
             {
                 if (day == null || day.customers == null) continue;
-                int slot = Array.IndexOf(day.customers, profile);
+                int slot = Array.FindIndex(day.customers, p => p == profile ||
+                    (!string.IsNullOrEmpty(profile.ProfileId) && p != null && p.ProfileId == profile.ProfileId));
                 if (slot < 0) continue;
                 sourceDay = day.day; sourceSlot = slot; return true;
             }
@@ -485,6 +487,16 @@ public class _DayManager : MonoBehaviour
 
     private CustomerProfile FindSavedProfile(CustomerOrderSave order)
     {
+        if (order != null && !string.IsNullOrEmpty(order.profileId))
+        {
+            if (tutorialDay != null)
+                foreach (var profile in tutorialDay.customers ?? Array.Empty<CustomerProfile>())
+                    if (profile != null && profile.ProfileId == order.profileId) return profile;
+            foreach (var candidateDay in customerDays ?? Array.Empty<CustomerDay>())
+                foreach (var profile in candidateDay != null ? candidateDay.customers ?? Array.Empty<CustomerProfile>() : Array.Empty<CustomerProfile>())
+                    if (profile != null && profile.ProfileId == order.profileId) return profile;
+            return null;
+        }
         if (order == null || order.sourceSlot < 0) return null;
         var day = FindCustomerDay(order.sourceDay);
         return day != null && day.customers != null && order.sourceSlot < day.customers.Length
@@ -494,13 +506,8 @@ public class _DayManager : MonoBehaviour
     private CustomerOrderSave CaptureOrder(CustomerProfile profile)
     {
         if (TryFindProfile(profile, out int sourceDay, out int slot))
-            return new CustomerOrderSave { sourceDay = sourceDay, sourceSlot = slot };
-        var indices = new List<int>();
-        if (profile.archetypes != null)
-            foreach (var archetype in profile.archetypes)
-                indices.Add(endlessRequests != null && endlessRequests.requests != null
-                    ? Array.IndexOf(endlessRequests.requests, archetype) : -1);
-        return new CustomerOrderSave { requests = indices.ToArray(), lines = profile.lines,
+            return new CustomerOrderSave { profileId = profile.ProfileId, requestIds = (string[])profile.requestIds.Clone() };
+        return new CustomerOrderSave { requestIds = (string[])profile.requestIds.Clone(), lines = profile.lines,
             happyLine = profile.happyLine, angryLine = profile.angryLine, price = profile.price,
             portrait = endlessRequests != null && endlessRequests.portraits != null
                 ? Array.IndexOf(endlessRequests.portraits, profile.portrait) : -1 };
@@ -509,23 +516,29 @@ public class _DayManager : MonoBehaviour
     private bool CanRestoreOrder(CustomerOrderSave order)
     {
         if (order == null) return false;
-        if (order.sourceSlot >= 0) return FindSavedProfile(order) != null;
-        if (order.lines == null || order.lines.Length == 0 || order.requests == null || order.price < 0) return false;
-        foreach (int index in order.requests)
-            if (endlessRequests == null || endlessRequests.requests == null || index < 0 ||
-                index >= endlessRequests.requests.Length || endlessRequests.requests[index] == null) return false;
-        return true;
+        if (!string.IsNullOrEmpty(order.profileId) || order.sourceSlot >= 0)
+            return FindSavedProfile(order) != null && (order.requestIds == null || TableManager.Instance.CustomerRequest.ContainsOrder(order.requestIds));
+        return order.lines != null && order.lines.Length > 0 && order.price >= 0 &&
+            TableManager.Instance.CustomerRequest.ContainsOrder(SavedRequestIds(order));
     }
+
+    private string[] SavedRequestIds(CustomerOrderSave order) => order.requestIds ??
+        TableManager.Instance.CustomerRequest.RestoreLegacyOrder(endlessRequests != null ? endlessRequests.PoolId : null, order.requests);
 
     private CustomerProfile RestoreOrder(CustomerOrderSave order)
     {
         var authored = FindSavedProfile(order);
-        if (authored != null) return authored;
+        if (authored != null)
+        {
+            if (order.requestIds == null) return authored;
+            var restored = Instantiate(authored);
+            restored.requestIds = (string[])order.requestIds.Clone();
+            return restored;
+        }
         var profile = ScriptableObject.CreateInstance<CustomerProfile>();
         profile.name = "RestoredCombination";
         profile.lines = order.lines;
-        profile.archetypes = Array.ConvertAll(order.requests, index => endlessRequests.requests[index]);
-        profile.conditions = Array.Empty<GunCondition>();
+        profile.requestIds = (string[])SavedRequestIds(order).Clone();
         profile.happyLine = order.happyLine; profile.angryLine = order.angryLine; profile.price = order.price;
         if (endlessRequests != null && endlessRequests.portraits != null && order.portrait >= 0 &&
             order.portrait < endlessRequests.portraits.Length) profile.portrait = endlessRequests.portraits[order.portrait];

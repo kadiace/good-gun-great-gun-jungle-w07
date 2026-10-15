@@ -12,12 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D4_6_Rotation
   m_EditorClassIdentifier: 
+  profileId: d5629a5fb5df7874ebefe9e24bd959af
+  requestIds:
+  - 60c861d406fb6fd48a48e2649ddcb52b
   lines:
   - "\uB3CC\uB824 \uB3CC\uB824 \uB3CC\uB9BC\uD310~"
-  - "회전 태그가 붙으면 좋겠어요!"
+  - "\uD68C\uC804 \uD0DC\uADF8\uAC00 \uBD99\uC73C\uBA74 \uC88B\uACA0\uC5B4\uC694!"
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: 60c861d406fb6fd48a48e2649ddcb52b, type: 2}
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
   happyLine: "\uC544~ \uB9C8\uC640\uB808 \uB9C8\uC640\uB808 \uB9C8\uC640\uB808 \uB9C8\uC640\uB808
     \uB9C8\uC640\uB808 \uCE74\uB808-\uB2C8 \uCE74\uBCA4 \uCE58\uB77C\uC2A4\uC694-\uB2C8"

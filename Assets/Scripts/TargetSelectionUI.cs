@@ -10,6 +10,8 @@ namespace WeaponWorkshop
         [SerializeField] private UnityEngine.UI.Button closeButton;
         [SerializeField] private GameObject[] targetPrefabs = new GameObject[0];
         [SerializeField] private string[] targetNames = new string[0];
+        [SerializeField] private ShootingTestData[] timedTests = new ShootingTestData[0];
+        private readonly System.Collections.Generic.List<UnityEngine.UI.Button> testButtons = new System.Collections.Generic.List<UnityEngine.UI.Button>();
         private TMPro.TextMeshProUGUI statusText;
         private TargetBell bell;
         private GameManager game;
@@ -123,6 +125,18 @@ namespace WeaponWorkshop
                 SoundManager.RegisterButtonSound(button, "SpawnButtonClick");
                 button.gameObject.SetActive(true);
             }
+            for (int i = 0; i < timedTests.Length; i++)
+            {
+                int index = i;
+                var button = Instantiate(buttonTemplate, grid);
+                button.name = "TimedTest" + i;
+                var data = timedTests[i];
+                button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = data != null
+                    ? data.DisplayName + " · " + data.TimeLimit.ToString("0") + "초" : "미설정 테스트";
+                button.onClick.AddListener(() => SelectTimedTest(index));
+                SoundManager.RegisterButtonSound(button, "SpawnButtonClick");
+                testButtons.Add(button); button.gameObject.SetActive(true);
+            }
             var cleanup = Instantiate(buttonTemplate, grid.parent);
             cleanup.name = "ClearSpawnedTargets";
             var cleanupRect = (RectTransform)cleanup.transform;
@@ -165,6 +179,7 @@ namespace WeaponWorkshop
             game = GameManager.Instance;
             if (game == null) return false;
             bell = source;
+            foreach (var button in testButtons) button.interactable = source.TestController != null;
             grid.gameObject.SetActive(true);
             SetCustomVisible(false);
             if (statusText != null) statusText.text = "";
@@ -178,6 +193,17 @@ namespace WeaponWorkshop
             if (bell == null || index < 0 || index >= targetPrefabs.Length) return;
             if (bell.Spawn(targetPrefabs[index])) Close();
             else if (statusText != null) statusText.text = bell.SpawnFailureReason ?? "소환할 수 없습니다.";
+        }
+
+        private void SelectTimedTest(int index)
+        {
+            if (bell == null || index < 0 || index >= timedTests.Length || timedTests[index] == null) return;
+            var source = bell; // Close clears the UI's bell reference.
+            var player = GameManager.Instance != null && GameManager.Instance.UI != null ? GameManager.Instance.UI.Player : null;
+            if (!source.PrepareTest(timedTests[index], player))
+            { if (statusText != null) statusText.text = source.SpawnFailureReason; return; }
+            Close();
+            source.TestController.Begin();
         }
 
         public void Close()

@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Water
   m_EditorClassIdentifier: 
-  displayName: "\uBB3C\uCD1D"
-  request: "\uBB3C\uCD1D \uD0DC\uADF8 (\uC804\uB825\uC774 \uC5F0\uACB0\uB41C \uBB3C \uBAA8\uB4C8 1\uAC1C \uC774\uC0C1)"
+  tableId: 48aeae95d13c1f643817498a6dae1573
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: 3912bb5b7da966a47995e32041938a6a, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 3
-  requiredModules:
-  - {fileID: 11400000, guid: 8d0c0ddd9cf586745abb86717c7cc6b6, type: 2}
+  unlockDay: 0
+  requiredModules: []

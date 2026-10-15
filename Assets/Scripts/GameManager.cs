@@ -65,6 +65,7 @@ namespace WeaponWorkshop
         }
         public void TogglePause()
         {
+            if (!GameplayBlocked && uiManager != null && uiManager.GetComponent<ShootingTestHUD>()?.CloseRetry() == true) return;
             var tutorialSkip = uiManager != null ? uiManager.GetComponent<TutorialSkipUI>() : null;
             if (tutorialSkip != null && tutorialSkip.IsOpen) return;
             var recipe = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponRecipeUI>() : null;
@@ -123,6 +124,7 @@ namespace WeaponWorkshop
         }
         public void Restart()
         {
+            uiManager?.GetComponent<ShootingTestHUD>()?.CancelTest();
             ManualCloseRequested?.Invoke();
             TargetSelectionCloseRequested?.Invoke();
             if (IsNight) return;
@@ -149,6 +151,7 @@ namespace WeaponWorkshop
         }
         public void SetNight(bool night)
         {
+            if (night) uiManager?.GetComponent<ShootingTestHUD>()?.CancelTest();
             if (night) ManualCloseRequested?.Invoke();
             if (night) TargetSelectionCloseRequested?.Invoke();
             IsNight = night;

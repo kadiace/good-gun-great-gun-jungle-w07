@@ -24,6 +24,7 @@ namespace WeaponWorkshop
         private Vector3 homingLocalAim;
         private Transform ignoredOwner;
         private Transform ignoredWeapon;
+        public Transform WeaponSource => ignoredWeapon;
         private Vector3 halfExtents;
         private int penetrationsRemaining;
         private float penetrationPower;

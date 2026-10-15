@@ -7,7 +7,11 @@ namespace WeaponWorkshop
     [CreateAssetMenu(menuName = "Weapon Workshop/Customer Request Pool")]
     public sealed class CustomerRequestPool : ScriptableObject
     {
+        [SerializeField, HideInInspector] private string poolId;
+        public string PoolId => poolId;
+        public string[] requestIds = System.Array.Empty<string>();
         [Tooltip("조합 재료. 각 요구사항의 request 문구가 주문 대사에 들어감")]
+        [System.Obsolete("레거시 후보 목록. requestIds와 TableManager.CustomerRequest를 사용하세요."), HideInInspector]
         public GunArchetype[] requests;
         [SerializeField, Tooltip("코어 기본 스탯으로 이미 만족하는 주문 조건은 모듈 해금을 요구하지 않음")]
         private CoreBaseStats coreBaseStats;
@@ -31,30 +35,26 @@ namespace WeaponWorkshop
         // moduleCredits: 보유 모듈 재화. 조합 전체의 필요 재화가 이 안에 들도록 고름.
         public CustomerProfile Create(int day, int min, int max, PlayerModuleUnlocks unlocks = null, int moduleCredits = int.MaxValue)
         {
-            var picked = new List<GunArchetype>();
-            var candidates = new List<GunArchetype>();
-            if (requests != null)
-                foreach (GunArchetype request in requests)
-                    if (request != null && request.unlockDay <= day && request.HasUnlockedModules(unlocks) &&
-                        CustomerModuleRequirements.Allows(request, unlocks, CoreStats) &&
-                        CustomerModuleRequirements.CreditCost(request, unlocks, CoreStats) <= moduleCredits) candidates.Add(request);
+            var table = TableManager.Instance.CustomerRequest;
+            var picked = new List<string>();
+            var candidates = new List<string>();
+            foreach (string id in requestIds ?? System.Array.Empty<string>())
+                if (CustomerModuleRequirements.Allows(new[] { id }, unlocks, CoreStats, day) &&
+                    CustomerModuleRequirements.CreditCost(new[] { id }, unlocks, CoreStats) <= moduleCredits) candidates.Add(id);
             int count = Mathf.Min(Random.Range(min, Mathf.Max(min, max) + 1), candidates.Count);
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
                 int index = Random.Range(0, candidates.Count);
-                GunArchetype next = candidates[index];
+                string next = candidates[index];
                 picked.Add(next);
                 candidates.RemoveAt(index);
                 // 같이 만족할 수 없는 요구사항은 후보에서 뺀다 (예: 권총 태그 + 스코프).
-                candidates.RemoveAll(c => next.ConflictsWith(c));
+                candidates.RemoveAll(c => table.Conflicts(next, c));
                 candidates.RemoveAll(c => CreditCost(picked, c, unlocks) > moduleCredits);
             }
 
             var phrases = new List<string>();
-            foreach (GunArchetype request in picked)
-            phrases.Add(request.weaponType != null
-                ? request.weaponType.DisplayName + " 태그"
-                : (string.IsNullOrEmpty(request.request) ? request.displayName : request.request));
+            foreach (string request in picked) phrases.Add(table.Phrase(request));
 
             CustomerProfile profile = CreateInstance<CustomerProfile>();
             profile.name = "Endless_" + string.Join("+", phrases);
@@ -63,8 +63,7 @@ namespace WeaponWorkshop
                     ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(orderTemplates ?? new string[0], multiRequestTemplates))
                     : orderTemplates, "{0} 주세요."), string.Join(", ", phrases)) };
             profile.endsClear = true;
-            profile.archetypes = picked.ToArray();
-            profile.conditions = new GunCondition[0];
+            profile.requestIds = picked.ToArray();
             profile.happyLine = Pick(happyLines, null);
             profile.angryLine = Pick(angryLines, null);
             profile.portrait = Pick(portraits, null);
@@ -73,14 +72,9 @@ namespace WeaponWorkshop
         }
 
         // 이미 고른 요구사항에 extra를 더했을 때의 필요 모듈 재화.
-        private int CreditCost(List<GunArchetype> picked, GunArchetype extra, PlayerModuleUnlocks unlocks)
+        private int CreditCost(List<string> picked, string extra, PlayerModuleUnlocks unlocks)
         {
-            var profile = CreateInstance<CustomerProfile>();
-            profile.archetypes = new List<GunArchetype>(picked) { extra }.ToArray();
-            profile.conditions = new GunCondition[0];
-            int cost = CustomerModuleRequirements.CreditCost(profile, unlocks, CoreStats);
-            DestroyImmediate(profile);
-            return cost;
+            return CustomerModuleRequirements.CreditCost(new List<string>(picked) { extra }.ToArray(), unlocks, CoreStats);
         }
 
         private static T Pick<T>(T[] items, T fallback)

@@ -12,11 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D5_11_RicsMonkey
   m_EditorClassIdentifier: 
+  profileId: bb35f40bd3aa17e4f831ca8946978d4b
+  requestIds: []
   lines:
   - "\uC6B0 \uC6B0 \uC6B0 \uC300\uC300\uC300"
   - "\uC2DD\uB2F9\uC73C\uB85C \uBE44\uC720\uD558\uC790\uBA74 \uC571\uC194\uCE7C\uB9AC\uBC84\uB97C
     4\uAC1C\uC6D4 \uB300\uC5EC\uD574\uB2EC\uB77C\uB294\uAC70\uC784"
   endsClear: 0
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
   happyLine: "\uC774\uD574\uAC00 \uC3D9\uC3D9 \uB418\uC796\uC544"

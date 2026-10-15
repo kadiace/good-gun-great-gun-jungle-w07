@@ -12,11 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
   m_Name: Type_GravityGun
   m_EditorClassIdentifier: 
-  displayName: "\uC911\uB825\uAC74"
-  tagColor: {r: 0.4392157, g: 0.27450982, b: 0.6392157, a: 1}
-  conditions:
-  - stat: 5
-    comparison: 0
-    value: 1
-    source: 1
-  sellMultiplier: 1
+  tableId: 1199a71d1cb406344b40eab02c202fd0
+  displayName: 
+  tagColor: {r: 0, g: 0, b: 0, a: 0}
+  conditions: []
+  sellMultiplier: 0

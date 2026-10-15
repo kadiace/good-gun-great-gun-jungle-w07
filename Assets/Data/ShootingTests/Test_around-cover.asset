@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 304d169ecb89ea74b87a8f3e6e3a832f, type: 3}
+  m_Name: Test_around-cover
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.ShootingTestData
+  testId: around-cover
+  displayName: "\uC5C4\uD3D0 \uB4A4 \uD45C\uC801 \uD14C\uC2A4\uD2B8"
+  instructions: "\uC5C4\uD3D0 \uB4A4 \uCD08\uB85D \uD45C\uC801 2\uAC1C\uB97C \uD30C\uAD34\uD558\uC138\uC694.
+    \uBC1D\uC740 \uBCBD\uC5D0\uC11C \uBC18\uC0AC\uD558\uAC70\uB098 \uBC94\uC704 \uACF5\uACA9\uC744
+    \uD65C\uC6A9\uD558\uC138\uC694."
+  failureHint: "\uC5C4\uD3D0\uBB3C\uC740 \uD30C\uAD34\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.
+    \uBC18\uC0AC\uAC01\uACFC \uD3ED\uBC1C \uBC94\uC704\uB97C \uC870\uC808\uD558\uACE0
+    \uBD89\uC740 \uC0C1\uC790\uB97C \uD53C\uD574 \uBCF4\uC138\uC694."
+  layoutPrefab: {fileID: 4375878458017071587, guid: 96f9740694073dc4f8e2baa9549dfde1, type: 3}
+  timeLimit: 30
+  requiredDestruction: 0.7

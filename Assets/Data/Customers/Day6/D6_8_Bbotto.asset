@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D6_8_Bbotto
   m_EditorClassIdentifier: 
+  profileId: 78f7371a5c003d44393acb6a85257afb
+  requestIds: []
   lines:
   - "\uB098 \uC778\uAC04 \uAE40\uC778\uC9C1 \uC77C\uD55C\uBC88 \uC800\uC9C8\uB7EC
     \uBCF4\uB9AC\uB77C"
@@ -19,6 +21,8 @@ MonoBehaviour:
     \uC0C0\uB2E4\uB2C8\uAE4C \uC57C \uBF40\uB610 \uC544 \uBF40\uB610 \uD55C\uBC88\uB9CC
     \uC9C4\uC9DC \uBF40\uB610 \uD55C\uBC88\uB9CC"
   endsClear: 0
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
   happyLine: "\uB108 \uAC1C\uC0C8\uB07C\uC5F4\uB9E4 \uBA39\uC5C8\uC5B4?"

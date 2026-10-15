@@ -12,15 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D1_3_SplitTwo
   m_EditorClassIdentifier: 
+  profileId: a660428af7905aa49a0c3400753fd0ae
+  requestIds:
+  - 81148a6e113140c18bfdab5b9d6201d6
   lines:
   - "\uC5F0\uC0AC \uBAA8\uB4C8\uC774 \uB4E4\uC5B4\uAC04 \uCD1D\uC774\uC694."
   endsClear: 1
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
   archetypes: []
-  conditions:
-  - measure: 2
-    stat: 1
-    min: 1
-    max: 999
+  conditions: []
   happyLine: "\uB4DC\uB974\uB975! \uC774\uAC70\uC608\uC694 \uC774\uAC70!"
   angryLine: "\uC5F0\uC0AC \uBAA8\uB4C8\uC774 \uC548 \uBCF4\uC774\uB294\uB370\uC694...?"
   price: 200
