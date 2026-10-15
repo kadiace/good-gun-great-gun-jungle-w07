@@ -7,6 +7,7 @@
 - 저장소 구조: 씬은 `Assets/Scenes/Intro`(메인메뉴·StartUI_Manager), `Assets/Scenes/Main`(공방·사격장), `Assets/Scenes/NightRaid`(습격·튜토리얼), `Assets/Scenes/Test`(시험). 씬 이름 문자열(`LoadSceneAsync`, `mainMenuScene`, `gameSceneName`, `standaloneWorkshopScene`, 에디터 스크립트 경로)는 실재 이름 Intro·Main과 NightRaid 폴더로 통일했다.
 - 자산 배치: 에디터 전용 도구는 `Assets/Editor`(플레이어 빌드에서 제외되어야 하므로 `Assets/Scripts`에 두지 않는다). `Prefabs` 루트는 `Player`·`Workbench`·`Range`·`Shop`·`NightRaid`로 나누고, NightRaid 출구 재질은 `Materials/NightRaid`, 출구 심볼 메시는 `Meshes/NightRaid`, 입력 액션 참조는 `Data/Input`, 배경 이미지는 `Textures/Backgrounds`에 둔다. URP 템플릿 잔재(`TutorialInfo`, `Readme.asset`, `Assets/Temp`)는 제거했다.
 - 경로 제약: `Resources/Sound/BGM|SFX`(SoundManager), `Resources/Stickers`·`Resources/Keyrings`(ModulePaletteUI), `Resources/RaidMapData.json`, `Prefabs/Managers/Resources/PoolManager.prefab`(PoolManager), `Assets/InputSystem_Actions.inputactions`(루트 유지)는 코드에 경로가 박혀 있어 옮길 때는 해당 로더와 에디터 스크립트의 경로를 함께 바꾼다. 프리팹/씬 참조는 `.meta`와 함께 이동하면 GUID가 보존된다.
+- 동적 TMP 폰트 에셋(Clear Dynamic Data On Build 켜짐)은 Editor/DynamicFontAssetSaveCleaner가 저장 직전 글리프·아틀라스를 비워 플레이로 채워진 데이터가 변경점으로 남지 않게 함. 폰트 에셋에 변경점이 뜨면 생성 데이터이므로 되돌리면 된다.
 - `Assets/Scripts`는 공용 파일이 루트에 많고 기능별 폴더 분리는 아직 미완이다(분리 시 `namespace WeaponWorkshop`이므로 이동만으로는 참조가 깨지지 않는다).
 - 테이블 정례: 참조 테이블은 `Resources/X.json`(데이터) → `XData`(직렬화된 필드만 둔 순수 자료, 메서드 두지 않음) → `TableManager`(한 번 로드해 인스턴스로 보유) 3층으로 만들고, 조회와 문구 생성은 별도 정적 클래스(`XInfo`)의 확장 메서드로 둔다. `TableManager`는 MonoBehaviour·스크립터블오브젝트·씬 연결 없이 `BeforeSceneLoad`에 초기화하고 `SubsystemRegistration`에서 정적 잔재를 정리한다. 프로퍼티명은 클래스명에서 Data를 뺀 이름(`RaidMapData` → `TableManager.Instance.RaidMap`)을 쓰고, 로드 실패는 빈 표와 오류 로그 1회로 처리하며 조회는 null 안전해야 한다. 지금은 습격 스테이지만 적용했다.
 - 테이블 적용 현황: 현행 방식 적용 — 습격 스테이지(`Resources/RaidMapData.json` → `RaidMapData` → `RaidStageInfo` → `TableManager.RaidMap`). 레거시로 남음 — 모듈 카탈로그와 태그·손님·레시피·튜토리얼 시퀀스(스크립터블오브젝트 참조로 읽고, 모듈 ID는 카탈로그 순서+1), 효과음(`Resources/Sound` 파일명 키, 키별 지연 로드), 스티커·열쇠고리(`Resources` 폴더를 창 열 때마다 스캔), 풀 관리자(`Prefabs/Managers/Resources` 경로 로딩). 레거시를 건드는 작업에서 접근 방식을 현행으로 함께 옮긴다.
@@ -99,7 +100,7 @@
 
 - PausePanel은 중앙 세로 배치의 계속하기·게임 저장·메인 메뉴로 나가기 버튼. 재시작·공방 나가기 UI 제거. 메인 메뉴 버튼은 저장하지 않은 진행 손실을 YesNoUI로 확인한 뒤 예 선택 시 PauseMenuNavigation으로 Intro 복귀(자동 저장 없음); 아니오/Esc는 일시정지 메뉴 유지.
 
-- UIManager/EventSystem의 InputSystemUIInputModule은 InputSystem_Actions/UI의 Point·Click·Navigate·Submit·Cancel 등 액션 참조를 명시적으로 연결. actionsAsset만 지정하면 클릭 입력이 연결되지 않아 사망 귀환 버튼 등 UI 조작 불가.
+- UIManager/EventSystem의 InputSystemUIInputModule은 InputSystem_Actions/UI의 Point·Click·Navigate·Submit·Cancel 등 액션 참조를 명시적으로 연결. actionsAsset만 지정하면 클릭 입력이 연결되지 않아 사망 귀환 버튼 등 UI 조작 불가. Intro EventSystem도 씬에 내장된 InputActionReference가 해석되지 않아 클릭 불가였으므로 InputSystem_Actions 에셋의 UI 액션 참조로 교체.
 
 - 셔터 슬랫·OPEN/CLOSE 판넬은 로컬+Z 공방 안쪽에 배치, 텍스트도 안쪽을 향하도록 Y180 회전. 이동 축/높이 유지. 슬랫은 Slat_0·사용자 수정 Slat_16 사이 Y를 균등 배치.
 
