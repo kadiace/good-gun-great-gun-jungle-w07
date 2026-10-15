@@ -142,7 +142,7 @@ namespace WeaponWorkshop
             if (wallet == null || amount <= 0) return;
             int refund = Mathf.Min(amount, PaidConstructionCost);
             PaidConstructionCost -= refund;
-            wallet.Credit(refund);
+            wallet.RefundConstruction(refund);
         }
 
         private void RefundConstructionCost()
@@ -154,7 +154,7 @@ namespace WeaponWorkshop
             foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>(true))
                 wallet.CreditModuleCredits(block.TakeModuleCreditCost());
             PaidConstructionCost = 0;
-            wallet.Credit(refund);
+            wallet.RefundConstruction(refund);
         }
         private Vector3 targetPosition;
         private Quaternion targetRotation;
