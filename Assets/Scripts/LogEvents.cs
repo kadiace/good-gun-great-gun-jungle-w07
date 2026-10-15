@@ -10,7 +10,6 @@ namespace WeaponWorkshop
         public float time;
         public float duration;
         public int[] moduleCrateRewards;
-        public int moduleCrateCredits;
         public int materialCrateCredits;
         public int enemyKills;
         public float health;

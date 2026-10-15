@@ -12,12 +12,13 @@ namespace WeaponWorkshop
         private static void ResetRegistry() => activeCrates.Clear();
         private void OnEnable() => activeCrates.Add(this);
         private void OnDisable() => activeCrates.Remove(this);
-        [SerializeField, Min(1)] private int reward = 50;
         [SerializeField] private ModuleCreditPickup pickupPrefab;
-        [SerializeField, Min(1)] private int dropCount = 5;
+        [SerializeField, Min(1), Tooltip("픽업 1개에 담는 재료. 상자 재료 ÷ 이 값(올림)이 픽업 개수다.")]
+        private int creditsPerPickup = 50;
         [SerializeField, Min(0f)] private float scatterSpeed = 2f;
         [SerializeField, Min(0f)] private float upwardSpeed = 3f;
         private DestructibleTarget structure;
+        private int reward;
         private bool claimed;
         public bool IsClaimed => claimed;
         public Transform OutlineRoot => transform;
@@ -27,6 +28,8 @@ namespace WeaponWorkshop
             claimed = false;
             structure = GetComponent<DestructibleTarget>();
         }
+        // 재료량은 스테이지 표(RaidMapData reward.materialPerCrate)에서 스포너가 넣는다.
+        public void Configure(int amount) => reward = Mathf.Max(0, amount);
         private void LateUpdate()
         {
             // Covers penetration, explosion, attributes and gravity without deleting the remaining body.
@@ -38,12 +41,13 @@ namespace WeaponWorkshop
         {
             if (claimed) return;
             claimed = true;
+            if (reward <= 0) return;
             if (pickupPrefab == null)
             {
                 Debug.LogError("상자에 ModuleCreditPickup 프리팹을 연결해주세요.", this);
                 return;
             }
-            int count = Mathf.Clamp(dropCount, 1, Mathf.Max(1, reward));
+            int count = Mathf.Clamp(Mathf.CeilToInt(reward / (float)creditsPerPickup), 1, reward);
             float rotation = Random.Range(0f, 360f);
             for (int i = 0; i < count; i++)
             {

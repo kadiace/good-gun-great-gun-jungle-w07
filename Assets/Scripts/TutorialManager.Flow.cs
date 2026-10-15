@@ -232,7 +232,7 @@ namespace WeaponWorkshop
         }
         private Component RaidLootTarget()
         {
-            var spawner = FindFirstObjectByType<ModuleUnlockCrateSpawner>();
+            var spawner = FindFirstObjectByType<RaidCrateSpawner>();
             if (spawner == null) return null;
             foreach (var objective in spawner.Objectives)
                 if (objective.Target != null && (CurrentStep.requiredModuleId == 0 || objective.ModuleId == CurrentStep.requiredModuleId))

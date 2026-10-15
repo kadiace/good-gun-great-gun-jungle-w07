@@ -55306,6 +55306,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 381303189}
+  - component: {fileID: 381303190}
   m_Layer: 0
   m_Name: Module_01_VaultBackCorner
   m_TagString: Untagged
@@ -55328,6 +55329,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7321064349310805917}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &381303190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 381303188}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab23d9b2a894dfd478f4fac4f097e8b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.RaidModuleCrateSpot
+  module: {fileID: 11400000, guid: 8185707d079aa3d4eba1d33833009eb2, type: 2}
 --- !u!1 &381513292
 GameObject:
   m_ObjectHideFlags: 0
@@ -213986,7 +214000,7 @@ MonoBehaviour:
   status: {fileID: 951690854}
   markerTemplate: {fileID: 1702829068}
   spawners:
-  - {fileID: 7321064349310805918}
+  - {fileID: 0}
   exits:
   - {fileID: 97853214}
   - {fileID: 546459161}
@@ -284929,6 +284943,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2100661360}
+  - component: {fileID: 2100661361}
   m_Layer: 0
   m_Name: Module_02_ArchiveRear
   m_TagString: Untagged
@@ -284951,6 +284966,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7321064349310805917}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2100661361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100661359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab23d9b2a894dfd478f4fac4f097e8b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.RaidModuleCrateSpot
+  module: {fileID: 11400000, guid: 9841ca931bf7a8c4b866da354b808ad7, type: 2}
 --- !u!1 &2100770636
 GameObject:
   m_ObjectHideFlags: 0
@@ -291011,77 +291039,6 @@ MonoBehaviour:
   debrisFadeDuration: 0.2
   debrisFloorBounce: 0.25
   debrisFloorFriction: 0.8
---- !u!114 &1615426067563224808
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3389501480479298735}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d14f315c9ad4d0cab277c812ea35035, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cratePrefab: {fileID: 114001, guid: f6fb5b4d0f094e0a9a56297691e86ba8, type: 3}
-  spawnPoints:
-  - {fileID: 286375483}
-  - {fileID: 1272719066}
-  - {fileID: 200940084}
-  - {fileID: 1480703215}
-  - {fileID: 1101227663}
-  - {fileID: 95992799}
-  - {fileID: 1363166481}
-  - {fileID: 535871870}
-  - {fileID: 17349366}
-  - {fileID: 493435055}
-  - {fileID: 1127332347}
-  - {fileID: 1670360357}
-  - {fileID: 1436101771}
-  - {fileID: 624916270}
-  - {fileID: 2053852842}
-  - {fileID: 1593646007}
-  - {fileID: 651870602}
-  - {fileID: 1541442917}
-  - {fileID: 1012079677}
-  - {fileID: 1502886262}
-  - {fileID: 1703090306}
-  - {fileID: 1698714241}
-  - {fileID: 1216718056}
-  - {fileID: 1344116419}
-  - {fileID: 1475011885}
-  - {fileID: 894637921}
-  - {fileID: 985942175}
-  - {fileID: 1698453915}
-  - {fileID: 1776383834}
-  - {fileID: 1956606183}
-  - {fileID: 1144218250}
-  - {fileID: 75565598}
-  - {fileID: 859167431}
-  - {fileID: 1332739696}
-  - {fileID: 1940286111}
-  - {fileID: 1462506985}
-  - {fileID: 532443984}
-  - {fileID: 1829388267}
-  - {fileID: 7641929}
-  - {fileID: 1450427774}
-  - {fileID: 304876802}
-  - {fileID: 376405900}
-  - {fileID: 91911551}
-  - {fileID: 1083212153}
-  - {fileID: 1702635361}
-  - {fileID: 308296919}
-  - {fileID: 1861577544}
-  - {fileID: 1003737925}
-  - {fileID: 176136857}
-  - {fileID: 1257685997}
-  - {fileID: 1121117238}
-  - {fileID: 561122799}
-  - {fileID: 1803905436}
-  - {fileID: 750027521}
-  - {fileID: 1282799324}
-  - {fileID: 274422994}
-  spawnCount: 10
 --- !u!1 &3389501480479298735
 GameObject:
   m_ObjectHideFlags: 0
@@ -291091,7 +291048,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5174669925636002786}
-  - component: {fileID: 1615426067563224808}
+  - component: {fileID: 5174669925636002787}
   m_Layer: 0
   m_Name: CrateSpawnManager
   m_TagString: Untagged
@@ -291170,6 +291127,83 @@ Transform:
   - {fileID: 274422994}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5174669925636002787
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3389501480479298735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c3f2e914086df34392accdc580bdd7e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.RaidCrateSpawner
+  materialCratePrefab: {fileID: 114001, guid: f6fb5b4d0f094e0a9a56297691e86ba8, type: 3}
+  moduleCratePrefab: {fileID: 114001, guid: 5362471a968346109f43bfe1d9fd126d, type: 3}
+  catalog: {fileID: 11400000, guid: 9ba20ad561a32444ba7c6c150b2af8ea, type: 2}
+  materialSpawnPoints:
+  - {fileID: 286375483}
+  - {fileID: 1272719066}
+  - {fileID: 200940084}
+  - {fileID: 1480703215}
+  - {fileID: 1101227663}
+  - {fileID: 95992799}
+  - {fileID: 1363166481}
+  - {fileID: 535871870}
+  - {fileID: 17349366}
+  - {fileID: 493435055}
+  - {fileID: 1127332347}
+  - {fileID: 1670360357}
+  - {fileID: 1436101771}
+  - {fileID: 624916270}
+  - {fileID: 2053852842}
+  - {fileID: 1593646007}
+  - {fileID: 651870602}
+  - {fileID: 1541442917}
+  - {fileID: 1012079677}
+  - {fileID: 1502886262}
+  - {fileID: 1703090306}
+  - {fileID: 1698714241}
+  - {fileID: 1216718056}
+  - {fileID: 1344116419}
+  - {fileID: 1475011885}
+  - {fileID: 894637921}
+  - {fileID: 985942175}
+  - {fileID: 1698453915}
+  - {fileID: 1776383834}
+  - {fileID: 1956606183}
+  - {fileID: 1144218250}
+  - {fileID: 75565598}
+  - {fileID: 859167431}
+  - {fileID: 1332739696}
+  - {fileID: 1940286111}
+  - {fileID: 1462506985}
+  - {fileID: 532443984}
+  - {fileID: 1829388267}
+  - {fileID: 7641929}
+  - {fileID: 1450427774}
+  - {fileID: 304876802}
+  - {fileID: 376405900}
+  - {fileID: 91911551}
+  - {fileID: 1083212153}
+  - {fileID: 1702635361}
+  - {fileID: 308296919}
+  - {fileID: 1861577544}
+  - {fileID: 1003737925}
+  - {fileID: 176136857}
+  - {fileID: 1257685997}
+  - {fileID: 1121117238}
+  - {fileID: 561122799}
+  - {fileID: 1803905436}
+  - {fileID: 750027521}
+  - {fileID: 1282799324}
+  - {fileID: 274422994}
+  moduleSpots:
+  - {fileID: 381303190}
+  - {fileID: 2100661361}
+  rewardScene: 
+  spawnUnlockedRewards: 0
 --- !u!1 &7321064349310805916
 GameObject:
   m_ObjectHideFlags: 0
@@ -291179,7 +291213,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7321064349310805917}
-  - component: {fileID: 7321064349310805918}
   m_Layer: 0
   m_Name: ModuleCrateSpawnManager
   m_TagString: Untagged
@@ -291204,27 +291237,6 @@ Transform:
   - {fileID: 2100661360}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7321064349310805918
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7321064349310805916}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f84dfba08474984acc1dd75e8df921b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cratePrefab: {fileID: 114001, guid: 5362471a968346109f43bfe1d9fd126d, type: 3}
-  catalog: {fileID: 11400000, guid: 9ba20ad561a32444ba7c6c150b2af8ea, type: 2}
-  spawnPoints:
-  - {fileID: 381303189}
-  - {fileID: 2100661360}
-  rewardModules:
-  - {fileID: 11400000, guid: 8185707d079aa3d4eba1d33833009eb2, type: 2}
-  - {fileID: 11400000, guid: 9841ca931bf7a8c4b866da354b808ad7, type: 2}
-  spawnUnlockedRewards: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

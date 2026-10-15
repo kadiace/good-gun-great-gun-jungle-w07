@@ -13,14 +13,13 @@ namespace WeaponWorkshop
         [SerializeField] private RectTransform panel;
         [SerializeField] private TextMeshProUGUI status;
         [SerializeField] private TextMeshProUGUI markerTemplate;
-        [SerializeField] private ModuleUnlockCrateSpawner[] spawners;
         [SerializeField] private NightRaidBoundary[] exits;
-        private readonly List<ModuleUnlockCrateSpawner.Objective> objectives = new List<ModuleUnlockCrateSpawner.Objective>();
+        private readonly List<RaidCrateSpawner.Objective> objectives = new List<RaidCrateSpawner.Objective>();
         private readonly List<TextMeshProUGUI> markers = new List<TextMeshProUGUI>();
         private readonly List<TextMeshProUGUI> enemyMarkers = new List<TextMeshProUGUI>();
         private TextMeshProUGUI exitMarker;
         private PlayerModuleUnlocks unlocks;
-        private ModuleCreditCrateSpawner[] creditSpawners;
+        private RaidCrateSpawner[] spawners;
         private NightRaidBoundary nearestExit;
         private bool ready;
         private float nextRefresh;
@@ -37,21 +36,19 @@ namespace WeaponWorkshop
             if (player == null || viewCamera == null || panel == null || status == null || markerTemplate == null) yield break;
             unlocks = player.GetComponent<PlayerModuleUnlocks>();
             if (unlocks == null) yield break;
-            // Spawners wait for raid-entry progression to be restored before selecting rewards.
-            yield return null;
-            creditSpawners = Object.FindObjectsByType<ModuleCreditCrateSpawner>(FindObjectsSortMode.None);
-            if (spawners != null)
-                foreach (var spawner in spawners)
+            // NightRaidController가 입장 상태를 복원한 뒤 상자를 만들므로 생성이 끝날 때까지 기다린다.
+            spawners = Object.FindObjectsByType<RaidCrateSpawner>(FindObjectsSortMode.None);
+            foreach (var spawner in spawners)
+            {
+                if (spawner == null || !spawner.isActiveAndEnabled) continue;
+                while (spawner != null && spawner.isActiveAndEnabled && !spawner.IsReady) yield return null;
+                if (spawner == null) continue;
+                foreach (var objective in spawner.Objectives)
                 {
-                    if (spawner == null || !spawner.isActiveAndEnabled) continue;
-                    while (spawner != null && spawner.isActiveAndEnabled && !spawner.IsReady) yield return null;
-                    if (spawner == null) continue;
-                    foreach (var objective in spawner.Objectives)
-                    {
-                        objectives.Add(objective);
-                        markers.Add(Instantiate(markerTemplate, panel));
-                    }
+                    objectives.Add(objective);
+                    markers.Add(Instantiate(markerTemplate, panel));
                 }
+            }
             exitMarker = Instantiate(markerTemplate, panel);
             exitMarker.color = new Color(.35f, 1f, .6f);
             ready = true;
@@ -91,10 +88,10 @@ namespace WeaponWorkshop
                         nearestExit = exit;
                     }
                 int remainingCrates = 0;
-                if (creditSpawners != null)
-                    foreach (var spawner in creditSpawners)
+                if (spawners != null)
+                    foreach (var spawner in spawners)
                         if (spawner != null && spawner.isActiveAndEnabled)
-                            remainingCrates += spawner.RemainingCrateCount;
+                            remainingCrates += spawner.RemainingMaterialCrateCount;
                 string objectiveStatus = remaining > 0 ? $"남은 모듈 {remaining}개" :
                     objectives.Count > 0 ? "모듈 획득 완료 · 가까운 탈출구로 이동하세요" : "남은 모듈 없음 · 가까운 탈출구로 이동하세요";
                 status.text = $"남은 재료 상자 {remainingCrates}개\n{objectiveStatus}";

@@ -109,7 +109,6 @@ public static class SetupRaidObjectives
                 hudData.FindProperty("status").objectReferenceValue = status;
                 hudData.FindProperty("markerTemplate").objectReferenceValue = template;
                 AssignArray(hudData.FindProperty("exits"), exits);
-                AssignArray(hudData.FindProperty("spawners"), roots.SelectMany(r => r.GetComponentsInChildren<ModuleUnlockCrateSpawner>(true)).ToArray());
                 hudData.ApplyModifiedPropertiesWithoutUndo();
                 EditorSceneManager.MarkSceneDirty(scene);
                 if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Scene save failed: " + path);

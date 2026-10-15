@@ -1,49 +1,61 @@
 {
   "regions": [
     {
-      "materialCrates": 4,
       "entryCost": 0,
       "name": "목조주택",
       "scene": "NightRaid_WoodenHouse",
-      "moduleCodes": [
-        "bf4a63288b8e9694787904964ba8acd4"
-      ],
+      "reward": {
+        "materialCrates": 4,
+        "materialPerCrate": 250,
+        "moduleCodes": [
+          "bf4a63288b8e9694787904964ba8acd4"
+        ]
+      },
       "helicopters": false,
       "tanks": true
     },
     {
-      "materialCrates": 10,
       "entryCost": 500,
       "name": "은행",
       "scene": "NightRaid_BankGrand",
-      "moduleCodes": [
-        "8185707d079aa3d4eba1d33833009eb2",
-        "9841ca931bf7a8c4b866da354b808ad7"
-      ],
+      "reward": {
+        "materialCrates": 10,
+        "materialPerCrate": 250,
+        "moduleCodes": [
+          "8185707d079aa3d4eba1d33833009eb2",
+          "9841ca931bf7a8c4b866da354b808ad7"
+        ]
+      },
       "helicopters": true,
       "tanks": true
     },
     {
-      "materialCrates": 18,
       "entryCost": 1500,
       "name": "군사기지",
       "scene": "NightRaid_Millitary_base",
-      "moduleCodes": [
-        "36f778d16d639104b90e807dc937aaaa",
-        "cf32abdb412c6124cabcbdd85c103cb5"
-      ],
+      "reward": {
+        "materialCrates": 18,
+        "materialPerCrate": 250,
+        "moduleCodes": [
+          "36f778d16d639104b90e807dc937aaaa",
+          "cf32abdb412c6124cabcbdd85c103cb5"
+        ]
+      },
       "helicopters": true,
       "tanks": true
     },
     {
-      "materialCrates": 12,
       "entryCost": 2500,
       "name": "정글 캠퍼스",
       "scene": "NightRaid_JungleCampus",
-      "moduleCodes": [
-        "0277d45126374004b802798d93561da2",
-        "8d0c0ddd9cf586745abb86717c7cc6b6"
-      ],
+      "reward": {
+        "materialCrates": 12,
+        "materialPerCrate": 250,
+        "moduleCodes": [
+          "0277d45126374004b802798d93561da2",
+          "8d0c0ddd9cf586745abb86717c7cc6b6"
+        ]
+      },
       "helicopters": true,
       "tanks": true
     }

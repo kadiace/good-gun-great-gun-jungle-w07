@@ -28,24 +28,30 @@ namespace WeaponWorkshop
         public static bool CanAffordEntry(this RaidMapData.Region region, PlayerWallet wallet) =>
             wallet != null && wallet.CanAfford(region.EntryCost());
 
+        /// <summary>보상 모듈 코드 목록. 행이나 보상이 비었으면 빈 배열이다.</summary>
+        public static string[] ModuleCodes(this RaidMapData.Region region) =>
+            region?.reward?.moduleCodes ?? Array.Empty<string>();
+
         /// <summary>지도 정보 패널용 설명. 모듈 획득 여부와 상자 수, 출몰 적을 행에서 계산한다.</summary>
         public static string Describe(this RaidMapData.Region region, ModuleCatalog catalog, PlayerModuleUnlocks unlocks)
         {
             if (region == null) return "이 구역의 정보가 아직 등록되지 않았습니다.";
             var text = new StringBuilder(region.name).AppendLine().AppendLine("획득 가능한 모듈");
-            int remaining = 0;
-            foreach (string code in region.moduleCodes ?? Array.Empty<string>())
+            int remaining = 0, acquiredCount = 0;
+            foreach (string code in region.ModuleCodes())
                 for (int id = 1; catalog != null && id <= catalog.Count; id++)
                     if (catalog.TryGet(id, out var entry) && entry.data.CodeId == code)
                     {
                         bool acquired = unlocks != null && unlocks.IsUnlocked(id);
-                        if (!acquired) remaining++;
+                        if (acquired) acquiredCount++; else remaining++;
                         text.Append("• ").Append(entry.displayName).AppendLine(acquired ? "  · 획득 완료" : "  · 미획득");
                         break;
                     }
-            if (region.moduleCodes == null || region.moduleCodes.Length == 0) text.AppendLine("• 없음");
+            if (region.ModuleCodes().Length == 0) text.AppendLine("• 없음");
+            // 이미 해금한 모듈 자리에는 재료 상자가 대신 나온다(RaidCrateSpawner).
+            int materialCrates = (region.reward != null ? Mathf.Max(0, region.reward.materialCrates) : 0) + acquiredCount;
             text.AppendLine().Append("모듈 상자  ").Append(remaining).AppendLine("개")
-                .Append("재료 상자  ").Append(region.materialCrates).AppendLine("개").AppendLine().AppendLine("출몰 적");
+                .Append("재료 상자  ").Append(materialCrates).AppendLine("개").AppendLine().AppendLine("출몰 적");
             if (region.tanks) text.AppendLine("• 탱크");
             if (region.helicopters) text.AppendLine("• 헬기");
             if (!region.tanks && !region.helicopters) text.AppendLine("• 없음");
@@ -61,7 +67,7 @@ namespace WeaponWorkshop
             if (table == null || table.regions == null || module == null) return "획득 장소가 아직 등록되지 않았습니다.";
             string code = module.CodeId;
             foreach (var region in table.regions)
-                if (region != null && region.moduleCodes != null && Array.IndexOf(region.moduleCodes, code) >= 0)
+                if (region != null && Array.IndexOf(region.ModuleCodes(), code) >= 0)
                 {
                     if (text.Length > 0) text.Append(" · ");
                     text.Append(region.name);
@@ -86,6 +92,11 @@ namespace WeaponWorkshop
                 else if (!scenes.Add(region.scene)) Debug.LogWarning($"스테이지 테이블 {resourcePath}에서 씬 이름 {region.scene}이 중복됩니다.");
                 if (string.IsNullOrEmpty(region.name)) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 {region.scene} 항목에 표시 이름이 없습니다.");
                 if (region.entryCost < 0) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 입장 비용이 음수입니다.");
+                if (region.reward == null) { Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 보상(reward)이 없습니다."); region.reward = new RaidMapData.Reward(); }
+                if (region.reward.moduleCodes == null) region.reward.moduleCodes = Array.Empty<string>();
+                if (region.reward.materialCrates < 0) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 재료 상자 수가 음수입니다.");
+                if (region.reward.materialPerCrate <= 0 && (region.reward.materialCrates > 0 || region.reward.moduleCodes.Length > 0))
+                    Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 상자당 재료(materialPerCrate)가 0 이하입니다.");
             }
         }
     }

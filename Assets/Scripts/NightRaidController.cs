@@ -33,7 +33,7 @@ namespace WeaponWorkshop
         private int raidStartingCredits, raidStartingBalance;
         private int[] raidStartingModules;
         private float raidStartedAt;
-        private int enemyKills, moduleCrateCredits, materialCrateCredits;
+        private int enemyKills, materialCrateCredits;
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.HashSet<string> discoveredEnemies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
@@ -81,7 +81,7 @@ namespace WeaponWorkshop
             {
                 scene = gameObject.scene.name, survived = !died,
                 time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
-                moduleCrateRewards = moduleCrateRewards.ToArray(), moduleCrateCredits = moduleCrateCredits,
+                moduleCrateRewards = moduleCrateRewards.ToArray(),
                 materialCrateCredits = materialCrateCredits, enemyKills = enemyKills,
                 health = playerHealth != null ? playerHealth.CurrentHealth : 0f
             });
@@ -168,11 +168,9 @@ namespace WeaponWorkshop
         {
             if (inRaid && collector == player) materialCrateCredits += amount;
         }
-        private void OnModuleCollected(FirstPersonPlayer collector, int moduleId, int credits)
+        private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
-            if (!inRaid || collector != player) return;
-            if (moduleId > 0) moduleCrateRewards.Add(moduleId);
-            else moduleCrateCredits += credits;
+            if (inRaid && collector == player && moduleId > 0) moduleCrateRewards.Add(moduleId);
         }
         private void FixedUpdate()
         {
@@ -245,8 +243,10 @@ namespace WeaponWorkshop
             raidStartingBalance = player.GetComponent<PlayerWallet>().Balance;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
-            enemyKills = moduleCrateCredits = materialCrateCredits = 0;
+            enemyKills = materialCrateCredits = 0;
             moduleCrateRewards.Clear(); discoveredEnemies.Clear();
+            // 보상 상자는 입장 상태(해금 모듈)를 복원한 뒤 한 번에 만든다. 이미 해금한 모듈 자리는 재료 상자가 된다.
+            Object.FindFirstObjectByType<RaidCrateSpawner>()?.Spawn(player.GetComponent<PlayerModuleUnlocks>());
             if (playerHealth != null) playerHealth.Died += ShowDeathResult;
             gameManager.SetDialogue(false); gameManager.SetNight(false);
         }

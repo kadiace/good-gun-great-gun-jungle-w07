@@ -226,7 +226,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3029947355728795001}
-  - component: {fileID: 8914790265247766643}
+  - component: {fileID: 3088986208410567770}
   m_Layer: 0
   m_Name: CrateSpawnManager
   m_TagString: Untagged
@@ -264,7 +264,7 @@ Transform:
   - {fileID: 5556405343461541887}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8914790265247766643
+--- !u!114 &3088986208410567770
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -273,11 +273,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 4815889874325738036}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d14f315c9ad4d0cab277c812ea35035, type: 3}
+  m_Script: {fileID: 11500000, guid: 6c3f2e914086df34392accdc580bdd7e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  cratePrefab: {fileID: 114001, guid: f6fb5b4d0f094e0a9a56297691e86ba8, type: 3}
-  spawnPoints:
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.RaidCrateSpawner
+  materialCratePrefab: {fileID: 114001, guid: f6fb5b4d0f094e0a9a56297691e86ba8, type: 3}
+  moduleCratePrefab: {fileID: 114001, guid: 5362471a968346109f43bfe1d9fd126d, type: 3}
+  catalog: {fileID: 11400000, guid: 9ba20ad561a32444ba7c6c150b2af8ea, type: 2}
+  materialSpawnPoints:
   - {fileID: 3418706339283193168}
   - {fileID: 6457901777044010589}
   - {fileID: 4059546844710195601}
@@ -293,7 +295,9 @@ MonoBehaviour:
   - {fileID: 4300670500665720986}
   - {fileID: 3010321094562848996}
   - {fileID: 5556405343461541887}
-  spawnCount: 3
+  moduleSpots: []
+  rewardScene: 
+  spawnUnlockedRewards: 0
 --- !u!1 &4951883578848792977
 GameObject:
   m_ObjectHideFlags: 0

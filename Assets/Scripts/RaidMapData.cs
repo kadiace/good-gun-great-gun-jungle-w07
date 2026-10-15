@@ -12,11 +12,19 @@ namespace WeaponWorkshop
         {
             public string scene;
             public string name;
-            public int materialCrates;
             public int entryCost;
-            public string[] moduleCodes;
+            public Reward reward;
             public bool helicopters;
             public bool tanks;
+        }
+
+        // 스테이지 보상. 상자 위치는 씬(RaidCrateSpawner·RaidModuleCrateSpot)이, 내용은 이 행이 정한다.
+        [Serializable]
+        public sealed class Reward
+        {
+            public int materialCrates;
+            public int materialPerCrate;
+            public string[] moduleCodes;
         }
 
         public Region[] regions;
