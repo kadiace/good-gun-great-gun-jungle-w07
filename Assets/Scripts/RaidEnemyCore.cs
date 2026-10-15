@@ -2,9 +2,18 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
+    public enum RaidEnemyType { None, Helicopter, Tank }
+
     [RequireComponent(typeof(TargetHealth))]
     public sealed class RaidEnemyCore : MonoBehaviour
     {
+        public string EnemyId { get; private set; }
+        public RaidEnemyType EnemyType { get; private set; }
+        public void AssignIdentity(string id, RaidEnemyType type)
+        {
+            EnemyId = id;
+            EnemyType = type;
+        }
         [SerializeField] private GameObject enemyRoot;
         [SerializeField, Range(0f, 1f), Tooltip("적 전체(enemyRoot 아래 모든 파괴 가능 부위)의 큐브가 이 비율 이상 떨어져 나가면 파괴. 0이면 사용 안 함.")]
         private float destroyAtLostRatio;

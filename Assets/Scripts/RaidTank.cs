@@ -41,7 +41,12 @@ namespace WeaponWorkshop
             if (core != null) core.Destroyed -= Stop;
             SetMovementSoundActive(false);
         }
-        public void Initialize(FirstPersonPlayer target) { player = target; fireRemaining = fireInterval; }
+        public void Initialize(FirstPersonPlayer target, string enemyId)
+        {
+            core.AssignIdentity(enemyId, RaidEnemyType.Tank);
+            player = target;
+            fireRemaining = fireInterval;
+        }
         public void Release()
         {
             if (destroyed || released) return;
