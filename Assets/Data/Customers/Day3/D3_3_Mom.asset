@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: e09ace2d9e03a6d4b9c5163bfb793a27
   requestIds:
-  - 70d86a3c50472dd47b261b990ddd9210
-  - a953407380ff6594a942af751bf23efb
+  - tag/shotgun/legacy
+  - tag/assault-rifle/legacy
   lines:
   - "\uC77C\uBC18\uC0AC\uACA9\uC774 \uC5F0\uBC1C\uC0AC\uACA9\uC5D0 \uC0F7\uAC74\uC0AC\uACA9\uC778
     \uCD1D\uC744 \uC3D8\uB294 \uC5C4\uB9C8\uB294 \uC88B\uC544\uD558\uC2DC\uB098\uC694?"

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_AssaultRifle
   m_EditorClassIdentifier: 
-  tableId: a953407380ff6594a942af751bf23efb
+  tableId: tag/assault-rifle/legacy
   displayName: 
   request: 
   conditions: []

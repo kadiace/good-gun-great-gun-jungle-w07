@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Spin
   m_EditorClassIdentifier: 
-  tableId: 60c861d406fb6fd48a48e2649ddcb52b
+  tableId: tag/spin/legacy
   displayName: 
   request: 
   conditions: []

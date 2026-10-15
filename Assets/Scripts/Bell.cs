@@ -19,6 +19,9 @@ namespace WeaponWorkshop
         public event System.Action<int> SaleCompleted;
         public event System.Action<int> SaleAccepted;
         public event System.Action CustomerKilled;
+        public event System.Action<CustomerProfile> CustomerInteracted;
+        public event System.Action<CustomerProfile, bool, bool> OrderFinished;
+        public event System.Action<CustomerProfile, int, bool, int> WeaponSold;
         public Transform OutlineRoot => transform;
         public Customer Current => current;
         public int RemainingCustomers => waiting.Count;
@@ -49,7 +52,7 @@ namespace WeaponWorkshop
             var profile = customers[data.currentCustomer];
             var prefab = profile.prefab != null ? profile.prefab : customerPrefab;
             current = Instantiate(prefab, data.customer.position, Quaternion.identity);
-            current.SaleCompleted += OnSaleCompleted; current.SaleAccepted += OnSaleAccepted; current.CustomerKilled += OnCustomerKilled;
+            SubscribeCustomer();
             current.RestoreSave(data.customer, profile, counterPoint.position, exitPoint.position, paymentSettings);
         }
 
@@ -119,9 +122,7 @@ namespace WeaponWorkshop
             if (prefab == null) return false;
             waiting.Dequeue();
             current = Instantiate(prefab, spawnPoint.position, spawnPoint.rotation);
-            current.SaleCompleted += OnSaleCompleted;
-            current.SaleAccepted += OnSaleAccepted;
-            current.CustomerKilled += OnCustomerKilled;
+            SubscribeCustomer();
             current.Arrive(profile, counterPoint.position, exitPoint.position, paymentSettings);
             return true;
         }
@@ -157,8 +158,24 @@ namespace WeaponWorkshop
             current.SaleCompleted -= OnSaleCompleted;
             current.SaleAccepted -= OnSaleAccepted;
             current.CustomerKilled -= OnCustomerKilled;
+            current.Interacted -= OnCustomerInteracted;
+            current.OrderFinished -= OnOrderFinished;
+            current.WeaponSold -= OnWeaponSold;
             current = null;
         }
+
+        private void SubscribeCustomer()
+        {
+            current.SaleCompleted += OnSaleCompleted;
+            current.SaleAccepted += OnSaleAccepted;
+            current.CustomerKilled += OnCustomerKilled;
+            current.Interacted += OnCustomerInteracted;
+            current.OrderFinished += OnOrderFinished;
+            current.WeaponSold += OnWeaponSold;
+        }
+        private void OnCustomerInteracted(CustomerProfile order) => CustomerInteracted?.Invoke(order);
+        private void OnOrderFinished(CustomerProfile order, bool success, bool dead) => OrderFinished?.Invoke(order, success, dead);
+        private void OnWeaponSold(CustomerProfile order, int price, bool satisfied, int tagCount) => WeaponSold?.Invoke(order, price, satisfied, tagCount);
 
         private void OnDestroy() => ReleaseCustomer();
     }

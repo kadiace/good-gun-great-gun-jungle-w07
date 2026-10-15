@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 0c5e735d8c860654eb79844236b27b63
   requestIds:
-  - a577397affb1dba46a5ab05ee475eec6
-  - 70d86a3c50472dd47b261b990ddd9210
+  - tag/homing/legacy
+  - tag/shotgun/legacy
   lines:
   - "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uC640 \uC720\uB3C4 \uD0DC\uADF8\uAC00 \uB458
     \uB2E4 \uBD99\uC73C\uBA74 \uC88B\uACA0\uC5B4\uC694. \uCE5C\uAD6C \uC120\uBB3C\uC774\uC5D0\uC694."

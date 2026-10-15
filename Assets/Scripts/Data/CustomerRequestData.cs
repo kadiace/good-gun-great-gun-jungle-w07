@@ -18,6 +18,7 @@ namespace WeaponWorkshop
         [Serializable] public sealed class Request
         {
             public string id, name, phrase, tagId;
+            public string[] legacyIds = Array.Empty<string>();
             public int unlockDay = 1;
             public bool saleBonus = true;
             public string[] excludes = Array.Empty<string>();

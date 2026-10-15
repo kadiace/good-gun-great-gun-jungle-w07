@@ -28,6 +28,7 @@ namespace WeaponWorkshop
         [SerializeField, Min(0f), InspectorName("던지는 힘"), Tooltip("총을 던질 때 즉시 적용할 초기 속도(m/s)")] private float throwSpeed = 5f;
         public EquipableWeapon EquippedWeapon { get; private set; }
         public event System.Action<EquipableWeapon, EquipableWeapon> EquippedWeaponChanged;
+        public event System.Action<EquipableWeapon> AttackInput;
         private void SetEquippedWeapon(EquipableWeapon next)
         {
             var previous = EquippedWeapon;
@@ -48,7 +49,7 @@ namespace WeaponWorkshop
             if (inputActions == null) return;
             controls = inputActions.FindActionMap("Player", true).Clone();
             attack = controls.FindAction("Attack", true);
-            attack.performed += _ => TryAttack();
+            attack.performed += OnAttackPerformed;
             drop = controls.FindAction("DropWeapon", true);
             drop.performed += _ => TryDropWeapon();
             attack.canceled += _ => ReleaseCharge();
@@ -138,6 +139,14 @@ namespace WeaponWorkshop
                 recoilOffset = recoilDistance;
                 ApplyRecoil();
             }
+        }
+
+        private void OnAttackPerformed(InputAction.CallbackContext context)
+        {
+            if (!TutorialManager.ActionAllowed("fire") || GameManager.GameplayBlocked || !Application.isFocused ||
+                player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
+            AttackInput?.Invoke(EquippedWeapon);
+            TryAttack();
         }
 
         public bool TryDropWeapon()

@@ -8,6 +8,7 @@ namespace WeaponWorkshop
     {
         [SerializeField] private EquipableWeapon[] defaults = new EquipableWeapon[3];
         private string[] codes;
+        public event Action<int, string> Stored;
         private void Awake() => Initialize();
         private void Initialize()
         {
@@ -22,6 +23,7 @@ namespace WeaponWorkshop
         {
             Initialize();
             codes[slot] = WeaponShareCode.Export(weapon);
+            Stored?.Invoke(slot, codes[slot]);
         }
         public string[] Capture() { Initialize(); return (string[])codes.Clone(); }
         public void Restore(string[] saved)

@@ -176,7 +176,16 @@ internal static class CustomerRequestMigration
     }
     private static List<T> Assets<T>() where T : UnityEngine.Object => AssetDatabase.FindAssets("t:" + typeof(T).Name, new[] { "Assets/Data" })
         .Select(guid => AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid))).Where(asset => asset != null).ToList();
-    private static string Id(UnityEngine.Object asset) => AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset));
+    private static string Id(UnityEngine.Object asset)
+    {
+        string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset));
+        if (asset is GunArchetype request)
+        {
+            string id = string.IsNullOrEmpty(request.TableId) ? guid : request.TableId;
+            return TableManager.Instance.CustomerRequest.FindRequest(id)?.id ?? id;
+        }
+        return guid;
+    }
     private static void SetIds(SerializedProperty array, string[] ids)
     {
         array.arraySize = ids.Length;

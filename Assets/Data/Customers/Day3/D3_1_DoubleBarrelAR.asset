@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 2ba099eab2272d940ae22970ff7731f3
   requestIds:
-  - a953407380ff6594a942af751bf23efb
-  - f190a969535f4aa4b837f4edc6d7f313
+  - tag/assault-rifle/legacy
+  - module/split-two/min-1/d3-1-double-barrel-ar
   lines:
   - "\uB354\uBE14\uBC30\uB7F4 \uB3CC\uACA9\uC18C\uCD1D\uC774\uC694."
   - "\uB3CC\uACA9\uC18C\uCD1D \uD0DC\uADF8\uC5D0 2\uBC29\uD5A5 \uBD84\uD560\uB3C4

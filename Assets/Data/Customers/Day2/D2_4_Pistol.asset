@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: d29f7a9b9e4256f449ba2276cf0fa0e4
   requestIds:
-  - afce91ece9f68f44b92e48a1652ea36b
+  - tag/handgun/legacy
   lines:
   - "\uAD8C\uCD1D \uD0DC\uADF8 \uBD99\uC740 \uAC78\uB85C \uBD80\uD0C1\uD574\uC694."
   endsClear: 1

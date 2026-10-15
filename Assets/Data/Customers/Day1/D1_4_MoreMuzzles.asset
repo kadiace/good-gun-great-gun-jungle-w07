@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 19eb28f21e576bd40bdd9363439fb11a
   requestIds:
-  - 37d5a78ecb744efd96386f736b71cf9f
+  - module/split-four/min-2/d1-4-more-muzzles
   lines:
   - "\uCD1D\uAD6C\uAC00 8\uAC1C \uC774\uC0C1\uC778 \uCD1D \uBD80\uD0C1\uB4DC\uB824\uC694.
     \uC0F7\uAC74 \uBAA8\uB4C8 \uB9D0\uACE0, 4\uBC29\uD5A5 \uBD84\uD560\uB85C\uC694!"

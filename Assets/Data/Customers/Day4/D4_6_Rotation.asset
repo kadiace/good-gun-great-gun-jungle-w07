@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: d5629a5fb5df7874ebefe9e24bd959af
   requestIds:
-  - 60c861d406fb6fd48a48e2649ddcb52b
+  - tag/spin/legacy
   lines:
   - "\uB3CC\uB824 \uB3CC\uB824 \uB3CC\uB9BC\uD310~"
   - "\uD68C\uC804 \uD0DC\uADF8\uAC00 \uBD99\uC73C\uBA74 \uC88B\uACA0\uC5B4\uC694!"

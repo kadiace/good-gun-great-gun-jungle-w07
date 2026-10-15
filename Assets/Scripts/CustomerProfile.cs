@@ -92,6 +92,7 @@ namespace WeaponWorkshop
     {
         [SerializeField, HideInInspector] private string profileId;
         public string ProfileId => profileId;
+        [field: System.NonSerialized] public CustomerOrderState OrderState { get; internal set; }
         [Tooltip("요청 정의는 TableManager.CustomerRequest에서 조회합니다.")]
         public string[] requestIds = System.Array.Empty<string>();
         [TextArea, Tooltip("순서대로 말하는 대사. 마지막 줄 외에는 전부 '예?' 버튼.")]

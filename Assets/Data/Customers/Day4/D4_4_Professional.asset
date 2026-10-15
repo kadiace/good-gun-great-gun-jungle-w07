@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: fd770da102b6f294191f246f9ca975f5
   requestIds:
-  - a953407380ff6594a942af751bf23efb
-  - d6d6fd1701a033d4b849c531f7f4f5f1
-  - 982660b8fcc3c1340adfa1edcdfb1257
-  - c8e35a29c16ae91459a744997e871c23
-  - 4e7c1ebb9b774bf0aa76abe4fc7e855c
+  - tag/assault-rifle/legacy
+  - tag/sniper-rifle/legacy
+  - tag/grenade-launcher/legacy
+  - module/scope/min-1
+  - module/scope/min-2/d4-4-professional
   lines:
   - "\uC5EC\uAE30\uC11C \uAC00\uC7A5 \uD504\uB85C\uB2E4\uC6B4 \uCD1D \uD55C \uC815\uB9CC
     \uC918."

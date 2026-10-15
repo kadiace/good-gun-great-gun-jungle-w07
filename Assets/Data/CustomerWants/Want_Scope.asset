@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Scope
   m_EditorClassIdentifier: 
-  tableId: c8e35a29c16ae91459a744997e871c23
+  tableId: module/scope/min-1
   displayName: 
   request: 
   conditions: []

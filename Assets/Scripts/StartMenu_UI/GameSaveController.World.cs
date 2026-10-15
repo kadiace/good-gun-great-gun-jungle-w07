@@ -169,6 +169,10 @@ namespace WeaponWorkshop
         }
         private bool RestoreWorldSave(GameSaveData data)
         {
+            using (dayManager != null ? dayManager.SuppressShopLogs() : null) return RestoreWorldSaveCore(data);
+        }
+        private bool RestoreWorldSaveCore(GameSaveData data)
+        {
             EnsureWorldBindings();
             if (data.sceneName != gameObject.scene.name || dayManager == null || !dayManager.CanRestoreSave(data) || player == null || corePrefab == null ||
                 player.GetComponent<PlayerWallet>() == null || player.GetComponent<WeaponHolder>() == null)

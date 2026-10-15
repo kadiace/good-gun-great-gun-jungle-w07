@@ -44,6 +44,13 @@ public class _DayManager : MonoBehaviour
     public setTimer CurrentPeriod { get; private set; }
     public event Action Changed;
     public event Action<int> DayAdvanced;
+    public event Action<int, int> BusinessOpened;
+    public event Action<int, int> ManualCloseRequested;
+    public event Action<CustomerProfile, int> OrderRegistered;
+    public bool CanCollectShopLogs => shopLogsReady && shopLogSuppression == 0;
+    private bool shopLogsReady;
+    private int shopLogSuppression;
+    private readonly List<CustomerProfile> ownedOrders = new List<CustomerProfile>();
     private bool hasCurrentPeriod;
     private bool isSettled;
     private bool returningToStart;
@@ -85,6 +92,7 @@ public class _DayManager : MonoBehaviour
     private void Start()
     {
         if (!HasRequiredReferences()) return;
+        shopLogsReady = GameSaveFiles.PendingLoad == null && !NightRaidTransfer.HasPendingReturn;
         if (askToSkipTutorial && GameSaveFiles.PendingLoad == null && !NightRaidTransfer.HasPendingReturn)
         {
             DayNumber = 0;
@@ -172,9 +180,11 @@ public class _DayManager : MonoBehaviour
                 selected = timing;
         return selected;
     }
-    public void CloseShop()
+    public void CloseShop() => CloseShop(false);
+    public void CloseShop(bool manual)
     {
         if (IsNight || IsAwaitingOpening || isSettled || !HasRequiredReferences()) return;
+        if (manual) ManualCloseRequested?.Invoke(DayNumber, Money);
         CurrentPeriod = setTimer.night;
         hasCurrentPeriod = true;
         var night = settings.timing?.Find(t => t != null && t.period == setTimer.night);
@@ -258,6 +268,7 @@ public class _DayManager : MonoBehaviour
             if (!ApplyCustomerDay(CurrentCustomerDay)) return false;
         }
         if (!customerBell.StartBusiness()) return false;
+        BusinessOpened?.Invoke(DayNumber, Money);
         Changed?.Invoke();
         return true;
     }
@@ -383,7 +394,7 @@ public class _DayManager : MonoBehaviour
             if (!HasRequiredReferences() || customerBell == null || data.dailyOrders.Length == 0 ||
                 Array.Exists(data.dailyOrders, order => !CanRestoreOrder(order)) ||
                 (data.deferredCustomers != null && Array.Exists(data.deferredCustomers,
-                    order => order == null || FindSavedProfile(order) == null))) return false;
+                    order => !CanRestoreOrder(order) || FindSavedProfile(order) == null))) return false;
             if (data.completed < 0 || data.nextCustomer < 0 || data.nextCustomer > data.dailyOrders.Length ||
                 data.currentCustomer < -1 || data.currentCustomer >= data.dailyOrders.Length) return false;
             if (data.currentCustomer < 0) return true;
@@ -405,13 +416,18 @@ public class _DayManager : MonoBehaviour
     public void RestoreSavedState(GameSaveData data)
     {
         if (!CanRestoreSave(data)) return;
+        using (SuppressShopLogs()) RestoreSavedStateCore(data);
+    }
+    private void RestoreSavedStateCore(GameSaveData data)
+    {
         deferredCustomers.Clear();
         endlessBag.Clear();
         if (data.deferredCustomers != null)
             foreach (var order in data.deferredCustomers)
             {
-                var profile = FindSavedProfile(order);
-                if (profile != null && !deferredCustomers.Contains(profile)) deferredCustomers.Add(profile);
+                if (FindSavedProfile(order) == null) continue;
+                var profile = RestoreOrder(order);
+                if (!IsDeferred(profile)) deferredCustomers.Add(profile);
             }
         CustomerDay restoredDay;
         if (data.dailyOrders != null)
@@ -425,6 +441,8 @@ public class _DayManager : MonoBehaviour
         {
             restoredDay = Instantiate(data.travelCustomerDay != null ? data.travelCustomerDay : FindCustomerDay(data.day));
             restoredDay.customers = (CustomerProfile[])restoredDay.customers.Clone();
+            for (int i = 0; i < restoredDay.customers.Length; i++)
+                restoredDay.customers[i] = CreateRuntimeOrder(restoredDay.customers[i], restored: true);
         }
         for (int i = 0; i < restoredDay.customers.Length; i++)
         {
@@ -432,7 +450,7 @@ public class _DayManager : MonoBehaviour
             if (i < data.nextCustomer && !currentOrder) continue;
             var profile = restoredDay.customers[i];
             if (CanServe(profile, data.day)) continue;
-            if (TryFindProfile(profile, out _, out _) && !deferredCustomers.Contains(profile)) deferredCustomers.Add(profile);
+            if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile)) deferredCustomers.Add(profile);
             restoredDay.customers[i] = CreateCombination(data.day, restoredDay.minRequests, restoredDay.maxRequests);
             if (currentOrder)
             {
@@ -506,8 +524,8 @@ public class _DayManager : MonoBehaviour
     private CustomerOrderSave CaptureOrder(CustomerProfile profile)
     {
         if (TryFindProfile(profile, out int sourceDay, out int slot))
-            return new CustomerOrderSave { profileId = profile.ProfileId, requestIds = (string[])profile.requestIds.Clone() };
-        return new CustomerOrderSave { requestIds = (string[])profile.requestIds.Clone(), lines = profile.lines,
+            return new CustomerOrderSave { profileId = profile.ProfileId, orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.requestIds) };
+        return new CustomerOrderSave { orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.requestIds), lines = profile.lines,
             happyLine = profile.happyLine, angryLine = profile.angryLine, price = profile.price,
             portrait = endlessRequests != null && endlessRequests.portraits != null
                 ? Array.IndexOf(endlessRequests.portraits, profile.portrait) : -1 };
@@ -516,27 +534,31 @@ public class _DayManager : MonoBehaviour
     private bool CanRestoreOrder(CustomerOrderSave order)
     {
         if (order == null) return false;
+        if (order.orderState != null && !Guid.TryParseExact(order.orderState.orderId, "N", out _)) return false;
         if (!string.IsNullOrEmpty(order.profileId) || order.sourceSlot >= 0)
             return FindSavedProfile(order) != null && (order.requestIds == null || TableManager.Instance.CustomerRequest.ContainsOrder(order.requestIds));
         return order.lines != null && order.lines.Length > 0 && order.price >= 0 &&
             TableManager.Instance.CustomerRequest.ContainsOrder(SavedRequestIds(order));
     }
 
-    private string[] SavedRequestIds(CustomerOrderSave order) => order.requestIds ??
-        TableManager.Instance.CustomerRequest.RestoreLegacyOrder(endlessRequests != null ? endlessRequests.PoolId : null, order.requests);
+    private string[] SavedRequestIds(CustomerOrderSave order) => order.requestIds != null
+        ? TableManager.Instance.CustomerRequest.CanonicalRequestIds(order.requestIds)
+        : TableManager.Instance.CustomerRequest.RestoreLegacyOrder(endlessRequests != null ? endlessRequests.PoolId : null, order.requests);
 
     private CustomerProfile RestoreOrder(CustomerOrderSave order)
     {
         var authored = FindSavedProfile(order);
         if (authored != null)
         {
-            if (order.requestIds == null) return authored;
-            var restored = Instantiate(authored);
-            restored.requestIds = (string[])order.requestIds.Clone();
+            var restored = CreateRuntimeOrder(authored, restored: true);
+            if (order.requestIds != null) restored.requestIds = SavedRequestIds(order);
+            restored.OrderState = order.orderState?.Copy(fromSave: true) ?? CustomerOrderState.Create(restored: true);
             return restored;
         }
         var profile = ScriptableObject.CreateInstance<CustomerProfile>();
         profile.name = "RestoredCombination";
+        profile.OrderState = order.orderState?.Copy(fromSave: true) ?? CustomerOrderState.Create(restored: true);
+        ownedOrders.Add(profile);
         profile.lines = order.lines;
         profile.requestIds = (string[])SavedRequestIds(order).Clone();
         profile.happyLine = order.happyLine; profile.angryLine = order.angryLine; profile.price = order.price;
@@ -554,6 +576,7 @@ public class _DayManager : MonoBehaviour
     {
         if (DayNumber == 0 || IsNight || CurrentCustomerDay == null || CurrentCustomerDay.customers == null || customerBell == null) return;
         ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday, customerBell.NextCustomerIndex);
+        PrepareRuntimeOrders(CurrentCustomerDay);
         customerBell.ReplaceRemaining(CurrentCustomerDay.customers);
     }
 
@@ -584,13 +607,19 @@ public class _DayManager : MonoBehaviour
         {
             var profile = day.customers[i];
             if (profile == null || canServe(profile, dayNumber)) continue;
-            if (TryFindProfile(profile, out _, out _) && !deferredCustomers.Contains(profile)) deferredCustomers.Add(profile);
+            if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile)) deferredCustomers.Add(CreateRuntimeOrder(profile));
             day.customers[i] = CreateCombination(dayNumber, day.minRequests, day.maxRequests);
         }
         foreach (var profile in pending)
         {
             if (!canServe(profile, dayNumber)) continue;
-            if (Array.IndexOf(day.customers, profile, from) >= 0) { deferredCustomers.Remove(profile); continue; }
+            int existing = Array.FindIndex(day.customers, from, candidate => SameProfile(candidate, profile));
+            if (existing >= 0)
+            {
+                day.customers[existing] = profile;
+                deferredCustomers.Remove(profile);
+                continue;
+            }
             for (int i = from; i < day.customers.Length; i++)
             {
                 if (day.customers[i] == null || TryFindProfile(day.customers[i], out _, out _)) continue;
@@ -632,7 +661,7 @@ public class _DayManager : MonoBehaviour
     private CustomerDay BuildEndlessDay(int dayNumber)
     {
         var today = new List<CustomerProfile>();
-        endlessBag.RemoveAll(profile => deferredCustomers.Contains(profile));
+        endlessBag.RemoveAll(IsDeferred);
         foreach (var profile in deferredCustomers)
             if (today.Count < endlessGuestsPerDay && CanServe(profile, dayNumber)) today.Add(profile);
         while (today.Count < endlessGuestsPerDay)
@@ -670,7 +699,8 @@ public class _DayManager : MonoBehaviour
             foreach (CustomerDay day in customerDays)
                 if (day != null && day.customers != null)
                     foreach (CustomerProfile profile in day.customers)
-                        if (profile != null && (endlessRequests == null || IsSpecial(profile)) && seen.Add(profile)) endlessBag.Add(profile);
+                        if (profile != null && (endlessRequests == null || IsSpecial(profile)) &&
+                            !ContainsProfile(exclude, profile) && !IsDeferred(profile) && seen.Add(profile)) endlessBag.Add(profile);
         for (int i = endlessBag.Count - 1; i > 0; i--)
         {
             int j = UnityEngine.Random.Range(0, i + 1);
@@ -712,10 +742,70 @@ public class _DayManager : MonoBehaviour
                 return false;
             }
         CurrentCustomerDay = day;
+        PrepareRuntimeOrders(day);
         dailyGuestCount = day.customers.Length;
         customerBell.SetPaymentSettings(settings);
         customerBell.SetCustomers(day.customers);
         return true;
+    }
+
+    private static bool SameProfile(CustomerProfile a, CustomerProfile b) => a == b ||
+        (a != null && b != null && !string.IsNullOrEmpty(a.ProfileId) && a.ProfileId == b.ProfileId);
+
+    private static bool ContainsProfile(IList<CustomerProfile> profiles, CustomerProfile profile, int from = 0)
+    {
+        for (int i = from; i < profiles.Count; i++) if (SameProfile(profiles[i], profile)) return true;
+        return false;
+    }
+    private bool IsDeferred(CustomerProfile profile) => ContainsProfile(deferredCustomers, profile);
+
+    private CustomerProfile CreateRuntimeOrder(CustomerProfile profile, bool restored = false)
+    {
+        if (profile == null || profile.OrderState != null) return profile;
+        var copy = Instantiate(profile);
+        copy.hideFlags = HideFlags.DontSave;
+        copy.OrderState = CustomerOrderState.Create(restored);
+        ownedOrders.Add(copy);
+        return copy;
+    }
+
+    private void PrepareRuntimeOrders(CustomerDay day)
+    {
+        for (int i = 0; i < day.customers.Length; i++) day.customers[i] = CreateRuntimeOrder(day.customers[i]);
+        PublishOrderLinks(day);
+    }
+    private void PublishOrderLinks(CustomerDay day)
+    {
+        if (!CanCollectShopLogs || day == null) return;
+        foreach (var profile in day.customers ?? Array.Empty<CustomerProfile>())
+            if (profile?.OrderState != null) OrderRegistered?.Invoke(profile, day.day);
+    }
+
+    // Restore calls Enter/UseCustomer as part of reconstructing state, not player input.
+    public IDisposable SuppressShopLogs()
+    {
+        shopLogSuppression++;
+        return new ShopLogRestoreScope(this);
+    }
+    private sealed class ShopLogRestoreScope : IDisposable
+    {
+        private _DayManager owner;
+        public ShopLogRestoreScope(_DayManager owner) => this.owner = owner;
+        public void Dispose()
+        {
+            if (owner == null) return;
+            var manager = owner;
+            owner = null;
+            manager.shopLogSuppression--;
+            if (manager.shopLogSuppression != 0) return;
+            manager.shopLogsReady = true;
+            manager.PublishOrderLinks(manager.CurrentCustomerDay);
+        }
+    }
+    private void OnDestroy()
+    {
+        foreach (var profile in ownedOrders) if (profile != null) Destroy(profile);
+        ownedOrders.Clear();
     }
 
     private bool HasRequiredReferences()

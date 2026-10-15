@@ -3,7 +3,6 @@ using System;
 namespace WeaponWorkshop
 {
     [Serializable] public sealed class SceneBootLog { public string scene; }
-    [Serializable] public sealed class WeaponSaleLog { public int price; public bool satisfied; public int tagCount; }
     [Serializable] public sealed class RaidResultLog
     {
         public string scene;

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 54d26364e40dd1b489519863487c0c76
   requestIds:
-  - a953407380ff6594a942af751bf23efb
+  - tag/assault-rifle/legacy
   lines:
   - "\uD3C9\uBC94\uD55C \uC790\uB3D9\uC18C\uCD1D\uC774\uC694. \uB3CC\uACA9\uC18C\uCD1D
     \uD0DC\uADF8 \uBD99\uC740 \uAC78\uB85C \uBD80\uD0C1\uD574\uC694."

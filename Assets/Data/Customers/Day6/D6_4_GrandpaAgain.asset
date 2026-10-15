@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 8f30edea593b9824c88aaa4606b9c50b
   requestIds:
-  - 48aeae95d13c1f643817498a6dae1573
-  - 982660b8fcc3c1340adfa1edcdfb1257
+  - tag/water-gun/legacy
+  - tag/grenade-launcher/legacy
   lines:
   - "\uC6CC\uD130\uBC24\uB54C \uC4F8 \uBB3C\uCD1D \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694"
   - "\uBB3C\uCD1D \uD0DC\uADF8\uB791 \uC720\uD0C4 \uD0DC\uADF8\uB97C \uAC19\uC774

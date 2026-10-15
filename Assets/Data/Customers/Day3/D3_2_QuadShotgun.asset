@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: d8d88852c4557604ebef499f6d5ceda1
   requestIds:
-  - 70d86a3c50472dd47b261b990ddd9210
-  - 40b0f2c46533419d80e7a465fde35429
+  - tag/shotgun/legacy
+  - module/split-four/min-1/d3-2-quad-shotgun
   lines:
   - "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uC5D0, 4\uBC29\uD5A5 \uBD84\uD560\uB85C \uB124
     \uAC08\uB798\uB97C \uB0B4\uC8FC\uC138\uC694!"

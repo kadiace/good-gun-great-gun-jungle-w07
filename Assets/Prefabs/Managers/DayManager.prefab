@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 698843594176761142}
   - component: {fileID: 1956039845641884337}
   - component: {fileID: 6523444370890610508}
+  - component: {fileID: 7008050243500031001}
   m_Layer: 0
   m_Name: DayManager
   m_TagString: Untagged
@@ -79,3 +80,18 @@ MonoBehaviour:
   generatedRatio: 0.5
   endlessRent: 1550
   endlessRentGrowth: 50
+--- !u!114 &7008050243500031001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2205551472972254094}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d3510ee5ea4d3740b1c00fe0238e768, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  dayManager: {fileID: 6523444370890610508}
+  customerBell: {fileID: 0}
+  player: {fileID: 0}

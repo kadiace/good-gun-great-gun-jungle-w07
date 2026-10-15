@@ -85,8 +85,17 @@ namespace WeaponWorkshop
         public static CustomerRequestData.Request FindRequest(this CustomerRequestData table, string id)
         {
             if (!string.IsNullOrEmpty(id) && table?.requests != null)
+            {
                 foreach (var row in table.requests) if (row != null && row.id == id) return row;
+                foreach (var row in table.requests)
+                    if (row != null && Array.IndexOf(row.legacyIds ?? Array.Empty<string>(), id) >= 0) return row;
+            }
             return null;
+        }
+        public static string[] CanonicalRequestIds(this CustomerRequestData table, string[] ids)
+        {
+            if (ids == null) return null;
+            return Array.ConvertAll(ids, id => table.FindRequest(id)?.id ?? id);
         }
         public static CustomerRequestData.Tag FindTag(this CustomerRequestData table, string id)
         {
@@ -156,8 +165,13 @@ namespace WeaponWorkshop
         public static bool Conflicts(this CustomerRequestData table, string first, string second)
         {
             var a = table.FindRequest(first); var b = table.FindRequest(second);
-            return a == null || b == null || Array.IndexOf(a.excludes ?? Array.Empty<string>(), second) >= 0 ||
-                Array.IndexOf(b.excludes ?? Array.Empty<string>(), first) >= 0;
+            return a == null || b == null || Excludes(table, a, b.id) || Excludes(table, b, a.id);
+        }
+        private static bool Excludes(CustomerRequestData table, CustomerRequestData.Request request, string id)
+        {
+            foreach (string excluded in request.excludes ?? Array.Empty<string>())
+                if (table.FindRequest(excluded)?.id == id) return true;
+            return false;
         }
         public static string[] RestoreLegacyOrder(this CustomerRequestData table, string poolId, int[] indices)
         {
@@ -168,8 +182,9 @@ namespace WeaponWorkshop
                 string id = null;
                 foreach (var row in table.legacySlots ?? Array.Empty<CustomerRequestData.LegacySlot>())
                     if (row.poolId == poolId && row.index == index) { id = row.requestId; break; }
-                if (table.FindRequest(id) == null) return null;
-                ids.Add(id);
+                var request = table.FindRequest(id);
+                if (request == null) return null;
+                ids.Add(request.id);
             }
             return ids.ToArray();
         }
@@ -214,6 +229,14 @@ namespace WeaponWorkshop
                 foreach (var condition in table.Conditions(row))
                     if (!ValidCondition(condition))
                         Debug.LogError("요청 표의 조건 범위를 확인하세요: " + row.id);
+            }
+            foreach (var row in table.requests ?? Array.Empty<CustomerRequestData.Request>())
+            {
+                if (row == null) continue;
+                foreach (string alias in row.legacyIds ?? Array.Empty<string>())
+                    if (string.IsNullOrEmpty(alias) || !ids.Add(alias)) Debug.LogError("요청 표에 빈/중복 이전 요청 ID가 있습니다: " + row.id);
+                foreach (string excluded in row.excludes ?? Array.Empty<string>())
+                    if (table.FindRequest(excluded) == null) Debug.LogError("요청 표의 제외 요청 ID가 없습니다: " + row.id);
             }
         }
     }

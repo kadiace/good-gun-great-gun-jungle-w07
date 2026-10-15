@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 64bbf60094050bb4492d018a6e417617
   requestIds:
-  - c45e9713dbf2ac3469b4a59283112118
-  - 48aeae95d13c1f643817498a6dae1573
-  - 6bfd82587bbb4a640a1dcc436cacd347
-  - 60c861d406fb6fd48a48e2649ddcb52b
-  - a577397affb1dba46a5ab05ee475eec6
-  - db5262cea8401e542a56f9a2812196a3
+  - tag/flamethrower/legacy
+  - tag/water-gun/legacy
+  - tag/gravity-gun/legacy
+  - tag/spin/legacy
+  - tag/homing/legacy
+  - tag/charge/legacy
   lines:
   - "\uC774 \uAC00\uAC8C\uC5D0\uC11C \uC81C\uC77C \uC88B\uC740 \uAC70 \uB2E4 \uB123\uC5B4\uC8FC\uC138\uC694."
   - "\uD654\uC5FC\uBC29\uC0AC\xB7\uBB3C\uCD1D\xB7\uC911\uB825\uAC74\xB7\uD68C\uC804\xB7\uC720\uB3C4\xB7\uCC28\uC9C0

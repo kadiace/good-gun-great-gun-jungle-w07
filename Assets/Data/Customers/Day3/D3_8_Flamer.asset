@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 0c575dbccf9fbcb40a50aa5bf6e458fb
   requestIds:
-  - c45e9713dbf2ac3469b4a59283112118
-  - 12dc496b759341be92ecc36d0bd8029b
+  - tag/flamethrower/legacy
+  - module/split-two/min-1/d3-8-flamer
   lines:
   - 3 - 2 - 1, fire!
   - "\uD654\uC5FC\uBC29\uC0AC \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC73C\uB85C

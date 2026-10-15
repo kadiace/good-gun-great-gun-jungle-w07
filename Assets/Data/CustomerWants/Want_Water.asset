@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Water
   m_EditorClassIdentifier: 
-  tableId: 48aeae95d13c1f643817498a6dae1573
+  tableId: tag/water-gun/legacy
   displayName: 
   request: 
   conditions: []

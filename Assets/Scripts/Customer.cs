@@ -50,6 +50,9 @@ namespace WeaponWorkshop
         public event System.Action<int> SaleCompleted;
         public event System.Action<int> SaleAccepted;
         public event System.Action CustomerKilled;
+        public event System.Action<CustomerProfile> Interacted;
+        public event System.Action<CustomerProfile, bool, bool> OrderFinished;
+        public event System.Action<CustomerProfile, int, bool, int> WeaponSold;
         public CustomerProfile Profile => profile;
         public bool HasTalked { get; private set; }
         public bool HasActiveOrder => HasTalked && atCounter && !deathStarted && saveStage < 3;
@@ -73,8 +76,10 @@ namespace WeaponWorkshop
         {
             if (interactor == null || interactor.Player == null) return false;
             WeaponHolder holder = interactor.Player.GetComponent<WeaponHolder>();
-            return SaleConfirmationUI.Instance != null
+            bool accepted = SaleConfirmationUI.Instance != null
                 ? SaleConfirmationUI.Instance.UseCustomer(this, holder) : Use(holder);
+            if (accepted) Interacted?.Invoke(profile);
+            return accepted;
         }
 
         // 처음이면 대화(총 들고 있어도), 대화 후 총을 들고 오면 판매. 빈손이면 다시 대화.
@@ -104,7 +109,7 @@ namespace WeaponWorkshop
             int price = satisfied ? Mathf.RoundToInt(cost * (1f + tagRatio * tagCount)) + Mathf.Max(0, profile.price)
                 : cost / 5 * 4;
             Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
-            GameLogger.Data("Info", "Shop", "총 판매", new WeaponSaleLog { price = price, satisfied = satisfied, tagCount = tagCount });
+            WeaponSold?.Invoke(profile, price, satisfied, tagCount);
             GameLogger.Count("WeaponSold");
             GameLogger.Measure("SalePrice", price);
             Destroy(weapon.gameObject);
@@ -134,6 +139,7 @@ namespace WeaponWorkshop
             if (!outcomeReported)
             {
                 outcomeReported = true;
+                OrderFinished?.Invoke(profile, SaleSatisfied, false);
                 SaleCompleted?.Invoke(price);
             }
             StartCoroutine(WalkTo(exitPoint, () =>
@@ -155,6 +161,7 @@ namespace WeaponWorkshop
             bool reportKill = !outcomeReported;
             deathStarted = true;
             outcomeReported = true;
+            if (reportKill) OrderFinished?.Invoke(profile, false, true);
             atCounter = false;
             StopAllCoroutines();
             if (talking && DialogueUI.Instance != null) DialogueUI.Instance.Hide();
