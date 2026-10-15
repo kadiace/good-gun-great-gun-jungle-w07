@@ -9,7 +9,6 @@ namespace WeaponWorkshop
     public sealed class CustomerRequirementsUI : MonoBehaviour
     {
         [SerializeField] private TMP_Text priceLabel;
-        [SerializeField] private RectTransform tagGrid;
         private UIManager ui;
         private Bell bell;
         private RectTransform panel, content;
@@ -18,17 +17,10 @@ namespace WeaponWorkshop
         private int used;
         private float nextUpdate;
         private Customer previousCustomer;
-        private Vector2 gridAnchorMin, gridAnchorMax, gridPivot, gridPosition, gridSize;
-        private bool movedGrid;
         private readonly Vector3[] canvasCorners = new Vector3[4];
         private void Awake()
         {
             ui = GetComponent<UIManager>();
-            if (tagGrid != null)
-            {
-                gridAnchorMin = tagGrid.anchorMin; gridAnchorMax = tagGrid.anchorMax; gridPivot = tagGrid.pivot;
-                gridPosition = tagGrid.anchoredPosition; gridSize = tagGrid.sizeDelta;
-            }
             Build();
             if (panel != null) panel.gameObject.SetActive(false);
         }
@@ -64,7 +56,7 @@ namespace WeaponWorkshop
             var customer = bell != null ? bell.Current : null;
             bool visible = weapon != null && customer != null && customer.HasActiveOrder;
             panel.gameObject.SetActive(visible);
-            if (!visible) { RestoreGrid(); previousCustomer = null; nextUpdate = 0f; return; }
+            if (!visible) { previousCustomer = null; nextUpdate = 0f; return; }
             PositionPanel();
             if (Time.unscaledTime < nextUpdate && previousCustomer == customer) return;
             nextUpdate = Time.unscaledTime + .12f;
@@ -99,19 +91,10 @@ namespace WeaponWorkshop
             var canvas = price.GetComponentInParent<Canvas>().rootCanvas.GetComponent<RectTransform>();
             canvas.GetWorldCorners(canvasCorners);
             float available = -panel.InverseTransformPoint(canvasCorners[0]).y - 20f;
-            float matchedHeight = tagGrid != null ? LayoutUtility.GetPreferredHeight(tagGrid) : 0f;
             float preferred = LayoutUtility.GetPreferredHeight(content);
-            float height = Mathf.Min(Mathf.Max(70f, preferred), Mathf.Clamp(available - matchedHeight - 12f, 70f, 420f));
+            float height = Mathf.Min(Mathf.Max(70f, preferred), Mathf.Clamp(available, 70f, 420f));
             panel.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
             panel.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(240f, price.rect.width));
-            if (tagGrid != null)
-            {
-                movedGrid = true;
-                var parent = (RectTransform)tagGrid.parent;
-                tagGrid.anchorMin = new Vector2(0f, 1f); tagGrid.anchorMax = Vector2.one; tagGrid.pivot = new Vector2(.5f, 1f);
-                tagGrid.sizeDelta = new Vector2(gridSize.x, matchedHeight);
-                tagGrid.anchoredPosition = new Vector2(gridPosition.x, parent.InverseTransformPoint(panel.position).y - parent.rect.yMax - height - 12f);
-            }
         }
         private void Row(string text, bool met, int depth, bool heading = false)
         {
@@ -137,12 +120,6 @@ namespace WeaponWorkshop
         }
         private static void Stretch(RectTransform rect)
         { rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero; }
-        private void RestoreGrid()
-        {
-            if (!movedGrid || tagGrid == null) return;
-            tagGrid.anchorMin = gridAnchorMin; tagGrid.anchorMax = gridAnchorMax; tagGrid.pivot = gridPivot;
-            tagGrid.anchoredPosition = gridPosition; tagGrid.sizeDelta = gridSize; movedGrid = false;
-        }
-        private void OnDisable() { RestoreGrid(); previousCustomer = null; if (panel != null) panel.gameObject.SetActive(false); }
+        private void OnDisable() { previousCustomer = null; if (panel != null) panel.gameObject.SetActive(false); }
     }
 }

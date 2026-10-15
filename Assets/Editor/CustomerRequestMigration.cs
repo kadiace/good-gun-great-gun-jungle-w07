@@ -166,7 +166,6 @@ internal static class CustomerRequestMigration
             var view = ui.GetComponent<CustomerRequirementsUI>() ?? ui.gameObject.AddComponent<CustomerRequirementsUI>();
             var data = new SerializedObject(view);
             data.FindProperty("priceLabel").objectReferenceValue = new SerializedObject(tagsUI).FindProperty("salePriceText").objectReferenceValue;
-            data.FindProperty("tagGrid").objectReferenceValue = new SerializedObject(tagsUI).FindProperty("grid").objectReferenceValue;
             data.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(root, uiPath); changed.Add(uiPath);
         }

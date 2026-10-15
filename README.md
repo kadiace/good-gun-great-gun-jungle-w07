@@ -1,5 +1,5 @@
 # 무기 공방 — 에이전트 메모
-- 작업대 판매 가격 아래 손님 요청 목록(CustomerRequirementsUI): 주문을 들은 현재 손님이 있을 때만 표시, 시작 숨김. 태그 아래 조건·현재 값·충족 여부를 들여쓰고 긴 목록은 기존 UI 스크롤 입력 사용. 2/4방향 분할 모듈의 최소 개수 조건은 실제 한 발사 경로의 인정 수 / 요구 개수로 표시한다. UI·태그·판매 판정은 CustomerRequestInfo 공유, 기존 상점 견적/손님 지급액 공식 유지. 사격 시험 인증 조건은 미연결.
+- 작업대 판매 가격 아래 손님 요청 목록(CustomerRequirementsUI): 주문을 들은 현재 손님이 있을 때만 표시, 시작 숨김. WeaponInfo의 기존 무기 태그 제목·목록은 제거하고 무게·판매 가격·손님 달성 조건만 표시한다. WorkshopTagsUI는 가격 계산과 호버용 태그 조회를 유지한다. 태그 아래 조건·현재 값·충족 여부를 들여쓰고 긴 목록은 기존 UI 스크롤 입력 사용. 2/4방향 분할 모듈의 최소 개수 조건은 실제 한 발사 경로의 인정 수 / 요구 개수로 표시한다. UI·태그·판매 판정은 CustomerRequestInfo 공유, 기존 상점 견적/손님 지급액 공식 유지. 사격 시험 인증 조건은 미연결.
 - 손님 저장 v5: 고정 손님 profileId와 선택 requestIds, 생성 주문 requestIds를 저장하고 정의는 TableManager에서 조회. v2~v4의 일차/슬롯·조합 후보 인덱스는 읽기 호환만 유지(legacySlots가 이전 인덱스와 ID 연결). 기존 요청 에셋의 일회 이관은 Tools/Weapon Workshop/Migrate NPC Request Table이며 정상 플레이 중 표를 자동 생성하지 않는다.
 
 - 시간제한 사격 프로토타입: TargetBell 기존 무제한/커스텀 소환 유지, 별도3종(장애물 뒤·넓게 흩어진·엄폐 뒤) 선택. Data/ShootingTests SO에 시간·파괴율·힌트, Prefabs/Range/ShootingTests에 개별 편집 배치. 임시 기본30초·초록 목표별70% 파괴, 붉은 보호 표적 일부 파괴 시 즉시 실패. ShootingRange/TimedTestPoint 생성·HUD 시간/파괴율/비전방 총구 경고(로컬 방향, 경고만). 실패 시 회차 표적·사용 총의 남은 공격 정리·타이머 초기화, 테이블3m 안에서 기존 F로 시선 없이 재시도(PlayerShootingTest), 실패 화면 Esc 종료. 성공 즉시 종료·4초 후 HUD 숨김. scaled time·시작 숨김, 밤/재시작/불러오기/비활성화 취소. 시험 배치·진행은 저장 제외. NPC 조건·통과 태그·프리셋 인증 미연결, 플레이 미확인.

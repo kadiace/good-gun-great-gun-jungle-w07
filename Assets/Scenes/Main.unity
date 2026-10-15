@@ -47283,14 +47283,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 301096851966614885, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
-      propertyPath: m_SizeDelta.y
-      value: -156
-      objectReference: {fileID: 0}
-    - target: {fileID: 301096851966614885, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -66
-      objectReference: {fileID: 0}
     - target: {fileID: 355924593960052661, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -48243,14 +48235,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2734127355926676604, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
-      propertyPath: m_fontAsset
-      value: 
-      objectReference: {fileID: 11400000, guid: b558a1489b608a94f827418e48391377, type: 2}
-    - target: {fileID: 2734127355926676604, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
-      propertyPath: m_sharedMaterial
-      value: 
-      objectReference: {fileID: 7083496883005580492, guid: b558a1489b608a94f827418e48391377, type: 2}
     - target: {fileID: 2779953578618993186, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -49613,18 +49597,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7487733917979720973, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7491008977163572344, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
-      propertyPath: m_fontAsset
-      value: 
-      objectReference: {fileID: 11400000, guid: bcc82f7b16e14ed4bb223e050ba23c00, type: 2}
-    - target: {fileID: 7491008977163572344, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
-      propertyPath: m_sharedMaterial
-      value: 
-      objectReference: {fileID: 1426258466443670400, guid: bcc82f7b16e14ed4bb223e050ba23c00, type: 2}
-    - target: {fileID: 7491008977163572344, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
-      propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7515129558982258520, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
