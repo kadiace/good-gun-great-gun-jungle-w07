@@ -12,8 +12,6 @@ namespace WeaponWorkshop
         [SerializeField, Tooltip("총을 받고 떠나는 위치 (가판대 기준 오른쪽)")] private Transform exitPoint;
         [SerializeField, Tooltip("매대 앞 손님이 서는 위치")] private Transform counterPoint;
         [SerializeField, Tooltip("판매금 지급 및 손님 완료를 전달할 날짜 관리자")] private _DayManager dayManager;
-        private DaySettings paymentSettings;
-        public void SetPaymentSettings(DaySettings settings) => paymentSettings = settings;
         private Customer current;
         private readonly Queue<CustomerProfile> waiting = new Queue<CustomerProfile>();
         public event System.Action<int> SaleCompleted;
@@ -53,7 +51,7 @@ namespace WeaponWorkshop
             var prefab = profile.prefab != null ? profile.prefab : customerPrefab;
             current = Instantiate(prefab, data.customer.position, Quaternion.identity);
             SubscribeCustomer();
-            current.RestoreSave(data.customer, profile, counterPoint.position, exitPoint.position, paymentSettings);
+            current.RestoreSave(data.customer, profile, counterPoint.position, exitPoint.position);
         }
 
         // 종을 쳐서 하루가 시작됐는지. 첫 손님을 꺼낸 순간부터 참이라 저장/복원도 그대로 따라감.
@@ -123,7 +121,7 @@ namespace WeaponWorkshop
             waiting.Dequeue();
             current = Instantiate(prefab, spawnPoint.position, spawnPoint.rotation);
             SubscribeCustomer();
-            current.Arrive(profile, counterPoint.position, exitPoint.position, paymentSettings);
+            current.Arrive(profile, counterPoint.position, exitPoint.position);
             return true;
         }
         private void OnSaleAccepted(int price, int constructionCost)

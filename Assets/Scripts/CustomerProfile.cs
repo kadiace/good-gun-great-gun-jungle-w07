@@ -93,12 +93,6 @@ namespace WeaponWorkshop
         [SerializeField, HideInInspector] private string profileId;
         public string ProfileId => profileId;
         [field: System.NonSerialized] public CustomerOrderState OrderState { get; internal set; }
-        [Tooltip("요청 정의는 TableManager.CustomerRequest에서 조회합니다.")]
-        public string[] requestIds = System.Array.Empty<string>();
-        [TextArea, Tooltip("순서대로 말하는 대사. 마지막 줄 외에는 전부 '예?' 버튼.")]
-        public string[] lines = { "총 하나 주세요." };
-        [Tooltip("켜면 마지막 줄 버튼이 '알겠습니다!'. 끄면 끝까지 헛소리 → 마지막도 '예?'로 나감.")]
-        public bool endsClear = true;
         [Tooltip("이 손님이 첫 차례인 영업 시작 뒤 실행할 안내 데이터")]
         public TutorialSequence callTutorialSequence;
         [Tooltip("처음 주문을 다 들은 뒤 실행할 안내 데이터")]
@@ -109,21 +103,36 @@ namespace WeaponWorkshop
         [Tooltip("종류 외 추가 조건")]
         [System.Obsolete("레거시 요청 조건. requestIds와 TableManager.CustomerRequest를 사용하세요."), HideInInspector]
         public GunCondition[] conditions;
-        [TextArea, Tooltip("조건에 맞는 총을 받았을 때")] public string happyLine;
-        [TextArea, Tooltip("조건에 안 맞는 총을 받았을 때")] public string angryLine;
-        [Min(0)] public int price = 100;
         [Tooltip("비우면 종의 기본 손님 프리팹 사용")] public Customer prefab;
         [Tooltip("손님 그림. 비우면 프리팹의 기본 그림")] public Sprite portrait;
 
+        // 주문 값(요청·대사·보상)은 주문 표(TableManager.CustomerOrder)의 손님 행(profileId)에서 읽는다.
+        // 무한 모드 조합·저장 복원 손님은 행이 없으므로 런타임 값을 쓰며, 값을 바꾸면 이 손님만의 복사본이 생긴다.
+        [System.NonSerialized] private CustomerOrderData.Guest runtimeOrder;
+        private static readonly CustomerOrderData.Guest NoOrder = new CustomerOrderData.Guest();
+        private CustomerOrderData.Guest Order => runtimeOrder ?? TableManager.Instance.CustomerOrder.FindGuest(profileId) ?? NoOrder;
+        private CustomerOrderData.Guest Writable => runtimeOrder ??= CustomerOrderInfo.Copy(Order == NoOrder ? null : Order);
+        public string[] RequestIds { get => Order.requestIds ?? System.Array.Empty<string>(); set => Writable.requestIds = value ?? System.Array.Empty<string>(); }
+        public string[] Lines { get => Order.lines ?? System.Array.Empty<string>(); set => Writable.lines = value ?? System.Array.Empty<string>(); }
+        public bool EndsClear { get => Order.endsClear; set => Writable.endsClear = value; }
+        public string HappyLine { get => Order.happyLine; set => Writable.happyLine = value; }
+        public string AngryLine { get => Order.angryLine; set => Writable.angryLine = value; }
+        public int Price { get => Order.price; set => Writable.price = value; }
+        public int UnlockDay => Order.unlockDay;
+        public int SaleBonusCount() => Order.SaleBonusCount();
+        // Instantiate는 직렬화 필드만 복사하므로 런타임 주문 값은 여기서 옮긴다.
+        public void CopyRuntimeOrderFrom(CustomerProfile source)
+            => runtimeOrder = source != null && source.runtimeOrder != null ? CustomerOrderInfo.Copy(source.runtimeOrder) : null;
+
         public string Reaction(bool satisfied)
         {
-            string line = satisfied ? happyLine : angryLine;
+            string line = satisfied ? HappyLine : AngryLine;
             return !string.IsNullOrEmpty(line) ? line : satisfied ? "좋네요! 감사합니다." : "이거 제가 말한 거 아닌데요...";
         }
 
         public bool Check(EquipableWeapon weapon)
         {
-            return TableManager.Instance.CustomerRequest.MeetsOrder(requestIds, weapon);
+            return TableManager.Instance.CustomerRequest.MeetsOrder(RequestIds, weapon);
         }
     }
 }

@@ -13,25 +13,9 @@ MonoBehaviour:
   m_Name: D4_4_Professional
   m_EditorClassIdentifier: 
   profileId: fd770da102b6f294191f246f9ca975f5
-  requestIds:
-  - tag/assault-rifle/legacy
-  - tag/sniper-rifle/legacy
-  - tag/grenade-launcher/legacy
-  - module/scope/min-1
-  - module/scope/min-2/d4-4-professional
-  lines:
-  - "\uC5EC\uAE30\uC11C \uAC00\uC7A5 \uD504\uB85C\uB2E4\uC6B4 \uCD1D \uD55C \uC815\uB9CC
-    \uC918."
-  - "\uB3CC\uACA9\uC18C\uCD1D\xB7\uC800\uACA9\uCD1D\xB7\uC720\uD0C4 \uD0DC\uADF8\uB97C
-    \uBAA8\uB450 \uBD99\uC774\uACE0 \uC2A4\uCF54\uD504 \uBAA8\uB4C8\uB3C4 \uB450
-    \uAC1C \uB2EC\uC544\uC918."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uC88B\uC544. \uD504\uB85C\uC758 \uBB3C\uAC74\uC774\uC57C."
-  angryLine: "\uC544\uB9C8\uCD94\uC5B4 \uAC19\uC740 \uBB3C\uAC74\uC774\uAD70."
-  price: 600
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 7738fafa742de5d42af109bc7cbc58f5, type: 3}

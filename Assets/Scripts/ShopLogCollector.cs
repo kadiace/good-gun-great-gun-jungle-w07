@@ -92,7 +92,7 @@ namespace WeaponWorkshop
             var entry = new ShopOrderLinkLogEvent
             {
                 profileId = order.ProfileId ?? "",
-                requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(order.requestIds) ?? Array.Empty<string>()
+                requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(order.RequestIds) ?? Array.Empty<string>()
             };
             if (Write(entry, state.restored ? "order_restored" : "order_created", order, day)) state.creationLogged = true;
         }

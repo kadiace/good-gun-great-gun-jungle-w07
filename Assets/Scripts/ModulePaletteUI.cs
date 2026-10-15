@@ -1774,7 +1774,7 @@ namespace WeaponWorkshop
                     : new Color(0.22f, 0.28f, 0.33f, 1f);
             if (paintAllButton != null)
                 paintAllButton.interactable = builder != null && builder.IsPaintingMode &&
-                                              !GameManager.GameplayBlocked;
+                                              !GameManager.ModalBlocked;
         }
 
         private void RefreshStickerPanel()

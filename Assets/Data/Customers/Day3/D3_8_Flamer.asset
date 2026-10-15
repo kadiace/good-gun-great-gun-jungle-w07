@@ -13,20 +13,9 @@ MonoBehaviour:
   m_Name: D3_8_Flamer
   m_EditorClassIdentifier: 
   profileId: 0c575dbccf9fbcb40a50aa5bf6e458fb
-  requestIds:
-  - tag/flamethrower/legacy
-  - module/split-two/min-1/d3-8-flamer
-  lines:
-  - 3 - 2 - 1, fire!
-  - "\uD654\uC5FC\uBC29\uC0AC \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC73C\uB85C
-    \uD574\uC8FC\uC138\uC694. \uB450 \uAC08\uB798\uB85C\uC694!"
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: Gonna watch it burn!
-  angryLine: "\uC7AC\uBBF8\uC5C6\uC5B4!!!"
-  price: 500
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: d93c365fa080b224487234211f2a4b5e, type: 3}

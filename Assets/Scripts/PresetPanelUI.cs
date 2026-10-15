@@ -32,7 +32,7 @@ namespace WeaponWorkshop
             bool available = session != null && session.IsEditing && session.ActiveWorkbench.CurrentWeapon != null;
             panel.SetActive(available);
             if (IsOpen && (!available || session.ActiveWorkbench.CurrentWeapon != selectedWeapon)) Close();
-            foreach (var slot in slots) slot.interactable = available && !GameManager.GameplayBlocked;
+            foreach (var slot in slots) slot.interactable = available && !GameManager.ModalBlocked;
         }
         private void Select(int slot)
         {

@@ -13,19 +13,9 @@ MonoBehaviour:
   m_Name: D3_2_QuadShotgun
   m_EditorClassIdentifier: 
   profileId: d8d88852c4557604ebef499f6d5ceda1
-  requestIds:
-  - tag/shotgun/legacy
-  - module/split-four/min-1/d3-2-quad-shotgun
-  lines:
-  - "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uC5D0, 4\uBC29\uD5A5 \uBD84\uD560\uB85C \uB124
-    \uAC08\uB798\uB97C \uB0B4\uC8FC\uC138\uC694!"
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uAFC8\uC774... \uC774\uB8E8\uC5B4\uC84C\uC5B4\uC694...!"
-  angryLine: "\uC774\uAC8C \uC544\uB2C8\uB780 \uB9D0\uC774\uB2E4\uC557!!!!"
-  price: 400
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 1d3e091061225b44b9ed9f8fddce384a, type: 3}

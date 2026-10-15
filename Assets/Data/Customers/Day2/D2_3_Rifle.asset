@@ -13,18 +13,9 @@ MonoBehaviour:
   m_Name: D2_3_Rifle
   m_EditorClassIdentifier: 
   profileId: 54d26364e40dd1b489519863487c0c76
-  requestIds:
-  - tag/assault-rifle/legacy
-  lines:
-  - "\uD3C9\uBC94\uD55C \uC790\uB3D9\uC18C\uCD1D\uC774\uC694. \uB3CC\uACA9\uC18C\uCD1D
-    \uD0DC\uADF8 \uBD99\uC740 \uAC78\uB85C \uBD80\uD0C1\uD574\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uD558\uC544.. \uC774 \uC11C\uB298\uD55C \uAC10\uAC01.... 12\uB144\uB9CC\uC774\uAD6C\uB9CC"
-  angryLine: "\uD3C9\uBC94\uD55C \uAC8C \uC81C\uC77C \uC5B4\uB824\uC6B4 \uAC70 \uC544\uC2DC\uC8E0? "
-  price: 300
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 81415ad55cd42654b86bafa68b433826, type: 3}

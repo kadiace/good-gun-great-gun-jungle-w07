@@ -13,19 +13,9 @@ MonoBehaviour:
   m_Name: D1_5_Combo
   m_EditorClassIdentifier: 
   profileId: 30f765269e0d71446a935b0c88492228
-  requestIds:
-  - module/penetration/min-1/d1-5-combo
-  - module/split-four/min-1/d1-5-combo
-  lines:
-  - "\uAD00\uD1B5 \uBAA8\uB4C8\uC774\uB791 4\uBC29\uD5A5 \uBD84\uD560 \uBAA8\uB4C8,
-    \uB458 \uB2E4 \uC368\uC11C \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uB458 \uB2E4 \uB4E4\uC5B4\uAC14\uB124\uC694. \uC644\uBCBD\uD55C \uC870\uD569!"
-  angryLine: "\uC774\uB7F0\uAC83\uB3C4 \uBABB\uD558\uB294\uAC74\uAC00?"
-  price: 240
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 8b9536eb505afbb4793c56c5d16b23c2, type: 3}

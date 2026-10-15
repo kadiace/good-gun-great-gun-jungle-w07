@@ -13,18 +13,9 @@ MonoBehaviour:
   m_Name: D3_9_christ
   m_EditorClassIdentifier: 
   profileId: 038a4f4f9f79c204a9087f7ce969d7f5
-  requestIds: []
-  lines:
-  - "\uC800\uB294 \uC885\uAD50\uC801 \uC774\uC720\uB85C \uCD1D\uAE30\uB97C \uC0AC\uC6A9\uD560
-    \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."
-  - "\uC65C\uC654\uB098\uAD6C\uC694? ##\uB2D8 \uBBFF\uC73C\uC2E4\uB798\uC694?"
-  endsClear: 0
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uCC9C\uBC8C\uC788\uC73C\uB77C!!"
-  angryLine: "\uCC9C\uBC8C\uC788\uC73C\uB77C!!"
-  price: 0
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 32f1603359440fe46b00be76853dce93, type: 3}

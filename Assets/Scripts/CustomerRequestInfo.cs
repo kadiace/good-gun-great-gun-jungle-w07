@@ -63,19 +63,19 @@ namespace WeaponWorkshop
             public float Value(CustomerRequestData.Condition condition)
             {
                 if (!HasWeapon || condition == null) return 0f;
-                switch (condition.measure)
+                switch (condition.Measure)
                 {
                     case GunMeasure.WeaponStat:
-                        if (condition.stat == StatType.Weight || condition.stat == StatType.Scope) return whole.Get(condition.stat);
-                        return firingStats.Get(condition.stat);
+                        if (condition.Stat == StatType.Weight || condition.Stat == StatType.Scope) return whole.Get(condition.Stat);
+                        return firingStats.Get(condition.Stat);
                     case GunMeasure.PathModules:
-                        if (condition.stat == StatType.Scope) return whole.scope; // Explicitly agreed sight exception.
-                        return ModuleCounter.TryToKind(condition.stat, out var kind) && pathModules.TryGetValue(kind, out var count) ? count : 0;
+                        if (condition.Stat == StatType.Scope) return whole.scope; // Explicitly agreed sight exception.
+                        return ModuleCounter.TryToKind(condition.Stat, out var kind) && pathModules.TryGetValue(kind, out var count) ? count : 0;
                     case GunMeasure.SplitTwoBlocks: return splitTwoCount;
                     case GunMeasure.SplitFourBlocks: return splitFourCount;
                     case GunMeasure.TotalModules: return totalOnPath;
                     case GunMeasure.Muzzles: return muzzles;
-                    default: return muzzleStats.TryGetValue(condition.stat, out var value) ? value : 0f;
+                    default: return muzzleStats.TryGetValue(condition.Stat, out var value) ? value : 0f;
                 }
             }
             public bool Meets(CustomerRequestData.Condition condition)
@@ -149,8 +149,7 @@ namespace WeaponWorkshop
             }
             return true;
         }
-        private static bool ValidCondition(CustomerRequestData.Condition condition) => condition != null &&
-            Enum.IsDefined(typeof(GunMeasure), condition.measure) && Enum.IsDefined(typeof(StatType), condition.stat) &&
+        private static bool ValidCondition(CustomerRequestData.Condition condition) => condition != null && condition.Parsed &&
             condition.min <= condition.max && !float.IsNaN(condition.min) && !float.IsNaN(condition.max) &&
             !float.IsInfinity(condition.min) && !float.IsInfinity(condition.max);
         public static int SaleBonusCount(this CustomerRequestData table, string[] ids)
@@ -165,17 +164,6 @@ namespace WeaponWorkshop
             if (row == null) return "등록되지 않은 요청";
             var tag = table.FindTag(row.tagId);
             return tag != null ? tag.name + " 태그" : string.IsNullOrEmpty(row.phrase) ? row.name : row.phrase;
-        }
-        public static bool Conflicts(this CustomerRequestData table, string first, string second)
-        {
-            var a = table.FindRequest(first); var b = table.FindRequest(second);
-            return a == null || b == null || Excludes(table, a, b.id) || Excludes(table, b, a.id);
-        }
-        private static bool Excludes(CustomerRequestData table, CustomerRequestData.Request request, string id)
-        {
-            foreach (string excluded in request.excludes ?? Array.Empty<string>())
-                if (table.FindRequest(excluded)?.id == id) return true;
-            return false;
         }
         public static string[] RestoreLegacyOrder(this CustomerRequestData table, string poolId, int[] indices)
         {
@@ -195,7 +183,7 @@ namespace WeaponWorkshop
         public static string Describe(CustomerRequestData.Condition condition, float currentValue)
         {
             string current = currentValue.ToString("0.##");
-            if ((condition.measure == GunMeasure.SplitTwoBlocks || condition.measure == GunMeasure.SplitFourBlocks)
+            if ((condition.Measure == GunMeasure.SplitTwoBlocks || condition.Measure == GunMeasure.SplitFourBlocks)
                 && condition.max == float.MaxValue)
                 return "발사 경로 전체의 " + condition.label + "  " + current + " / " + condition.min.ToString("0.##");
             return Describe(condition) + "  (현재 " + current + ")";
@@ -203,10 +191,10 @@ namespace WeaponWorkshop
         public static string Describe(CustomerRequestData.Condition condition, bool includePathScope = true)
         {
             string label = condition.label;
-            bool splitModule = condition.measure == GunMeasure.SplitTwoBlocks || condition.measure == GunMeasure.SplitFourBlocks;
+            bool splitModule = condition.Measure == GunMeasure.SplitTwoBlocks || condition.Measure == GunMeasure.SplitFourBlocks;
             if (includePathScope && splitModule) label = "발사 경로 전체의 " + label;
-            bool scopedModule = condition.measure == GunMeasure.PathModules || condition.measure == GunMeasure.TotalModules;
-            if (includePathScope && scopedModule && condition.stat != StatType.Scope) label = "한 발사 경로의 " + label;
+            bool scopedModule = condition.Measure == GunMeasure.PathModules || condition.Measure == GunMeasure.TotalModules;
+            if (includePathScope && scopedModule && condition.Stat != StatType.Scope) label = "한 발사 경로의 " + label;
             string lower = condition.min.ToString("0.##"), upper = condition.max.ToString("0.##");
             if (condition.min == condition.max && !condition.maxExclusive) return label + " 정확히 " + lower;
             if (condition.max == float.MaxValue) return label + " " + lower + " 이상";
@@ -221,6 +209,11 @@ namespace WeaponWorkshop
         }
         public static void Validate(CustomerRequestData table, ShootingTestTableData tests)
         {
+            // 조건의 enum 이름을 한 번 해석해 둔다. 해석하지 못한 조건은 ValidCondition에서 거부된다.
+            foreach (var tag in table.tags ?? Array.Empty<CustomerRequestData.Tag>())
+                foreach (var condition in tag?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) Parse(condition, tag.id);
+            foreach (var row in table.requests ?? Array.Empty<CustomerRequestData.Request>())
+                foreach (var condition in row?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) Parse(condition, row.id);
             var ids = new HashSet<string>();
             foreach (var tag in table.tags ?? Array.Empty<CustomerRequestData.Tag>())
                 if (tag == null || string.IsNullOrEmpty(tag.id) || !ids.Add(tag.id)) Debug.LogError("요청 표에 빈/중복 태그 ID가 있습니다.");
@@ -240,9 +233,15 @@ namespace WeaponWorkshop
                 if (row == null) continue;
                 foreach (string alias in row.legacyIds ?? Array.Empty<string>())
                     if (string.IsNullOrEmpty(alias) || !ids.Add(alias)) Debug.LogError("요청 표에 빈/중복 이전 요청 ID가 있습니다: " + row.id);
-                foreach (string excluded in row.excludes ?? Array.Empty<string>())
-                    if (table.FindRequest(excluded) == null) Debug.LogError("요청 표의 제외 요청 ID가 없습니다: " + row.id);
             }
+        }
+        private static void Parse(CustomerRequestData.Condition condition, string owner)
+        {
+            if (condition == null) return;
+            condition.Parsed = Enum.TryParse<GunMeasure>(condition.measure, false, out condition.Measure) &&
+                Enum.IsDefined(typeof(GunMeasure), condition.Measure) &&
+                Enum.TryParse<StatType>(condition.stat, false, out condition.Stat) && Enum.IsDefined(typeof(StatType), condition.Stat);
+            if (!condition.Parsed) Debug.LogError($"요청 표 {owner} 조건의 measure/stat 이름을 해석하지 못했습니다: {condition.measure}/{condition.stat}");
         }
     }
 }

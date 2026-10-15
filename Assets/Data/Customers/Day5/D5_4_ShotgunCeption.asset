@@ -13,20 +13,9 @@ MonoBehaviour:
   m_Name: D5_4_ShotgunCeption
   m_EditorClassIdentifier: 
   profileId: a0a2b26fb940de64c88d341032fefb96
-  requestIds:
-  - module/shotgun/min-3/d5-4-shotgun-ception
-  lines:
-  - "\uC0F7\uAC74\uC5D0 \uC0F7\uAC74\uC744 \uB2EC\uACE0, \uAC70\uAE30\uC5D0 \uB2E4\uC2DC
-    \uC0F7\uAC74\uC744 \uB2EC\uC544\uC11C \uB4DC\uC154\uBCF4\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?"
-  - "\uC0F7\uAC74\uBAA8\uB4C8 3\uAC1C \uC774\uC0C1 \uC774\uC5B4 \uBD99\uC5EC\uC11C\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uC0F7\uAC74 \uC18D\uC5D0 \uC0F7\uAC74 \uC18D\uC5D0 \uC0F7\uAC74! \uC798
-    \uBA39\uACA0\uC2B5\uB2C8\uB2E4."
-  angryLine: "\uC0F7\uAC74\uC774 \uBE60\uC84C\uC796\uC544!"
-  price: 700
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: b88afe9c8da380848afd8c347488f25c, type: 3}

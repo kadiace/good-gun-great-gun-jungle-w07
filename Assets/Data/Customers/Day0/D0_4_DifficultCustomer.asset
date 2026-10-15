@@ -13,17 +13,9 @@ MonoBehaviour:
   m_Name: D0_4_DifficultCustomer
   m_EditorClassIdentifier: 
   profileId: 6f6cf35ea746e344a93b1587938c685b
-  requestIds: []
-  lines:
-  - "\uB530\uB73B\uD55C \uC544\uC774\uC2A4 \uC544\uBA54\uB9AC\uCE74\uB178 \uD55C
-    \uC794\uC774\uC694."
-  endsClear: 0
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\u2026"
-  angryLine: "\u2026"
-  price: 0
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: d9f1ebf4c1d982b4e8b01bb9c21296c1, type: 3}

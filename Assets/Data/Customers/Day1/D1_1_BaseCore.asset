@@ -13,19 +13,9 @@ MonoBehaviour:
   m_Name: D1_1_BaseCore
   m_EditorClassIdentifier: 
   profileId: 25b5381ef8e155343bbafe08fae3af6d
-  requestIds:
-  - module/stat-modules/exact-0/d1-1-base-core
-  lines:
-  - "\uCC98\uC74C\uC774\uB77C \uC798 \uBAB0\uB77C\uC11C\uC694. \uAC1C\uC870 \uC548
-    \uD55C \uAE30\uBCF8 \uCF54\uC5B4 \uADF8\uB300\uB85C \uC8FC\uC138\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uC624, \uAE54\uB054\uD558\uB124\uC694. \uCC98\uC74C\uC5D4 \uAE30\uBCF8\uC774
-    \uCD5C\uACE0\uC8E0!"
-  angryLine: "\uC5D0\uC73C\uC73C....\uB1CC\uAC00 \uB179\uB290\uB2E4.....\uC5B4\uB835\uB2E4,..."
-  price: 200
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: d9f1ebf4c1d982b4e8b01bb9c21296c1, type: 3}

@@ -13,17 +13,9 @@ MonoBehaviour:
   m_Name: D0_3_SplitTwo
   m_EditorClassIdentifier: 
   profileId: e3726adb0bb965747ae2a14bdd32852b
-  requestIds:
-  - module/fire-rate/min-1/d0-3-split-two
-  lines:
-  - "\uC5F0\uC0AC \uBAA8\uB4C8\uC774 \uB4E4\uC5B4\uAC04 \uCD1D\uC774\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uB4DC\uB974\uB975! \uC774\uAC70\uC608\uC694 \uC774\uAC70!"
-  angryLine: "\uC5F0\uC0AC \uBAA8\uB4C8\uC774 \uC548 \uBCF4\uC774\uB294\uB370\uC694...?"
-  price: 200
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 411975f766c31524295c3ef756fdb1ed, type: 3}

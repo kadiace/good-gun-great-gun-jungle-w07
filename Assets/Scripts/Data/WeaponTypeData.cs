@@ -58,10 +58,10 @@ namespace WeaponWorkshop
                 var result = new System.Collections.Generic.List<Condition>();
                 foreach (var condition in Definition?.conditions ?? Array.Empty<CustomerRequestData.Condition>())
                 {
-                    bool modules = condition.measure == GunMeasure.PathModules;
-                    if (condition.min > 0f) result.Add(new Condition { stat = condition.stat,
+                    bool modules = condition.Measure == GunMeasure.PathModules;
+                    if (condition.min > 0f) result.Add(new Condition { stat = condition.Stat,
                         source = modules ? ValueSource.ModuleCount : ValueSource.Stat, comparison = Comparison.AtLeast, value = condition.min });
-                    if (condition.max < float.MaxValue) result.Add(new Condition { stat = condition.stat,
+                    if (condition.max < float.MaxValue) result.Add(new Condition { stat = condition.Stat,
                         source = modules ? ValueSource.ModuleCount : ValueSource.Stat,
                         comparison = condition.maxExclusive ? Comparison.LessThan : Comparison.AtMost, value = condition.max });
                 }

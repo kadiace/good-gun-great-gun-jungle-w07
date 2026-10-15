@@ -15,7 +15,6 @@ namespace WeaponWorkshop
         [SerializeField, Min(0f), Tooltip("초당 튀는 횟수")] private float bobRate = 3f;
         [SerializeField, Min(0f), Tooltip("그림 크기(PPU)와 상관없이 이 높이(m)로 맞춤. 0이면 원본 크기")] private float portraitHeight = 2f;
         [SerializeField, Min(0f), Tooltip("가로로 넓은 그림은 이 너비(m)를 넘지 않게 줄임 (매대 구멍 2m). 0이면 제한 없음")] private float portraitMaxWidth = 1.8f;
-        private DaySettings paymentSettings;
         private Vector3 exitPoint;
         private Vector3 portraitRest;
         private int saveStage, dialogueIndex, soldPrice;
@@ -23,9 +22,9 @@ namespace WeaponWorkshop
         public CustomerSave CaptureSave() => new CustomerSave { stage = saveStage, line = dialogueIndex,
             price = soldPrice, talked = HasTalked, satisfied = SaleSatisfied, position = transform.position };
 
-        public void RestoreSave(CustomerSave state, CustomerProfile savedProfile, Vector3 counter, Vector3 exit, DaySettings settings)
+        public void RestoreSave(CustomerSave state, CustomerProfile savedProfile, Vector3 counter, Vector3 exit)
         {
-            Arrive(savedProfile, counter, exit, settings);
+            Arrive(savedProfile, counter, exit);
             StopAllCoroutines();
             transform.position = state.position;
             HasTalked = state.talked; SaleSatisfied = state.satisfied; soldPrice = state.price;
@@ -59,14 +58,13 @@ namespace WeaponWorkshop
         public bool SaleSatisfied { get; private set; }
         public Transform OutlineRoot => transform;
 
-        public void Arrive(CustomerProfile customerProfile, Vector3 counterPoint, Vector3 exit, DaySettings saleSettings = null)
+        public void Arrive(CustomerProfile customerProfile, Vector3 counterPoint, Vector3 exit)
         {
             if (portrait != null) portraitRest = portrait.transform.localPosition;
             if (customerProfile != null) profile = customerProfile;
             if (portrait != null && profile != null && profile.portrait != null) portrait.sprite = profile.portrait;
             FitPortrait();
             saveStage = 0;
-            paymentSettings = saleSettings;
             exitPoint = exit;
             StartCoroutine(WalkTo(counterPoint, () => { atCounter = true; saveStage = 1; }));
         }
@@ -102,12 +100,13 @@ namespace WeaponWorkshop
             EquipableWeapon weapon = holder.TakeWeapon();
             bool satisfied = CheckWeapon(weapon);
             SaleSatisfied = satisfied;
-            // 만족은 실제 낸 제작비 × (1 + 태그비율 × 요청 태그 수) + 손님 보상(profile.price), 불만족은 제작비의 80%.
+            // 만족은 실제 낸 제작비 × (1 + 태그비율 × 보너스 요청 수) + 손님 보상(Price), 불만족은 제작비 × 불만족 비율.
+            // 비율은 주문 표(CustomerOrderData.sale)에서 읽는다.
             int cost = weapon != null ? weapon.PaidConstructionCost : 0;
-            int tagCount = TableManager.Instance.CustomerRequest.SaleBonusCount(profile.requestIds);
-            float tagRatio = paymentSettings != null ? paymentSettings.tagBonusRatio : 0.5f;
-            int price = satisfied ? Mathf.RoundToInt(cost * (1f + tagRatio * tagCount)) + Mathf.Max(0, profile.price)
-                : cost / 5 * 4;
+            int tagCount = profile.SaleBonusCount();
+            var sale = TableManager.Instance.CustomerOrder.sale;
+            int price = satisfied ? Mathf.RoundToInt(cost * (1f + sale.tagBonusRatio * tagCount)) + Mathf.Max(0, profile.Price)
+                : Mathf.RoundToInt(cost * sale.dissatisfiedRatio);
             Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
             WeaponSold?.Invoke(profile, price, satisfied, tagCount);
             GameLogger.Count("WeaponSold");
@@ -254,9 +253,9 @@ namespace WeaponWorkshop
         private void ShowLine(int index)
         {
             dialogueIndex = index;
-            bool last = index >= profile.lines.Length - 1;
-            string answer = last && profile.endsClear ? Okay : Huh;
-            DialogueUI.Instance.Show(profile.lines[index], answer, () =>
+            bool last = index >= profile.Lines.Length - 1;
+            string answer = last && profile.EndsClear ? Okay : Huh;
+            DialogueUI.Instance.Show(profile.Lines[index], answer, () =>
             {
                 if (!last) { ShowLine(index + 1); return; }
                 // 튜토리얼은 처음 주문을 들었을 때만.

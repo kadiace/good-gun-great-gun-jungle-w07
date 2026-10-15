@@ -48,7 +48,7 @@ namespace WeaponWorkshop
             var snapshot = new CustomerRequestInfo.WeaponSnapshot(weapon);
             used = 0;
             Row("손님 요청사항", true, 0, true);
-            var ids = customer.Profile != null ? customer.Profile.requestIds : null;
+            var ids = customer.Profile != null ? customer.Profile.RequestIds : null;
             if (ids == null) Row("요청 데이터를 확인할 수 없습니다.", false, 0);
             else if (ids.Length == 0) Row("추가 요청 없음", true, 0, true);
             else foreach (string id in ids)

@@ -13,17 +13,9 @@ MonoBehaviour:
   m_Name: D4_2_PolitePistol
   m_EditorClassIdentifier: 
   profileId: caed71048059fb84ea75dbd3fa5def6d
-  requestIds:
-  - tag/handgun/legacy
-  lines:
-  - "\uAD8C\uCD1D \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC73C\uB85C \uBD80\uD0C1\uB4DC\uB824\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uAC10\uC0AC\uD569\uB2C8\uB2E4! \uC88B\uC740 \uD558\uB8E8 \uBCF4\uB0B4\uC138\uC694?"
-  angryLine: "\uC548\uB155\uD788 \uACC4\uC138\uC694...?"
-  price: 500
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 046fc015c03a5f1488918ecbfde77205, type: 3}

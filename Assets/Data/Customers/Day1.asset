@@ -13,14 +13,10 @@ MonoBehaviour:
   m_Name: Day1
   m_EditorClassIdentifier: 
   day: 1
-  rent: 350
+  startTutorial: {fileID: 0}
   customers:
   - {fileID: 11400000, guid: 25b5381ef8e155343bbafe08fae3af6d, type: 2}
   - {fileID: 11400000, guid: f350a20ea1c6a314b9a2ebfd39e192be, type: 2}
   - {fileID: 11400000, guid: a660428af7905aa49a0c3400753fd0ae, type: 2}
   - {fileID: 11400000, guid: 19eb28f21e576bd40bdd9363439fb11a, type: 2}
   - {fileID: 11400000, guid: 30f765269e0d71446a935b0c88492228, type: 2}
-  useRequestPool: 0
-  extraGenerated: 0
-  minRequests: 1
-  maxRequests: 2

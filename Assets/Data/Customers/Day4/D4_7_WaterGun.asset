@@ -13,19 +13,9 @@ MonoBehaviour:
   m_Name: D4_7_WaterGun
   m_EditorClassIdentifier: 
   profileId: 89a6e2464d2d3824c92a161cb4ac7990
-  requestIds:
-  - tag/water-gun/legacy
-  lines:
-  - ...
-  - "\uBB3C\uCD1D \uD0DC\uADF8\uAC00 \uBD99\uB294 \uCD1D\uC774\uBA74 \uB3FC\uC694.
-    \uC5EC\uB984\uC774\uC796\uC544\uC694!"
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uD558 \uD558 \uD558! \uCD09\uCD09\uD558\uAC8C \uB9CC\uB4E4\uC5B4\uC8FC\uC9C0!"
-  angryLine: "\uB180\uB7EC\uAC00\uC11C \uC0B4\uC778\uC0AC\uAC74 \uB098\uAC8C \uC0DD\uACBC\uC796\uC544\uC694!!"
-  price: 500
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: da10ad2ef240f60459602bd17613a769, type: 3}
