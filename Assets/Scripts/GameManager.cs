@@ -44,13 +44,17 @@ namespace WeaponWorkshop
             InDialogue = false;
             InTargetSelection = false;
             InManual = false;
-            GameLogger.Data("Info", "System", "씬 시작", new SceneBootLog { scene = gameObject.scene.name });
             if (inputActions == null) return;
             controls = inputActions.FindActionMap("Game", true).Clone();
             controls.FindAction("Pause", true).performed += _ => TogglePause();
         }
         private void OnEnable() => controls?.Enable();
-        private void Start() => uiManager?.Refresh(this);
+        private void Start()
+        {
+            // LogKit 자동 초기화(AfterSceneLoad)가 첫 씬 Awake보다 늦으므로 Start에서 기록한다.
+            GameLogger.Data("Info", "System", "씬 시작", new SceneBootLog { scene = gameObject.scene.name });
+            uiManager?.Refresh(this);
+        }
         private void OnDisable()
         {
             if (cursorRestore != null) StopCoroutine(cursorRestore);
