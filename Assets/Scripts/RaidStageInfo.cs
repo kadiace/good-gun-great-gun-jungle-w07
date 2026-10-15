@@ -20,6 +20,14 @@ namespace WeaponWorkshop
             return Array.Find(table.regions, region => region != null && region.scene == scene);
         }
 
+        /// <summary>입장 비용. 행이 비었거나 값이 음수면 0으로 본다.</summary>
+        public static int EntryCost(this RaidMapData.Region region) =>
+            region != null && region.entryCost > 0 ? region.entryCost : 0;
+
+        /// <summary>지갑이 이 구역의 입장 비용을 낼 수 있는지 본다.</summary>
+        public static bool CanAffordEntry(this RaidMapData.Region region, PlayerWallet wallet) =>
+            wallet != null && wallet.CanAfford(region.EntryCost());
+
         /// <summary>지도 정보 패널용 설명. 모듈 획득 여부와 상자 수, 출몰 적을 행에서 계산한다.</summary>
         public static string Describe(this RaidMapData.Region region, ModuleCatalog catalog, PlayerModuleUnlocks unlocks)
         {
@@ -41,6 +49,8 @@ namespace WeaponWorkshop
             if (region.tanks) text.AppendLine("• 탱크");
             if (region.helicopters) text.AppendLine("• 헬기");
             if (!region.tanks && !region.helicopters) text.AppendLine("• 없음");
+            int cost = region.EntryCost();
+            text.AppendLine().Append("입장 비용  ").AppendLine(cost > 0 ? $"$ {cost:N0}" : "무료");
             return text.AppendLine().Append("지도에서 영역을 눌러 이동하세요.").ToString();
         }
 
@@ -75,6 +85,7 @@ namespace WeaponWorkshop
                 if (string.IsNullOrEmpty(region.scene)) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 씬 이름이 없습니다.");
                 else if (!scenes.Add(region.scene)) Debug.LogWarning($"스테이지 테이블 {resourcePath}에서 씬 이름 {region.scene}이 중복됩니다.");
                 if (string.IsNullOrEmpty(region.name)) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 {region.scene} 항목에 표시 이름이 없습니다.");
+                if (region.entryCost < 0) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 입장 비용이 음수입니다.");
             }
         }
     }
