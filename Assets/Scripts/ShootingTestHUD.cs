@@ -72,7 +72,8 @@ namespace WeaponWorkshop
             details.text = Controller.StatusText;
             if (Controller.NonForwardMuzzles > 0)
                 details.text += "\n* 현재 일부 총구가 전방을 향해 있지 않습니다 (" + Controller.NonForwardMuzzles + "개).";
-            retry.text = failed ? (Controller.CanRetryNearby ? "F: 같은 테스트 즉시 재시도 · Esc: 종료" : "테이블 근처로 돌아와 F: 재시도 · Esc: 종료")
+            retry.text = failed ? (Controller.CanRetryWithWeapon ? "F: 같은 테스트 즉시 재시도 · Esc: 종료" :
+                Controller.CanRetryNearby ? "테스트할 총을 손에 든 뒤 F: 재시도 · Esc: 종료" : "테이블 근처로 돌아와 F: 재시도 · Esc: 종료")
                 : "모든 총구를 전방으로 정렬하세요. 붉은 보호 표적은 파괴하면 실패합니다.";
         }
         private void OnDisable() { CancelTest(); if (panel != null) panel.gameObject.SetActive(false); }

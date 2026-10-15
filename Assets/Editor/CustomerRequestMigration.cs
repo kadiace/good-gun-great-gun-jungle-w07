@@ -108,7 +108,7 @@ internal static class CustomerRequestMigration
         table.requests = requests.OrderBy(r => r.id, StringComparer.Ordinal).ToArray();
         table.tags = tags.OrderBy(t => t.id, StringComparer.Ordinal).ToArray();
         table.legacySlots = legacySlots.ToArray();
-        CustomerRequestInfo.Validate(table);
+        CustomerRequestInfo.Validate(table, TableManager.Instance.ShootingTestTable);
         foreach (var entry in selected)
             if (!table.ContainsOrder(entry.Value)) throw new InvalidOperationException("프로필의 요청 ID를 표에서 찾을 수 없습니다: " + entry.Key.name);
         foreach (var entry in poolSelected)

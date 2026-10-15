@@ -19,10 +19,12 @@ namespace WeaponWorkshop
         public void SetDirection(Vector3Int direction)
         {
             if (direction.sqrMagnitude != 1) return;
+            bool changed = OutputDirection != direction;
             outputDirection = direction;
             ModuleDraw draw = GetComponent<ModuleDraw>();
             if (GetComponent<SplitModule>() != null) draw?.SetSplitAxis(direction);
             else draw?.SetDirection(direction);
+            if (changed) GetComponentInParent<CubeAssembly>()?.NotifyStructureChanged();
         }
     }
 }

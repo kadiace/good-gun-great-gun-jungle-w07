@@ -49,9 +49,9 @@ namespace WeaponWorkshop
         {
             if (GameManager.GameplayBlocked) return false;
             if (player == null || !player.enabled) return false;
-            // Player-owned temporary interaction takes priority near the test table; input remains Workshop/Interact.
-            if (player.GetComponent<PlayerShootingTest>()?.TryRetry() == true) return true;
             RefreshTarget();
+            // The player-owned mode decides whether this input belongs to a temporary interaction.
+            if (player.GetComponent<PlayerShootingTest>()?.TryRetry(aimedTarget) == true) return true;
             if (aimedTarget != null && TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeInteraction(aimedTarget)) return false;
             bool interacted = CanInteractTarget && aimedTarget.Interact(this);
             if (interacted) RefreshTarget();

@@ -27,6 +27,14 @@ namespace WeaponWorkshop
         private InputAction drop;
         [SerializeField, Min(0f), InspectorName("던지는 힘"), Tooltip("총을 던질 때 즉시 적용할 초기 속도(m/s)")] private float throwSpeed = 5f;
         public EquipableWeapon EquippedWeapon { get; private set; }
+        public event System.Action<EquipableWeapon, EquipableWeapon> EquippedWeaponChanged;
+        private void SetEquippedWeapon(EquipableWeapon next)
+        {
+            var previous = EquippedWeapon;
+            if (previous == next) return;
+            EquippedWeapon = next;
+            EquippedWeaponChanged?.Invoke(previous, next);
+        }
         public Camera AimCamera => aimCamera;
         public bool CanEquip => isActiveAndEnabled && handPoint != null;
 
@@ -188,7 +196,7 @@ namespace WeaponWorkshop
             if (weapon == null || weapon.IsEquipped || handPoint == null) return false;
             ReturnWeapon();
             if (!weapon.Equip(handPoint)) return false;
-            EquippedWeapon = weapon;
+            SetEquippedWeapon(weapon);
             WorkshopSoundEffects.RaiseWeaponEquipped(handPoint.position);
             return true;
         }
@@ -201,7 +209,7 @@ namespace WeaponWorkshop
                 (replacement != null && (replacement.IsEquipped || replacement.IsMoving))) return false;
             TakeWeapon();
             if (replacement == null || Equip(replacement)) return true;
-            EquippedWeapon = incoming;
+            SetEquippedWeapon(incoming);
             return false;
         }
 
@@ -209,7 +217,7 @@ namespace WeaponWorkshop
         {
             EquipableWeapon weapon = EquippedWeapon;
             weapon?.CancelCharge();
-            EquippedWeapon = null;
+            SetEquippedWeapon(null);
             ResetRecoil();
             return weapon;
         }
@@ -218,7 +226,7 @@ namespace WeaponWorkshop
         {
             EquippedWeapon?.CancelCharge();
             if (EquippedWeapon != null) EquippedWeapon.ReturnToWorkbench();
-            EquippedWeapon = null;
+            SetEquippedWeapon(null);
             ResetRecoil();
         }
     }

@@ -21,13 +21,16 @@ namespace WeaponWorkshop
         /// <summary>습격 스테이지 테이블. 로드 실패 시 빈 표이며 원인은 이미 로그로 남았다.</summary>
         public RaidMapData RaidMap { get; private set; }
         public CustomerRequestData CustomerRequest { get; private set; }
+        public ShootingTestTableData ShootingTestTable { get; private set; }
 
         private TableManager()
         {
             RaidMap = Load<RaidMapData>(RaidMapResource);
             RaidStageInfo.Validate(RaidMap, RaidMapResource);
+            ShootingTestTable = Load<ShootingTestTableData>(nameof(ShootingTestTableData));
+            ShootingTestInfo.Validate(ShootingTestTable);
             CustomerRequest = Load<CustomerRequestData>(nameof(CustomerRequestData));
-            CustomerRequestInfo.Validate(CustomerRequest);
+            CustomerRequestInfo.Validate(CustomerRequest, ShootingTestTable);
         }
 
         /// <summary>반복 호출해도 테이블을 다시 읽지 않는다.</summary>

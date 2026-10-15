@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
@@ -6,6 +7,64 @@ namespace WeaponWorkshop
 {
     public sealed class EquipableWeapon : MonoBehaviour, IInteractable
     {
+        // Runtime state belongs to this gun. Only world/travel saves restore it, never blueprints or prefabs.
+        private readonly HashSet<string> passedTestIds = new HashSet<string>(StringComparer.Ordinal);
+        private string certifiedAssemblyKey;
+        private string currentAssemblyKey;
+        public event Action AssemblyChanged;
+
+        public string TestAssemblyKey
+        {
+            get
+            {
+                if (currentAssemblyKey == null) currentAssemblyKey = ReadAssemblyKey();
+                return currentAssemblyKey;
+            }
+        }
+        private string ReadAssemblyKey()
+        {
+            try { return WeaponShareCode.GetAssemblyKey(this); }
+            catch (ArgumentException) { return null; }
+        }
+        public void NotifyAssemblyChanged()
+        {
+            passedTestIds.Clear(); certifiedAssemblyKey = null; currentAssemblyKey = null;
+            AssemblyChanged?.Invoke();
+        }
+        public bool RecordPassedTest(string testId, string startedAssemblyKey)
+        {
+            if (!TableManager.Instance.ShootingTestTable.IsAvailable(testId)) return false;
+            string actual = ReadAssemblyKey();
+            if (actual == null || actual != startedAssemblyKey) return false;
+            currentAssemblyKey = actual;
+            if (certifiedAssemblyKey != actual) passedTestIds.Clear();
+            certifiedAssemblyKey = actual;
+            passedTestIds.Add(testId);
+            return true;
+        }
+        public bool HasPassedTest(string testId) => TableManager.Instance.ShootingTestTable.IsAvailable(testId) &&
+            certifiedAssemblyKey != null && certifiedAssemblyKey == TestAssemblyKey && passedTestIds.Contains(testId);
+
+        public string[] CapturePassedTests(out string assemblyKey)
+        {
+            assemblyKey = null;
+            if (passedTestIds.Count == 0) return Array.Empty<string>();
+            if (ReadAssemblyKey() != certifiedAssemblyKey)
+            { passedTestIds.Clear(); certifiedAssemblyKey = null; currentAssemblyKey = null; return Array.Empty<string>(); }
+            assemblyKey = certifiedAssemblyKey;
+            var ids = new List<string>();
+            foreach (string id in passedTestIds) if (TableManager.Instance.ShootingTestTable.IsAvailable(id)) ids.Add(id);
+            ids.Sort(StringComparer.Ordinal);
+            return ids.ToArray();
+        }
+        public void RestorePassedTests(string[] ids, string assemblyKey)
+        {
+            passedTestIds.Clear(); certifiedAssemblyKey = null; currentAssemblyKey = ReadAssemblyKey();
+            if (ids == null || string.IsNullOrEmpty(assemblyKey) || currentAssemblyKey != assemblyKey) return;
+            foreach (string id in ids) if (TableManager.Instance.ShootingTestTable.IsAvailable(id)) passedTestIds.Add(id);
+            if (passedTestIds.Count > 0) certifiedAssemblyKey = assemblyKey;
+        }
+
         [SerializeField] private string weaponName = "나만의 총";
         public string WeaponName => string.IsNullOrWhiteSpace(weaponName) ? "나만의 총" : weaponName;
         public void SetWeaponName(string value)
@@ -113,7 +172,7 @@ namespace WeaponWorkshop
         public void IgnorePlayerCollisions()
         {
             var weaponColliders = GetComponentsInChildren<Collider>(true);
-            foreach (var player in Object.FindObjectsByType<FirstPersonPlayer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (var player in UnityEngine.Object.FindObjectsByType<FirstPersonPlayer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 if (player.gameObject.scene != gameObject.scene) continue;
                 foreach (var playerCollider in player.GetComponentsInChildren<Collider>(true))
