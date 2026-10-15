@@ -81,7 +81,7 @@ namespace WeaponWorkshop
                     if (wallet.TryPurchaseModule(Mathf.Max(0, money - oldMoney), Mathf.Max(0, materials - oldMaterials),
                         () => assembly.RestoreLayout(plan)))
                     {
-                        wallet.Credit(Mathf.Max(0, oldMoney - money)); wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
+                        wallet.RefundConstruction(Mathf.Max(0, oldMoney - money)); wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
                         current.SetWeaponName(blueprint.name); GetComponent<WeaponNameUI>()?.RefreshName();
                         current.GetComponentInChildren<StatCollector>()?.Recalculate();
                         ui.ShowNotification("무기 코드를 적용했습니다.");

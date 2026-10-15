@@ -6,6 +6,7 @@ namespace WeaponWorkshop
     {
         [SerializeField] private GameObject panel;
         [SerializeField] private TMPro.TMP_Text description;
+        [SerializeField] private CustomerRequirementsUI requirements;
         [SerializeField] private _DayManager dayManager;
         [Header("상태별 기본 목표")]
         [SerializeField, TextArea] private string openingObjective = "셔터를 올리고 영업을 시작하세요.";
@@ -30,6 +31,8 @@ namespace WeaponWorkshop
             originalPivot = panelRect.pivot;
             originalScale = panelRect.localScale;
             panel.SetActive(false);
+            description.fontSize = 20f;
+            description.enableAutoSizing = false;
             if (dayManager == null) dayManager = FindFirstObjectByType<_DayManager>();
         }
         private void OnEnable() => Refresh();
@@ -60,11 +63,13 @@ namespace WeaponWorkshop
                 panelRect.pivot = compact ? new Vector2(0f, .5f) : originalPivot;
                 panelRect.anchoredPosition = compact ? new Vector2(54f, 0f) : originalPosition;
                 panelRect.sizeDelta = compact ? new Vector2(300f, originalSize.y) : originalSize;
-                panelRect.localScale = compact ? originalScale * .85f : originalScale;
+                panelRect.localScale = originalScale;
             }
-            bool visible = !string.IsNullOrWhiteSpace(objective);
+            bool hasObjective = !string.IsNullOrWhiteSpace(objective);
+            if (description.gameObject.activeSelf != hasObjective) description.gameObject.SetActive(hasObjective);
+            bool visible = hasObjective || (requirements != null && requirements.HasActiveOrder);
             if (panel.activeSelf != visible) panel.SetActive(visible);
-            if (visible && description.text != objective) description.text = objective;
+            if (hasObjective && description.text != objective) description.text = objective;
         }
     }
 }

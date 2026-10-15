@@ -16,7 +16,8 @@ namespace WeaponWorkshop
 
         public override void CalculateLayoutInputVertical()
         {
-            SetLayoutInputForAxis(Arrange(false), Arrange(false), -1f, 1);
+            float height = Arrange(false);
+            SetLayoutInputForAxis(height, height, -1f, 1);
         }
 
         public override void SetLayoutHorizontal() => Arrange(true);
@@ -29,8 +30,11 @@ namespace WeaponWorkshop
             foreach (RectTransform child in rectChildren)
             {
                 var text = child.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                float width = Mathf.Min(available, (text != null ? text.preferredWidth : 0f) + textPadding.x * 2f);
-                float height = Mathf.Max(minimumHeight, (text != null ? text.preferredHeight : 0f) + textPadding.y * 2f);
+                float naturalWidth = text != null ? text.GetPreferredValues(text.text, Mathf.Infinity, Mathf.Infinity).x : 0f;
+                float width = Mathf.Min(available, naturalWidth + textPadding.x * 2f);
+                float textHeight = text != null ? text.GetPreferredValues(text.text,
+                    Mathf.Max(1f, width - textPadding.x * 2f), Mathf.Infinity).y : 0f;
+                float height = Mathf.Max(minimumHeight, textHeight + textPadding.y * 2f);
                 if (x > 0f && x + width > available)
                 {
                     x = 0f;

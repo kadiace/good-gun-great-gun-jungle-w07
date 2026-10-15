@@ -13,6 +13,7 @@ namespace WeaponWorkshop
             private readonly WeaponStats whole;
             private readonly WeaponStats firingStats;
             private readonly int muzzles, totalOnPath;
+            private readonly int splitTwoCount, splitFourCount;
             public bool HasWeapon { get; }
             private readonly EquipableWeapon weapon;
             public bool HasPassedTest(string id) => weapon != null && weapon.HasPassedTest(id);
@@ -44,6 +45,9 @@ namespace WeaponWorkshop
                             if (ModuleCounter.IsStatModule(kind)) total++;
                             if (seen.Add(block))
                             {
+                                // Count each firing split once, including splits on different branches.
+                                if (kind == ModuleKind.SplitTwo) splitTwoCount++;
+                                else if (kind == ModuleKind.SplitFour) splitFourCount++;
                                 var module = block.GetComponent<ModuleStats>();
                                 var bonus = module != null && module.Data != null ? module.Data.GetStats() : block.GetStatContribution();
                                 bonus.weight = 0f; effective.Add(bonus);
@@ -67,8 +71,8 @@ namespace WeaponWorkshop
                     case GunMeasure.PathModules:
                         if (condition.stat == StatType.Scope) return whole.scope; // Explicitly agreed sight exception.
                         return ModuleCounter.TryToKind(condition.stat, out var kind) && pathModules.TryGetValue(kind, out var count) ? count : 0;
-                    case GunMeasure.SplitTwoBlocks: return pathModules.TryGetValue(ModuleKind.SplitTwo, out var two) ? two : 0;
-                    case GunMeasure.SplitFourBlocks: return pathModules.TryGetValue(ModuleKind.SplitFour, out var four) ? four : 0;
+                    case GunMeasure.SplitTwoBlocks: return splitTwoCount;
+                    case GunMeasure.SplitFourBlocks: return splitFourCount;
                     case GunMeasure.TotalModules: return totalOnPath;
                     case GunMeasure.Muzzles: return muzzles;
                     default: return muzzleStats.TryGetValue(condition.stat, out var value) ? value : 0f;
@@ -193,15 +197,16 @@ namespace WeaponWorkshop
             string current = currentValue.ToString("0.##");
             if ((condition.measure == GunMeasure.SplitTwoBlocks || condition.measure == GunMeasure.SplitFourBlocks)
                 && condition.max == float.MaxValue)
-                return "한 발사 경로의 " + condition.label + "  " + current + " / " + condition.min.ToString("0.##");
+                return "발사 경로 전체의 " + condition.label + "  " + current + " / " + condition.min.ToString("0.##");
             return Describe(condition) + "  (현재 " + current + ")";
         }
-        public static string Describe(CustomerRequestData.Condition condition)
+        public static string Describe(CustomerRequestData.Condition condition, bool includePathScope = true)
         {
             string label = condition.label;
-            bool scopedModule = condition.measure == GunMeasure.PathModules || condition.measure == GunMeasure.TotalModules ||
-                condition.measure == GunMeasure.SplitTwoBlocks || condition.measure == GunMeasure.SplitFourBlocks;
-            if (scopedModule && condition.stat != StatType.Scope) label = "한 발사 경로의 " + label;
+            bool splitModule = condition.measure == GunMeasure.SplitTwoBlocks || condition.measure == GunMeasure.SplitFourBlocks;
+            if (includePathScope && splitModule) label = "발사 경로 전체의 " + label;
+            bool scopedModule = condition.measure == GunMeasure.PathModules || condition.measure == GunMeasure.TotalModules;
+            if (includePathScope && scopedModule && condition.stat != StatType.Scope) label = "한 발사 경로의 " + label;
             string lower = condition.min.ToString("0.##"), upper = condition.max.ToString("0.##");
             if (condition.min == condition.max && !condition.maxExclusive) return label + " 정확히 " + lower;
             if (condition.max == float.MaxValue) return label + " " + lower + " 이상";
