@@ -16,7 +16,18 @@ namespace WeaponWorkshop
         private Coroutine cursorRestore;
         private readonly System.Collections.Generic.List<GameObject> effects = new System.Collections.Generic.List<GameObject>();
         public static GameManager Instance { get; private set; }
-        public static bool GameplayBlocked => Instance != null && (Instance.IsPaused || Instance.InDialogue || Instance.IsNight || Instance.InTargetSelection || Instance.InManual || (Instance.UI != null && Instance.UI.IsChoiceOpen));
+        // 글자 입력 중에는 F(상호작용)·단축키 등 게임 조작이 입력과 함께 실행되지 않게 막는다.
+        public static bool GameplayBlocked => ModalBlocked || TextInputFocused;
+        // 창·대화·일시정지 등 화면 상태로만 막힌 경우. 입력칸에서 바로 누를 수 있어야 하는 UI 버튼의 활성 판정에 쓴다.
+        public static bool ModalBlocked => Instance != null && (Instance.IsPaused || Instance.InDialogue || Instance.IsNight || Instance.InTargetSelection || Instance.InManual || (Instance.UI != null && Instance.UI.IsChoiceOpen));
+        public static bool TextInputFocused
+        {
+            get
+            {
+                var selected = UnityEngine.EventSystems.EventSystem.current != null ? UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject : null;
+                return selected != null && selected.TryGetComponent<TMPro.TMP_InputField>(out var field) && field.isFocused;
+            }
+        }
         public bool InManual { get; private set; }
         public event System.Action ManualCloseRequested;
         public void SetManual(bool open) { InManual = open; RestoreCursor(); }
@@ -69,7 +80,8 @@ namespace WeaponWorkshop
         }
         public void TogglePause()
         {
-            if (!GameplayBlocked && uiManager != null && uiManager.GetComponent<ShootingTestHUD>()?.CloseRetry() == true) return;
+            // ESC는 입력칸 선택 중에도 창 닫기·작업대 나가기로 동작하므로 화면 상태(ModalBlocked)만 본다.
+            if (!ModalBlocked && uiManager != null && uiManager.GetComponent<ShootingTestHUD>()?.CloseRetry() == true) return;
             var tutorialSkip = uiManager != null ? uiManager.GetComponent<TutorialSkipUI>() : null;
             if (tutorialSkip != null && tutorialSkip.IsOpen) return;
             var recipe = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponRecipeUI>() : null;
@@ -83,7 +95,7 @@ namespace WeaponWorkshop
             var weaponName = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponNameUI>() : null;
             if (weaponName != null && weaponName.CancelEditing()) return;
             if (InTargetSelection) { TargetSelectionCloseRequested?.Invoke(); return; }
-            if (!GameplayBlocked)
+            if (!ModalBlocked)
             {
                 var session = workshopSession;
                 if (session == null && uiManager != null && uiManager.Player != null)

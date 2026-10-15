@@ -55,7 +55,8 @@ namespace WeaponWorkshop
         private void Focus()
         {
             if (!TutorialManager.ActionAllowed("rename")) { input.DeactivateInputField(); return; }
-            if (GameManager.GameplayBlocked || GameManager.Instance == null) return;
+            // 입력칸 자신이 선택된 상태는 막힘으로 보지 않는다.
+            if (GameManager.ModalBlocked || GameManager.Instance == null) return;
             ownsDialogue = true; GameManager.Instance.SetDialogue(true);
         }
         private void ReleaseFocus()
