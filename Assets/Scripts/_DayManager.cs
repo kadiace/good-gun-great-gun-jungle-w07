@@ -115,6 +115,7 @@ public class _DayManager : MonoBehaviour
         if (DayNumber != 0 || !HasRequiredReferences()) return;
         customerBell?.EndDay();
         if (!ApplyCustomerDay(PrepareDay(1))) return;
+        wallet?.RestoreTodayConstructionCost(0);
         DayNumber = 1;
         CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodayRent = 0;
         isSettled = IsNight = IsSettlementOpen = CanStartNextDay = false;
@@ -316,6 +317,7 @@ public class _DayManager : MonoBehaviour
         }
         CustomerDay nextDay = PrepareDay(DayNumber + 1);
         if (!ApplyCustomerDay(nextDay)) return;
+        wallet?.RestoreTodayConstructionCost(0);
         startedDayInDebt = wallet != null && Money < 0;
         DayNumber = nextDay.day;
         CompletedGuests = 0;
@@ -351,6 +353,7 @@ public class _DayManager : MonoBehaviour
         customerBell.EndDay();
         if (!ApplyCustomerDay(target)) return false;
         DayNumber = day;
+        wallet?.RestoreTodayConstructionCost(0);
         CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodayRent = 0;
         isSettled = IsNight = night;
         IsSettlementOpen = IsBankrupt = bankruptcyResultOpen = returningToStart = startedDayInDebt = false;
@@ -374,7 +377,8 @@ public class _DayManager : MonoBehaviour
     public void CaptureSave(GameSaveData data)
     {
         data.completed = CompletedGuests; data.dissatisfied = DissatisfiedGuests; data.killed = KilledGuests;
-        data.income = TodayIncome; data.period = (int)CurrentPeriod; data.night = IsNight;
+        data.income = TodayIncome; data.constructionCost = wallet != null ? wallet.TodayConstructionCost : 0;
+        data.period = (int)CurrentPeriod; data.night = IsNight;
         data.settlement = IsSettlementOpen; data.timer = timerController.CaptureSave();
         data.startedDayInDebt = startedDayInDebt;
         customerBell.CaptureSave(data);
@@ -461,6 +465,7 @@ public class _DayManager : MonoBehaviour
         if (!ApplyCustomerDay(restoredDay)) return;
         DayNumber = data.day; CompletedGuests = data.completed; DissatisfiedGuests = data.dissatisfied;
         KilledGuests = data.killed; TodayIncome = data.income; CurrentPeriod = (setTimer)data.period;
+        wallet?.RestoreTodayConstructionCost(data.constructionCost);
         hasCurrentPeriod = true; isSettled = IsNight = data.night; IsSettlementOpen = data.settlement;
         startedDayInDebt = data.startedDayInDebt;
         // The saved wallet already includes rent; restore its display without charging again.

@@ -17,6 +17,7 @@ namespace WeaponWorkshop
             public CubeAssembly.LayoutSnapshot snapshot;
             public PlayerWallet wallet;
             public int walletBalance;
+            public int todayConstructionCost;
             public int walletModuleCredits;
         }
 
@@ -679,6 +680,7 @@ namespace WeaponWorkshop
                 snapshot = snapshot,
                 wallet = wallet,
                 walletBalance = walletBalance,
+                todayConstructionCost = wallet != null ? wallet.TodayConstructionCost : 0,
                 walletModuleCredits = walletModuleCredits
             });
             return true;
@@ -707,6 +709,7 @@ namespace WeaponWorkshop
             CancelPreview();
             if (!entry.assembly.RestoreLayout(entry.snapshot)) return;
             entry.wallet?.RestoreBalance(entry.walletBalance);
+            entry.wallet?.RestoreTodayConstructionCost(entry.todayConstructionCost);
             entry.wallet?.RestoreModuleCredits(entry.walletModuleCredits);
             undoHistory.RemoveAt(last);
         }

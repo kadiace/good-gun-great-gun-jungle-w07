@@ -206,8 +206,8 @@ public sealed class DaySettlementUI : MonoBehaviour
             todayIncomeText.gameObject.SetActive(show);
             if (show)
             {
-                int netIncome = dayManager.TodayIncome - dayManager.TodayRent;
-                string amount = $"$ {netIncome:N0}";
+                long netIncome = (long)dayManager.TodayIncome - dayManager.TodayRent - (wallet != null ? wallet.TodayConstructionCost : 0);
+                string amount = netIncome < 0 ? $"−$ {-netIncome:N0}" : $"$ {netIncome:N0}";
                 if (netIncome < 0) amount = $"<color=#D5443F>{amount}</color>";
                 todayIncomeText.text = $"<size=18>최종 정산액</size>\n{amount}";
             }
@@ -218,10 +218,15 @@ public sealed class DaySettlementUI : MonoBehaviour
             string rentAmount = dayManager.TodayRent > 0
                 ? $"<color=#D5443F>−$ {dayManager.TodayRent:N0}</color>"
                 : $"$ {dayManager.TodayRent:N0}";
+            int constructionCost = wallet != null ? wallet.TodayConstructionCost : 0;
+            string constructionAmount = constructionCost > 0
+                ? $"<color=#D5443F>−$ {constructionCost:N0}</color>"
+                : constructionCost < 0 ? $"+$ {-(long)constructionCost:N0}" : "$ 0";
             summaryText.text = $"완료한 손님<pos=78%>{dayManager.CompletedGuests}명\n" +
                 $"불만족 손님<pos=78%>{dayManager.DissatisfiedGuests}명\n" +
-                $"살해한 손님<pos=78%>{dayManager.KilledGuests}명\n\n" +
+                $"살해한 손님<pos=78%>{dayManager.KilledGuests}명\n" +
                 $"수입<pos=65%>+$ {dayManager.TodayIncome:N0}\n" +
+                $"총기 제작비<pos=65%>{constructionAmount}\n" +
                 $"자리세<pos=65%>{rentAmount}";
             if (dayManager.IsBankrupt)
                 summaryText.text += "\n\n<color=#D5443F>자릿세를 낼 돈이 부족합니다.</color>";
