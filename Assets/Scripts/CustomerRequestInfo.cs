@@ -200,13 +200,13 @@ namespace WeaponWorkshop
                 return "발사 경로 전체의 " + condition.label + "  " + current + " / " + condition.min.ToString("0.##");
             return Describe(condition) + "  (현재 " + current + ")";
         }
-        public static string Describe(CustomerRequestData.Condition condition)
+        public static string Describe(CustomerRequestData.Condition condition, bool includePathScope = true)
         {
             string label = condition.label;
             bool splitModule = condition.measure == GunMeasure.SplitTwoBlocks || condition.measure == GunMeasure.SplitFourBlocks;
-            if (splitModule) label = "발사 경로 전체의 " + label;
+            if (includePathScope && splitModule) label = "발사 경로 전체의 " + label;
             bool scopedModule = condition.measure == GunMeasure.PathModules || condition.measure == GunMeasure.TotalModules;
-            if (scopedModule && condition.stat != StatType.Scope) label = "한 발사 경로의 " + label;
+            if (includePathScope && scopedModule && condition.stat != StatType.Scope) label = "한 발사 경로의 " + label;
             string lower = condition.min.ToString("0.##"), upper = condition.max.ToString("0.##");
             if (condition.min == condition.max && !condition.maxExclusive) return label + " 정확히 " + lower;
             if (condition.max == float.MaxValue) return label + " " + lower + " 이상";
