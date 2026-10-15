@@ -10,12 +10,14 @@ namespace WeaponWorkshop
         [SerializeField, Min(0)] private int startingBalance = 99999999;
         public int StartingBalance => startingBalance;
         public int Balance { get; private set; }
+        public int TodayConstructionCost { get; private set; }
         [SerializeField, Min(0)] private int startingModuleCredits;
         public int ModuleCredits { get; private set; }
 
         private void Awake()
         {
             Balance = Mathf.Max(0, startingBalance);
+            TodayConstructionCost = 0;
             ModuleCredits = Mathf.Max(0, startingModuleCredits);
         }
         public event Action Changed;
@@ -46,6 +48,7 @@ namespace WeaponWorkshop
         {
             if (!CheckModuleFunds(dollars, materials) || purchase == null || !purchase()) return false;
             Balance = (int)Math.Max(int.MinValue, (long)Balance - dollars);
+            TodayConstructionCost = (int)Math.Min(int.MaxValue, (long)TodayConstructionCost + dollars);
             ModuleCredits -= materials;
             Changed?.Invoke();
             return true;
@@ -90,6 +93,19 @@ namespace WeaponWorkshop
         {
             if (amount <= 0) return;
             Balance = (int)Math.Min(int.MaxValue, (long)Balance + amount);
+            Changed?.Invoke();
+        }
+
+        public void RefundConstruction(int amount)
+        {
+            if (amount <= 0) return;
+            TodayConstructionCost = (int)Math.Max(int.MinValue, (long)TodayConstructionCost - amount);
+            Credit(amount);
+        }
+
+        public void RestoreTodayConstructionCost(int amount)
+        {
+            TodayConstructionCost = amount;
             Changed?.Invoke();
         }
 

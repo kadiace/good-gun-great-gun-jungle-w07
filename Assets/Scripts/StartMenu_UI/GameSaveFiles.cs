@@ -151,6 +151,8 @@ namespace WeaponWorkshop
         public WeaponWorldSave[] weapons = Array.Empty<WeaponWorldSave>();
         public TargetWorldSave[] targets = Array.Empty<TargetWorldSave>();
         public int completed, dissatisfied, killed, income, period, nextCustomer, currentCustomer = -1;
+        public int constructionCost;
+        public int soldConstructionCost;
         public bool night, settlement, confirmation, inWorkshop;
         public bool startedDayInDebt;
         public int workbench = -1;

@@ -81,7 +81,7 @@ namespace WeaponWorkshop
                     Mathf.Max(0, old.paidConstructionCost - oldMoney), out int money, out int materials);
                 var wallet = ui.Player.GetComponent<PlayerWallet>();
                 if (!wallet.TryPurchaseModule(Mathf.Max(0, money - oldMoney), Mathf.Max(0, materials - oldMaterials), () => assembly.RestoreLayout(plan))) return;
-                wallet.Credit(Mathf.Max(0, oldMoney - money)); wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
+                wallet.RefundConstruction(Mathf.Max(0, oldMoney - money)); wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
                 selectedWeapon.SetWeaponName(blueprint.name);
                 selectedWeapon.GetComponentInChildren<StatCollector>()?.Recalculate();
                 GetComponent<WeaponNameUI>()?.RefreshName();

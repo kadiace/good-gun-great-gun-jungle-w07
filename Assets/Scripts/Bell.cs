@@ -126,9 +126,9 @@ namespace WeaponWorkshop
             current.Arrive(profile, counterPoint.position, exitPoint.position, paymentSettings);
             return true;
         }
-        private void OnSaleAccepted(int price)
+        private void OnSaleAccepted(int price, int constructionCost)
         {
-            dayManager?.ReceivePayment(price);
+            dayManager?.ReceivePayment(price, constructionCost);
             SaleAccepted?.Invoke(price);
         }
 
