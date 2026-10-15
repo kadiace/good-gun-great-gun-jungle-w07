@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: a00ebe5381d81494ba1d532eaa55a166
   requestIds:
-  - 70d86a3c50472dd47b261b990ddd9210
+  - tag/shotgun/legacy
   lines:
   - "\uC0F7\uAC74 \uD558\uB098\uC694."
   - "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uAC00 \uBD99\uC740 \uAC78\uB85C\uC694!"

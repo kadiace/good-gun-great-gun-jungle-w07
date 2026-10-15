@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: WantTag_Flamethrower
   m_EditorClassIdentifier: 
-  tableId: f414d5e3527d6c94caba92a8f1ea4073
+  tableId: tag/flamethrower
   displayName: 
   request: 
   conditions: []

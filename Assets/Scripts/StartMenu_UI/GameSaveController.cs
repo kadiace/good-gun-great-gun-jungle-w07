@@ -149,6 +149,10 @@ namespace WeaponWorkshop
         }
         private void Start()
         {
+            using (dayManager != null ? dayManager.SuppressShopLogs() : null) InitializeSaveState();
+        }
+        private void InitializeSaveState()
+        {
             bool showReturnFade = NightRaidTransfer.ReturnDayFadePending;
             NightRaidTransfer.ReturnDayFadePending = false;
             if(NightRaidTransfer.TryConsumeReturn(out var workshop, out int creditsBeforeLoss))
@@ -211,6 +215,10 @@ namespace WeaponWorkshop
             dayManager.StartNextDay();
         }
         private void Restore(GameSaveData data)
+        {
+            using (dayManager != null ? dayManager.SuppressShopLogs() : null) RestoreCore(data);
+        }
+        private void RestoreCore(GameSaveData data)
         {
             GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
             if (data.version >= 3) { RestoreWorldSave(data); return; }

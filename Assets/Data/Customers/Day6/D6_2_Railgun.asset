@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 949c287f545cef84eb20c1f31f8eba01
   requestIds:
-  - db5262cea8401e542a56f9a2812196a3
-  - d6d6fd1701a033d4b849c531f7f4f5f1
+  - tag/charge/legacy
+  - tag/sniper-rifle/legacy
   lines:
   - "\uBE5B\uC758\uAC80 : \uC288\uD37C\uB178\uBC14 \uD55C\uC790\uB8E8 \uC8FC\uC138\uC694!"
   - "\uCC28\uC9C0 \uD0DC\uADF8\uC640 \uC800\uACA9\uCD1D \uD0DC\uADF8\uB97C \uBD99\uC5EC\uC8FC\uC138\uC694.

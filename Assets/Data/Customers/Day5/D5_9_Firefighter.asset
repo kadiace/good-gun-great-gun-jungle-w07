@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 52c56089bff6c5341966c99523742ef5
   requestIds:
-  - 48aeae95d13c1f643817498a6dae1573
-  - db5262cea8401e542a56f9a2812196a3
+  - tag/water-gun/legacy
+  - tag/charge/legacy
   lines:
   - "\uBB3C\uCD1D \uD0DC\uADF8\uC5D0 \uCC28\uC9C0 \uD0DC\uADF8\uAE4C\uC9C0 \uBD80\uD0C1\uD574\uC694!"
   endsClear: 1

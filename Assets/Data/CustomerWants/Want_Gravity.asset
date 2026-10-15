@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Gravity
   m_EditorClassIdentifier: 
-  tableId: 6bfd82587bbb4a640a1dcc436cacd347
+  tableId: tag/gravity-gun/legacy
   displayName: 
   request: 
   conditions: []

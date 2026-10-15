@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: e58d71f88d4f876438bf7acace814a9b
   requestIds:
-  - 982660b8fcc3c1340adfa1edcdfb1257
-  - 2be3abe367214f4498ce45b36c408667
+  - tag/grenade-launcher/legacy
+  - stat/weight/min-4/d3-4-sommelier
   lines:
   - "\uC5EC\uAE30 \uC18C\uBBC8\uB9AC\uC5D0 \uC788\uB098\uC694?"
   - "\uC720\uD0C4 \uD0DC\uADF8\uC5D0, \uC2A4\uD0EF \uBAA8\uB4C8\uC740 4\uAC1C \uC774\uC0C1

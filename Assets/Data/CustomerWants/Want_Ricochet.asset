@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Ricochet
   m_EditorClassIdentifier: 
-  tableId: fdd2d5a8251468842be3744e7dba689f
+  tableId: tag/ricochet/legacy
   displayName: 
   request: 
   conditions: []

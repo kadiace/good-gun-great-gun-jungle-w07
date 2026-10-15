@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 1117dd03e64b32a43b93b4a15b89a4c2
   requestIds:
-  - 6bfd82587bbb4a640a1dcc436cacd347
+  - tag/gravity-gun/legacy
   lines:
   - "\uC544\uB3C8 \uBE60\uAC00\uB3C8\uB098\uC2A4\uD0A4!(\u041E\u0433\u043E\u043D\u044C
     \u043F\u043E \u0433\u043E\u0442\u043E\u0432\u043D\u043E\u0441\u0442\u0438!)"

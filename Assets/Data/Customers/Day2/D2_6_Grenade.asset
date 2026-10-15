@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: a657c8e6daaac0640b26135bf3b0e940
   requestIds:
-  - 982660b8fcc3c1340adfa1edcdfb1257
+  - tag/grenade-launcher/legacy
   lines:
   - "\uC720\uD0C4 \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC73C\uB85C \uB9DE\uCDB0\uC8FC\uC138\uC694."
   endsClear: 1

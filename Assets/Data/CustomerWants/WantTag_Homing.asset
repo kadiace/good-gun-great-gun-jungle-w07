@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: WantTag_Homing
   m_EditorClassIdentifier: 
-  tableId: 91214fdaf5f33204b87af5b6e5faafc8
+  tableId: tag/homing
   displayName: 
   request: 
   conditions: []

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 8df14042c9325de4e9e896078ddebfc2
   requestIds:
-  - e64de5a40aee4451b6b5fef4f2560b76
-  - a61fe9fb9a4d488788c1ec6b1072ae0f
+  - module/penetration/min-1/d0-5-combo
+  - module/split-four/min-1/d0-5-combo
   lines:
   - "\uAD00\uD1B5 \uBAA8\uB4C8\uC774\uB791 4\uBC29\uD5A5 \uBD84\uD560 \uBAA8\uB4C8,
     \uB458 \uB2E4 \uC368\uC11C \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694."

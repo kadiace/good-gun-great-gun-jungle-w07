@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 1cd9be92bac19b246923e91f6cf077e7
   requestIds:
-  - afce91ece9f68f44b92e48a1652ea36b
-  - fdd2d5a8251468842be3744e7dba689f
+  - tag/handgun/legacy
+  - tag/ricochet/legacy
   lines:
   - "\uD398\uB974\uC18C\uB098\uB97C \uC18C\uD658\uD560 \uC218 \uC788\uB294 \uCD1D
     \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694."

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 0a8af4ee73848804a9693aa05665fb80
   requestIds:
-  - c45e9713dbf2ac3469b4a59283112118
-  - 60c861d406fb6fd48a48e2649ddcb52b
+  - tag/flamethrower/legacy
+  - tag/spin/legacy
   lines:
   - "\uB0B4\uAC8C \uCD95\uAD6C\uB294... \uC0B4\uC778\uC774\uB2E4... \uD30C\uC774\uC5B4
     \uD1A0\uB124\uC774\uB3C4!!"

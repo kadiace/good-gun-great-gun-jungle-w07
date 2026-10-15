@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: 6a41b8901ebccb14a9bea905b5e759ab
   requestIds:
-  - fdd2d5a8251468842be3744e7dba689f
+  - tag/ricochet/legacy
   lines:
   - "\uB2F9\uAD6C \uC88B\uC544\uD558\uC138\uC694?"
   - "\uB3C4\uD0C4 \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC774\uC694. \uBCBD\uC5D0

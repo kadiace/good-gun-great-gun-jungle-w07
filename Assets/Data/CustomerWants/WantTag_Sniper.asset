@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: WantTag_Sniper
   m_EditorClassIdentifier: 
-  tableId: 4f973a10b24bb66429934674b59258d1
+  tableId: tag/sniper-rifle
   displayName: 
   request: 
   conditions: []

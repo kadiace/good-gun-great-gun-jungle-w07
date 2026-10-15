@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_SplitTwo
   m_EditorClassIdentifier: 
-  tableId: 7845d9dc6dfec7644bc4727e668fa871
+  tableId: module/split-two/min-1
   displayName: 
   request: 
   conditions: []

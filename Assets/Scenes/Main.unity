@@ -14829,6 +14829,14 @@ PrefabInstance:
       propertyPath: customerBell
       value: 
       objectReference: {fileID: 66214490}
+    - target: {fileID: 7008050243500031001, guid: e1c2177cd405fbb49ab073208c035664, type: 3}
+      propertyPath: customerBell
+      value:
+      objectReference: {fileID: 66214490}
+    - target: {fileID: 7008050243500031001, guid: e1c2177cd405fbb49ab073208c035664, type: 3}
+      propertyPath: player
+      value:
+      objectReference: {fileID: 988761843}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: WantTag_MiniNuke
   m_EditorClassIdentifier: 
-  tableId: a0eed031913cef84eab19bafbe2ff4df
+  tableId: tag/mini-nuke
   displayName: 
   request: 
   conditions: []

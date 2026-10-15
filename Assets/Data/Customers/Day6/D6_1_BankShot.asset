@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: d5a59221e412b7b4bb5188f1953c12d2
   requestIds:
-  - fdd2d5a8251468842be3744e7dba689f
-  - d6d6fd1701a033d4b849c531f7f4f5f1
+  - tag/ricochet/legacy
+  - tag/sniper-rifle/legacy
   lines:
   - "\uB3C4\uD0C4\uB418\uC5C8\uC2B5\uB2C8\uB2E4."
   - "\uB3C4\uD0C4 \uD0DC\uADF8\uC640 \uC800\uACA9\uCD1D \uD0DC\uADF8\uB97C \uD568\uAED8

@@ -38,7 +38,7 @@ namespace WeaponWorkshop
             var table = TableManager.Instance.CustomerRequest;
             var picked = new List<string>();
             var candidates = new List<string>();
-            foreach (string id in requestIds ?? System.Array.Empty<string>())
+            foreach (string id in table.CanonicalRequestIds(requestIds) ?? System.Array.Empty<string>())
                 if (CustomerModuleRequirements.Allows(new[] { id }, unlocks, CoreStats, day) &&
                     CustomerModuleRequirements.CreditCost(new[] { id }, unlocks, CoreStats) <= moduleCredits) candidates.Add(id);
             int count = Mathf.Min(Random.Range(min, Mathf.Max(min, max) + 1), candidates.Count);

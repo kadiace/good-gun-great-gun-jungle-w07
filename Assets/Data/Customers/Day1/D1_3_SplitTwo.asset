@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profileId: a660428af7905aa49a0c3400753fd0ae
   requestIds:
-  - 81148a6e113140c18bfdab5b9d6201d6
+  - module/fire-rate/min-1/d1-3-split-two
   lines:
   - "\uC5F0\uC0AC \uBAA8\uB4C8\uC774 \uB4E4\uC5B4\uAC04 \uCD1D\uC774\uC694."
   endsClear: 1

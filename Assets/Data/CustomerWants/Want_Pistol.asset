@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Pistol
   m_EditorClassIdentifier: 
-  tableId: afce91ece9f68f44b92e48a1652ea36b
+  tableId: tag/handgun/legacy
   displayName: 
   request: 
   conditions: []

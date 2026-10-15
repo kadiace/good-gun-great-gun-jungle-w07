@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.EventSystems;
-using LogKit;
 
 namespace WeaponWorkshop
 {
@@ -33,6 +32,8 @@ namespace WeaponWorkshop
         private FirstPersonPlayer player;
         private WeaponHolder weaponHolder;
         private Workbench activeWorkbench;
+        public event System.Action WorkbenchEntered;
+        public event System.Action<EquipableWeapon> WorkbenchExited;
         public Workbench ActiveWorkbench => activeWorkbench;
         private InputAction exit;
         private InputActionMap controls;
@@ -117,7 +118,7 @@ namespace WeaponWorkshop
             originalFieldOfView = playerCamera.fieldOfView;
             hasOriginalFieldOfView = true;
             SetMode(true, animate);
-            GameLogger.Info("Workshop", "작업대 진입");
+            WorkbenchEntered?.Invoke();
             return true;
         }
 
@@ -126,7 +127,6 @@ namespace WeaponWorkshop
             if (!TutorialManager.ActionAllowed("exit")) return;
             if (!IsInWorkshop) return;
             SetMode(false, true);
-            GameLogger.Info("Workshop", "작업대 퇴장");
             if (cursorRestore != null) StopCoroutine(cursorRestore);
             cursorRestore = StartCoroutine(RestoreCursorAfterEscape());
         }
@@ -150,6 +150,7 @@ namespace WeaponWorkshop
 
         private void SetMode(bool workshop, bool animate = false)
         {
+            if (!workshop && activeWorkbench != null) WorkbenchExited?.Invoke(activeWorkbench.CurrentWeapon);
             if (cameraMove != null) StopCoroutine(cameraMove);
             cameraMove = null;
             if (!workshop) RestoreWorkshopFieldOfView();

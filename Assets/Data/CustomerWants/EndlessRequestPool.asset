@@ -14,22 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   poolId: 4ed43104870c3e24f89f81d6ec6fd1bd
   requestIds:
-  - c8e35a29c16ae91459a744997e871c23
-  - 7845d9dc6dfec7644bc4727e668fa871
-  - 5c76f903d2f431541ba0ad0748212dca
-  - bfd5154c074e097469bfe8a36c7fd547
-  - 0d8bdcf9176b9d144832800890380fe9
-  - f414d5e3527d6c94caba92a8f1ea4073
-  - 2a84630bf124ec64ba0d101ec701cbe6
-  - c72d25cecff161540a6c693be4355a28
-  - 91214fdaf5f33204b87af5b6e5faafc8
-  - a0eed031913cef84eab19bafbe2ff4df
-  - 018d81c1a0e6af041832d131bd683963
-  - b2f89098d7e03e14ea82f271ee522562
-  - 9dc28f49f1304f142a4751f178f39cdf
-  - 4f973a10b24bb66429934674b59258d1
-  - 6dd80349125f3384f99d6fce630dd64e
-  - a06ceb531cbb6a041b8f160acf2c8c1d
+  - module/scope/min-1
+  - module/split-two/min-1
+  - module/split-four/min-1
+  - tag/assault-rifle
+  - tag/charge
+  - tag/flamethrower
+  - tag/gravity-gun
+  - tag/grenade-launcher
+  - tag/homing
+  - tag/mini-nuke
+  - tag/handgun
+  - tag/ricochet
+  - tag/shotgun
+  - tag/sniper-rifle
+  - tag/spin
+  - tag/water-gun
   requests: []
   coreBaseStats: {fileID: 11400000, guid: a5e8910bc9b6fe24992c755e554564ef, type: 2}
   minRequests: 1
