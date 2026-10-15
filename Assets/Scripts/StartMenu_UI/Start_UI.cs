@@ -19,9 +19,12 @@ public sealed class Start_UI : MonoBehaviour
         RefreshSaveAvailability();
     }
 
+    // 세이브 파일 읽고 지 상태 결정하는쪽으로 로직 바꿈요
     public void RefreshSaveAvailability()
     {
-        if (keepStartGameButton != null) keepStartGameButton.interactable = WeaponWorkshop.GameSaveFiles.LatestSlot() >= 0;
+        if (keepStartGameButton == null) return;
+        bool hasAvailableSave = WeaponWorkshop.GameSaveFiles.LatestSlot() >= 0;
+        keepStartGameButton.gameObject.SetActive(hasAvailableSave);
     }
 
     public void KeepStartGame()
