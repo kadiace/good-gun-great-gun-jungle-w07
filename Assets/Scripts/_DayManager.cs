@@ -545,7 +545,8 @@ public class _DayManager : MonoBehaviour
     private bool CanRestoreOrder(CustomerOrderSave order)
     {
         if (order == null) return false;
-        if (order.orderState != null && !Guid.TryParseExact(order.orderState.orderId, "N", out _)) return false;
+        if (order.orderState != null && !string.IsNullOrEmpty(order.orderState.orderId) &&
+            !Guid.TryParseExact(order.orderState.orderId, "N", out _)) return false;
         if (!string.IsNullOrEmpty(order.profileId) || order.sourceSlot >= 0)
             return FindSavedProfile(order) != null && (order.requestIds == null || TableManager.Instance.CustomerRequest.ContainsOrder(order.requestIds));
         return order.lines != null && order.lines.Length > 0 && order.price >= 0 &&
@@ -563,12 +564,14 @@ public class _DayManager : MonoBehaviour
         {
             var restored = CreateRuntimeOrder(authored, restored: true);
             if (order.requestIds != null) restored.requestIds = SavedRequestIds(order);
-            restored.OrderState = order.orderState?.Copy(fromSave: true) ?? CustomerOrderState.Create(restored: true);
+            restored.OrderState = !string.IsNullOrEmpty(order.orderState?.orderId)
+                ? order.orderState.Copy(fromSave: true) : CustomerOrderState.Create(restored: true);
             return restored;
         }
         var profile = ScriptableObject.CreateInstance<CustomerProfile>();
         profile.name = "RestoredCombination";
-        profile.OrderState = order.orderState?.Copy(fromSave: true) ?? CustomerOrderState.Create(restored: true);
+        profile.OrderState = !string.IsNullOrEmpty(order.orderState?.orderId)
+            ? order.orderState.Copy(fromSave: true) : CustomerOrderState.Create(restored: true);
         ownedOrders.Add(profile);
         profile.lines = order.lines;
         profile.requestIds = (string[])SavedRequestIds(order).Clone();
