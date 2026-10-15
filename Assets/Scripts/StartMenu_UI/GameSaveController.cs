@@ -110,7 +110,6 @@ namespace WeaponWorkshop
             var wallet = player.GetComponent<PlayerWallet>();
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
-                raidDeathDrops = RaidDeathLoot.Capture(),
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
                 savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null };
             data.playerPosition = player.transform.position; data.playerEuler = player.transform.eulerAngles;
@@ -168,9 +167,8 @@ namespace WeaponWorkshop
                 {
                     if (TutorialManager.TrainingReturnPending && TutorialManager.Instance != null &&
                         TutorialManager.Instance.ResumeTrainingHome(dayManager)) return;
-                    AdvanceAfterRaid(showReturnFade);
+                    if (showReturnFade) AdvanceAfterRaid(true);
                     player.GetComponent<PlayerWallet>()?.ShowModuleCreditLoss(creditsBeforeLoss);
-                    SaveRaidRecovery();
                 }
                 else NightRaidTransfer.KeepRecovery(workshop);
                 return;
@@ -180,7 +178,6 @@ namespace WeaponWorkshop
                 if (dayManager != null)
                 {
                     dayManager.CloseShop();
-                    AdvanceAfterRaid(showReturnFade);
                 }
                 return;
             }
@@ -192,19 +189,7 @@ namespace WeaponWorkshop
             }
             GameSaveFiles.PendingLoad = null;
             if (!restoreOnStart) return;
-            RaidDeathLoot.Restore(data.raidDeathDrops);
-            if (data.raidDeathReturnPending)
-            {
-                if (!RestoreWorldSave(data)) return;
-                if (dayManager.CanStartNextDay) dayManager.StartNextDay(); else dayManager.ShowSettlement();
-                SaveRaidRecovery();
-            }
-            else Restore(data);
-        }
-        private void SaveRaidRecovery()
-        {
-            if ((RaidDeathLoot.Capture().Length > 0 || GameSaveFiles.HasRaidRecovery) &&
-                TryCaptureTravel(out var recovery, out _)) GameSaveFiles.TryWriteRaidRecovery(recovery);
+            Restore(data);
         }
         private void AdvanceAfterRaid(bool showFade)
         {

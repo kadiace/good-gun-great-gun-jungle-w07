@@ -33,17 +33,9 @@ public sealed class Start_UI : MonoBehaviour
         int slot = WeaponWorkshop.GameSaveFiles.LatestSlot();
         if (slot < 0)
         {
-            // Never let a hidden recovery copy or stale in-memory load start a game by itself.
             WeaponWorkshop.GameSaveFiles.PendingLoad = null;
             RefreshSaveAvailability();
             WeaponWorkshop.FeedbackUI.For(this)?.ShowNotification("불러올 수 있는 저장 파일이 없습니다.");
-            return;
-        }
-        if (WeaponWorkshop.GameSaveFiles.TryReadRaidRecovery(out var recovery) &&
-            (!WeaponWorkshop.GameSaveFiles.TryReadSlot(slot, out var saved) || recovery.savedUtcTicks > saved.savedUtcTicks))
-        {
-            WeaponWorkshop.GameSaveFiles.PendingLoad = recovery;
-            BeginGame(string.IsNullOrEmpty(recovery.sceneName) ? gameSceneName : recovery.sceneName);
             return;
         }
         LoadSlot(slot);
@@ -63,7 +55,6 @@ public sealed class Start_UI : MonoBehaviour
     {
         if (loading) return;
         WeaponWorkshop.GameSaveFiles.PendingLoad = null;
-        WeaponWorkshop.RaidDeathLoot.Clear();
         WeaponWorkshop.GameSaveFiles.ClearRaidRecovery();
         BeginGame();
     }

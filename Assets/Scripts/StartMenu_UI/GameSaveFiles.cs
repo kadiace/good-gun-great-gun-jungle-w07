@@ -142,8 +142,6 @@ namespace WeaponWorkshop
         public int version = 7, day, balance, paidCost;
         public int moduleCredits;
         public int[] unlockedModules = Array.Empty<int>();
-        public RaidDeathDropSave[] raidDeathDrops = Array.Empty<RaidDeathDropSave>();
-        public bool raidDeathReturnPending;
         public CustomerOrderSave[] dailyOrders;
         public CustomerOrderSave[] deferredCustomers;
         public int dailyRent;
@@ -172,27 +170,11 @@ namespace WeaponWorkshop
         private static string AutoSavePath => Path.Combine(Application.persistentDataPath, "Saves", "autosave.json");
         private static string RaidRecoveryPath => Path.Combine(Application.persistentDataPath, "Saves", "raid-recovery.json");
         public static bool HasRaidRecovery => File.Exists(RaidRecoveryPath);
-        public static bool TryReadRaidRecovery(out GameSaveData data) => TryReadPath(RaidRecoveryPath, out data);
         public static void ClearRaidRecovery()
         {
             if (HasRaidRecovery) File.Delete(RaidRecoveryPath);
             string temp = RaidRecoveryPath + ".tmp";
             if (File.Exists(temp)) File.Delete(temp);
-        }
-        public static bool TryWriteRaidRecovery(GameSaveData data)
-        {
-            if (data == null) return false;
-            try
-            {
-                data.savedUtcTicks = DateTime.UtcNow.Ticks;
-                WritePath(RaidRecoveryPath, data, true);
-                return true;
-            }
-            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
-            {
-                Debug.LogError("사망 드롭 복구 상태를 저장하지 못했습니다: " + e.Message);
-                return false;
-            }
         }
         private static string PathFor(int slot)
         {
@@ -230,9 +212,6 @@ namespace WeaponWorkshop
                     read.blocks.Select(b => b.cell).Distinct().Count() != read.blocks.Length) return false;
                 if (read.version >= 3 && (string.IsNullOrEmpty(read.sceneName) || read.map == null || read.weapons == null || read.targets == null ||
                     read.weapons.Any(w => w == null || w.blocks == null || w.blocks.Any(b => b == null || b.slot < 1 || b.paidCost < 0)))) return false;
-                if (read.raidDeathDrops != null && read.raidDeathDrops.Any(d => d == null || string.IsNullOrEmpty(d.id) ||
-                    string.IsNullOrEmpty(d.sceneName) || d.credits < 0 || d.modules == null ||
-                    (d.weapon != null && (d.weapon.blocks == null || d.weapon.blocks.Any(b => b == null || b.slot < 1 || b.paidCost < 0))))) return false;
                 if (read.version < 4)
                 {
                     int[] ids = { 0, 1, 2, 3, 4, 8, 5, 9, 11, 10, 16, 13, 14, 12, 15, 7, 17, 6, 19, 18 };
@@ -263,7 +242,6 @@ namespace WeaponWorkshop
             if (AutoSaveExists) File.Delete(AutoSavePath);
             string temp = AutoSavePath + ".tmp";
             if (File.Exists(temp)) File.Delete(temp);
-            // The raid recovery file is an internal companion snapshot, not an independent save slot.
             ClearRaidRecovery();
         }
         public static void DeleteAllSaves()
@@ -271,7 +249,6 @@ namespace WeaponWorkshop
             for (int slot = 0; slot < SlotCount; slot++) Delete(slot);
             DeleteAutoSave();
             PendingLoad = null;
-            RaidDeathLoot.Clear();
             NightRaidTransfer.Abandon();
         }
         public static int LatestSlot()
