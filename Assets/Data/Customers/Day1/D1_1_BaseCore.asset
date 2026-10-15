@@ -15,7 +15,6 @@ MonoBehaviour:
   profileId: 25b5381ef8e155343bbafe08fae3af6d
   requestIds:
   - module/stat-modules/exact-0/d1-1-base-core
-  - shooting-test/wide-targets
   lines:
   - "\uCC98\uC74C\uC774\uB77C \uC798 \uBAB0\uB77C\uC11C\uC694. \uAC1C\uC870 \uC548
     \uD55C \uAE30\uBCF8 \uCF54\uC5B4 \uADF8\uB300\uB85C \uC8FC\uC138\uC694."
