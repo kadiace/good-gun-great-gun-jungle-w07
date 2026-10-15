@@ -6,6 +6,7 @@ namespace WeaponWorkshop
     // 공방에서 고를 수 있는 전체 모듈 목록. 모듈 ID = 목록 순서 + 1.
     // 1 기본 블럭, 2 연장, 3 두 방향 분할, 4 네 방향 분할, 5번부터 스탯 모듈.
     [CreateAssetMenu(fileName = "ModuleCatalog", menuName = "Weapon Workshop/Module Catalog")]
+    [System.Obsolete("레거시 테이블 저장소(스크립터블오브젝트). 참조 테이블은 Resources/X.json -> XData -> TableManager 3층으로 승격하며, 새로 만들거나 고치는 기능은 TableManager.Instance.~~로 읽는다.")]
     public sealed class ModuleCatalog : ScriptableObject
     {
         [Serializable]

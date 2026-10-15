@@ -4,6 +4,7 @@ using UnityEngine;
 namespace WeaponWorkshop
 {
     // One candidate query, then data-only processing as the wave grows.
+    [DefaultExecutionOrder(-1000)]
     public sealed class ExpandingExplosion : MonoBehaviour
     {
         public struct Piece
@@ -170,7 +171,9 @@ namespace WeaponWorkshop
                 energy[first.direction] = blocked ? 0f : Mathf.Max(0f, incoming - cost);
                 nextLayer = end;
             }
-            foreach (var target in dirty) target.FinishExplosionStep();
+            PoolManager.QueueExplosionFinish(dirty);
+            if (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius)
+                PoolManager.FlushExplosionFinish();
             while (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius)
             {
                 var hit = healthHits[nextHealth++];

@@ -387,6 +387,7 @@ namespace WeaponWorkshop
             backgroundMusicSource.clip = null;
         }
 
+        // 레거시 테이블: Resources 경로 문자열로 클립을 찾는다. 새 테이블 값은 TableManager에서 받아온다.
         private AudioClip LoadBackgroundMusic(string clipName)
             => Resources.Load<AudioClip>("Sound/BGM/" + clipName);
 
@@ -519,6 +520,7 @@ namespace WeaponWorkshop
             raidMusicVolume = Mathf.Clamp01(raidMusicVolume);
         }
 
+        // 레거시 테이블: Resources 경로 문자열 + 파일명 키. 새 테이블 값은 TableManager에서 받아온다.
         private AudioClip LoadClip(string clipName)
         {
             if (clips.TryGetValue(clipName, out AudioClip clip)) return clip;

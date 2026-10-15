@@ -168,6 +168,7 @@ namespace WeaponWorkshop
             return modelHalfHeight;
         }
 
+        // 레거시 테이블: 모델 이름으로 텍스처를 짝짓는다. 짝지는 표를 만들면 TableManager로 승격한다.
         private static void ApplyMatchingArtwork(GameObject model)
         {
             if (model == null) return;

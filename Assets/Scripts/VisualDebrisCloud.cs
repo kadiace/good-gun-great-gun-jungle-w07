@@ -18,6 +18,8 @@ namespace WeaponWorkshop
             public bool absorbing;
             public Vector3 absorptionStart, absorptionCenter, spreadPosition;
             public float spreadFraction;
+            public float distantElapsed;
+            public uint visualId;
         }
         private readonly List<Fragment> fragments = new List<Fragment>();
         private sealed class FallingGroup
@@ -103,11 +105,18 @@ namespace WeaponWorkshop
         private Color color;
         private float floorHeight, floorBounce, floorFriction;
         private float rollingFriction = 3f, bounceMultiplier = 0.4f, motionMultiplier = 0.65f, wallSearchRadius = 12f;
+        [SerializeField, Min(0f)] private float fullDetailDistance = 6f;
+        [SerializeField, Min(0)] private int maximumDistantDraws = 256;
         private readonly DebrisWallCache wallCache = new DebrisWallCache();
         private int wallCursor;
         private bool[] wallSelected = System.Array.Empty<bool>();
         private int nearCursor;
-        private bool MovingDebris(Fragment part) => !part.absorbing && part.velocity.sqrMagnitude>.0225f && part.age<part.lifetime;
+        private uint nextVisualId;
+        private bool hasView;
+        private Vector3 viewPosition;
+        private bool Distant(Vector3 position) => hasView && (position - viewPosition).sqrMagnitude > fullDetailDistance * fullDetailDistance;
+        private bool MovingDebris(Fragment part) => !part.absorbing && !Distant(part.position) &&
+            part.velocity.sqrMagnitude > .0225f && part.age < part.lifetime;
         private void SelectWallChecks(int quota)
         {
             if(wallSelected.Length<fragments.Count)System.Array.Resize(ref wallSelected,Mathf.NextPowerOfTwo(fragments.Count));
@@ -234,6 +243,7 @@ namespace WeaponWorkshop
                 spreadFraction = emissionSpreadFraction,
                 lifetime = absorbEmission ? emissionDuration : lifetime, fade = Mathf.Clamp(fade, 0.01f, lifetime) };
             VaryDebris(ref part);
+            part.visualId = ++nextVisualId;
             fragments.Add(part);
         }
 
@@ -316,6 +326,7 @@ namespace WeaponWorkshop
                         part.velocity = scatter * impactKick
                             + new Vector3(group.velocity.x, impactKick * 0.25f, group.velocity.z);
                         VaryDebris(ref part);
+                        part.visualId = ++nextVisualId;
                         fragments.Add(part);
                         group.parts[index] = group.parts[group.parts.Count - 1];
                         group.parts.RemoveAt(group.parts.Count - 1);
@@ -359,6 +370,46 @@ namespace WeaponWorkshop
             Mathf.Abs((rotation * Vector3.up).y * scale.y) +
             Mathf.Abs((rotation * Vector3.forward).y * scale.z));
 
+        private void AdvanceDistant(ref Fragment part, float dt, Vector3 gravity)
+        {
+            if (part.grounded)
+            {
+                part.velocity.y = 0f;
+                Vector3 previous = part.velocity;
+                part.velocity = Vector3.MoveTowards(part.velocity, Vector3.zero, floorFriction * dt);
+                if (part.velocity.sqrMagnitude < 0.0225f) part.velocity = Vector3.zero;
+                part.position += (previous + part.velocity) * (0.5f * dt);
+            }
+            else
+            {
+                part.position += part.velocity * dt + gravity * (0.5f * dt * dt);
+                part.velocity += gravity * dt;
+                float restingY = floorHeight + HalfHeight(part.rotation, part.scale);
+                if (part.position.y <= restingY)
+                {
+                    part.position.y = restingY;
+                    if (part.velocity.y < 0f)
+                    {
+                        float rebound = -part.velocity.y * floorBounce;
+                        part.grounded = rebound < 0.45f;
+                        part.velocity.y = part.grounded ? 0f : rebound;
+                    }
+                }
+            }
+            part.wallPosition = part.position;
+            part.wallElapsed = 0f;
+        }
+
+        private bool DrawDistant(Fragment part, ref int drawn)
+        {
+            if (drawn >= maximumDistantDraws) return false;
+            float distance = Vector3.Distance(part.position, viewPosition);
+            float fraction = Mathf.Lerp(1f, 0.25f, Mathf.Clamp01((distance - fullDetailDistance) / 18f));
+            if ((part.visualId * 2654435761u) / (float)uint.MaxValue >= fraction) return false;
+            drawn++;
+            return true;
+        }
+
         private void LateUpdate()
         {
             if (material == null) return;
@@ -370,8 +421,13 @@ namespace WeaponWorkshop
             foreach (var bucket in buckets) bucket.Clear();
             float dt = Time.deltaTime;
             AdvanceGroups(dt);
+            Camera view = Camera.main;
+            hasView = view != null;
+            if (hasView) viewPosition = view.transform.position;
             int wallQuota = Mathf.Min(fragments.Count,PoolManager.WallChecksPerCloud);
             SelectWallChecks(wallQuota);
+            Vector3 gravity = Physics.gravity;
+            int distantDrawn = 0;
             for (int i = fragments.Count - 1; i >= 0; i--)
             {
                 Fragment part = fragments[i];
@@ -398,15 +454,33 @@ namespace WeaponWorkshop
                     buckets[15].Add(Matrix4x4.TRS(part.position, part.rotation, part.scale * (1f - eased)));
                     continue;
                 }
-                Vector3 gravity = Physics.gravity;
+                if (Distant(part.position))
+                {
+                    part.distantElapsed += dt;
+                    if (((Time.frameCount + (int)part.visualId) & 1) == 0)
+                    {
+                        AdvanceDistant(ref part, part.distantElapsed, gravity);
+                        part.distantElapsed = 0f;
+                    }
+                    fragments[i] = part;
+                    if (DrawDistant(part, ref distantDrawn))
+                    {
+                        float opacity = Mathf.Clamp01((part.lifetime - part.age) / part.fade);
+                        buckets[Mathf.Clamp(Mathf.CeilToInt(opacity * 15f), 0, 15)]
+                            .Add(Matrix4x4.TRS(part.position, part.rotation, part.scale));
+                    }
+                    continue;
+                }
+                float step = dt + part.distantElapsed;
+                part.distantElapsed = 0f;
                 float alpha = Mathf.Clamp01((part.lifetime - part.age) / part.fade);
                 if (part.grounded)
                 {
                     part.velocity.y = 0f;
                     Vector3 previousVelocity = part.velocity;
-                    part.velocity = Vector3.MoveTowards(part.velocity, Vector3.zero, floorFriction * dt);
+                    part.velocity = Vector3.MoveTowards(part.velocity, Vector3.zero, floorFriction * step);
                     if(part.velocity.sqrMagnitude<0.0225f)part.velocity=Vector3.zero;
-                    Vector3 movement = (previousVelocity + part.velocity) * (0.5f * dt);
+                    Vector3 movement = (previousVelocity + part.velocity) * (0.5f * step);
                     part.position += movement;
                     float rollingRadius = Mathf.Max(0.01f, Mathf.Max(part.scale.x, part.scale.z) * 0.5f);
                     if (movement.sqrMagnitude > 0.00000001f)
@@ -425,16 +499,16 @@ namespace WeaponWorkshop
                         if (Mathf.Abs(forward.y) > best) bestAxis = forward;
                         if (bestAxis.y < 0f) bestAxis = -bestAxis;
                         Quaternion flat = Quaternion.FromToRotation(bestAxis, Vector3.up) * part.rotation;
-                        part.rotation = Quaternion.RotateTowards(part.rotation, flat, 180f * dt);
+                        part.rotation = Quaternion.RotateTowards(part.rotation, flat, 180f * step);
                     }
                     part.spin = Vector3.zero;
                 }
                 else
                 {
-                    part.position += part.velocity * dt + gravity * (0.5f * dt * dt);
-                    part.velocity += gravity * dt;
+                    part.position += part.velocity * step + gravity * (0.5f * step * step);
+                    part.velocity += gravity * step;
                 }
-                if (!part.grounded) part.rotation = (Quaternion.Euler(part.spin * dt) * part.rotation).normalized;
+                if (!part.grounded) part.rotation = (Quaternion.Euler(part.spin * step) * part.rotation).normalized;
                 // Cube extent along world Y prevents rotating corners from sinking below the plane.
                 float halfHeight = HalfHeight(part.rotation, part.scale);
                 float restingY = floorHeight + halfHeight;
@@ -454,7 +528,7 @@ namespace WeaponWorkshop
                         part.velocity.y = part.grounded ? 0f : rebound;
                     }
                 }
-                part.wallElapsed += dt;
+                part.wallElapsed += step;
                 if(wallSelected[i] && part.velocity.sqrMagnitude>0.0225f && PoolManager.TryWallCheck())
                 {
                     float wallRadius=0.5f*part.scale.magnitude;

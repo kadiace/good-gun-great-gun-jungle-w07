@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.EventSystems;
+using LogKit;
 
 namespace WeaponWorkshop
 {
@@ -116,6 +117,7 @@ namespace WeaponWorkshop
             originalFieldOfView = playerCamera.fieldOfView;
             hasOriginalFieldOfView = true;
             SetMode(true, animate);
+            GameLogger.Info("Workshop", "작업대 진입");
             return true;
         }
 
@@ -124,6 +126,7 @@ namespace WeaponWorkshop
             if (!TutorialManager.ActionAllowed("exit")) return;
             if (!IsInWorkshop) return;
             SetMode(false, true);
+            GameLogger.Info("Workshop", "작업대 퇴장");
             if (cursorRestore != null) StopCoroutine(cursorRestore);
             cursorRestore = StartCoroutine(RestoreCursorAfterEscape());
         }

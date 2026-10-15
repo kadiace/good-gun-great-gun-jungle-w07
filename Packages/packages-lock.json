@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.team.logkit": {
+      "version": "https://github.com/Bo-sung/logkit.git?path=package",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "2a8d2731de53e5f6c946f2380167982a578f98c4"
+    },
     "com.unity.2d.animation": {
       "version": "13.0.6",
       "depth": 1,

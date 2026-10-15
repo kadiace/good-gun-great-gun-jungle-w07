@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LogKit;
 
 namespace WeaponWorkshop
 {
@@ -27,6 +28,7 @@ namespace WeaponWorkshop
         private Vector3 halfExtents;
         private int penetrationsRemaining;
         private float penetrationPower;
+        private bool hitCounted;
         private bool exploded;
         private int ricochetsRemaining;
         private bool terminal;
@@ -40,6 +42,8 @@ namespace WeaponWorkshop
             effects = GetComponent<ProjectileEffects>();
             terminal = false;
             exploded = false;
+            hitCounted = false;
+            GameLogger.Count("Attack");
             penetrationPower = effects != null ? Mathf.Max(0f, effects.Stats.penetration) : 0f;
             ignoredOwner = owner;
             ignoredWeapon = weapon;
@@ -220,6 +224,12 @@ namespace WeaponWorkshop
             TargetHealth target = hit.collider.GetComponentInParent<TargetHealth>();
             bool firstHitOnTarget = target != null && hitTargets.Add(target);
             bool firstHitOnStructure = structure != null && hitStructures.Add(structure);
+            // 명중률 지표: 탄 하나당 처음 맞은 순간만 센다.
+            if (!hitCounted && (structure != null || target != null))
+            {
+                hitCounted = true;
+                GameLogger.Count("AttackHit");
+            }
             // Internal voxel crossings do not need their own particle systems.
             if (structure != null ? firstHitOnStructure : target != null ? firstHitOnTarget : true)
                 ShowImpact(hit.point, hit.normal, incomingDirection);

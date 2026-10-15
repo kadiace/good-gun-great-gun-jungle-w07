@@ -76,6 +76,7 @@ public sealed class Start_UI : MonoBehaviour
             return;
         }
         loading = true;
+        LogKit.GameLogger.Info("System", string.IsNullOrEmpty(savedScene) ? "새 게임 시작" : $"저장 게임 시작({savedScene})");
         SceneManager.LoadSceneAsync(sceneToLoad);
     }
 
