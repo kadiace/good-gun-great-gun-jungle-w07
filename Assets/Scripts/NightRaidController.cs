@@ -21,6 +21,8 @@ namespace WeaponWorkshop
         private bool mapOpen, transitioning, inRaid, returnOpen, openedFromPreparation, entryRestoreFailed;
         private bool returningAfterDeath;
         private FirstPersonPlayer player;
+        private WeaponHolder playerWeaponHolder;
+        private Camera raidCamera;
         private RaidPlayerHealth playerHealth;
         private PaintMaterialLibrary travelPaints;
         private float returnCooldown;
@@ -30,6 +32,10 @@ namespace WeaponWorkshop
         private const float ExtractionDuration = 5f;
         private int raidStartingCredits, raidStartingBalance;
         private int[] raidStartingModules;
+        private float raidStartedAt;
+        private int enemyKills, moduleCrateCredits, materialCrateCredits;
+        private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
+        private readonly System.Collections.Generic.HashSet<string> discoveredEnemies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
         private readonly System.Collections.Generic.SortedSet<int> trainingModules = new System.Collections.Generic.SortedSet<int>();
         public bool HasTrainingModule(int moduleId) => trainingModules.Contains(moduleId);
@@ -71,7 +77,14 @@ namespace WeaponWorkshop
             }
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             returningAfterDeath = died;
-            GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog { scene = gameObject.scene.name, survived = !died });
+            GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog
+            {
+                scene = gameObject.scene.name, survived = !died,
+                time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
+                moduleCrateRewards = moduleCrateRewards.ToArray(), moduleCrateCredits = moduleCrateCredits,
+                materialCrateCredits = materialCrateCredits, enemyKills = enemyKills,
+                health = playerHealth != null ? playerHealth.CurrentHealth : 0f
+            });
             ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(), () =>
             { returnOpen = true; ReturnHome(); });
         }
@@ -118,6 +131,82 @@ namespace WeaponWorkshop
             CancelExtraction();
             ui.Bind(this); ui.ShowMap(false); ui.ShowReturn(false);
         }
+        private void OnEnable()
+        {
+            DestructibleTarget.CellDestroyed += OnCellDestroyed;
+            RaidEnemyCore.Spawned += OnEnemySpawned;
+            RaidEnemyCore.Killed += OnEnemyKilled;
+            ModuleCreditPickup.CreditCollected += OnMaterialCollected;
+            ModuleUnlockPickup.RewardCollected += OnModuleCollected;
+        }
+        private void OnDisable()
+        {
+            DestructibleTarget.CellDestroyed -= OnCellDestroyed;
+            RaidEnemyCore.Spawned -= OnEnemySpawned;
+            RaidEnemyCore.Killed -= OnEnemyKilled;
+            ModuleCreditPickup.CreditCollected -= OnMaterialCollected;
+            ModuleUnlockPickup.RewardCollected -= OnModuleCollected;
+        }
+        private void OnCellDestroyed(DestructibleTarget target, string blockId)
+        {
+            if (!inRaid || target.gameObject.scene != gameObject.scene) return;
+            GameLogger.Data("Info", "NightRaid", "블록 파괴", new RaidBlockDestroyedLog
+            { stageId = gameObject.scene.name, time = Time.timeSinceLevelLoad, blockId = blockId });
+        }
+        private void OnEnemySpawned(RaidEnemyCore core)
+        {
+            if (!inRaid || core.gameObject.scene != gameObject.scene || string.IsNullOrEmpty(core.EnemyId)) return;
+            GameLogger.Data("Info", "NightRaid", "적 생성", new RaidEnemyLog { time = Time.timeSinceLevelLoad, enemyId = core.EnemyId });
+        }
+        private void OnEnemyKilled(RaidEnemyCore core)
+        {
+            if (!inRaid || core.gameObject.scene != gameObject.scene) return;
+            enemyKills++;
+            GameLogger.Data("Info", "NightRaid", "적 처치", new RaidEnemyLog { time = Time.timeSinceLevelLoad, enemyId = core.EnemyId });
+        }
+        private void OnMaterialCollected(FirstPersonPlayer collector, int amount)
+        {
+            if (inRaid && collector == player) materialCrateCredits += amount;
+        }
+        private void OnModuleCollected(FirstPersonPlayer collector, int moduleId, int credits)
+        {
+            if (!inRaid || collector != player) return;
+            if (moduleId > 0) moduleCrateRewards.Add(moduleId);
+            else moduleCrateCredits += credits;
+        }
+        private void FixedUpdate()
+        {
+            if (!inRaid || resultOpen || entryRestoreFailed || player == null) return;
+            int moduleCrates = 0, materialCrates = 0, tanks = 0, helicopters = 0;
+            foreach (var crate in ModuleUnlockCrate.ActiveCrates)
+                if (crate != null && crate.gameObject.scene == gameObject.scene && !crate.IsClaimed) moduleCrates++;
+            foreach (var crate in ModuleCreditCrate.ActiveCrates)
+                if (crate != null && crate.gameObject.scene == gameObject.scene && !crate.IsClaimed) materialCrates++;
+            for (int i = 0; i < RaidEnemyCore.ActiveCount; i++)
+            {
+                var core = RaidEnemyCore.ActiveAt(i);
+                if (core == null || core.IsDestroyed || core.gameObject.scene != gameObject.scene || string.IsNullOrEmpty(core.EnemyId)) continue;
+                if (core.EnemyType == RaidEnemyType.Tank) tanks++;
+                else if (core.EnemyType == RaidEnemyType.Helicopter) helicopters++;
+                if (GameManager.GameplayBlocked || raidCamera == null || discoveredEnemies.Contains(core.EnemyId)) continue;
+                Vector3 aimPoint = core.GetComponent<TargetHealth>().AimPoint;
+                Vector3 viewport = raidCamera.WorldToViewportPoint(aimPoint);
+                if (viewport.z <= 0f || viewport.x < 0f || viewport.x > 1f || viewport.y < 0f || viewport.y > 1f) continue;
+                Vector3 direction = aimPoint - raidCamera.transform.position;
+                if (Physics.Raycast(raidCamera.transform.position, direction, out var hit, direction.magnitude,
+                        Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) &&
+                    RaidEnemyCore.FindForPart(hit.collider.transform) == core && discoveredEnemies.Add(core.EnemyId))
+                    GameLogger.Data("Info", "NightRaid", "적 발견", new RaidEnemyLog { time = Time.timeSinceLevelLoad, enemyId = core.EnemyId });
+            }
+            GameLogger.Data("Info", "NightRaid", "플레이어 상태", new RaidPlayerStateLog
+            {
+                time = Time.timeSinceLevelLoad, position = player.transform.position,
+                cameraRotation = raidCamera != null ? raidCamera.transform.rotation.eulerAngles : player.ViewPoint.rotation.eulerAngles,
+                health = playerHealth != null ? playerHealth.CurrentHealth : 0f,
+                remainingModuleCrates = moduleCrates, remainingMaterialCrates = materialCrates,
+                tanks = tanks, helicopters = helicopters
+            });
+        }
         private void OnDestroy()
         {
             if (playerHealth != null) playerHealth.Died -= ShowDeathResult;
@@ -129,6 +218,8 @@ namespace WeaponWorkshop
             var area = Object.FindFirstObjectByType<NightRaidArea>();
             if (area == null) return;
             player = uiManager.Player;
+            playerWeaponHolder = player != null ? player.GetComponent<WeaponHolder>() : null;
+            raidCamera = playerWeaponHolder != null ? playerWeaponHolder.AimCamera : null;
             playerHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
             inRaid = true;
             GameLogger.Data("Info", "NightRaid", "습격 시작", new SceneBootLog { scene = gameObject.scene.name });
@@ -154,6 +245,9 @@ namespace WeaponWorkshop
             raidStartingCredits = player.GetComponent<PlayerWallet>().ModuleCredits;
             raidStartingBalance = player.GetComponent<PlayerWallet>().Balance;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
+            raidStartedAt = Time.timeSinceLevelLoad;
+            enemyKills = moduleCrateCredits = materialCrateCredits = 0;
+            moduleCrateRewards.Clear(); discoveredEnemies.Clear();
             if (playerHealth != null) playerHealth.Died += ShowDeathResult;
             gameManager.SetDialogue(false); gameManager.SetNight(false);
         }

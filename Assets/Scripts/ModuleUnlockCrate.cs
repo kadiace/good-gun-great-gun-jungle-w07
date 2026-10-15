@@ -1,9 +1,16 @@
+using System.Collections.Generic;
 using UnityEngine;
 namespace WeaponWorkshop
 {
     [RequireComponent(typeof(DestructibleTarget))]
     public sealed class ModuleUnlockCrate : MonoBehaviour, IInteractable
     {
+        private static readonly List<ModuleUnlockCrate> activeCrates = new List<ModuleUnlockCrate>();
+        public static IReadOnlyList<ModuleUnlockCrate> ActiveCrates => activeCrates;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRegistry() => activeCrates.Clear();
+        private void OnEnable() => activeCrates.Add(this);
+        private void OnDisable() => activeCrates.Remove(this);
         [SerializeField, Min(1)] private int moduleId = 10;
         [SerializeField] private ModuleUnlockPickup pickupPrefab;
         [SerializeField, Min(0f)] private float upwardSpeed = 3f;
@@ -13,6 +20,7 @@ namespace WeaponWorkshop
         private bool rewardsCredits;
         private DestructibleTarget body;
         private bool claimed;
+        public bool IsClaimed => claimed;
         private ModuleUnlockCrateSpawner.Objective objective;
         public void TrackObjective(ModuleUnlockCrateSpawner.Objective target) => objective = target;
         public Transform OutlineRoot => transform;

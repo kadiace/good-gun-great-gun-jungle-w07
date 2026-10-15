@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -5,6 +6,12 @@ namespace WeaponWorkshop
     [RequireComponent(typeof(DestructibleTarget))]
     public sealed class ModuleCreditCrate : MonoBehaviour, IInteractable
     {
+        private static readonly List<ModuleCreditCrate> activeCrates = new List<ModuleCreditCrate>();
+        public static IReadOnlyList<ModuleCreditCrate> ActiveCrates => activeCrates;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRegistry() => activeCrates.Clear();
+        private void OnEnable() => activeCrates.Add(this);
+        private void OnDisable() => activeCrates.Remove(this);
         [SerializeField, Min(1)] private int reward = 50;
         [SerializeField] private ModuleCreditPickup pickupPrefab;
         [SerializeField, Min(1)] private int dropCount = 5;
@@ -45,7 +52,7 @@ namespace WeaponWorkshop
                 var pickup = Instantiate(pickupPrefab, transform.position + Vector3.up * 0.25f + direction * 0.2f,
                     Quaternion.identity, transform.parent);
                 int amount = reward / count + (i < reward % count ? 1 : 0);
-                pickup.Release(amount, direction * scatterSpeed + Vector3.up * upwardSpeed);
+                pickup.ReleaseFromCrate(amount, direction * scatterSpeed + Vector3.up * upwardSpeed);
             }
         }
 

@@ -6,6 +6,7 @@ namespace WeaponWorkshop
     public sealed partial class DestructibleTarget : MonoBehaviour
     {
         public static event System.Action<DestructibleTarget> PartDestroyed;
+        public static event System.Action<DestructibleTarget, string> CellDestroyed;
         [SerializeField, HideInInspector] private string targetId;
         public string TargetId => targetId;
         public string StageId => gameObject.scene.name;
@@ -290,6 +291,7 @@ namespace WeaponWorkshop
         private static readonly Vector3Int[] neighbors = { Vector3Int.right, Vector3Int.left,
             Vector3Int.up, Vector3Int.down, Vector3Int.forward, Vector3Int.back };
         private bool subdivided;
+        private bool restoringSave;
         private Vector3 initialPosition;
         private Quaternion initialRotation;
         private Vector3 initialScale;
@@ -763,8 +765,10 @@ namespace WeaponWorkshop
                 if (!subdivided) Subdivide();
                 ResetTarget();
                 var keep = new HashSet<Vector3Int>(state.remaining ?? System.Array.Empty<Vector3Int>());
+                restoringSave = true;
                 foreach (var cell in new List<Cell>(cells))
                     if (!keep.Contains(coordinates[cell])) { RemoveCell(cell); }
+                restoringSave = false;
                 structureDirty = false; renderDirty = true;
             }
             transform.localPosition = state.position; transform.localRotation = state.rotation; transform.localScale = state.scale;
@@ -812,8 +816,10 @@ namespace WeaponWorkshop
 
         private void RemoveCell(Cell cell)
         {
+            string cellId = null;
             if (coordinates.TryGetValue(cell, out Vector3Int coordinate))
             {
+                if (!restoringSave && CellDestroyed != null) TryGetCellId(coordinate, out cellId);
                 RecordSupportRemoval(cell, coordinate);
                 MarkRenderChunk(coordinate);
                 grid.Remove(coordinate);
@@ -826,6 +832,7 @@ namespace WeaponWorkshop
             cells.RemoveAt(cells.Count - 1);
             cell.slot = -1;
             renderDirty = true;
+            if (cellId != null) CellDestroyed?.Invoke(this, cellId);
         }
 
         private void DropUnsupported()

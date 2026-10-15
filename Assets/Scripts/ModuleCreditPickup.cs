@@ -5,10 +5,12 @@ namespace WeaponWorkshop
     [RequireComponent(typeof(Rigidbody))]
     public sealed class ModuleCreditPickup : MonoBehaviour
     {
+        public static event System.Action<FirstPersonPlayer, int> CreditCollected;
         [SerializeField, Min(0f)] private float pickupDelay = 0.35f;
         [SerializeField] private PickupMagnet magnet = new PickupMagnet();
         [SerializeField] private Color color = new Color(0.2f, 1f, 0.32f, 1f);
         private int amount;
+        private bool materialCrateReward;
         private bool collected;
         private float availableAt;
         public event System.Action Collected;
@@ -33,6 +35,11 @@ namespace WeaponWorkshop
             amount = Mathf.Max(0, value);
             magnet.Launch(velocity);
         }
+        public void ReleaseFromCrate(int value, Vector3 velocity)
+        {
+            materialCrateReward = true;
+            Release(value, velocity);
+        }
 
         private void FixedUpdate()
         {
@@ -43,6 +50,7 @@ namespace WeaponWorkshop
             if (wallet == null) return;
             collected = true;
             wallet.CreditModuleCredits(amount);
+            if (materialCrateReward) CreditCollected?.Invoke(player, amount);
             Collected?.Invoke();
             gameObject.SetActive(false);
             Destroy(gameObject);
