@@ -12,9 +12,9 @@ namespace WeaponWorkshop
         private RaidTank cargo;
         private Vector3 destination, exit;
         private bool released, initialized;
-        public void Initialize(FirstPersonPlayer player, Vector3 landingPoint, Vector3 outward)
+        public bool Initialize(FirstPersonPlayer player, Vector3 landingPoint, Vector3 outward, string enemyId)
         {
-            if (tankPrefab == null || cargoAnchor == null) { Destroy(gameObject); return; }
+            if (tankPrefab == null || cargoAnchor == null) { Destroy(gameObject); return false; }
             outward.y = 0f; if (outward.sqrMagnitude < 0.01f) outward = Vector3.forward;
             outward.Normalize();
             float height = dropHeight - cargoAnchor.localPosition.y;
@@ -23,8 +23,9 @@ namespace WeaponWorkshop
             transform.rotation = Quaternion.LookRotation(-outward);
             exit = destination - outward * 80f;
             cargo = Instantiate(tankPrefab, cargoAnchor.position, transform.rotation, cargoAnchor);
-            cargo.Initialize(player); initialized = true;
+            cargo.Initialize(player, enemyId); initialized = true;
             WorkshopSoundEffects.RaiseTankAppeared(transform.position);
+            return true;
         }
         private void ReleaseCargo()
         {

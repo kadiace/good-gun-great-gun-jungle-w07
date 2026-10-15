@@ -6,6 +6,33 @@ namespace WeaponWorkshop
     public sealed partial class DestructibleTarget : MonoBehaviour
     {
         public static event System.Action<DestructibleTarget> PartDestroyed;
+        public static event System.Action<DestructibleTarget, string> CellDestroyed;
+        [SerializeField, HideInInspector] private string targetId;
+        public string TargetId => targetId;
+        public string StageId => gameObject.scene.name;
+
+        public bool TryGetCellId(Vector3Int coordinate, out string id)
+        {
+            id = null;
+            if (string.IsNullOrEmpty(targetId) || targetMesh == null || targetMesh.sharedMesh == null) return false;
+            Vector3Int size = subdivided ? divisions : GetGridDivisions();
+            if (coordinate.x < 0 || coordinate.y < 0 || coordinate.z < 0 ||
+                coordinate.x >= size.x || coordinate.y >= size.y || coordinate.z >= size.z ||
+                (subdivided && !grid.ContainsKey(coordinate))) return false;
+            id = StageId + "/" + targetId + "/" + coordinate.x + "_" + coordinate.y + "_" + coordinate.z;
+            return true;
+        }
+
+        private Vector3Int GetGridDivisions()
+        {
+            Bounds bounds = targetMesh.sharedMesh.bounds;
+            Transform root = targetMesh.transform;
+            float size = Mathf.Max(0.01f, partSize);
+            return new Vector3Int(
+                Mathf.Max(1, Mathf.CeilToInt(root.TransformVector(Vector3.right).magnitude * bounds.size.x / size - 0.00001f)),
+                Mathf.Max(1, Mathf.CeilToInt(root.TransformVector(Vector3.up).magnitude * bounds.size.y / size - 0.00001f)),
+                Mathf.Max(1, Mathf.CeilToInt(root.TransformVector(Vector3.forward).magnitude * bounds.size.z / size - 0.00001f)));
+        }
         public bool DamageProtected { get; set; }
         [SerializeField, Tooltip("차량/몹에 붙은 부품은 코어 파괴 전까지 건물 지지 계산에서 제외합니다.")]
         private bool attachedToMovingBody;
@@ -264,6 +291,7 @@ namespace WeaponWorkshop
         private static readonly Vector3Int[] neighbors = { Vector3Int.right, Vector3Int.left,
             Vector3Int.up, Vector3Int.down, Vector3Int.forward, Vector3Int.back };
         private bool subdivided;
+        private bool restoringSave;
         private Vector3 initialPosition;
         private Quaternion initialRotation;
         private Vector3 initialScale;
@@ -737,8 +765,10 @@ namespace WeaponWorkshop
                 if (!subdivided) Subdivide();
                 ResetTarget();
                 var keep = new HashSet<Vector3Int>(state.remaining ?? System.Array.Empty<Vector3Int>());
+                restoringSave = true;
                 foreach (var cell in new List<Cell>(cells))
                     if (!keep.Contains(coordinates[cell])) { RemoveCell(cell); }
+                restoringSave = false;
                 structureDirty = false; renderDirty = true;
             }
             transform.localPosition = state.position; transform.localRotation = state.rotation; transform.localScale = state.scale;
@@ -786,8 +816,10 @@ namespace WeaponWorkshop
 
         private void RemoveCell(Cell cell)
         {
+            string cellId = null;
             if (coordinates.TryGetValue(cell, out Vector3Int coordinate))
             {
+                if (!restoringSave && CellDestroyed != null) TryGetCellId(coordinate, out cellId);
                 RecordSupportRemoval(cell, coordinate);
                 MarkRenderChunk(coordinate);
                 grid.Remove(coordinate);
@@ -800,6 +832,7 @@ namespace WeaponWorkshop
             cells.RemoveAt(cells.Count - 1);
             cell.slot = -1;
             renderDirty = true;
+            if (cellId != null) CellDestroyed?.Invoke(this, cellId);
         }
 
         private void DropUnsupported()

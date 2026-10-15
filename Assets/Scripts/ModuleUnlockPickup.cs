@@ -4,6 +4,7 @@ namespace WeaponWorkshop
     [RequireComponent(typeof(Rigidbody))]
     public sealed class ModuleUnlockPickup : MonoBehaviour
     {
+        public static event System.Action<FirstPersonPlayer, int, int> RewardCollected;
         [SerializeField, Min(0f)] private float pickupDelay = 0.35f;
         [SerializeField] private PickupMagnet magnet = new PickupMagnet();
         private int moduleId;
@@ -36,6 +37,7 @@ namespace WeaponWorkshop
             if (rewardsCredits) wallet.CreditModuleCredits(moduleCredits);
             else if (NightRaidController.Instance == null || !NightRaidController.Instance.TryCollectTrainingModule(moduleId))
                 unlocks.UnlockModule(moduleId);
+            RewardCollected?.Invoke(player, rewardsCredits ? 0 : moduleId, rewardsCredits ? moduleCredits : 0);
             if (!rewardsCredits && TutorialManager.Instance != null) TutorialManager.Instance.NotifyTrainingLoot(moduleId);
             gameObject.SetActive(false);
             Destroy(gameObject);
