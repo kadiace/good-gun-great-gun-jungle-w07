@@ -279,7 +279,9 @@ namespace WeaponWorkshop
             player = uiManager.Player; if (player == null) return;
             // 0일차 안내 습격은 무료다. 그 외에는 표 행의 입장 비용을 확인한다.
             var region = training ? null : TableManager.Instance.RaidMap.Find(regionScene);
-            int cost = region.EntryCost();
+            if (!training && region == null)
+            { ui.ShowError("습격 지역 데이터가 없습니다."); return; }
+            int cost = training ? 0 : region.EntryCost();
             // 잔액 검사는 버튼이 이미 꺼져 있어야 하므로 방어용이다.
             if (cost > 0 && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))
             { ui.ShowError("입장 비용이 부족합니다."); return; }
