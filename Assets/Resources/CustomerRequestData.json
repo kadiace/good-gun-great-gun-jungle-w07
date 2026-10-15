@@ -11,6 +11,7 @@
                 "c8e35a29c16ae91459a744997e871c23",
                 "a0eed031913cef84eab19bafbe2ff4df"
             ],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": []
         },
@@ -22,6 +23,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -43,6 +45,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 7
             ],
@@ -56,6 +59,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -77,6 +81,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -98,6 +103,7 @@
             "unlockDay": 7,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 8
             ],
@@ -111,6 +117,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -132,6 +139,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -153,6 +161,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -174,6 +183,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -195,6 +205,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -216,6 +227,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -237,6 +249,7 @@
             "unlockDay": 3,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 11
             ],
@@ -250,6 +263,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -271,6 +285,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -292,6 +307,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -313,6 +329,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 3,
                 15,
@@ -328,6 +345,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -349,6 +367,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 2
             ],
@@ -372,6 +391,7 @@
             "unlockDay": 6,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 10
             ],
@@ -385,6 +405,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -406,6 +427,7 @@
             "unlockDay": 7,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 8
             ],
@@ -419,6 +441,7 @@
             "unlockDay": 6,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 10
             ],
@@ -432,6 +455,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 13
             ],
@@ -445,6 +469,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 1
             ],
@@ -468,6 +493,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -489,6 +515,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -510,6 +537,7 @@
             "unlockDay": 5,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 12
             ],
@@ -523,6 +551,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 5
             ],
@@ -536,6 +565,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 13
             ],
@@ -549,6 +579,7 @@
             "unlockDay": 3,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 11
             ],
@@ -565,6 +596,7 @@
                 "afce91ece9f68f44b92e48a1652ea36b",
                 "c72d25cecff161540a6c693be4355a28"
             ],
+            "requiredTestIds": [],
             "requiredModules": [
                 5
             ],
@@ -578,6 +610,7 @@
             "unlockDay": 5,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 12
             ],
@@ -591,6 +624,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -612,6 +646,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 4
             ],
@@ -625,6 +660,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": []
         },
@@ -636,6 +672,7 @@
             "unlockDay": 4,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 6
             ],
@@ -649,6 +686,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 3,
                 4
@@ -663,6 +701,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -684,6 +723,7 @@
             "unlockDay": 2,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 9
             ],
@@ -697,6 +737,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 5
             ],
@@ -710,6 +751,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 14
             ],
@@ -733,6 +775,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -754,6 +797,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 3
             ],
@@ -767,6 +811,7 @@
             "unlockDay": 1,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 7
             ],
@@ -780,6 +825,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -801,6 +847,7 @@
             "unlockDay": 0,
             "saleBonus": false,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [],
             "conditions": [
                 {
@@ -822,6 +869,7 @@
             "unlockDay": 2,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 9
             ],
@@ -835,9 +883,52 @@
             "unlockDay": 4,
             "saleBonus": true,
             "excludes": [],
+            "requiredTestIds": [],
             "requiredModules": [
                 6
             ],
+            "conditions": []
+        },
+        {
+            "id": "shooting-test/around-cover",
+            "name": "엄폐 뒤 표적 테스트 통과",
+            "phrase": "엄폐 뒤 표적 테스트를 통과한 총",
+            "tagId": "",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredTestIds": [
+                "around-cover"
+            ],
+            "requiredModules": [],
+            "conditions": []
+        },
+        {
+            "id": "shooting-test/behind-barrier",
+            "name": "장애물 뒤 표적 테스트 통과",
+            "phrase": "장애물 뒤 표적 테스트를 통과한 총",
+            "tagId": "",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredTestIds": [
+                "behind-barrier"
+            ],
+            "requiredModules": [],
+            "conditions": []
+        },
+        {
+            "id": "shooting-test/wide-targets",
+            "name": "넓게 흩어진 표적 테스트 통과",
+            "phrase": "넓게 흩어진 표적 테스트를 통과한 총",
+            "tagId": "",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredTestIds": [
+                "wide-targets"
+            ],
+            "requiredModules": [],
             "conditions": []
         }
     ],

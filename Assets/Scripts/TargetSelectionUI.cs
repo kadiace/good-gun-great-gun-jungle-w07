@@ -131,6 +131,7 @@ namespace WeaponWorkshop
                 var button = Instantiate(buttonTemplate, grid);
                 button.name = "TimedTest" + i;
                 var data = timedTests[i];
+                button.interactable = data != null && data.IsAvailable;
                 button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = data != null
                     ? data.DisplayName + " · " + data.TimeLimit.ToString("0") + "초" : "미설정 테스트";
                 button.onClick.AddListener(() => SelectTimedTest(index));
@@ -179,7 +180,8 @@ namespace WeaponWorkshop
             game = GameManager.Instance;
             if (game == null) return false;
             bell = source;
-            foreach (var button in testButtons) button.interactable = source.TestController != null;
+            for (int i = 0; i < testButtons.Count; i++)
+                testButtons[i].interactable = source.TestController != null && timedTests[i] != null && timedTests[i].IsAvailable;
             grid.gameObject.SetActive(true);
             SetCustomVisible(false);
             if (statusText != null) statusText.text = "";
@@ -197,7 +199,7 @@ namespace WeaponWorkshop
 
         private void SelectTimedTest(int index)
         {
-            if (bell == null || index < 0 || index >= timedTests.Length || timedTests[index] == null) return;
+            if (bell == null || index < 0 || index >= timedTests.Length || timedTests[index] == null || !timedTests[index].IsAvailable) return;
             var source = bell; // Close clears the UI's bell reference.
             var player = GameManager.Instance != null && GameManager.Instance.UI != null ? GameManager.Instance.UI.Player : null;
             if (!source.PrepareTest(timedTests[index], player))

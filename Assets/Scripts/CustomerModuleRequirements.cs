@@ -17,6 +17,8 @@ namespace WeaponWorkshop
             {
                 var row = table.FindRequest(id);
                 if (row.unlockDay > day) return false;
+                foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
+                    if (!TableManager.Instance.ShootingTestTable.IsAvailable(testId)) return false;
                 foreach (var kind in row.requiredModules ?? Array.Empty<ModuleKind>())
                     if (unlocks == null || !unlocks.IsUnlocked(kind)) return false;
                 foreach (var condition in table.Conditions(row))

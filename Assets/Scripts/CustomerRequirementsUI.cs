@@ -72,12 +72,19 @@ namespace WeaponWorkshop
                 var request = table.FindRequest(id);
                 if (request == null) { Row("등록되지 않은 요청", false, 0); continue; }
                 var tag = table.FindTag(request.tagId);
-                bool grouped = tag != null || request.conditions == null || request.conditions.Length != 1;
+                bool grouped = tag != null || request.conditions == null || request.conditions.Length != 1 ||
+                    (request.requiredTestIds != null && request.requiredTestIds.Length > 0);
                 if (grouped) Row(tag != null ? tag.name + " 태그" : request.name, table.MeetsRequest(id, snapshot), 0);
                 foreach (var condition in table.Conditions(request))
                     if (condition == null) Row("요청 조건을 확인할 수 없습니다.", false, grouped ? 1 : 0);
                     else Row(CustomerRequestInfo.Describe(condition, snapshot.Value(condition)),
                         snapshot.Meets(condition), grouped ? 1 : 0);
+                foreach (string testId in request.requiredTestIds ?? System.Array.Empty<string>())
+                {
+                    var test = TableManager.Instance.ShootingTestTable.Find(testId);
+                    bool passed = snapshot.HasPassedTest(testId);
+                    Row((test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, grouped ? 1 : 0);
+                }
             }
             for (int i = used; i < rows.Count; i++) rows[i].gameObject.SetActive(false);
             LayoutRebuilder.ForceRebuildLayoutImmediate(content);

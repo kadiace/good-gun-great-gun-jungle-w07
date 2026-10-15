@@ -18,6 +18,7 @@ namespace WeaponWorkshop
         private PlayerShootingTest playerTest;
         private WeaponHolder holder;
         private EquipableWeapon weapon;
+        private string startedAssemblyKey;
         private Transform shotSource;
         private ShootingTestHUD hud;
         private readonly StringBuilder summary = new StringBuilder();
@@ -31,6 +32,8 @@ namespace WeaponWorkshop
         public bool IsActive => State == TestState.Prepared || State == TestState.Running;
         public bool CanRetryNearby => State == TestState.Failed && player != null && bell != null &&
             Vector3.Distance(player.transform.position, bell.transform.position) <= retryDistance;
+        public bool CanRetryWithWeapon => CanRetryNearby && holder != null && holder.EquippedWeapon != null &&
+            holder.EquippedWeapon.IsEquipped && !holder.EquippedWeapon.IsMoving;
 
         private void Awake() { State = TestState.Idle; RemainingSeconds = 0f; }
 
@@ -38,7 +41,7 @@ namespace WeaponWorkshop
         {
             error = null;
             if (IsActive) { error = "진행 중인 테스트를 먼저 종료하세요."; return false; }
-            if (data == null || data.LayoutPrefab == null || layoutPoint == null || sourcePlayer == null || bell == null ||
+            if (data == null || !data.IsAvailable || data.LayoutPrefab == null || layoutPoint == null || sourcePlayer == null || bell == null ||
                 data.TimeLimit <= 0f || float.IsNaN(data.TimeLimit) || float.IsInfinity(data.TimeLimit))
             { error = "사격 테스트 설정을 확인하세요."; return false; }
             var sourceHolder = sourcePlayer.GetComponent<WeaponHolder>();
@@ -48,6 +51,8 @@ namespace WeaponWorkshop
             if (assembly == null) { error = "총의 조립 정보를 확인할 수 없습니다."; return false; }
             var paths = assembly.GetProjectilePaths();
             if (paths.Count == 0) { error = "발사 가능한 총구가 없습니다."; return false; }
+            string assemblyKey = equipped.TestAssemblyKey;
+            if (string.IsNullOrEmpty(assemblyKey)) { error = "총의 구성을 인증할 수 없습니다."; return false; }
             var sourcePlayerTest = sourcePlayer.GetComponent<PlayerShootingTest>();
             var sourceHUD = GameManager.Instance != null && GameManager.Instance.UI != null
                 ? GameManager.Instance.UI.GetComponent<ShootingTestHUD>() : null;
@@ -63,7 +68,9 @@ namespace WeaponWorkshop
             if (hud != null) hud.Unbind(this);
             if (playerTest != null) playerTest.Unbind(this);
             ClearShots();
+            UnsubscribeWeapon();
             player = sourcePlayer; holder = sourceHolder; weapon = equipped;
+            startedAssemblyKey = assemblyKey;
             shotSource = equipped.GetComponentInChildren<PowerCore>()?.transform;
             definition = data;
             playerTest = sourcePlayerTest;
@@ -88,6 +95,8 @@ namespace WeaponWorkshop
             layout.SetActive(true);
             RemainingSeconds = data.TimeLimit;
             State = TestState.Prepared;
+            holder.EquippedWeaponChanged += OnEquippedWeaponChanged;
+            weapon.AssemblyChanged += OnAssemblyChanged;
             StatusText = data.Instructions;
             playerTest.Bind(this); hud.Bind(this);
             return true;
@@ -96,6 +105,7 @@ namespace WeaponWorkshop
         public void Begin()
         {
             if (State != TestState.Prepared || layout == null) return;
+            if (!HasOriginalWeapon()) { Finish(false, "테스트 중 총을 내려놓거나 교체했습니다."); return; }
             foreach (var target in destructibles) target.DamageProtected = false;
             RemainingSeconds = definition.TimeLimit;
             nextSummary = 0f;
@@ -104,7 +114,7 @@ namespace WeaponWorkshop
 
         public void Retry()
         {
-            if (!CanRetryNearby || definition == null) return;
+            if (!CanRetryWithWeapon || definition == null) return;
             var retryData = definition;
             if (Prepare(retryData, player, out var error)) Begin();
             else GameManager.Instance?.UI?.ShowNotification(error);
@@ -113,7 +123,7 @@ namespace WeaponWorkshop
         private void LateUpdate()
         {
             if (State != TestState.Running) return;
-            if (holder == null || holder.EquippedWeapon != weapon || weapon == null)
+            if (!HasOriginalWeapon())
             { Finish(false, "테스트 중 총을 내려놓거나 교체했습니다."); return; }
             // Scaled time agrees with projectiles, explosions, and pause. GameplayBlocked alone does not stop physics.
             RemainingSeconds = Mathf.Max(0f, RemainingSeconds - Time.deltaTime);
@@ -157,11 +167,30 @@ namespace WeaponWorkshop
         private void Finish(bool passed, string reason)
         {
             if (!IsActive) return;
+            if (passed && (!HasOriginalWeapon() || !weapon.RecordPassedTest(definition.Id, startedAssemblyKey)))
+            { passed = false; reason = "총의 구성이 변경되어 다시 테스트해야 합니다."; }
             State = passed ? TestState.Passed : TestState.Failed;
+            UnsubscribeWeapon();
             StatusText = reason + "\n" + StatusText + (passed ? "" : "\n" + definition.FailureHint);
             if (!passed) RemainingSeconds = definition.TimeLimit;
             ClearShots(); DestroyLayout();
             GameManager.Instance?.UI?.ShowNotification(reason);
+        }
+
+        private bool HasOriginalWeapon() => holder != null && holder.isActiveAndEnabled && weapon != null &&
+            holder.EquippedWeapon == weapon && weapon.IsEquipped && !weapon.IsMoving && weapon.gameObject.activeInHierarchy;
+        private void OnEquippedWeaponChanged(EquipableWeapon previous, EquipableWeapon next)
+        {
+            if (IsActive) Finish(false, "총을 내려놓거나 교체했습니다. 테스트할 총을 들고 F키로 다시 시도하세요.");
+        }
+        private void OnAssemblyChanged()
+        {
+            if (IsActive) Finish(false, "모듈 구성이 변경되어 테스트를 종료했습니다. F키로 다시 시도하세요.");
+        }
+        private void UnsubscribeWeapon()
+        {
+            if (holder != null) holder.EquippedWeaponChanged -= OnEquippedWeaponChanged;
+            if (weapon != null) weapon.AssemblyChanged -= OnAssemblyChanged;
         }
 
         private void ClearShots()
@@ -185,11 +214,12 @@ namespace WeaponWorkshop
         {
             bool wasActive = IsActive;
             State = TestState.Idle;
+            UnsubscribeWeapon();
             if (wasActive) ClearShots();
             DestroyLayout();
             if (playerTest != null) playerTest.Unbind(this);
             if (hud != null) hud.Unbind(this);
-            definition = null; weapon = null; shotSource = null; player = null; holder = null;
+            definition = null; weapon = null; shotSource = null; player = null; holder = null; startedAssemblyKey = null;
             RemainingSeconds = 0f; NonForwardMuzzles = 0; StatusText = "";
         }
         private void OnDisable() => Cancel();

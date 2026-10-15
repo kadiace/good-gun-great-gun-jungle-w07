@@ -11,7 +11,8 @@ namespace WeaponWorkshop
             if(weapon.IsMoving && !allowMoving){error="무기 이동이 끝난 후 귀환하세요.";return false;}
             var assembly=weapon.GetComponentInChildren<CubeAssembly>(true);
             if(assembly==null||!assembly.TryCaptureLayout(out var layout)){error="장착한 무기를 저장할 수 없습니다.";return false;}
-            state=new WeaponWorldSave { weaponName=weapon.WeaponName, held=true,active=true,position=Vector3.zero,rotation=Quaternion.identity,
+            var passedTests = weapon.CapturePassedTests(out var testKey);
+            state=new WeaponWorldSave { weaponName=weapon.WeaponName, passedTestIds=passedTests,testAssemblyKey=testKey,held=true,active=true,position=Vector3.zero,rotation=Quaternion.identity,
                 scale=weapon.UnequippedWorldScale,paidCost=layout.paidConstructionCost,blocks=CaptureBlocks(layout),
                 constructionLocked=weapon.ConstructionLocked,paint=CapturePaint(assembly),
                 hasSelectedScopeCell=weapon.HasSelectedScopeCell,selectedScopeCell=weapon.SelectedScopeCell,
@@ -52,6 +53,7 @@ namespace WeaponWorkshop
                 orientationNormal = b.normal, paidPurchaseCost = b.paidCost, paidModuleCreditCost = b.paidModuleCreditCost, hasColor = b.hasColor, color = b.color }).ToArray();
             if (!assembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks, state.paidCost)))
             { Destroy(weapon.gameObject); error = "이동할 무기 조립을 복원할 수 없습니다."; return false; }
+            weapon.RestorePassedTests(state.passedTestIds, state.testAssemblyKey);
             for (int i = 0; i < materials.Length; i++)
             {
                 var face = state.paint[i];

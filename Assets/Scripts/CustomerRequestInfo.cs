@@ -14,10 +14,13 @@ namespace WeaponWorkshop
             private readonly WeaponStats firingStats;
             private readonly int muzzles, totalOnPath;
             public bool HasWeapon { get; }
+            private readonly EquipableWeapon weapon;
+            public bool HasPassedTest(string id) => weapon != null && weapon.HasPassedTest(id);
             public WeaponSnapshot(EquipableWeapon weapon) : this(weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null) { }
             public WeaponSnapshot(PowerCore core)
             {
                 if (core == null) return;
+                weapon = core.GetComponentInParent<EquipableWeapon>();
                 HasWeapon = true;
                 var assembly = core.GetComponent<CubeAssembly>();
                 var collector = core.GetComponent<StatCollector>();
@@ -100,7 +103,12 @@ namespace WeaponWorkshop
         {
             var request = table.FindRequest(id);
             return request != null && weapon.HasWeapon && (string.IsNullOrEmpty(request.tagId) || table.MeetsTag(request.tagId, weapon))
-                && MeetsAll(request.conditions, weapon);
+                && MeetsAll(request.conditions, weapon) && MeetsTests(request.requiredTestIds, weapon);
+        }
+        private static bool MeetsTests(string[] ids, WeaponSnapshot weapon)
+        {
+            foreach (string id in ids ?? Array.Empty<string>()) if (!weapon.HasPassedTest(id)) return false;
+            return true;
         }
         private static bool MeetsAll(CustomerRequestData.Condition[] conditions, WeaponSnapshot weapon)
         {
@@ -123,6 +131,8 @@ namespace WeaponWorkshop
                 var row = table.FindRequest(id);
                 if (row == null || row.conditions == null || (!string.IsNullOrEmpty(row.tagId) && table.FindTag(row.tagId) == null)) return false;
                 foreach (var condition in table.Conditions(row)) if (!ValidCondition(condition)) return false;
+                foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
+                    if (TableManager.Instance.ShootingTestTable.Find(testId) == null) return false;
             }
             return true;
         }
@@ -189,7 +199,7 @@ namespace WeaponWorkshop
             foreach (var condition in tag?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) yield return condition;
             foreach (var condition in request?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) yield return condition;
         }
-        public static void Validate(CustomerRequestData table)
+        public static void Validate(CustomerRequestData table, ShootingTestTableData tests)
         {
             var ids = new HashSet<string>();
             foreach (var tag in table.tags ?? Array.Empty<CustomerRequestData.Tag>())
@@ -199,6 +209,8 @@ namespace WeaponWorkshop
             {
                 if (row == null || string.IsNullOrEmpty(row.id) || !ids.Add(row.id)) { Debug.LogError("요청 표에 빈/중복 요청 ID가 있습니다."); continue; }
                 if (!string.IsNullOrEmpty(row.tagId) && table.FindTag(row.tagId) == null) Debug.LogError("요청 표의 태그 ID가 없습니다: " + row.id);
+                foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
+                    if (tests.Find(testId) == null) Debug.LogError("요청 표의 사격 테스트 ID가 없습니다: " + row.id);
                 foreach (var condition in table.Conditions(row))
                     if (!ValidCondition(condition))
                         Debug.LogError("요청 표의 조건 범위를 확인하세요: " + row.id);

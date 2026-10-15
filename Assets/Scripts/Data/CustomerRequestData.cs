@@ -21,6 +21,7 @@ namespace WeaponWorkshop
             public int unlockDay = 1;
             public bool saleBonus = true;
             public string[] excludes = Array.Empty<string>();
+            public string[] requiredTestIds = Array.Empty<string>();
             public ModuleKind[] requiredModules = Array.Empty<ModuleKind>();
             public Condition[] conditions = Array.Empty<Condition>();
         }

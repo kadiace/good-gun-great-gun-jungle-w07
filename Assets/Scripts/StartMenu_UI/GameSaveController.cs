@@ -132,6 +132,7 @@ namespace WeaponWorkshop
                 { error = "현재 무기 구성을 저장할 수 없습니다."; return false; }
                 data.paidCost = layout.paidConstructionCost;
                 data.weaponName = weapon.WeaponName;
+                data.passedTestIds = weapon.CapturePassedTests(out data.testAssemblyKey);
                 data.blocks = layout.blocks.Select(b => new SaveBlock { slot = b.slot, cell = b.cell,
                     output = b.outputDirection, normal = b.orientationNormal, paidCost = b.paidPurchaseCost, paidModuleCreditCost = b.paidModuleCreditCost, hasColor = b.hasColor, color = b.color }).ToArray();
             }
@@ -232,6 +233,7 @@ namespace WeaponWorkshop
                 if (!assembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks, data.paidCost)) ||
                     player.GetComponent<WeaponHolder>() == null)
                 { Destroy(restored.gameObject); Debug.LogError("저장 무기를 복원하지 못했습니다.", this); return; }
+                restored.RestorePassedTests(data.passedTestIds, data.testAssemblyKey);
             }
             if (data.inWorkshop)
             {

@@ -33,7 +33,11 @@ namespace WeaponWorkshop
             using (var hash = SHA256.Create()) return hash.ComputeHash(Encoding.UTF8.GetBytes("WGG.weapon-code.v1." + purpose));
         }
         public static string Export(EquipableWeapon weapon)
+            => CompactExport(new Blueprint { name = weapon.WeaponName, blocks = CollectBlocks(weapon) });
+
+        private static Block[] CollectBlocks(EquipableWeapon weapon)
         {
+            if (weapon == null) throw new ArgumentException("무기가 없습니다.");
             var assembly = weapon.GetComponentInChildren<CubeAssembly>();
             if (assembly == null || !assembly.TryCaptureLayout(out var layout)) throw new ArgumentException("무기 구성을 읽을 수 없습니다.");
             var blocks = layout.blocks.Select(b => new Block
@@ -42,7 +46,25 @@ namespace WeaponWorkshop
                 output = b.outputDirection, normal = b.orientationNormal, hasColor = b.hasColor, color = b.color
             }).ToArray();
             if (blocks.Length > 1000 || blocks.Any(b => string.IsNullOrEmpty(b.module))) throw new ArgumentException("공유할 수 없는 모듈 또는 너무 큰 무기입니다.");
-            return CompactExport(new Blueprint { name = weapon.WeaponName, blocks = blocks });
+            return blocks;
+        }
+        // Same layout capture as sharing; names, picked colors, prices and encoding are not performance identity.
+        public static string GetAssemblyKey(EquipableWeapon weapon)
+        {
+            var blueprint = Validate(new Blueprint { name = "나만의 총", blocks = CollectBlocks(weapon) });
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                writer.Write(1);
+                foreach (var block in blueprint.blocks.OrderBy(b => b.cell.x).ThenBy(b => b.cell.y).ThenBy(b => b.cell.z))
+                {
+                    writer.Write(block.module);
+                    foreach (var vector in new[] { block.cell, block.output, block.normal })
+                    { writer.Write(vector.x); writer.Write(vector.y); writer.Write(vector.z); }
+                }
+                writer.Flush();
+                using (var hash = SHA256.Create()) return Convert.ToBase64String(hash.ComputeHash(stream.ToArray()));
+            }
         }
         private static readonly Vector3Int[] Directions = { Vector3Int.right, Vector3Int.left, Vector3Int.up, Vector3Int.down, Vector3Int.forward, Vector3Int.back };
         private static void Number(BinaryWriter w, uint n)

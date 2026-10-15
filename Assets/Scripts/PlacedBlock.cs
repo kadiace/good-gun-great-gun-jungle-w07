@@ -84,8 +84,10 @@ namespace WeaponWorkshop
         public void SetOrientation(Vector3Int normal)
         {
             if (normal.sqrMagnitude != 1) return;
+            bool changed = orientationNormal != normal;
             orientationNormal = normal;
             RefreshDraw();
+            if (changed) GetComponentInParent<CubeAssembly>()?.NotifyStructureChanged();
         }
 
         private void OnEnable()

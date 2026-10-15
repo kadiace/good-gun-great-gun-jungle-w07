@@ -138,7 +138,9 @@ namespace WeaponWorkshop
                     if ((rack != null && string.IsNullOrEmpty(Identity(rack))) || (bench != null && string.IsNullOrEmpty(Identity(bench))))
                     { error = "무기 거치 위치의 저장 ID 연결을 확인하세요."; return false; }
                     bool hasSavedParent = !string.IsNullOrEmpty(Identity(weapon.transform.parent));
-                    states.Add(new WeaponWorldSave { weaponName = weapon.WeaponName, held = weapon.IsEquipped, rackId = Identity(rack), benchId = Identity(bench),
+                    var passedTests = weapon.CapturePassedTests(out var testKey);
+                    states.Add(new WeaponWorldSave { weaponName = weapon.WeaponName, passedTestIds = passedTests, testAssemblyKey = testKey,
+                        held = weapon.IsEquipped, rackId = Identity(rack), benchId = Identity(bench),
                         returnBenchId = Identity(weapon.Workbench), parentId = Identity(weapon.transform.parent), active = weapon.gameObject.activeSelf,
                         position = hasSavedParent ? weapon.transform.localPosition : weapon.transform.position, rotation = hasSavedParent ? weapon.transform.localRotation : weapon.transform.rotation,
                         scale = weapon.IsEquipped ? weapon.UnequippedWorldScale : weapon.transform.localScale,
@@ -217,6 +219,7 @@ namespace WeaponWorkshop
                     hasColor = b.hasColor, color = b.color }).ToArray();
                 if (!assembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks, state.paidCost)))
                 { Destroy(weapon.gameObject); Debug.LogError("저장 무기 조립 복원에 실패했습니다.", this); return false; }
+                weapon.RestorePassedTests(state.passedTestIds, state.testAssemblyKey);
                 foreach (var face in state.paint ?? Array.Empty<PaintFaceSave>())
                 {
                     var block = assembly.GetComponentsInChildren<PlacedBlock>(true).FirstOrDefault(b => b.Cell == face.cell && b.transform.parent == assembly.transform);
