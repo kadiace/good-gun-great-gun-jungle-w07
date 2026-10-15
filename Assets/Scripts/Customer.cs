@@ -48,7 +48,7 @@ namespace WeaponWorkshop
             portraitColor = portrait.color;
         }
         public event System.Action<int> SaleCompleted;
-        public event System.Action<int> SaleAccepted;
+        public event System.Action<int, int> SaleAccepted;
         public event System.Action CustomerKilled;
         public event System.Action<CustomerProfile> Interacted;
         public event System.Action<CustomerProfile, bool, bool> OrderFinished;
@@ -114,7 +114,7 @@ namespace WeaponWorkshop
             GameLogger.Measure("SalePrice", price);
             Destroy(weapon.gameObject);
             atCounter = false;
-            SaleAccepted?.Invoke(price);
+            SaleAccepted?.Invoke(price, cost);
             WorkshopSoundEffects.RaiseWeaponSold(transform.position);
             // 조건 만족 여부에 따라 손님별 반응 대사 → 확인 누르면 퇴장.
             ShowSaleReaction(price);

@@ -206,10 +206,18 @@ public sealed class DaySettlementUI : MonoBehaviour
             todayIncomeText.gameObject.SetActive(show);
             if (show)
             {
-                long netIncome = (long)dayManager.TodayIncome - dayManager.TodayRent - (wallet != null ? wallet.TodayConstructionCost : 0);
+                long netIncome = (long)dayManager.TodayIncome - dayManager.TodayRent - dayManager.TodaySoldConstructionCost;
                 string amount = netIncome < 0 ? $"−$ {-netIncome:N0}" : $"$ {netIncome:N0}";
                 if (netIncome < 0) amount = $"<color=#D5443F>{amount}</color>";
-                todayIncomeText.text = $"<size=18>최종 정산액</size>\n{amount}";
+                int balance = wallet != null ? wallet.Balance : 0;
+                long previousBalance = (long)balance - netIncome;
+                string previousAmount = previousBalance < 0 ? $"−$ {-previousBalance:N0}" : $"$ {previousBalance:N0}";
+                string settlementAmount = netIncome < 0 ? $"(−$ {-netIncome:N0})" : $"$ {netIncome:N0}";
+                string currentAmount = balance < 0 ? $"−$ {-(long)balance:N0}" : $"$ {balance:N0}";
+                if (balance < 0) currentAmount = $"<color=#D5443F>{currentAmount}</color>";
+                todayIncomeText.text = $"<size=18>최종 정산액</size>\n{amount}\n" +
+                    $"<size=14>기존 보유 금액 + 최종 정산액 = 현재 보유 금액</size>\n" +
+                    $"<size=18>{previousAmount} + {settlementAmount} = {currentAmount}</size>";
             }
         }
         if (show && receiptTitle != null) receiptTitle.text = dayManager.DayNumber == 0 ? "튜토리얼 - 영업 정산" : $"DAY {dayManager.DayNumber:00} - 영업 정산";
@@ -218,10 +226,9 @@ public sealed class DaySettlementUI : MonoBehaviour
             string rentAmount = dayManager.TodayRent > 0
                 ? $"<color=#D5443F>−$ {dayManager.TodayRent:N0}</color>"
                 : $"$ {dayManager.TodayRent:N0}";
-            int constructionCost = wallet != null ? wallet.TodayConstructionCost : 0;
+            int constructionCost = dayManager.TodaySoldConstructionCost;
             string constructionAmount = constructionCost > 0
-                ? $"<color=#D5443F>−$ {constructionCost:N0}</color>"
-                : constructionCost < 0 ? $"+$ {-(long)constructionCost:N0}" : "$ 0";
+                ? $"<color=#D5443F>−$ {constructionCost:N0}</color>" : "$ 0";
             summaryText.text = $"완료한 손님<pos=78%>{dayManager.CompletedGuests}명\n" +
                 $"불만족 손님<pos=78%>{dayManager.DissatisfiedGuests}명\n" +
                 $"살해한 손님<pos=78%>{dayManager.KilledGuests}명\n" +

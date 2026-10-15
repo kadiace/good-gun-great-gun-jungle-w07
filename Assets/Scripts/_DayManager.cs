@@ -32,6 +32,7 @@ public class _DayManager : MonoBehaviour
     public int Money => wallet != null ? wallet.Balance : 0;
     public int ModuleCredits => wallet != null ? wallet.ModuleCredits : 0;
     public int TodayIncome { get; private set; }
+    public int TodaySoldConstructionCost { get; private set; }
     public int TodayRent { get; private set; }
     [SerializeField, Min(0), Tooltip("무한 모드 첫날 월세")] private int endlessRent = 2000;
     [SerializeField, Min(0), Tooltip("무한 모드 하루마다 오르는 월세")] private int endlessRentGrowth = 50;
@@ -71,6 +72,7 @@ public class _DayManager : MonoBehaviour
         DissatisfiedGuests = 0;
         KilledGuests = 0;
         TodayIncome = 0;
+        TodaySoldConstructionCost = 0;
         TodayRent = 0;
         wallet = PlayerWallet.ForScene(this);
         DayNumber = startingDay;
@@ -117,7 +119,7 @@ public class _DayManager : MonoBehaviour
         if (!ApplyCustomerDay(PrepareDay(1))) return;
         wallet?.RestoreTodayConstructionCost(0);
         DayNumber = 1;
-        CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodayRent = 0;
+        CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodaySoldConstructionCost = TodayRent = 0;
         isSettled = IsNight = IsSettlementOpen = CanStartNextDay = false;
         startedDayInDebt = wallet != null && Money < 0;
         ApplyMorning(); gameManager.SetNight(false); Changed?.Invoke();
@@ -125,11 +127,12 @@ public class _DayManager : MonoBehaviour
     }
 
     // Submission pays now; departure only advances the guest/day count.
-    public void ReceivePayment(int payment)
+    public void ReceivePayment(int payment, int constructionCost = 0)
     {
         if (!isActiveAndEnabled || IsNight || isSettled || !HasRequiredReferences()) return;
         int income = Mathf.Max(0, payment);
         TodayIncome += income;
+        TodaySoldConstructionCost = (int)Math.Min(int.MaxValue, (long)TodaySoldConstructionCost + Mathf.Max(0, constructionCost));
         wallet?.Credit(income);
         Changed?.Invoke();
     }
@@ -324,6 +327,7 @@ public class _DayManager : MonoBehaviour
         DissatisfiedGuests = 0;
         KilledGuests = 0;
         TodayIncome = 0;
+        TodaySoldConstructionCost = 0;
         TodayRent = 0;
         isSettled = false;
         IsNight = false;
@@ -354,7 +358,7 @@ public class _DayManager : MonoBehaviour
         if (!ApplyCustomerDay(target)) return false;
         DayNumber = day;
         wallet?.RestoreTodayConstructionCost(0);
-        CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodayRent = 0;
+        CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodaySoldConstructionCost = TodayRent = 0;
         isSettled = IsNight = night;
         IsSettlementOpen = IsBankrupt = bankruptcyResultOpen = returningToStart = startedDayInDebt = false;
         CanStartNextDay = night && HasNextDay;
@@ -378,6 +382,7 @@ public class _DayManager : MonoBehaviour
     {
         data.completed = CompletedGuests; data.dissatisfied = DissatisfiedGuests; data.killed = KilledGuests;
         data.income = TodayIncome; data.constructionCost = wallet != null ? wallet.TodayConstructionCost : 0;
+        data.soldConstructionCost = TodaySoldConstructionCost;
         data.period = (int)CurrentPeriod; data.night = IsNight;
         data.settlement = IsSettlementOpen; data.timer = timerController.CaptureSave();
         data.startedDayInDebt = startedDayInDebt;
@@ -464,7 +469,8 @@ public class _DayManager : MonoBehaviour
         }
         if (!ApplyCustomerDay(restoredDay)) return;
         DayNumber = data.day; CompletedGuests = data.completed; DissatisfiedGuests = data.dissatisfied;
-        KilledGuests = data.killed; TodayIncome = data.income; CurrentPeriod = (setTimer)data.period;
+        KilledGuests = data.killed; TodayIncome = data.income; TodaySoldConstructionCost = data.soldConstructionCost;
+        CurrentPeriod = (setTimer)data.period;
         wallet?.RestoreTodayConstructionCost(data.constructionCost);
         hasCurrentPeriod = true; isSettled = IsNight = data.night; IsSettlementOpen = data.settlement;
         startedDayInDebt = data.startedDayInDebt;
