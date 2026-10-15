@@ -50,7 +50,7 @@ namespace WeaponWorkshop
         private readonly System.Collections.Generic.Dictionary<DestructibleTarget, int> spawnedPrefabs = new System.Collections.Generic.Dictionary<DestructibleTarget, int>();
         public TargetWorldSave CaptureSave()
         {
-            var states = new System.Collections.Generic.List<TargetWorldSave>();
+            var states = new System.Collections.Generic.List<TargetSpawnSave>();
             foreach (var pair in spawnedPrefabs)
             {
                 if (pair.Key == null) continue;
@@ -58,7 +58,7 @@ namespace WeaponWorkshop
                 state.prefabSlot = pair.Value;
                 var body = pair.Key.GetComponent<Rigidbody>();
                 if (body != null) { state.velocity = body.linearVelocity; state.angularVelocity = body.angularVelocity; }
-                states.Add(state);
+                states.Add(TargetSpawnSave.From(state));
             }
             return new TargetWorldSave { spawnedByBell = true, exists = states.Count > 0, spawnedTargets = states.ToArray() };
         }
@@ -67,7 +67,7 @@ namespace WeaponWorkshop
             ClearSpawned();
             if (state == null || !state.exists || spawnPoint == null) return;
             // Older saves contain one default target instead of a collection.
-            var states = state.spawnedTargets ?? new[] { state };
+            var states = state.spawnedTargets ?? new[] { TargetSpawnSave.From(state) };
             foreach (var saved in states)
             {
                 var prefab = saved.prefabSlot == -1 ? DefaultTargetPrefab : selectionUI != null ? selectionUI.GetSavePrefab(saved.prefabSlot) : null;
@@ -82,7 +82,7 @@ namespace WeaponWorkshop
                 var falling = instance.GetComponent<FallingRangeTarget>();
                 if (falling == null) falling = instance.AddComponent<FallingRangeTarget>();
                 falling.SetFallMetersPerPower(fallMetersPerPower);
-                instance.SetActive(true); target.RestoreSave(saved);
+                instance.SetActive(true); target.RestoreSave(saved.ToSave());
                 var body = instance.GetComponent<Rigidbody>(); body.linearVelocity = saved.velocity; body.angularVelocity = saved.angularVelocity;
                 spawnedPrefabs[target] = saved.prefabSlot;
             }

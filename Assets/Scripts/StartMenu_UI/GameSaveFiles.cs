@@ -35,13 +35,70 @@ namespace WeaponWorkshop
         public string id;
         public bool spawnedByBell, exists, subdivided;
         public int prefabSlot = -1;
-        public TargetWorldSave[] spawnedTargets;
+        // 자기 자신과 같은 타입을 담으면 직렬화 계층이 무한히 늘어 JsonUtility의 깊이 제한(10)에서
+        // 파싱이 중단되고, 그 뒤의 필드(timer·savedUtcTicks·blocks)가 비어 저장을 읽지 못한다.
+        // 그래서 bells이 낳은 표적은 한 층에서 끊은 얕은 기록으로 담는다.
+        public TargetSpawnSave[] spawnedTargets;
         public Vector3 meshSize, velocity, angularVelocity;
         public float penetration, explosion, heat, water;
         public Vector3 position, scale;
         public Quaternion rotation;
         public Vector3Int[] remaining;
     }
+    /// <summary>표적 종이 새로 만들어 낸 표적 한 층. 재귀 필드가 없어 직렬화 깊이를 고정한다.</summary>
+    [Serializable] public sealed class TargetSpawnSave
+    {
+        public string id;
+        public bool spawnedByBell, exists, subdivided;
+        public int prefabSlot = -1;
+        public Vector3 meshSize, velocity, angularVelocity;
+        public float penetration, explosion, heat, water;
+        public Vector3 position, scale;
+        public Quaternion rotation;
+        public Vector3Int[] remaining;
+
+        public static TargetSpawnSave From(TargetWorldSave saved) => saved == null ? null : new TargetSpawnSave
+        {
+            id = saved.id,
+            spawnedByBell = saved.spawnedByBell,
+            exists = saved.exists,
+            subdivided = saved.subdivided,
+            prefabSlot = saved.prefabSlot,
+            meshSize = saved.meshSize,
+            velocity = saved.velocity,
+            angularVelocity = saved.angularVelocity,
+            penetration = saved.penetration,
+            explosion = saved.explosion,
+            heat = saved.heat,
+            water = saved.water,
+            position = saved.position,
+            scale = saved.scale,
+            rotation = saved.rotation,
+            remaining = saved.remaining,
+        };
+
+        // 표적 복원 쪽은 TargetWorldSave를 받는다. 하위 계층은 애초에 없으므로 빈 참조로 되돌린다.
+        public TargetWorldSave ToSave() => new TargetWorldSave
+        {
+            id = id,
+            spawnedByBell = spawnedByBell,
+            exists = exists,
+            subdivided = subdivided,
+            prefabSlot = prefabSlot,
+            meshSize = meshSize,
+            velocity = velocity,
+            angularVelocity = angularVelocity,
+            penetration = penetration,
+            explosion = explosion,
+            heat = heat,
+            water = water,
+            position = position,
+            scale = scale,
+            rotation = rotation,
+            remaining = remaining,
+        };
+    }
+
     [Serializable] public sealed class CustomerSave
     {
         public int stage, line, price;
