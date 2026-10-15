@@ -241,7 +241,6 @@ namespace WeaponWorkshop
                     return;
                 }
             }
-            player.GetComponent<PlayerRaidDeathLoot>()?.BeginRaid();
             raidStartingCredits = player.GetComponent<PlayerWallet>().ModuleCredits;
             raidStartingBalance = player.GetComponent<PlayerWallet>().Balance;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
@@ -346,7 +345,7 @@ namespace WeaponWorkshop
                 if (returningAfterDeath) NightRaidTransfer.MarkStandaloneDeathReturn();
             }
             transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false); PoolManager.ClearActive();
-            NightRaidTransfer.ReturnDayFadePending = true;
+            NightRaidTransfer.ReturnDayFadePending = !returningAfterDeath;
             SceneManager.LoadSceneAsync(homeScene, LoadSceneMode.Single);
         }
         public void ReturnAfterDeath()
@@ -356,14 +355,6 @@ namespace WeaponWorkshop
             returningAfterDeath = true;
             returnOpen = true;
             ReturnHome();
-        }
-        public void PersistDeathRecovery()
-        {
-            if (!inRaid || NightRaidTransfer.Workshop == null) return;
-            if (!NightRaidTransfer.PrepareReturn(player, true, out var error))
-            { Debug.LogError(error, this); return; }
-            NightRaidTransfer.Workshop.raidDeathReturnPending = true;
-            GameSaveFiles.TryWriteRaidRecovery(NightRaidTransfer.Workshop);
         }
     }
 }

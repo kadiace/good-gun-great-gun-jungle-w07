@@ -47,11 +47,13 @@ namespace WeaponWorkshop
             }
             var held = player.GetComponent<WeaponHolder>().EquippedWeapon;
             WeaponWorldSave carried = null;
-            // A failed raid forfeits the carried weapon; only successful returns capture it.
             if (!died && held != null && !GameSaveController.TryCaptureCarried(held, out carried, out error)) return false;
-            var weapons = Workshop.weapons.Where(w => !w.held).ToList();
-            if (carried != null) weapons.Add(carried);
-            Workshop.weapons = weapons.ToArray(); Workshop.hasWeapon = carried != null;
+            if (!died)
+            {
+                var weapons = Workshop.weapons.Where(w => !w.held).ToList();
+                if (carried != null) weapons.Add(carried);
+                Workshop.weapons = weapons.ToArray(); Workshop.hasWeapon = carried != null;
+            }
             if (!died) Workshop.balance = player.GetComponent<PlayerWallet>().Balance;
             moduleCreditsBeforeLoss = died ? player.GetComponent<PlayerWallet>().ModuleCredits : 0;
             // Death forfeits raid module credits and unlocks; keep the departure snapshot.
@@ -60,8 +62,7 @@ namespace WeaponWorkshop
                 Workshop.moduleCredits = player.GetComponent<PlayerWallet>().ModuleCredits;
                 Workshop.unlockedModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             }
-            Workshop.inWorkshop = false; Workshop.confirmation = false; Workshop.settlement = true;
-            Workshop.raidDeathDrops = RaidDeathLoot.Capture();
+            Workshop.inWorkshop = false; Workshop.confirmation = false; Workshop.settlement = !died;
             Returning = true; return true;
         }
         public static bool TryConsumeReturn(out GameSaveData checkpoint, out int creditsBeforeLoss)

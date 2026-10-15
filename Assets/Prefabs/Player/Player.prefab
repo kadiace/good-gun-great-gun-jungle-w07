@@ -386,7 +386,6 @@ GameObject:
   - component: {fileID: 9172716195057149514}
   - component: {fileID: 4929073071528039610}
   - component: {fileID: 8600000000000000004}
-  - component: {fileID: 8600000000000000003}
   - component: {fileID: 8600000000000000002}
   - component: {fileID: 1579415539275536474}
   - component: {fileID: 8600000000000000001}
@@ -562,21 +561,6 @@ MonoBehaviour:
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   scanDistance: 50
   scanDuration: 0.5
---- !u!114 &8600000000000000003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7023710557123375426}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 77ac472f7ad44fb8bd96220c714d03b3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bundlePrefab: {fileID: 114002, guid: bb027c1c97a24d329abf3b56a4510c14, type: 3}
-  creditsPrefab: {fileID: 114002, guid: 7255c3617b4e4f94a9d9d7d246d8cb02, type: 3}
-  weaponPrefab: {fileID: 1139247510883965995, guid: 322a9cb9f297faa479b02c16e2e4a9ac, type: 3}
 --- !u!114 &8600000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
