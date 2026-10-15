@@ -203,7 +203,7 @@ public class _DayManager : MonoBehaviour
         IsNight = true;
         WorkshopSoundEffects.RaiseBusinessEnded();
         customerBell?.EndDay();
-        TodayRent = CurrentCustomerDay != null ? CurrentCustomerDay.rent : 0;
+        TodayRent = CurrentCustomerDay != null ? CurrentCustomerDay.Rent : 0;
         if (wallet != null && wallet.Balance < TodayRent)
         {
             IsBankrupt = true;
@@ -368,7 +368,7 @@ public class _DayManager : MonoBehaviour
             hasCurrentPeriod = true;
             var nightTiming = settings.timing?.Find(t => t != null && t.period == setTimer.night);
             if (nightTiming != null) timerController.SetImmediately(nightTiming);
-            TodayRent = target.rent;
+            TodayRent = target.Rent;
             customerBell.EndDay();
         }
         else ApplyMorning();
@@ -390,7 +390,7 @@ public class _DayManager : MonoBehaviour
         if (CurrentCustomerDay != null)
         {
             data.dailyOrders = Array.ConvertAll(CurrentCustomerDay.customers, CaptureOrder);
-            data.dailyRent = CurrentCustomerDay.rent;
+            data.dailyRent = CurrentCustomerDay.Rent;
         }
         data.deferredCustomers = deferredCustomers.ConvertAll(CaptureOrder).ToArray();
     }
@@ -409,7 +409,7 @@ public class _DayManager : MonoBehaviour
             if (data.currentCustomer < 0) return true;
             var order = data.dailyOrders[data.currentCustomer];
             var profile = FindSavedProfile(order);
-            var lines = profile != null ? profile.lines : order.lines;
+            var lines = profile != null ? profile.Lines : order.lines;
             return data.customer != null && (data.customer.stage != 2 ||
                 (lines != null && data.customer.line >= 0 && data.customer.line < lines.Length));
         }
@@ -418,8 +418,8 @@ public class _DayManager : MonoBehaviour
             data.completed >= 0 && data.nextCustomer >= 0 && data.nextCustomer <= day.customers.Length &&
             data.currentCustomer >= -1 && data.currentCustomer < day.customers.Length &&
             (data.currentCustomer < 0 || (data.customer != null && day.customers[data.currentCustomer] != null &&
-                (data.customer.stage != 2 || (day.customers[data.currentCustomer].lines != null &&
-                data.customer.line < day.customers[data.currentCustomer].lines.Length))));
+                (data.customer.stage != 2 || (day.customers[data.currentCustomer].Lines != null &&
+                data.customer.line < day.customers[data.currentCustomer].Lines.Length))));
     }
 
     public void RestoreSavedState(GameSaveData data)
@@ -443,12 +443,14 @@ public class _DayManager : MonoBehaviour
         {
             restoredDay = ScriptableObject.CreateInstance<CustomerDay>();
             restoredDay.day = data.day;
-            restoredDay.rent = data.dailyRent;
+            restoredDay.Rent = data.dailyRent;
             restoredDay.customers = Array.ConvertAll(data.dailyOrders, RestoreOrder);
         }
         else
         {
-            restoredDay = Instantiate(data.travelCustomerDay != null ? data.travelCustomerDay : FindCustomerDay(data.day));
+            var sourceDay = data.travelCustomerDay != null ? data.travelCustomerDay : FindCustomerDay(data.day);
+            restoredDay = Instantiate(sourceDay);
+            restoredDay.CopyRuntimeFrom(sourceDay);
             restoredDay.customers = (CustomerProfile[])restoredDay.customers.Clone();
             for (int i = 0; i < restoredDay.customers.Length; i++)
                 restoredDay.customers[i] = CreateRuntimeOrder(restoredDay.customers[i], restored: true);
@@ -460,7 +462,7 @@ public class _DayManager : MonoBehaviour
             var profile = restoredDay.customers[i];
             if (CanServe(profile, data.day)) continue;
             if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile)) deferredCustomers.Add(profile);
-            restoredDay.customers[i] = CreateCombination(data.day, restoredDay.minRequests, restoredDay.maxRequests);
+            restoredDay.customers[i] = CreateCombination(data.day, restoredDay.MinRequests, restoredDay.MaxRequests);
             if (currentOrder)
             {
                 data.customer = new CustomerSave { stage = data.customer.stage == 0 ? 0 : 1, position = data.customer.position };
@@ -475,7 +477,7 @@ public class _DayManager : MonoBehaviour
         hasCurrentPeriod = true; isSettled = IsNight = data.night; IsSettlementOpen = data.settlement;
         startedDayInDebt = data.startedDayInDebt;
         // The saved wallet already includes rent; restore its display without charging again.
-        TodayRent = IsNight ? CurrentCustomerDay.rent : 0;
+        TodayRent = IsNight ? CurrentCustomerDay.Rent : 0;
         CanStartNextDay = IsNight && HasNextDay;
         timerController.RestoreSave(data.timer);
         gameManager.SetNight(data.night && data.settlement);
@@ -535,9 +537,9 @@ public class _DayManager : MonoBehaviour
     private CustomerOrderSave CaptureOrder(CustomerProfile profile)
     {
         if (TryFindProfile(profile, out int sourceDay, out int slot))
-            return new CustomerOrderSave { profileId = profile.ProfileId, orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.requestIds) };
-        return new CustomerOrderSave { orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.requestIds), lines = profile.lines,
-            happyLine = profile.happyLine, angryLine = profile.angryLine, price = profile.price,
+            return new CustomerOrderSave { profileId = profile.ProfileId, orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.RequestIds) };
+        return new CustomerOrderSave { orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.RequestIds), lines = profile.Lines,
+            happyLine = profile.HappyLine, angryLine = profile.AngryLine, price = profile.Price,
             portrait = endlessRequests != null && endlessRequests.portraits != null
                 ? Array.IndexOf(endlessRequests.portraits, profile.portrait) : -1 };
     }
@@ -563,7 +565,7 @@ public class _DayManager : MonoBehaviour
         if (authored != null)
         {
             var restored = CreateRuntimeOrder(authored, restored: true);
-            if (order.requestIds != null) restored.requestIds = SavedRequestIds(order);
+            if (order.requestIds != null) restored.RequestIds = SavedRequestIds(order);
             restored.OrderState = !string.IsNullOrEmpty(order.orderState?.orderId)
                 ? order.orderState.Copy(fromSave: true) : CustomerOrderState.Create(restored: true);
             return restored;
@@ -573,9 +575,9 @@ public class _DayManager : MonoBehaviour
         profile.OrderState = !string.IsNullOrEmpty(order.orderState?.orderId)
             ? order.orderState.Copy(fromSave: true) : CustomerOrderState.Create(restored: true);
         ownedOrders.Add(profile);
-        profile.lines = order.lines;
-        profile.requestIds = (string[])SavedRequestIds(order).Clone();
-        profile.happyLine = order.happyLine; profile.angryLine = order.angryLine; profile.price = order.price;
+        profile.Lines = order.lines;
+        profile.RequestIds = (string[])SavedRequestIds(order).Clone();
+        profile.HappyLine = order.happyLine; profile.AngryLine = order.angryLine; profile.Price = order.price;
         if (endlessRequests != null && endlessRequests.portraits != null && order.portrait >= 0 &&
             order.portrait < endlessRequests.portraits.Length) profile.portrait = endlessRequests.portraits[order.portrait];
         return profile;
@@ -602,8 +604,8 @@ public class _DayManager : MonoBehaviour
     private CustomerProfile CreateCombination(int day, int min = -1, int max = -1)
         => endlessRequests == null ? ScriptableObject.CreateInstance<CustomerProfile>()
             : endlessRequests.Create(day,
-                min < 0 ? endlessRequests.minRequests : min,
-                max < 0 ? endlessRequests.maxRequests : max,
+                min < 0 ? endlessRequests.MinRequests : min,
+                max < 0 ? endlessRequests.MaxRequests : max,
                 ModuleUnlocks, ModuleCredits);
 
     private CustomerDay PrepareDay(int dayNumber)
@@ -622,7 +624,7 @@ public class _DayManager : MonoBehaviour
             var profile = day.customers[i];
             if (profile == null || canServe(profile, dayNumber)) continue;
             if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile)) deferredCustomers.Add(CreateRuntimeOrder(profile));
-            day.customers[i] = CreateCombination(dayNumber, day.minRequests, day.maxRequests);
+            day.customers[i] = CreateCombination(dayNumber, day.MinRequests, day.MaxRequests);
         }
         foreach (var profile in pending)
         {
@@ -649,11 +651,12 @@ public class _DayManager : MonoBehaviour
     {
         if (source == null) return null;
         var day = Instantiate(source);
+        day.CopyRuntimeFrom(source);
         if (source.customers == null) return day;
         day.customers = (CustomerProfile[])source.customers.Clone();
-        if (source.day == 0 || endlessRequests == null || !source.useRequestPool) return day;
+        if (source.day == 0 || endlessRequests == null || !source.UseRequestPool) return day;
         var specials = new List<CustomerProfile>();
-        int generated = source.extraGenerated;
+        int generated = source.ExtraGenerated;
         foreach (CustomerProfile profile in source.customers)
             if (profile != null && !IsSpecial(profile)) generated++;
             else specials.Add(profile); // null도 그대로 넘겨 ApplyCustomerDay가 에러를 띄우게 함
@@ -664,7 +667,7 @@ public class _DayManager : MonoBehaviour
         {
             // '예?' 손님을 목록 순서대로 하루 전체에 고르게 펼침. 첫 손님은 조합 손님이 오도록.
             bool special = next < specials.Count && (t + 1) * specials.Count / total > t * specials.Count / total;
-            customers[t] = special ? specials[next++] : endlessRequests.Create(source.day, source.minRequests, source.maxRequests,
+            customers[t] = special ? specials[next++] : endlessRequests.Create(source.day, source.MinRequests, source.MaxRequests,
                 ModuleUnlocks, ModuleCredits);
         }
         day.customers = customers;
@@ -696,11 +699,11 @@ public class _DayManager : MonoBehaviour
         if (today.Count == 0) return null;
         var day = ScriptableObject.CreateInstance<CustomerDay>();
         day.day = dayNumber;
-        day.minRequests = endlessRequests != null ? endlessRequests.minRequests : 1;
-        day.maxRequests = endlessRequests != null ? endlessRequests.maxRequests : 1;
+        day.MinRequests = endlessRequests != null ? endlessRequests.MinRequests : 1;
+        day.MaxRequests = endlessRequests != null ? endlessRequests.MaxRequests : 1;
         int firstEndlessDay = 1;
         if (customerDays != null) foreach (CustomerDay fixedDay in customerDays) if (fixedDay != null) firstEndlessDay = Mathf.Max(firstEndlessDay, fixedDay.day + 1);
-        day.rent = endlessRent + endlessRentGrowth * Mathf.Max(0, dayNumber - firstEndlessDay);
+        day.Rent = endlessRent + endlessRentGrowth * Mathf.Max(0, dayNumber - firstEndlessDay);
         day.customers = today.ToArray();
         return day;
     }
@@ -727,7 +730,7 @@ public class _DayManager : MonoBehaviour
 
     // '예?'를 눌러야 말하는 손님 또는 진상. 일반 손님은 무한 모드에서 조합으로 대체됨.
     private static bool IsSpecial(CustomerProfile profile)
-        => !profile.endsClear || (profile.lines != null && profile.lines.Length > 1);
+        => !profile.EndsClear || profile.Lines.Length > 1;
 
     private bool HasAnyCustomer()
     {
@@ -758,7 +761,6 @@ public class _DayManager : MonoBehaviour
         CurrentCustomerDay = day;
         PrepareRuntimeOrders(day);
         dailyGuestCount = day.customers.Length;
-        customerBell.SetPaymentSettings(settings);
         customerBell.SetCustomers(day.customers);
         return true;
     }
@@ -777,6 +779,7 @@ public class _DayManager : MonoBehaviour
     {
         if (profile == null || profile.OrderState != null) return profile;
         var copy = Instantiate(profile);
+        copy.CopyRuntimeOrderFrom(profile);
         copy.hideFlags = HideFlags.DontSave;
         copy.OrderState = CustomerOrderState.Create(restored);
         ownedOrders.Add(copy);

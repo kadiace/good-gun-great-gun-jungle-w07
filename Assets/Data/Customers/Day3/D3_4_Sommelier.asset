@@ -13,21 +13,9 @@ MonoBehaviour:
   m_Name: D3_4_Sommelier
   m_EditorClassIdentifier: 
   profileId: e58d71f88d4f876438bf7acace814a9b
-  requestIds:
-  - tag/grenade-launcher/legacy
-  - stat/weight/min-4/d3-4-sommelier
-  lines:
-  - "\uC5EC\uAE30 \uC18C\uBBC8\uB9AC\uC5D0 \uC788\uB098\uC694?"
-  - "\uC720\uD0C4 \uD0DC\uADF8\uC5D0, \uC2A4\uD0EF \uBAA8\uB4C8\uC740 4\uAC1C \uC774\uC0C1
-    \uBD80\uD0C1\uD569\uB2C8\uB2E4."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uD6CC\uB96D\uD55C \uBE48\uD2F0\uC9C0\uAD70\uC694. \uBC14\uB514\uAC10\uC774
-    \uBB35\uC9C1\uD574."
-  angryLine: "\uC774\uAC74... \uD558\uC6B0\uC2A4 \uC640\uC778 \uC218\uC900\uC774\uAD70\uC694."
-  price: 500
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 1048d3d8c1192a64ba178f3ec671f36b, type: 3}

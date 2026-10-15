@@ -13,19 +13,9 @@ MonoBehaviour:
   m_Name: D6_3_HomingShotgun
   m_EditorClassIdentifier: 
   profileId: 0c5e735d8c860654eb79844236b27b63
-  requestIds:
-  - tag/homing/legacy
-  - tag/shotgun/legacy
-  lines:
-  - "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uC640 \uC720\uB3C4 \uD0DC\uADF8\uAC00 \uB458
-    \uB2E4 \uBD99\uC73C\uBA74 \uC88B\uACA0\uC5B4\uC694. \uCE5C\uAD6C \uC120\uBB3C\uC774\uC5D0\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uC774\uC81C \uAC54\uB3C4 \uD50C\uB798\uD2F0\uB118 \uAC00\uACA0\uB124\uC694!"
-  angryLine: "\uCE5C\uAD6C\uAC00 \uB354 \uBABB \uB9DE\uD790 \uAC83 \uAC19\uC740\uB370\uC694..."
-  price: 800
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 3e2eb713248910e4697e88238a8dd955, type: 3}

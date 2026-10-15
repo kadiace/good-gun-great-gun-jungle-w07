@@ -1,1518 +1,871 @@
 {
-    "requests": [
+  "requests": [
+    {
+      "id": "module/explosion/min-2",
+      "name": "폭발 모듈 개수",
+      "phrase": "",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
         {
-            "id": "module/explosion/min-2/d5-3-student",
-            "name": "폭발 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "08dbc26e0a7043288f412d911e86341d"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "0a96ef47053b4950af035ef296403291",
-                    "label": "폭발 모듈 개수",
-                    "measure": 2,
-                    "stat": 2,
-                    "min": 2.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/fire-rate/min-1/d0-3-split-two",
-            "name": "연사 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "446282254eab4b3abda70d3caabfd2a8"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "0f7b2afe74da4b6488b100444deb4e65",
-                    "label": "연사 모듈 개수",
-                    "measure": 2,
-                    "stat": 1,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/fire-rate/min-1/d1-3-split-two",
-            "name": "연사 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "81148a6e113140c18bfdab5b9d6201d6"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "a715940f9f44479e85881405bfcbc9c9",
-                    "label": "연사 모듈 개수",
-                    "measure": 2,
-                    "stat": 1,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/penetration/min-1/d0-2-extension",
-            "name": "관통 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "3cd6ab6c03bd4587afb368a6e52274a1"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "d6210f32aacb4bd58f98cf195a0c6bd2",
-                    "label": "관통 모듈 개수",
-                    "measure": 2,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/penetration/min-1/d0-2-module-customer",
-            "name": "관통 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "68d24c5725174793aa8ca26435ec50bd"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "86b54bfb901147658a02041eb2012ce3",
-                    "label": "관통 모듈 개수",
-                    "measure": 2,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/penetration/min-1/d0-5-combo",
-            "name": "관통 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "e64de5a40aee4451b6b5fef4f2560b76"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "4365b3719c644ce98ed9e71a69ea2fe2",
-                    "label": "관통 모듈 개수",
-                    "measure": 2,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/penetration/min-1/d1-2-extension",
-            "name": "관통 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "4d02285ccf89482d86daf245b15b6c0a"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "341a4626706e47a18dfe867df46ad044",
-                    "label": "관통 모듈 개수",
-                    "measure": 2,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/penetration/min-1/d1-5-combo",
-            "name": "관통 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "0de1724fb39d46cc88a0316007dc3e2f"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "c10209b729ba4727a0640e143e3c8d31",
-                    "label": "관통 모듈 개수",
-                    "measure": 2,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/scope/min-1",
-            "name": "스코프",
-            "phrase": "스코프",
-            "tagId": "",
-            "legacyIds": [
-                "c8e35a29c16ae91459a744997e871c23"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                14
-            ],
-            "conditions": [
-                {
-                    "id": "a7615589153c4c90bf57db42d0bef8fa",
-                    "label": "스코프 개수",
-                    "measure": 1,
-                    "stat": 12,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/scope/min-2/d4-4-professional",
-            "name": "스코프 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "4e7c1ebb9b774bf0aa76abe4fc7e855c"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "26adb212c61642208843b7b427566898",
-                    "label": "스코프 개수",
-                    "measure": 1,
-                    "stat": 12,
-                    "min": 2.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/shotgun/min-3/d5-4-shotgun-ception",
-            "name": "산탄 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "ca4f3f1971ec4adf8f498ed34a364093"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "ea91fe61df2d41f49c414dadd5e9abe0",
-                    "label": "산탄 모듈 개수",
-                    "measure": 2,
-                    "stat": 10,
-                    "min": 3.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-four/min-1",
-            "name": "쿼드라배럴(4방향 분할)",
-            "phrase": "4방향 분할(쿼드라배럴)",
-            "tagId": "",
-            "legacyIds": [
-                "5c76f903d2f431541ba0ad0748212dca"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                2
-            ],
-            "conditions": [
-                {
-                    "id": "a43e779b33f842309169d689cc2de931",
-                    "label": "4방향 분할 모듈 개수",
-                    "measure": 5,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-four/min-1/d0-5-combo",
-            "name": "4방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "a61fe9fb9a4d488788c1ec6b1072ae0f"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "56d845a7c83544a0ae392481b66119c9",
-                    "label": "4방향 분할 모듈 개수",
-                    "measure": 5,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-four/min-1/d1-5-combo",
-            "name": "4방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "4ebfaf28deed49c4bdaea72e4f161b12"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "41e0184ba18e4fff92b4df35d2491a2e",
-                    "label": "4방향 분할 모듈 개수",
-                    "measure": 5,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-four/min-1/d3-2-quad-shotgun",
-            "name": "4방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "40b0f2c46533419d80e7a465fde35429"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "0b0740df53554c2cb8f665b630f030ad",
-                    "label": "4방향 분할 모듈 개수",
-                    "measure": 5,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-four/min-2/d0-4-more-muzzles",
-            "name": "4방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "5495cdb5ec8b49889fedb519f9f530ff"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "ff1e04067e3e4a9bb0acc8cfa9b606c8",
-                    "label": "4방향 분할 모듈 개수",
-                    "measure": 5,
-                    "stat": 0,
-                    "min": 2.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-four/min-2/d1-4-more-muzzles",
-            "name": "4방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "37d5a78ecb744efd96386f736b71cf9f"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "711777e6b98a468e8a3e488fcddd390a",
-                    "label": "4방향 분할 모듈 개수",
-                    "measure": 5,
-                    "stat": 0,
-                    "min": 2.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-two/min-1",
-            "name": "더블배럴(2방향 분할)",
-            "phrase": "2방향 분할(더블배럴)",
-            "tagId": "",
-            "legacyIds": [
-                "7845d9dc6dfec7644bc4727e668fa871"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                1
-            ],
-            "conditions": [
-                {
-                    "id": "2653a01a7f8a4b6da0af9165e7e6a8fb",
-                    "label": "2방향 분할 모듈 개수",
-                    "measure": 4,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-two/min-1/d3-1-double-barrel-ar",
-            "name": "2방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "f190a969535f4aa4b837f4edc6d7f313"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "e1a5df08fd144400a32132a9def590ef",
-                    "label": "2방향 분할 모듈 개수",
-                    "measure": 4,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-two/min-1/d3-8-flamer",
-            "name": "2방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "12dc496b759341be92ecc36d0bd8029b"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "79baa58581804250b6e40575229d4a8f",
-                    "label": "2방향 분할 모듈 개수",
-                    "measure": 4,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-two/min-1/d4-5-rip-and-tear",
-            "name": "2방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "485e61ed24d2490987931ad36a029e77"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "29f40e31959e43a3bc90f7d3131fe2a5",
-                    "label": "2방향 분할 모듈 개수",
-                    "measure": 4,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/split-two/min-1/d5-5-real-gun",
-            "name": "2방향 분할 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "81d72487c62c42bb8a2c996de2071c0d"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "28e1e47ddfde468b895203b46b7d9429",
-                    "label": "2방향 분할 모듈 개수",
-                    "measure": 4,
-                    "stat": 0,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "module/stat-modules/exact-0/d1-1-base-core",
-            "name": "스탯 모듈 개수",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "c0fbdc9111b6474fbe47321706b603fd"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "57440a572d4241df9ee53fcc4554edc4",
-                    "label": "스탯 모듈 개수",
-                    "measure": 3,
-                    "stat": 0,
-                    "min": 0.0,
-                    "max": 0.0,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "shooting-test/around-cover",
-            "name": "엄폐 뒤 표적 테스트 통과",
-            "phrase": "엄폐 뒤 표적 테스트를 통과한 총",
-            "tagId": "",
-            "legacyIds": [],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [
-                "around-cover"
-            ],
-            "requiredModules": [],
-            "conditions": []
-        },
-        {
-            "id": "shooting-test/behind-barrier",
-            "name": "장애물 뒤 표적 테스트 통과",
-            "phrase": "장애물 뒤 표적 테스트를 통과한 총",
-            "tagId": "",
-            "legacyIds": [],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [
-                "behind-barrier"
-            ],
-            "requiredModules": [],
-            "conditions": []
-        },
-        {
-            "id": "shooting-test/wide-targets",
-            "name": "넓게 흩어진 표적 테스트 통과",
-            "phrase": "넓게 흩어진 표적 테스트를 통과한 총",
-            "tagId": "",
-            "legacyIds": [],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [
-                "wide-targets"
-            ],
-            "requiredModules": [],
-            "conditions": []
-        },
-        {
-            "id": "stat/weight/min-4/d3-4-sommelier",
-            "name": "무게",
-            "phrase": "",
-            "tagId": "",
-            "legacyIds": [
-                "2be3abe367214f4498ce45b36c408667"
-            ],
-            "unlockDay": 0,
-            "saleBonus": false,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": [
-                {
-                    "id": "026521f3c1a34d588f8deac38e2ad2ae",
-                    "label": "무게",
-                    "measure": 1,
-                    "stat": 11,
-                    "min": 4.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "tag/assault-rifle",
-            "name": "돌격소총 태그",
-            "phrase": "돌격소총 태그 (관통 2 이상, 연사 3 이상, 무게 15 이상)",
-            "tagId": "9b6639978cc6faf49a0a539f89ad1ffb",
-            "legacyIds": [
-                "bfd5154c074e097469bfe8a36c7fd547"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                3,
-                4
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/assault-rifle/legacy",
-            "name": "돌격소총",
-            "phrase": "돌격소총 태그 (관통 2 이상, 연사 3 이상, 무게 15 이상)",
-            "tagId": "9b6639978cc6faf49a0a539f89ad1ffb",
-            "legacyIds": [
-                "a953407380ff6594a942af751bf23efb"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                4
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/charge",
-            "name": "차지 태그",
-            "phrase": "차지 태그 (차지 모듈 1개 이상)",
-            "tagId": "f591f239c94e4f44dae9ea87c6bcdb26",
-            "legacyIds": [
-                "0d8bdcf9176b9d144832800890380fe9"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                7
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/charge/legacy",
-            "name": "차지",
-            "phrase": "차지 태그 (차지 모듈 1개 이상)",
-            "tagId": "f591f239c94e4f44dae9ea87c6bcdb26",
-            "legacyIds": [
-                "db5262cea8401e542a56f9a2812196a3"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                7
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/flamethrower",
-            "name": "화염방사 태그",
-            "phrase": "화염방사 태그 (발열 모듈 1개 이상, 연사 1 이상)",
-            "tagId": "b370a46a3f0c45a438dc174b4b9c8d32",
-            "legacyIds": [
-                "f414d5e3527d6c94caba92a8f1ea4073"
-            ],
-            "unlockDay": 2,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                9
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/flamethrower/legacy",
-            "name": "화염방사(발열)",
-            "phrase": "화염방사 태그 (발열 모듈 1개 이상, 연사 1 이상)",
-            "tagId": "b370a46a3f0c45a438dc174b4b9c8d32",
-            "legacyIds": [
-                "c45e9713dbf2ac3469b4a59283112118"
-            ],
-            "unlockDay": 2,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                9
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/gravity-gun",
-            "name": "중력건 태그",
-            "phrase": "중력건 태그 (중력 모듈 1개 이상)",
-            "tagId": "1199a71d1cb406344b40eab02c202fd0",
-            "legacyIds": [
-                "2a84630bf124ec64ba0d101ec701cbe6"
-            ],
-            "unlockDay": 7,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                8
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/gravity-gun/legacy",
-            "name": "중력건",
-            "phrase": "중력건 태그 (중력 모듈 1개 이상)",
-            "tagId": "1199a71d1cb406344b40eab02c202fd0",
-            "legacyIds": [
-                "6bfd82587bbb4a640a1dcc436cacd347"
-            ],
-            "unlockDay": 7,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                8
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/grenade-launcher",
-            "name": "유탄 태그",
-            "phrase": "유탄 태그 (폭발 1 이상, 3 미만)",
-            "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
-            "legacyIds": [
-                "c72d25cecff161540a6c693be4355a28"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                5
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/grenade-launcher/legacy",
-            "name": "유탄(폭발)",
-            "phrase": "유탄 태그 (폭발 1 이상, 3 미만)",
-            "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
-            "legacyIds": [
-                "982660b8fcc3c1340adfa1edcdfb1257"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                5
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/handgun",
-            "name": "권총 태그",
-            "phrase": "권총 태그 (무게 20 미만, 스코프 모듈 없음)",
-            "tagId": "f9e8d0ecf0b963e4aa51f837b5ae8602",
-            "legacyIds": [
-                "018d81c1a0e6af041832d131bd683963"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [
-                "module/scope/min-1",
-                "tag/mini-nuke"
-            ],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": []
-        },
-        {
-            "id": "tag/handgun/legacy",
-            "name": "권총",
-            "phrase": "권총 태그 (무게 20 미만, 스코프 모듈 없음)",
-            "tagId": "f9e8d0ecf0b963e4aa51f837b5ae8602",
-            "legacyIds": [
-                "afce91ece9f68f44b92e48a1652ea36b"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [],
-            "conditions": []
-        },
-        {
-            "id": "tag/homing",
-            "name": "유도 태그",
-            "phrase": "유도 태그 (유도 모듈 1개 이상)",
-            "tagId": "7d95d7b383516df44830a4c7b34f3568",
-            "legacyIds": [
-                "91214fdaf5f33204b87af5b6e5faafc8"
-            ],
-            "unlockDay": 5,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                12
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/homing/legacy",
-            "name": "유도",
-            "phrase": "유도 태그 (유도 모듈 1개 이상)",
-            "tagId": "7d95d7b383516df44830a4c7b34f3568",
-            "legacyIds": [
-                "a577397affb1dba46a5ab05ee475eec6"
-            ],
-            "unlockDay": 5,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                12
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/mini-nuke",
-            "name": "소형핵 태그",
-            "phrase": "소형핵 태그 (폭발 10 이상)",
-            "tagId": "3396cf208ef6d564bb1cd952a6fe598b",
-            "legacyIds": [
-                "a0eed031913cef84eab19bafbe2ff4df"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [
-                "tag/handgun/legacy",
-                "tag/grenade-launcher"
-            ],
-            "requiredTestIds": [],
-            "requiredModules": [
-                5
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/ricochet",
-            "name": "도탄 태그",
-            "phrase": "도탄 태그 (반사 모듈 1개 이상)",
-            "tagId": "36dc9431816b1d84182d3e07c11a2c4c",
-            "legacyIds": [
-                "b2f89098d7e03e14ea82f271ee522562"
-            ],
-            "unlockDay": 4,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                6
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/ricochet/legacy",
-            "name": "도탄(반사)",
-            "phrase": "도탄 태그 (반사 모듈 1개 이상)",
-            "tagId": "36dc9431816b1d84182d3e07c11a2c4c",
-            "legacyIds": [
-                "fdd2d5a8251468842be3744e7dba689f"
-            ],
-            "unlockDay": 4,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                6
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/shotgun",
-            "name": "산탄총 태그",
-            "phrase": "산탄총 태그 (산탄 모듈 1개 이상)",
-            "tagId": "b89c88322f37da74cb6f1624397fce4d",
-            "legacyIds": [
-                "9dc28f49f1304f142a4751f178f39cdf"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                13
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/shotgun/legacy",
-            "name": "산탄총",
-            "phrase": "산탄총 태그 (산탄 모듈 1개 이상)",
-            "tagId": "b89c88322f37da74cb6f1624397fce4d",
-            "legacyIds": [
-                "70d86a3c50472dd47b261b990ddd9210"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                13
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/sniper-rifle",
-            "name": "저격소총 태그",
-            "phrase": "저격총 태그 (관통 2 이상, 무게 15 이상, 속도 2 이상, 스코프 1 이상)",
-            "tagId": "aaf2e5c321465134bab63de10ee5e54a",
-            "legacyIds": [
-                "4f973a10b24bb66429934674b59258d1"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                3,
-                15,
-                14
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/sniper-rifle/legacy",
-            "name": "저격소총",
-            "phrase": "저격총 태그 (관통 2 이상, 무게 15 이상, 속도 2 이상, 스코프 1 이상)",
-            "tagId": "aaf2e5c321465134bab63de10ee5e54a",
-            "legacyIds": [
-                "d6d6fd1701a033d4b849c531f7f4f5f1"
-            ],
-            "unlockDay": 1,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                3
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/spin",
-            "name": "회전 태그",
-            "phrase": "회전 태그 (회전 모듈 1개 이상)",
-            "tagId": "b5d9e450608d02c448b9a7d3bba5ad92",
-            "legacyIds": [
-                "6dd80349125f3384f99d6fce630dd64e"
-            ],
-            "unlockDay": 6,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                10
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/spin/legacy",
-            "name": "회전",
-            "phrase": "회전 태그 (회전 모듈 1개 이상)",
-            "tagId": "b5d9e450608d02c448b9a7d3bba5ad92",
-            "legacyIds": [
-                "60c861d406fb6fd48a48e2649ddcb52b"
-            ],
-            "unlockDay": 6,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                10
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/water-gun",
-            "name": "물총 태그",
-            "phrase": "물총 태그 (전력이 연결된 물 모듈 1개 이상)",
-            "tagId": "3912bb5b7da966a47995e32041938a6a",
-            "legacyIds": [
-                "a06ceb531cbb6a041b8f160acf2c8c1d"
-            ],
-            "unlockDay": 3,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                11
-            ],
-            "conditions": []
-        },
-        {
-            "id": "tag/water-gun/legacy",
-            "name": "물총",
-            "phrase": "물총 태그 (전력이 연결된 물 모듈 1개 이상)",
-            "tagId": "3912bb5b7da966a47995e32041938a6a",
-            "legacyIds": [
-                "48aeae95d13c1f643817498a6dae1573"
-            ],
-            "unlockDay": 3,
-            "saleBonus": true,
-            "excludes": [],
-            "requiredTestIds": [],
-            "requiredModules": [
-                11
-            ],
-            "conditions": []
+          "id": "0a96ef47053b4950af035ef296403291",
+          "label": "폭발 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Explosion",
+          "min": 2.0
         }
-    ],
-    "tags": [
+      ],
+      "legacyIds": [
+        "module/explosion/min-2/d5-3-student",
+        "08dbc26e0a7043288f412d911e86341d"
+      ]
+    },
+    {
+      "id": "module/fire-rate/min-1",
+      "name": "연사 모듈 개수",
+      "phrase": "",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
         {
-            "id": "1199a71d1cb406344b40eab02c202fd0",
-            "name": "중력건",
-            "color": {
-                "r": 0.43921568989753725,
-                "g": 0.27450981736183169,
-                "b": 0.6392157077789307,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "863658194d8545da862fc7d8db1fb189",
-                    "label": "중력 모듈 개수",
-                    "measure": 2,
-                    "stat": 5,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "3396cf208ef6d564bb1cd952a6fe598b",
-            "name": "소형핵",
-            "color": {
-                "r": 0.4431372582912445,
-                "g": 0.6078431606292725,
-                "b": 0.1568627506494522,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "09602f9cad214a56a3167920e97b366b",
-                    "label": "폭발력",
-                    "measure": 1,
-                    "stat": 2,
-                    "min": 11.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "36dc9431816b1d84182d3e07c11a2c4c",
-            "name": "도탄",
-            "color": {
-                "r": 0.2235294133424759,
-                "g": 0.49803921580314639,
-                "b": 0.5490196347236633,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "0d10d176a4f54cdabf34bee6cb9a1c9b",
-                    "label": "반사 모듈 개수",
-                    "measure": 2,
-                    "stat": 3,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "3912bb5b7da966a47995e32041938a6a",
-            "name": "물총",
-            "color": {
-                "r": 0.13725490868091584,
-                "g": 0.5529412031173706,
-                "b": 0.7215686440467835,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "e7ff2d7dff9244a0b6514b6543a237ed",
-                    "label": "물 모듈 개수",
-                    "measure": 2,
-                    "stat": 8,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "7d95d7b383516df44830a4c7b34f3568",
-            "name": "유도",
-            "color": {
-                "r": 0.23529411852359773,
-                "g": 0.5176470875740051,
-                "b": 0.33725491166114809,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "5f7eef445eff472aa5855ce68a786d42",
-                    "label": "유도 모듈 개수",
-                    "measure": 2,
-                    "stat": 9,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "9b6639978cc6faf49a0a539f89ad1ffb",
-            "name": "돌격소총",
-            "color": {
-                "r": 0.3333333432674408,
-                "g": 0.41960784792900088,
-                "b": 0.24705882370471955,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "131a51ff34db406ea3ad67140510102b",
-                    "label": "관통력",
-                    "measure": 1,
-                    "stat": 0,
-                    "min": 2.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                },
-                {
-                    "id": "98c168b9310846f4807a3bad9ebb53f7",
-                    "label": "연사력",
-                    "measure": 1,
-                    "stat": 1,
-                    "min": 3.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                },
-                {
-                    "id": "018c50ae57ed4c6c893c539c6f0c07e5",
-                    "label": "무게",
-                    "measure": 1,
-                    "stat": 11,
-                    "min": 15.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "aaf2e5c321465134bab63de10ee5e54a",
-            "name": "저격소총",
-            "color": {
-                "r": 0.2705882489681244,
-                "g": 0.3529411852359772,
-                "b": 0.3921568691730499,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "e30d1c214cff47f8b5084a097e3c66ce",
-                    "label": "관통력",
-                    "measure": 1,
-                    "stat": 0,
-                    "min": 2.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                },
-                {
-                    "id": "5a32f8746338407f968197068f0805b4",
-                    "label": "무게",
-                    "measure": 1,
-                    "stat": 11,
-                    "min": 15.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                },
-                {
-                    "id": "c2ab0b1ab62942739a5632f68913b417",
-                    "label": "탄속 배율",
-                    "measure": 1,
-                    "stat": 13,
-                    "min": 2.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                },
-                {
-                    "id": "f5efaab411884a5b9a31053927970eb0",
-                    "label": "스코프 개수",
-                    "measure": 1,
-                    "stat": 12,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "b370a46a3f0c45a438dc174b4b9c8d32",
-            "name": "화염방사",
-            "color": {
-                "r": 0.772549033164978,
-                "g": 0.2980392277240753,
-                "b": 0.13333334028720857,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "ef873257cdba40c8980fa01514e520e1",
-                    "label": "발열 모듈 개수",
-                    "measure": 2,
-                    "stat": 6,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                },
-                {
-                    "id": "f12e1fe427074a55954fae3c3ed6089f",
-                    "label": "연사력",
-                    "measure": 1,
-                    "stat": 1,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "b5d9e450608d02c448b9a7d3bba5ad92",
-            "name": "회전",
-            "color": {
-                "r": 0.32549020648002627,
-                "g": 0.41960784792900088,
-                "b": 0.6509804129600525,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "8ca1e54bb0ac4e62b604acf146241c4b",
-                    "label": "회전 모듈 개수",
-                    "measure": 2,
-                    "stat": 7,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "b89c88322f37da74cb6f1624397fce4d",
-            "name": "산탄총",
-            "color": {
-                "r": 0.545098066329956,
-                "g": 0.3529411852359772,
-                "b": 0.21176470816135407,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "73a08effdf864933bb84b361c5486c31",
-                    "label": "산탄 모듈 개수",
-                    "measure": 2,
-                    "stat": 10,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "cb2c1699ceedbb54084051bd0ed7a56b",
-            "name": "유탄",
-            "color": {
-                "r": 0.6392157077789307,
-                "g": 0.4156862795352936,
-                "b": 0.14509804546833039,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "c0b4ecdbd00d415bb287d9dbfb602020",
-                    "label": "폭발력",
-                    "measure": 1,
-                    "stat": 2,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                },
-                {
-                    "id": "d4b7c6142b6b409db7e142ffc1234b65",
-                    "label": "폭발력",
-                    "measure": 1,
-                    "stat": 2,
-                    "min": 0.0,
-                    "max": 10.0,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "f591f239c94e4f44dae9ea87c6bcdb26",
-            "name": "차지",
-            "color": {
-                "r": 0.6745098233222961,
-                "g": 0.5176470875740051,
-                "b": 0.250980406999588,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "2712e58edf614a48a556ba535a0b85fb",
-                    "label": "차지 모듈 개수",
-                    "measure": 2,
-                    "stat": 4,
-                    "min": 1.0,
-                    "max": 3.4028234663852887e38,
-                    "maxExclusive": false
-                }
-            ]
-        },
-        {
-            "id": "f9e8d0ecf0b963e4aa51f837b5ae8602",
-            "name": "권총",
-            "color": {
-                "r": 0.3803921639919281,
-                "g": 0.3960784375667572,
-                "b": 0.41960784792900088,
-                "a": 1.0
-            },
-            "sellMultiplier": 1.0,
-            "conditions": [
-                {
-                    "id": "8a9152156c354599b9bd1cca8b809a60",
-                    "label": "무게",
-                    "measure": 1,
-                    "stat": 11,
-                    "min": 0.0,
-                    "max": 20.0,
-                    "maxExclusive": true
-                }
-            ]
+          "id": "0f7b2afe74da4b6488b100444deb4e65",
+          "label": "연사 모듈 개수",
+          "measure": "PathModules",
+          "stat": "FireRate",
+          "min": 1.0
         }
-    ],
-    "legacySlots": [
+      ],
+      "legacyIds": [
+        "module/fire-rate/min-1/d0-3-split-two",
+        "446282254eab4b3abda70d3caabfd2a8",
+        "module/fire-rate/min-1/d1-3-split-two",
+        "81148a6e113140c18bfdab5b9d6201d6"
+      ]
+    },
+    {
+      "id": "module/penetration/min-1",
+      "name": "관통 모듈 개수",
+      "phrase": "",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
         {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "module/scope/min-1",
-            "index": 0
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "module/split-two/min-1",
-            "index": 1
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "module/split-four/min-1",
-            "index": 2
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/assault-rifle",
-            "index": 3
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/charge",
-            "index": 4
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/flamethrower",
-            "index": 5
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/gravity-gun",
-            "index": 6
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/grenade-launcher",
-            "index": 7
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/homing",
-            "index": 8
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/mini-nuke",
-            "index": 9
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/handgun",
-            "index": 10
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/ricochet",
-            "index": 11
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/shotgun",
-            "index": 12
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/sniper-rifle",
-            "index": 13
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/spin",
-            "index": 14
-        },
-        {
-            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
-            "requestId": "tag/water-gun",
-            "index": 15
+          "id": "4365b3719c644ce98ed9e71a69ea2fe2",
+          "label": "관통 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Penetration",
+          "min": 1.0
         }
-    ]
+      ],
+      "legacyIds": [
+        "module/penetration/min-1/d0-2-extension",
+        "3cd6ab6c03bd4587afb368a6e52274a1",
+        "module/penetration/min-1/d0-2-module-customer",
+        "68d24c5725174793aa8ca26435ec50bd",
+        "module/penetration/min-1/d0-5-combo",
+        "e64de5a40aee4451b6b5fef4f2560b76",
+        "module/penetration/min-1/d1-2-extension",
+        "4d02285ccf89482d86daf245b15b6c0a",
+        "module/penetration/min-1/d1-5-combo",
+        "0de1724fb39d46cc88a0316007dc3e2f"
+      ]
+    },
+    {
+      "id": "module/scope/min-1",
+      "name": "스코프",
+      "phrase": "스코프",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "a7615589153c4c90bf57db42d0bef8fa",
+          "label": "스코프 개수",
+          "measure": "WeaponStat",
+          "stat": "Scope",
+          "min": 1.0
+        }
+      ],
+      "legacyIds": [
+        "c8e35a29c16ae91459a744997e871c23"
+      ]
+    },
+    {
+      "id": "module/scope/min-2",
+      "name": "스코프 개수",
+      "phrase": "",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "26adb212c61642208843b7b427566898",
+          "label": "스코프 개수",
+          "measure": "WeaponStat",
+          "stat": "Scope",
+          "min": 2.0
+        }
+      ],
+      "legacyIds": [
+        "module/scope/min-2/d4-4-professional",
+        "4e7c1ebb9b774bf0aa76abe4fc7e855c"
+      ]
+    },
+    {
+      "id": "module/shotgun/min-3",
+      "name": "산탄 모듈 개수",
+      "phrase": "",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "ea91fe61df2d41f49c414dadd5e9abe0",
+          "label": "산탄 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Shotgun",
+          "min": 3.0
+        }
+      ],
+      "legacyIds": [
+        "module/shotgun/min-3/d5-4-shotgun-ception",
+        "ca4f3f1971ec4adf8f498ed34a364093"
+      ]
+    },
+    {
+      "id": "module/split-four/min-1",
+      "name": "쿼드라배럴(4방향 분할)",
+      "phrase": "4방향 분할(쿼드라배럴)",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "a43e779b33f842309169d689cc2de931",
+          "label": "4방향 분할 모듈 개수",
+          "measure": "SplitFourBlocks",
+          "stat": "Penetration",
+          "min": 1.0
+        }
+      ],
+      "legacyIds": [
+        "5c76f903d2f431541ba0ad0748212dca",
+        "module/split-four/min-1/d0-5-combo",
+        "a61fe9fb9a4d488788c1ec6b1072ae0f",
+        "module/split-four/min-1/d1-5-combo",
+        "4ebfaf28deed49c4bdaea72e4f161b12",
+        "module/split-four/min-1/d3-2-quad-shotgun",
+        "40b0f2c46533419d80e7a465fde35429"
+      ]
+    },
+    {
+      "id": "module/split-four/min-2",
+      "name": "4방향 분할 모듈 개수",
+      "phrase": "",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "ff1e04067e3e4a9bb0acc8cfa9b606c8",
+          "label": "4방향 분할 모듈 개수",
+          "measure": "SplitFourBlocks",
+          "stat": "Penetration",
+          "min": 2.0
+        }
+      ],
+      "legacyIds": [
+        "module/split-four/min-2/d0-4-more-muzzles",
+        "5495cdb5ec8b49889fedb519f9f530ff",
+        "module/split-four/min-2/d1-4-more-muzzles",
+        "37d5a78ecb744efd96386f736b71cf9f"
+      ]
+    },
+    {
+      "id": "module/split-two/min-1",
+      "name": "더블배럴(2방향 분할)",
+      "phrase": "2방향 분할(더블배럴)",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "2653a01a7f8a4b6da0af9165e7e6a8fb",
+          "label": "2방향 분할 모듈 개수",
+          "measure": "SplitTwoBlocks",
+          "stat": "Penetration",
+          "min": 1.0
+        }
+      ],
+      "legacyIds": [
+        "7845d9dc6dfec7644bc4727e668fa871",
+        "module/split-two/min-1/d3-1-double-barrel-ar",
+        "f190a969535f4aa4b837f4edc6d7f313",
+        "module/split-two/min-1/d3-8-flamer",
+        "12dc496b759341be92ecc36d0bd8029b",
+        "module/split-two/min-1/d4-5-rip-and-tear",
+        "485e61ed24d2490987931ad36a029e77",
+        "module/split-two/min-1/d5-5-real-gun",
+        "81d72487c62c42bb8a2c996de2071c0d"
+      ]
+    },
+    {
+      "id": "module/stat-modules/exact-0",
+      "name": "스탯 모듈 개수",
+      "phrase": "",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "57440a572d4241df9ee53fcc4554edc4",
+          "label": "스탯 모듈 개수",
+          "measure": "TotalModules",
+          "stat": "Penetration",
+          "min": 0.0,
+          "max": 0.0
+        }
+      ],
+      "legacyIds": [
+        "module/stat-modules/exact-0/d1-1-base-core",
+        "c0fbdc9111b6474fbe47321706b603fd"
+      ]
+    },
+    {
+      "id": "shooting-test/around-cover",
+      "name": "엄폐 뒤 표적 테스트 통과",
+      "phrase": "엄폐 뒤 표적 테스트를 통과한 총",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [
+        "around-cover"
+      ],
+      "conditions": [],
+      "legacyIds": []
+    },
+    {
+      "id": "shooting-test/behind-barrier",
+      "name": "장애물 뒤 표적 테스트 통과",
+      "phrase": "장애물 뒤 표적 테스트를 통과한 총",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [
+        "behind-barrier"
+      ],
+      "conditions": [],
+      "legacyIds": []
+    },
+    {
+      "id": "shooting-test/wide-targets",
+      "name": "넓게 흩어진 표적 테스트 통과",
+      "phrase": "넓게 흩어진 표적 테스트를 통과한 총",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [
+        "wide-targets"
+      ],
+      "conditions": [],
+      "legacyIds": []
+    },
+    {
+      "id": "stat/weight/min-4",
+      "name": "무게",
+      "phrase": "",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "026521f3c1a34d588f8deac38e2ad2ae",
+          "label": "무게",
+          "measure": "WeaponStat",
+          "stat": "Weight",
+          "min": 4.0
+        }
+      ],
+      "legacyIds": [
+        "stat/weight/min-4/d3-4-sommelier",
+        "2be3abe367214f4498ce45b36c408667"
+      ]
+    },
+    {
+      "id": "tag/assault-rifle",
+      "name": "돌격소총 태그",
+      "phrase": "돌격소총 태그 (관통 2 이상, 연사 3 이상, 무게 15 이상)",
+      "tagId": "9b6639978cc6faf49a0a539f89ad1ffb",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "bfd5154c074e097469bfe8a36c7fd547",
+        "tag/assault-rifle/legacy",
+        "a953407380ff6594a942af751bf23efb"
+      ]
+    },
+    {
+      "id": "tag/charge",
+      "name": "차지 태그",
+      "phrase": "차지 태그 (차지 모듈 1개 이상)",
+      "tagId": "f591f239c94e4f44dae9ea87c6bcdb26",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "0d8bdcf9176b9d144832800890380fe9",
+        "tag/charge/legacy",
+        "db5262cea8401e542a56f9a2812196a3"
+      ]
+    },
+    {
+      "id": "tag/flamethrower",
+      "name": "화염방사 태그",
+      "phrase": "화염방사 태그 (발열 모듈 1개 이상, 연사 1 이상)",
+      "tagId": "b370a46a3f0c45a438dc174b4b9c8d32",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "f414d5e3527d6c94caba92a8f1ea4073",
+        "tag/flamethrower/legacy",
+        "c45e9713dbf2ac3469b4a59283112118"
+      ]
+    },
+    {
+      "id": "tag/gravity-gun",
+      "name": "중력건 태그",
+      "phrase": "중력건 태그 (중력 모듈 1개 이상)",
+      "tagId": "1199a71d1cb406344b40eab02c202fd0",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "2a84630bf124ec64ba0d101ec701cbe6",
+        "tag/gravity-gun/legacy",
+        "6bfd82587bbb4a640a1dcc436cacd347"
+      ]
+    },
+    {
+      "id": "tag/grenade-launcher",
+      "name": "유탄 태그",
+      "phrase": "유탄 태그 (폭발 1 이상, 3 미만)",
+      "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "c72d25cecff161540a6c693be4355a28",
+        "tag/grenade-launcher/legacy",
+        "982660b8fcc3c1340adfa1edcdfb1257"
+      ]
+    },
+    {
+      "id": "tag/handgun",
+      "name": "권총 태그",
+      "phrase": "권총 태그 (무게 20 미만, 스코프 모듈 없음)",
+      "tagId": "f9e8d0ecf0b963e4aa51f837b5ae8602",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "018d81c1a0e6af041832d131bd683963",
+        "tag/handgun/legacy",
+        "afce91ece9f68f44b92e48a1652ea36b"
+      ]
+    },
+    {
+      "id": "tag/homing",
+      "name": "유도 태그",
+      "phrase": "유도 태그 (유도 모듈 1개 이상)",
+      "tagId": "7d95d7b383516df44830a4c7b34f3568",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "91214fdaf5f33204b87af5b6e5faafc8",
+        "tag/homing/legacy",
+        "a577397affb1dba46a5ab05ee475eec6"
+      ]
+    },
+    {
+      "id": "tag/mini-nuke",
+      "name": "소형핵 태그",
+      "phrase": "소형핵 태그 (폭발 10 이상)",
+      "tagId": "3396cf208ef6d564bb1cd952a6fe598b",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "a0eed031913cef84eab19bafbe2ff4df"
+      ]
+    },
+    {
+      "id": "tag/ricochet",
+      "name": "도탄 태그",
+      "phrase": "도탄 태그 (반사 모듈 1개 이상)",
+      "tagId": "36dc9431816b1d84182d3e07c11a2c4c",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "b2f89098d7e03e14ea82f271ee522562",
+        "tag/ricochet/legacy",
+        "fdd2d5a8251468842be3744e7dba689f"
+      ]
+    },
+    {
+      "id": "tag/shotgun",
+      "name": "산탄총 태그",
+      "phrase": "산탄총 태그 (산탄 모듈 1개 이상)",
+      "tagId": "b89c88322f37da74cb6f1624397fce4d",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "9dc28f49f1304f142a4751f178f39cdf",
+        "tag/shotgun/legacy",
+        "70d86a3c50472dd47b261b990ddd9210"
+      ]
+    },
+    {
+      "id": "tag/sniper-rifle",
+      "name": "저격소총 태그",
+      "phrase": "저격총 태그 (관통 2 이상, 무게 15 이상, 속도 2 이상, 스코프 1 이상)",
+      "tagId": "aaf2e5c321465134bab63de10ee5e54a",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "4f973a10b24bb66429934674b59258d1",
+        "tag/sniper-rifle/legacy",
+        "d6d6fd1701a033d4b849c531f7f4f5f1"
+      ]
+    },
+    {
+      "id": "tag/spin",
+      "name": "회전 태그",
+      "phrase": "회전 태그 (회전 모듈 1개 이상)",
+      "tagId": "b5d9e450608d02c448b9a7d3bba5ad92",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "6dd80349125f3384f99d6fce630dd64e",
+        "tag/spin/legacy",
+        "60c861d406fb6fd48a48e2649ddcb52b"
+      ]
+    },
+    {
+      "id": "tag/water-gun",
+      "name": "물총 태그",
+      "phrase": "물총 태그 (전력이 연결된 물 모듈 1개 이상)",
+      "tagId": "3912bb5b7da966a47995e32041938a6a",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [],
+      "legacyIds": [
+        "a06ceb531cbb6a041b8f160acf2c8c1d",
+        "tag/water-gun/legacy",
+        "48aeae95d13c1f643817498a6dae1573"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "id": "1199a71d1cb406344b40eab02c202fd0",
+      "name": "중력건",
+      "color": {
+        "r": 0.43921568989753723,
+        "g": 0.27450981736183167,
+        "b": 0.6392157077789307,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "863658194d8545da862fc7d8db1fb189",
+          "label": "중력 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Gravity",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "3396cf208ef6d564bb1cd952a6fe598b",
+      "name": "소형핵",
+      "color": {
+        "r": 0.4431372582912445,
+        "g": 0.6078431606292725,
+        "b": 0.1568627506494522,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "09602f9cad214a56a3167920e97b366b",
+          "label": "폭발력",
+          "measure": "WeaponStat",
+          "stat": "Explosion",
+          "min": 11.0
+        }
+      ]
+    },
+    {
+      "id": "36dc9431816b1d84182d3e07c11a2c4c",
+      "name": "도탄",
+      "color": {
+        "r": 0.2235294133424759,
+        "g": 0.49803921580314636,
+        "b": 0.5490196347236633,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "0d10d176a4f54cdabf34bee6cb9a1c9b",
+          "label": "반사 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Ricochet",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "3912bb5b7da966a47995e32041938a6a",
+      "name": "물총",
+      "color": {
+        "r": 0.13725490868091583,
+        "g": 0.5529412031173706,
+        "b": 0.7215686440467834,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "e7ff2d7dff9244a0b6514b6543a237ed",
+          "label": "물 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Water",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "7d95d7b383516df44830a4c7b34f3568",
+      "name": "유도",
+      "color": {
+        "r": 0.23529411852359772,
+        "g": 0.5176470875740051,
+        "b": 0.33725491166114807,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "5f7eef445eff472aa5855ce68a786d42",
+          "label": "유도 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Homing",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "9b6639978cc6faf49a0a539f89ad1ffb",
+      "name": "돌격소총",
+      "color": {
+        "r": 0.3333333432674408,
+        "g": 0.41960784792900085,
+        "b": 0.24705882370471954,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "131a51ff34db406ea3ad67140510102b",
+          "label": "관통력",
+          "measure": "WeaponStat",
+          "stat": "Penetration",
+          "min": 2.0
+        },
+        {
+          "id": "98c168b9310846f4807a3bad9ebb53f7",
+          "label": "연사력",
+          "measure": "WeaponStat",
+          "stat": "FireRate",
+          "min": 3.0
+        },
+        {
+          "id": "018c50ae57ed4c6c893c539c6f0c07e5",
+          "label": "무게",
+          "measure": "WeaponStat",
+          "stat": "Weight",
+          "min": 15.0
+        }
+      ]
+    },
+    {
+      "id": "aaf2e5c321465134bab63de10ee5e54a",
+      "name": "저격소총",
+      "color": {
+        "r": 0.2705882489681244,
+        "g": 0.3529411852359772,
+        "b": 0.3921568691730499,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "e30d1c214cff47f8b5084a097e3c66ce",
+          "label": "관통력",
+          "measure": "WeaponStat",
+          "stat": "Penetration",
+          "min": 2.0
+        },
+        {
+          "id": "5a32f8746338407f968197068f0805b4",
+          "label": "무게",
+          "measure": "WeaponStat",
+          "stat": "Weight",
+          "min": 15.0
+        },
+        {
+          "id": "c2ab0b1ab62942739a5632f68913b417",
+          "label": "탄속 배율",
+          "measure": "WeaponStat",
+          "stat": "Speed",
+          "min": 2.0
+        },
+        {
+          "id": "f5efaab411884a5b9a31053927970eb0",
+          "label": "스코프 개수",
+          "measure": "WeaponStat",
+          "stat": "Scope",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "b370a46a3f0c45a438dc174b4b9c8d32",
+      "name": "화염방사",
+      "color": {
+        "r": 0.772549033164978,
+        "g": 0.2980392277240753,
+        "b": 0.13333334028720856,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "ef873257cdba40c8980fa01514e520e1",
+          "label": "발열 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Heat",
+          "min": 1.0
+        },
+        {
+          "id": "f12e1fe427074a55954fae3c3ed6089f",
+          "label": "연사력",
+          "measure": "WeaponStat",
+          "stat": "FireRate",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "b5d9e450608d02c448b9a7d3bba5ad92",
+      "name": "회전",
+      "color": {
+        "r": 0.32549020648002625,
+        "g": 0.41960784792900085,
+        "b": 0.6509804129600525,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "8ca1e54bb0ac4e62b604acf146241c4b",
+          "label": "회전 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Spin",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "b89c88322f37da74cb6f1624397fce4d",
+      "name": "산탄총",
+      "color": {
+        "r": 0.545098066329956,
+        "g": 0.3529411852359772,
+        "b": 0.21176470816135406,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "73a08effdf864933bb84b361c5486c31",
+          "label": "산탄 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Shotgun",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "cb2c1699ceedbb54084051bd0ed7a56b",
+      "name": "유탄",
+      "color": {
+        "r": 0.6392157077789307,
+        "g": 0.4156862795352936,
+        "b": 0.14509804546833038,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "c0b4ecdbd00d415bb287d9dbfb602020",
+          "label": "폭발력",
+          "measure": "WeaponStat",
+          "stat": "Explosion",
+          "min": 1.0
+        },
+        {
+          "id": "d4b7c6142b6b409db7e142ffc1234b65",
+          "label": "폭발력",
+          "measure": "WeaponStat",
+          "stat": "Explosion",
+          "min": 0.0,
+          "max": 10.0
+        }
+      ]
+    },
+    {
+      "id": "f591f239c94e4f44dae9ea87c6bcdb26",
+      "name": "차지",
+      "color": {
+        "r": 0.6745098233222961,
+        "g": 0.5176470875740051,
+        "b": 0.250980406999588,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "2712e58edf614a48a556ba535a0b85fb",
+          "label": "차지 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Charge",
+          "min": 1.0
+        }
+      ]
+    },
+    {
+      "id": "f9e8d0ecf0b963e4aa51f837b5ae8602",
+      "name": "권총",
+      "color": {
+        "r": 0.3803921639919281,
+        "g": 0.3960784375667572,
+        "b": 0.41960784792900085,
+        "a": 1.0
+      },
+      "sellMultiplier": 1.0,
+      "conditions": [
+        {
+          "id": "8a9152156c354599b9bd1cca8b809a60",
+          "label": "무게",
+          "measure": "WeaponStat",
+          "stat": "Weight",
+          "min": 0.0,
+          "max": 20.0,
+          "maxExclusive": true
+        }
+      ]
+    }
+  ],
+  "legacySlots": [
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "module/scope/min-1",
+      "index": 0
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "module/split-two/min-1",
+      "index": 1
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "module/split-four/min-1",
+      "index": 2
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/assault-rifle",
+      "index": 3
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/charge",
+      "index": 4
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/flamethrower",
+      "index": 5
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/gravity-gun",
+      "index": 6
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/grenade-launcher",
+      "index": 7
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/homing",
+      "index": 8
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/mini-nuke",
+      "index": 9
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/handgun",
+      "index": 10
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/ricochet",
+      "index": 11
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/shotgun",
+      "index": 12
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/sniper-rifle",
+      "index": 13
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/spin",
+      "index": 14
+    },
+    {
+      "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+      "requestId": "tag/water-gun",
+      "index": 15
+    }
+  ]
 }

@@ -13,20 +13,9 @@ MonoBehaviour:
   m_Name: D6_2_Railgun
   m_EditorClassIdentifier: 
   profileId: 949c287f545cef84eb20c1f31f8eba01
-  requestIds:
-  - tag/charge/legacy
-  - tag/sniper-rifle/legacy
-  lines:
-  - "\uBE5B\uC758\uAC80 : \uC288\uD37C\uB178\uBC14 \uD55C\uC790\uB8E8 \uC8FC\uC138\uC694!"
-  - "\uCC28\uC9C0 \uD0DC\uADF8\uC640 \uC800\uACA9\uCD1D \uD0DC\uADF8\uB97C \uBD99\uC5EC\uC8FC\uC138\uC694.
-    \uBAA8\uC544 \uC3D8\uB294 \uB808\uC77C\uAC74\uC73C\uB85C\uC694!"
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uBE5B\uC774\uC5EC-----------!!!!!"
-  angryLine: "\uB044\uC559...."
-  price: 900
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 14aed5ebacf577c42a98a1801020cf27, type: 3}

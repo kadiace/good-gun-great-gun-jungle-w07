@@ -13,21 +13,9 @@ MonoBehaviour:
   m_Name: D5_3_Student
   m_EditorClassIdentifier: 
   profileId: 3fe84f1ef3ba7c645b20fad83564cada
-  requestIds:
-  - module/explosion/min-2/d5-3-student
-  lines:
-  - "\uC120\uC0DD\uB2D8! \uC5C4\uCCAD \uAC15\uD55C \uCD1D \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694!
-    \uD3ED\uBC1C \uBAA8\uB4C8 2\uAC1C\uB294 \uB2EC\uC544\uC57C \uC138\uB2E4\uACE0
-    \uB4E4\uC5C8\uC5B4\uC694!"
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uC6B0\uC640! \uC120\uC0DD\uB2D8 \uCD5C\uACE0\uC608\uC694! \uBC14\uB85C
-    \uC368\uBCFC\uAC8C\uC694!"
-  angryLine: "\uC120\uC0DD\uB2D8... \uC774\uAC78\uB85C\uB294 \uC544\uBB34\uB3C4 \uBABB
-    \uC9C0\uCF1C\uC694..."
-  price: 600
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: b260ae8862bd47c4fa8852ece7e90963, type: 3}

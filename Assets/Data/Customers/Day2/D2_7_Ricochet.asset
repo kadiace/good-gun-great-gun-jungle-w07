@@ -13,19 +13,9 @@ MonoBehaviour:
   m_Name: D2_7_Ricochet
   m_EditorClassIdentifier: 
   profileId: 6a41b8901ebccb14a9bea905b5e759ab
-  requestIds:
-  - tag/ricochet/legacy
-  lines:
-  - "\uB2F9\uAD6C \uC88B\uC544\uD558\uC138\uC694?"
-  - "\uB3C4\uD0C4 \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC774\uC694. \uBCBD\uC5D0
-    \uD295\uACA8 \uB9DE\uD788\uB294 \uCD1D\uC774\uC694!"
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uC4F0\uB9AC\uCFE0\uC158 \uAC01 \uB098\uC654\uB2E4!"
-  angryLine: "300\uC774\uD558 \uB9DB\uC138\uC774 \uAE08\uC9C0!"
-  price: 400
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: b58e2e492f89fde48969f7aa1a6ddfe1, type: 3}

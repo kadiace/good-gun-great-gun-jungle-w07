@@ -22,21 +22,9 @@ namespace WeaponWorkshop
         [Tooltip("이 랜덤 주문에 필요한 모듈. 하나라도 잠겨 있으면 조합 후보에서 제외")]
         public ModuleData[] requiredModules;
 
-        public bool HasUnlockedModules(PlayerModuleUnlocks unlocks)
-        {
-            var row = TableManager.Instance.CustomerRequest.FindRequest(tableId);
-            if (row == null) return false;
-            foreach (var kind in row.requiredModules)
-                if (unlocks == null || !unlocks.IsUnlocked(kind)) return false;
-            return true;
-        }
-
         public bool Check(EquipableWeapon weapon)
         {
             return TableManager.Instance.CustomerRequest.MeetsRequest(tableId, new CustomerRequestInfo.WeaponSnapshot(weapon));
         }
-
-        public bool ConflictsWith(GunArchetype other)
-            => other != null && TableManager.Instance.CustomerRequest.Conflicts(tableId, other.tableId);
     }
 }

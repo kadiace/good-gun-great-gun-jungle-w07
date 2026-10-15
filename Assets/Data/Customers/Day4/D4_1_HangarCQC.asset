@@ -13,19 +13,9 @@ MonoBehaviour:
   m_Name: D4_1_HangarCQC
   m_EditorClassIdentifier: 
   profileId: d22429fd957afa44483eb23d1c989306
-  requestIds:
-  - tag/handgun/legacy
-  lines:
-  - "\uACA9\uB0A9\uACE0 \uB0B4\uBD80 CQC\uB2E4."
-  - "\uAD8C\uCD1D \uD0DC\uADF8 \uBD99\uC5EC\uC11C \uC791\uAC8C \uB9CC\uB4E4\uC5B4."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "...\uC774 \uC815\uB3C4\uBA74 \uACA9\uB0A9\uACE0\uC5D0\uC11C \uC368\uB3C4
-    \uB418\uACA0\uAD70. (\uB2F4\uBC30 \uC5F0\uAE30)"
-  angryLine: "\uAC70 \uCD1D \uD55C\uBC88 \uB4A4\uC9C0\uAC8C \uCD08\uC9DC\uAC19\uB124...."
-  price: 600
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 45ba01f02d224f347b2ddf08086cc33f, type: 3}

@@ -13,17 +13,9 @@ MonoBehaviour:
   m_Name: D0_2_Extension
   m_EditorClassIdentifier: 
   profileId: f6afb57651235a649a138ba28b86b8b3
-  requestIds:
-  - module/penetration/min-1/d0-2-extension
-  lines:
-  - "\uAD00\uD1B5 \uBAA8\uB4C8\uC744 \uD558\uB098 \uC774\uC0C1 \uB2EC\uC544\uC8FC\uC138\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uAD00\uD1B5 \uBAA8\uB4C8 \uB531 \uBD99\uC5B4\uC788\uB124\uC694. \uAC10\uC0AC\uD569\uB2C8\uB2E4!"
-  angryLine: "\uAD00\uD1B5 \uBAA8\uB4C8... \uC5B4\uB514 \uC788\uC5B4\uC694?"
-  price: 200
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 29b74ce080a15784fa576d4745cf251a, type: 3}

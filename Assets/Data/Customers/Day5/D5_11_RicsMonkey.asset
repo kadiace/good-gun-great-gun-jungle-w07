@@ -13,21 +13,9 @@ MonoBehaviour:
   m_Name: D5_11_RicsMonkey
   m_EditorClassIdentifier: 
   profileId: bb35f40bd3aa17e4f831ca8946978d4b
-  requestIds: []
-  lines:
-  - "\uC6B0 \uC6B0 \uC6B0 \uC300\uC300\uC300"
-  - "\uC2DD\uB2F9\uC73C\uB85C \uBE44\uC720\uD558\uC790\uBA74 \uC571\uC194\uCE7C\uB9AC\uBC84\uB97C
-    4\uAC1C\uC6D4 \uB300\uC5EC\uD574\uB2EC\uB77C\uB294\uAC70\uC784"
-  endsClear: 0
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uC774\uD574\uAC00 \uC3D9\uC3D9 \uB418\uC796\uC544"
-  angryLine: "\uC2DD\uB2F9\uC73C\uB85C \uBE44\uC720\uD558\uC790\uBA74 \uC9C4\uC0C1\uC774
-    \uD589\uD328 \uBD80\uB9AC\uB294 \uAC70\r\n\uC606\uC5D0 \uC788\uB358 \uC190\uB2D8\uC774
-    \uC2DD\uB2F9 \uC8FC\uC778 \uAC00\uBA74 \uC4F0\uACE0 \uB300\uC2E0 \uC695\uD574\uC92C\uB354\uB2C8\r\n\uADF8
-    \uC190\uB2D8\uC744 \uACE0\uC18C\uD558\uB294 \uAC70\uC784"
-  price: 700
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 50776c8b486984d4d88a79f6eb34eae3, type: 3}

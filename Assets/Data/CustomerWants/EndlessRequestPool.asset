@@ -13,46 +13,8 @@ MonoBehaviour:
   m_Name: EndlessRequestPool
   m_EditorClassIdentifier: 
   poolId: 4ed43104870c3e24f89f81d6ec6fd1bd
-  requestIds:
-  - module/scope/min-1
-  - module/split-two/min-1
-  - module/split-four/min-1
-  - tag/assault-rifle
-  - tag/charge
-  - tag/flamethrower
-  - tag/gravity-gun
-  - tag/grenade-launcher
-  - tag/homing
-  - tag/mini-nuke
-  - tag/handgun
-  - tag/ricochet
-  - tag/shotgun
-  - tag/sniper-rifle
-  - tag/spin
-  - tag/water-gun
   requests: []
   coreBaseStats: {fileID: 11400000, guid: a5e8910bc9b6fe24992c755e554564ef, type: 2}
-  minRequests: 1
-  maxRequests: 3
-  orderTemplates:
-  - "\uCD1D \uD558\uB098 \uC8FC\uC138\uC694. \uC870\uAC74\uC740 {0}."
-  - "{0}. \uC774\uB807\uAC8C \uB9DE\uCDB0\uC11C \uD558\uB098 \uBD80\uD0C1\uB4DC\uB824\uC694."
-  - "{0}! \uC774\uAC83\uB9CC \uC9C0\uCF1C\uC8FC\uC2DC\uBA74 \uB3FC\uC694."
-  - "\uCD9C\uADFC\uAE38\uC5D0 \uC4F8 \uCD1D\uC774 \uD544\uC694\uD574\uC694. {0}."
-  multiRequestTemplates:
-  - "\uC0AC\uC7A5\uB2D8, {0}. \uC774\uAC70 \uB2E4 \uB4E4\uC5B4\uAC04 \uCD1D \uC788\uC8E0?"
-  happyLines:
-  - "\uB531 \uC81C\uAC00 \uC6D0\uD558\uB358 \uAC70\uC608\uC694!"
-  - "\uC5ED\uC2DC \uC5EC\uAE30\uAC00 \uC81C\uC77C \uC798\uD558\uB124\uC694."
-  - "\uC644\uBCBD\uD574\uC694. \uB2E8\uACE8 \uD560\uAC8C\uC694!"
-  - "\uC624, \uC190\uB9DB \uC88B\uB124\uC694!"
-  - "\uC774 \uC815\uB3C4\uBA74 \uBCC4\uC810 \uB2E4\uC12F \uAC1C!"
-  angryLines:
-  - "\uC774\uAC70 \uC81C\uAC00 \uB9D0\uD55C \uAC70 \uC544\uB2CC\uB370\uC694..."
-  - "\uC8FC\uBB38\uC11C \uB2E4\uC2DC \uC77D\uC5B4\uBCF4\uC2DC\uACA0\uC5B4\uC694?"
-  - "...\uD658\uBD88\uC740 \uC548 \uB418\uC8E0?"
-  - "\uBCC4\uC810 \uD558\uB098 \uB4DC\uB9B4\uAC8C\uC694."
-  - "\uC81C\uAC00 \uB9D0\uD55C \uAC8C \uD558\uB098\uB3C4 \uC548 \uB4E4\uC5B4\uAC14\uC796\uC544\uC694!"
   portraits:
   - {fileID: 21300000, guid: d9f1ebf4c1d982b4e8b01bb9c21296c1, type: 3}
   - {fileID: 21300000, guid: 29b74ce080a15784fa576d4745cf251a, type: 3}
@@ -86,5 +48,3 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 9a586c2dc1c2a9f409cb2ff254523e98, type: 3}
   - {fileID: 21300000, guid: 256ef3cf0b0e3bf409ad59666539696b, type: 3}
   - {fileID: 21300000, guid: 3995ccc453a4544428f67c25d653ce99, type: 3}
-  basePrice: 200
-  pricePerRequest: 200

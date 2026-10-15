@@ -22,6 +22,7 @@ namespace WeaponWorkshop
         public RaidMapData RaidMap { get; private set; }
         public CustomerRequestData CustomerRequest { get; private set; }
         public ShootingTestTableData ShootingTestTable { get; private set; }
+        public CustomerOrderData CustomerOrder { get; private set; }
 
         private TableManager()
         {
@@ -31,6 +32,8 @@ namespace WeaponWorkshop
             ShootingTestInfo.Validate(ShootingTestTable);
             CustomerRequest = Load<CustomerRequestData>(nameof(CustomerRequestData));
             CustomerRequestInfo.Validate(CustomerRequest, ShootingTestTable);
+            CustomerOrder = Load<CustomerOrderData>(nameof(CustomerOrderData));
+            CustomerOrderInfo.Validate(CustomerOrder, CustomerRequest);
         }
 
         /// <summary>반복 호출해도 테이블을 다시 읽지 않는다.</summary>

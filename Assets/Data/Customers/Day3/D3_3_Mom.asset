@@ -13,22 +13,9 @@ MonoBehaviour:
   m_Name: D3_3_Mom
   m_EditorClassIdentifier: 
   profileId: e09ace2d9e03a6d4b9c5163bfb793a27
-  requestIds:
-  - tag/shotgun/legacy
-  - tag/assault-rifle/legacy
-  lines:
-  - "\uC77C\uBC18\uC0AC\uACA9\uC774 \uC5F0\uBC1C\uC0AC\uACA9\uC5D0 \uC0F7\uAC74\uC0AC\uACA9\uC778
-    \uCD1D\uC744 \uC3D8\uB294 \uC5C4\uB9C8\uB294 \uC88B\uC544\uD558\uC2DC\uB098\uC694?"
-  - "\uB3CC\uACA9\uC18C\uCD1D \uD0DC\uADF8\uC640 \uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uB97C
-    \uBAA8\uB450 \uB9CC\uC871\uD558\uB294 \uCD1D \uC8FC\uC138\uC694."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uC77C\uBC18\uC0AC\uACA9\uC774 \uC5F0\uBC1C\uC0AC\uACA9\uC5D0 \uC0F7\uAC74\uC0AC\uACA9\uC778
-    \uCD1D\uC744 \uC3D8\uB294 \uC5C4\uB9C8\uB77C.... \uC5B4\uD750"
-  angryLine: "\uC774 \uC81C\uBAA9\uC774 \uC544\uB2C8\uC600\uB098\uBD10\uC694...."
-  price: 500
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: b7116260357cb5b4fb61f4b9233bfe75, type: 3}

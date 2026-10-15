@@ -13,21 +13,9 @@ MonoBehaviour:
   m_Name: D5_8_BlackHole
   m_EditorClassIdentifier: 
   profileId: c2bdd0ee67e738841a3edca181024144
-  requestIds:
-  - tag/gravity-gun/legacy
-  - tag/grenade-launcher/legacy
-  lines:
-  - "\uC6B0\uC8FC\uAC00\u2192 \uB0B4\uAC8C\uC5D0\u2197 \uB178\u2197\uB798\u2197\uD55C\uB2E4\uC544\uC544\u2197\u2197\uC544\uC545\u2198!
-    \uC774 \uC120\uC728\uC740 \uB300\uCCB4 \uBB50\uC57C?!"
-  - "\uC911\uB825\uAC74 \uD0DC\uADF8\uC640 \uC720\uD0C4 \uD0DC\uADF8\uB97C \uD568\uAED8
-    \uBD99\uC5EC\uBCF4\uC790..."
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "(\uB9CC\uC871\uD55C\uB4EF\uC774 \uB3CC\uC544\uAC14\uB294\uB370 \uBB50\uD558\uB294\uB188\uC774\uC600\uC9C0..?)"
-  angryLine: "(\uADD3\uCCAD\uC774 \uD130\uC9C8\uAC83\uAC19\uB2E4.)"
-  price: 800
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: b83a6165eccb707428a78737f7f396c1, type: 3}

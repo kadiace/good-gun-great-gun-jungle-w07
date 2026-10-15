@@ -13,21 +13,9 @@ MonoBehaviour:
   m_Name: D4_9_Snaiper
   m_EditorClassIdentifier: 
   profileId: 8ca54d168454a8a4bbf7e11f5964cca1
-  requestIds:
-  - tag/sniper-rifle/legacy
-  - tag/homing/legacy
-  lines:
-  - "\uC800\uB97C 2\uCC28\uC6D0? 4\uCC28\uC6D0? \uC758 \uC800\uACA9\uC218\uB85C \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694!"
-  - "\uC800\uACA9\uCD1D \uD0DC\uADF8\uC640 \uC720\uB3C4 \uD0DC\uADF8\uB97C \uD568\uAED8
-    \uC6D0\uD574\uC694!"
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uBC31\uC219\uC744 \uC0B6\uC544\uBA39\uC73C\uB77C~[Personne n'\xE9chappe
-    \xE0 mon regard]"
-  angryLine: "\uC544 \uC774\uAC8C \uC548\uB9DE\uB124;"
-  price: 600
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 9655bfee6a0b87048a0d0bf9efea18bf, type: 3}

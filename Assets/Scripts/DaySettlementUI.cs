@@ -187,7 +187,7 @@ public sealed class DaySettlementUI : MonoBehaviour
         dailyRentText?.gameObject.SetActive(hasDailyRent);
         if (hasDailyRent && dailyRentText != null)
         {
-            int rent = dayManager.CurrentCustomerDay.rent;
+            int rent = dayManager.CurrentCustomerDay.Rent;
             dailyRentText.text = rent > 0 ? $"자리세: −$ {rent:N0}" : $"자리세: $ {rent:N0}";
             dailyRentText.color = rent > 0 ? NegativeValueColor : Color.white;
         }
@@ -197,7 +197,7 @@ public sealed class DaySettlementUI : MonoBehaviour
         {
             moneyCounter.SetTarget(wallet.Balance, moneyCountDuration);
             int rent = dayManager != null && dayManager.CurrentCustomerDay != null
-                ? dayManager.CurrentCustomerDay.rent : 0;
+                ? dayManager.CurrentCustomerDay.Rent : 0;
             long balanceAfterRent = (long)wallet.Balance - (dayManager != null && dayManager.IsNight ? 0 : rent);
             moneyCounter.SetNegative(balanceAfterRent <= 0);
         }

@@ -13,19 +13,9 @@ MonoBehaviour:
   m_Name: D5_9_Firefighter
   m_EditorClassIdentifier: 
   profileId: 52c56089bff6c5341966c99523742ef5
-  requestIds:
-  - tag/water-gun/legacy
-  - tag/charge/legacy
-  lines:
-  - "\uBB3C\uCD1D \uD0DC\uADF8\uC5D0 \uCC28\uC9C0 \uD0DC\uADF8\uAE4C\uC9C0 \uBD80\uD0C1\uD574\uC694!"
-  endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uAE34\uAE09\uCD9C\uB3D9!"
-  angryLine: "\uCC28\uB77C\uB9AC \uC785\uC73C\uB85C \uBD88\uC5B4\uC11C \uB044\uB294\uAC8C
-    \uB0AB\uACA0\uC5B4"
-  price: 700
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 1868cc07ee699e748950c8451f4f0d29, type: 3}
