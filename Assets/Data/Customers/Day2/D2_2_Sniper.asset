@@ -12,14 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D2_2_Sniper
   m_EditorClassIdentifier: 
+  profileId: d5398f48369de9044b8afcc0e73edc0d
+  requestIds:
+  - d6d6fd1701a033d4b849c531f7f4f5f1
   lines:
   - "\uC800\uACA9\uCD1D \uC8FC\uC138\uC694."
-  - "저격총 태그가 붙은 총이어야 해요."
+  - "\uC800\uACA9\uCD1D \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC774\uC5B4\uC57C
+    \uD574\uC694."
   endsClear: 1
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
-  archetypes:
-  - {fileID: 11400000, guid: d6d6fd1701a033d4b849c531f7f4f5f1, type: 2}
+  archetypes: []
   conditions: []
   happyLine: "...\uACE7\uACE0 \uC870\uC6A9\uD558\uAD70. \uC88B\uC544."
   angryLine: "\uAD00\uD1B5\uC774 \uC548 \uB418\uC796\uC544\uC694. \uC774\uAC78\uB85C

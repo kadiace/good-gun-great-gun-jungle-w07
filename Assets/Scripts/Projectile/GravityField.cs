@@ -7,6 +7,7 @@ namespace WeaponWorkshop
     public sealed class GravityField : MonoBehaviour
     {
         private float remaining, duration;
+        public Transform WeaponSource { get; private set; }
         private Transform lens;
         private Renderer lensRenderer;
         private MaterialPropertyBlock appearance;
@@ -21,6 +22,7 @@ namespace WeaponWorkshop
             field.lens = null; field.lensRenderer = null;
             field.structures.Clear();
             field.remaining = field.duration = duration;
+            field.WeaponSource = weapon;
             // One range query per impact, deduplicated across merged collision boxes.
             var structures = field.structures;
             int count = CombatPhysicsQueries.OverlapSphere(center, radius, layers & ~LayerMask.GetMask("Energy"), out var overlaps);
@@ -61,6 +63,7 @@ namespace WeaponWorkshop
         {
             WorkshopSoundEffects.RaiseGravityFieldStopped(this);
             remaining = duration = 0f; lens = null; lensRenderer = null; structures.Clear();
+            WeaponSource = null;
             appearance?.Clear();
         }
         private void Update()

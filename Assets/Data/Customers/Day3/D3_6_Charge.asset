@@ -12,6 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D3_6_Charge
   m_EditorClassIdentifier: 
+  profileId: 2d9480eb51c562c4c92a1421ea5770da
+  requestIds:
+  - db5262cea8401e542a56f9a2812196a3
   lines:
   - "\"\uD669\uD63C\uBCF4\uB2E4 \uC5B4\uB450\uC6B4 \uC790\uC5EC \uB0B4 \uBAB8\uC5D0
     \uD750\uB974\uB294 \uD53C\uBCF4\uB2E4 \uB354 \uBD89\uC740 \uC790\uC5EC\n\uC2DC\uAC04\uC758
@@ -21,10 +24,12 @@ MonoBehaviour:
     \uC788\uB294 \uBAA8\uB4E0 \uC5B4\uB9AC\uC11D\uC740 \uC790\uB4E4\uC5D0\uAC8C\n\uB098\uC640
     \uADF8\uB300\uC758 \uD798\uC744, \uC704\uB300\uD55C \uD30C\uBA78\uC758 \uD798\uC744
     \uBCF4\uC5EC\uC904 \uAC83\uC744!\""
-  - "차지 태그가 붙은 총으로 해주세요. 모아서 쏘는 거요."
+  - "\uCC28\uC9C0 \uD0DC\uADF8\uAC00 \uBD99\uC740 \uCD1D\uC73C\uB85C \uD574\uC8FC\uC138\uC694.
+    \uBAA8\uC544\uC11C \uC3D8\uB294 \uAC70\uC694."
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: db5262cea8401e542a56f9a2812196a3, type: 2}
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
   happyLine: "\uB4DC\uB798\uACE4 \uC2AC\uB808\uC774\uBE0C!!!!"
   angryLine: "\uC544 \uBD80\uB044\uB7EC\uC6CC...."

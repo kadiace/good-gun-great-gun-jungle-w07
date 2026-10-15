@@ -12,13 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: WantTag_MiniNuke
   m_EditorClassIdentifier: 
-  displayName: "\uC18C\uD615\uD575 \uD0DC\uADF8"
-  request: "\uC18C\uD615\uD575 \uD0DC\uADF8 (\uD3ED\uBC1C 10 \uC774\uC0C1)"
+  tableId: a0eed031913cef84eab19bafbe2ff4df
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: 3396cf208ef6d564bb1cd952a6fe598b, type: 2}
-  excludes:
-  - {fileID: 11400000, guid: afce91ece9f68f44b92e48a1652ea36b, type: 2}
-  - {fileID: 11400000, guid: c72d25cecff161540a6c693be4355a28, type: 2}
-  unlockDay: 1
-  requiredModules:
-  - {fileID: 11400000, guid: 3819fc250847c48448b1dc45b4ce63a6, type: 2}
+  weaponType: {fileID: 0}
+  excludes: []
+  unlockDay: 0
+  requiredModules: []

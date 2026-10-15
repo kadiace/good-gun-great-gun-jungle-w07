@@ -1,0 +1,1277 @@
+{
+    "requests": [
+        {
+            "id": "018d81c1a0e6af041832d131bd683963",
+            "name": "권총 태그",
+            "phrase": "권총 태그 (무게 20 미만, 스코프 모듈 없음)",
+            "tagId": "f9e8d0ecf0b963e4aa51f837b5ae8602",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [
+                "c8e35a29c16ae91459a744997e871c23",
+                "a0eed031913cef84eab19bafbe2ff4df"
+            ],
+            "requiredModules": [],
+            "conditions": []
+        },
+        {
+            "id": "08dbc26e0a7043288f412d911e86341d",
+            "name": "폭발 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "0a96ef47053b4950af035ef296403291",
+                    "label": "폭발 모듈 개수",
+                    "measure": 2,
+                    "stat": 2,
+                    "min": 2.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "0d8bdcf9176b9d144832800890380fe9",
+            "name": "차지 태그",
+            "phrase": "차지 태그 (차지 모듈 1개 이상)",
+            "tagId": "f591f239c94e4f44dae9ea87c6bcdb26",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                7
+            ],
+            "conditions": []
+        },
+        {
+            "id": "0de1724fb39d46cc88a0316007dc3e2f",
+            "name": "관통 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "c10209b729ba4727a0640e143e3c8d31",
+                    "label": "관통 모듈 개수",
+                    "measure": 2,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "12dc496b759341be92ecc36d0bd8029b",
+            "name": "2방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "79baa58581804250b6e40575229d4a8f",
+                    "label": "2방향 분할 모듈 개수",
+                    "measure": 4,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "2a84630bf124ec64ba0d101ec701cbe6",
+            "name": "중력건 태그",
+            "phrase": "중력건 태그 (중력 모듈 1개 이상)",
+            "tagId": "1199a71d1cb406344b40eab02c202fd0",
+            "unlockDay": 7,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                8
+            ],
+            "conditions": []
+        },
+        {
+            "id": "2be3abe367214f4498ce45b36c408667",
+            "name": "무게",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "026521f3c1a34d588f8deac38e2ad2ae",
+                    "label": "무게",
+                    "measure": 1,
+                    "stat": 11,
+                    "min": 4.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "37d5a78ecb744efd96386f736b71cf9f",
+            "name": "4방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "711777e6b98a468e8a3e488fcddd390a",
+                    "label": "4방향 분할 모듈 개수",
+                    "measure": 5,
+                    "stat": 0,
+                    "min": 2.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "3cd6ab6c03bd4587afb368a6e52274a1",
+            "name": "관통 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "d6210f32aacb4bd58f98cf195a0c6bd2",
+                    "label": "관통 모듈 개수",
+                    "measure": 2,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "40b0f2c46533419d80e7a465fde35429",
+            "name": "4방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "0b0740df53554c2cb8f665b630f030ad",
+                    "label": "4방향 분할 모듈 개수",
+                    "measure": 5,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "446282254eab4b3abda70d3caabfd2a8",
+            "name": "연사 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "0f7b2afe74da4b6488b100444deb4e65",
+                    "label": "연사 모듈 개수",
+                    "measure": 2,
+                    "stat": 1,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "485e61ed24d2490987931ad36a029e77",
+            "name": "2방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "29f40e31959e43a3bc90f7d3131fe2a5",
+                    "label": "2방향 분할 모듈 개수",
+                    "measure": 4,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "48aeae95d13c1f643817498a6dae1573",
+            "name": "물총",
+            "phrase": "물총 태그 (전력이 연결된 물 모듈 1개 이상)",
+            "tagId": "3912bb5b7da966a47995e32041938a6a",
+            "unlockDay": 3,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                11
+            ],
+            "conditions": []
+        },
+        {
+            "id": "4d02285ccf89482d86daf245b15b6c0a",
+            "name": "관통 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "341a4626706e47a18dfe867df46ad044",
+                    "label": "관통 모듈 개수",
+                    "measure": 2,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "4e7c1ebb9b774bf0aa76abe4fc7e855c",
+            "name": "스코프 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "26adb212c61642208843b7b427566898",
+                    "label": "스코프 개수",
+                    "measure": 1,
+                    "stat": 12,
+                    "min": 2.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "4ebfaf28deed49c4bdaea72e4f161b12",
+            "name": "4방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "41e0184ba18e4fff92b4df35d2491a2e",
+                    "label": "4방향 분할 모듈 개수",
+                    "measure": 5,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "4f973a10b24bb66429934674b59258d1",
+            "name": "저격소총 태그",
+            "phrase": "저격총 태그 (관통 2 이상, 무게 15 이상, 속도 2 이상, 스코프 1 이상)",
+            "tagId": "aaf2e5c321465134bab63de10ee5e54a",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                3,
+                15,
+                14
+            ],
+            "conditions": []
+        },
+        {
+            "id": "5495cdb5ec8b49889fedb519f9f530ff",
+            "name": "4방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "ff1e04067e3e4a9bb0acc8cfa9b606c8",
+                    "label": "4방향 분할 모듈 개수",
+                    "measure": 5,
+                    "stat": 0,
+                    "min": 2.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "5c76f903d2f431541ba0ad0748212dca",
+            "name": "쿼드라배럴(4방향 분할)",
+            "phrase": "4방향 분할(쿼드라배럴)",
+            "tagId": "",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                2
+            ],
+            "conditions": [
+                {
+                    "id": "a43e779b33f842309169d689cc2de931",
+                    "label": "4방향 분할 모듈 개수",
+                    "measure": 5,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "60c861d406fb6fd48a48e2649ddcb52b",
+            "name": "회전",
+            "phrase": "회전 태그 (회전 모듈 1개 이상)",
+            "tagId": "b5d9e450608d02c448b9a7d3bba5ad92",
+            "unlockDay": 6,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                10
+            ],
+            "conditions": []
+        },
+        {
+            "id": "68d24c5725174793aa8ca26435ec50bd",
+            "name": "관통 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "86b54bfb901147658a02041eb2012ce3",
+                    "label": "관통 모듈 개수",
+                    "measure": 2,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "6bfd82587bbb4a640a1dcc436cacd347",
+            "name": "중력건",
+            "phrase": "중력건 태그 (중력 모듈 1개 이상)",
+            "tagId": "1199a71d1cb406344b40eab02c202fd0",
+            "unlockDay": 7,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                8
+            ],
+            "conditions": []
+        },
+        {
+            "id": "6dd80349125f3384f99d6fce630dd64e",
+            "name": "회전 태그",
+            "phrase": "회전 태그 (회전 모듈 1개 이상)",
+            "tagId": "b5d9e450608d02c448b9a7d3bba5ad92",
+            "unlockDay": 6,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                10
+            ],
+            "conditions": []
+        },
+        {
+            "id": "70d86a3c50472dd47b261b990ddd9210",
+            "name": "산탄총",
+            "phrase": "산탄총 태그 (산탄 모듈 1개 이상)",
+            "tagId": "b89c88322f37da74cb6f1624397fce4d",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                13
+            ],
+            "conditions": []
+        },
+        {
+            "id": "7845d9dc6dfec7644bc4727e668fa871",
+            "name": "더블배럴(2방향 분할)",
+            "phrase": "2방향 분할(더블배럴)",
+            "tagId": "",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                1
+            ],
+            "conditions": [
+                {
+                    "id": "2653a01a7f8a4b6da0af9165e7e6a8fb",
+                    "label": "2방향 분할 모듈 개수",
+                    "measure": 4,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "81148a6e113140c18bfdab5b9d6201d6",
+            "name": "연사 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "a715940f9f44479e85881405bfcbc9c9",
+                    "label": "연사 모듈 개수",
+                    "measure": 2,
+                    "stat": 1,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "81d72487c62c42bb8a2c996de2071c0d",
+            "name": "2방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "28e1e47ddfde468b895203b46b7d9429",
+                    "label": "2방향 분할 모듈 개수",
+                    "measure": 4,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "91214fdaf5f33204b87af5b6e5faafc8",
+            "name": "유도 태그",
+            "phrase": "유도 태그 (유도 모듈 1개 이상)",
+            "tagId": "7d95d7b383516df44830a4c7b34f3568",
+            "unlockDay": 5,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                12
+            ],
+            "conditions": []
+        },
+        {
+            "id": "982660b8fcc3c1340adfa1edcdfb1257",
+            "name": "유탄(폭발)",
+            "phrase": "유탄 태그 (폭발 1 이상, 3 미만)",
+            "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                5
+            ],
+            "conditions": []
+        },
+        {
+            "id": "9dc28f49f1304f142a4751f178f39cdf",
+            "name": "산탄총 태그",
+            "phrase": "산탄총 태그 (산탄 모듈 1개 이상)",
+            "tagId": "b89c88322f37da74cb6f1624397fce4d",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                13
+            ],
+            "conditions": []
+        },
+        {
+            "id": "a06ceb531cbb6a041b8f160acf2c8c1d",
+            "name": "물총 태그",
+            "phrase": "물총 태그 (전력이 연결된 물 모듈 1개 이상)",
+            "tagId": "3912bb5b7da966a47995e32041938a6a",
+            "unlockDay": 3,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                11
+            ],
+            "conditions": []
+        },
+        {
+            "id": "a0eed031913cef84eab19bafbe2ff4df",
+            "name": "소형핵 태그",
+            "phrase": "소형핵 태그 (폭발 10 이상)",
+            "tagId": "3396cf208ef6d564bb1cd952a6fe598b",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [
+                "afce91ece9f68f44b92e48a1652ea36b",
+                "c72d25cecff161540a6c693be4355a28"
+            ],
+            "requiredModules": [
+                5
+            ],
+            "conditions": []
+        },
+        {
+            "id": "a577397affb1dba46a5ab05ee475eec6",
+            "name": "유도",
+            "phrase": "유도 태그 (유도 모듈 1개 이상)",
+            "tagId": "7d95d7b383516df44830a4c7b34f3568",
+            "unlockDay": 5,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                12
+            ],
+            "conditions": []
+        },
+        {
+            "id": "a61fe9fb9a4d488788c1ec6b1072ae0f",
+            "name": "4방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "56d845a7c83544a0ae392481b66119c9",
+                    "label": "4방향 분할 모듈 개수",
+                    "measure": 5,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "a953407380ff6594a942af751bf23efb",
+            "name": "돌격소총",
+            "phrase": "돌격소총 태그 (관통 2 이상, 연사 3 이상, 무게 15 이상)",
+            "tagId": "9b6639978cc6faf49a0a539f89ad1ffb",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                4
+            ],
+            "conditions": []
+        },
+        {
+            "id": "afce91ece9f68f44b92e48a1652ea36b",
+            "name": "권총",
+            "phrase": "권총 태그 (무게 20 미만, 스코프 모듈 없음)",
+            "tagId": "f9e8d0ecf0b963e4aa51f837b5ae8602",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": []
+        },
+        {
+            "id": "b2f89098d7e03e14ea82f271ee522562",
+            "name": "도탄 태그",
+            "phrase": "도탄 태그 (반사 모듈 1개 이상)",
+            "tagId": "36dc9431816b1d84182d3e07c11a2c4c",
+            "unlockDay": 4,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                6
+            ],
+            "conditions": []
+        },
+        {
+            "id": "bfd5154c074e097469bfe8a36c7fd547",
+            "name": "돌격소총 태그",
+            "phrase": "돌격소총 태그 (관통 2 이상, 연사 3 이상, 무게 15 이상)",
+            "tagId": "9b6639978cc6faf49a0a539f89ad1ffb",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                3,
+                4
+            ],
+            "conditions": []
+        },
+        {
+            "id": "c0fbdc9111b6474fbe47321706b603fd",
+            "name": "스탯 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "57440a572d4241df9ee53fcc4554edc4",
+                    "label": "스탯 모듈 개수",
+                    "measure": 3,
+                    "stat": 0,
+                    "min": 0.0,
+                    "max": 0.0,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "c45e9713dbf2ac3469b4a59283112118",
+            "name": "화염방사(발열)",
+            "phrase": "화염방사 태그 (발열 모듈 1개 이상, 연사 1 이상)",
+            "tagId": "b370a46a3f0c45a438dc174b4b9c8d32",
+            "unlockDay": 2,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                9
+            ],
+            "conditions": []
+        },
+        {
+            "id": "c72d25cecff161540a6c693be4355a28",
+            "name": "유탄 태그",
+            "phrase": "유탄 태그 (폭발 1 이상, 3 미만)",
+            "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                5
+            ],
+            "conditions": []
+        },
+        {
+            "id": "c8e35a29c16ae91459a744997e871c23",
+            "name": "스코프",
+            "phrase": "스코프",
+            "tagId": "",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                14
+            ],
+            "conditions": [
+                {
+                    "id": "a7615589153c4c90bf57db42d0bef8fa",
+                    "label": "스코프 개수",
+                    "measure": 1,
+                    "stat": 12,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "ca4f3f1971ec4adf8f498ed34a364093",
+            "name": "산탄 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "ea91fe61df2d41f49c414dadd5e9abe0",
+                    "label": "산탄 모듈 개수",
+                    "measure": 2,
+                    "stat": 10,
+                    "min": 3.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "d6d6fd1701a033d4b849c531f7f4f5f1",
+            "name": "저격소총",
+            "phrase": "저격총 태그 (관통 2 이상, 무게 15 이상, 속도 2 이상, 스코프 1 이상)",
+            "tagId": "aaf2e5c321465134bab63de10ee5e54a",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                3
+            ],
+            "conditions": []
+        },
+        {
+            "id": "db5262cea8401e542a56f9a2812196a3",
+            "name": "차지",
+            "phrase": "차지 태그 (차지 모듈 1개 이상)",
+            "tagId": "f591f239c94e4f44dae9ea87c6bcdb26",
+            "unlockDay": 1,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                7
+            ],
+            "conditions": []
+        },
+        {
+            "id": "e64de5a40aee4451b6b5fef4f2560b76",
+            "name": "관통 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "4365b3719c644ce98ed9e71a69ea2fe2",
+                    "label": "관통 모듈 개수",
+                    "measure": 2,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "f190a969535f4aa4b837f4edc6d7f313",
+            "name": "2방향 분할 모듈 개수",
+            "phrase": "",
+            "tagId": "",
+            "unlockDay": 0,
+            "saleBonus": false,
+            "excludes": [],
+            "requiredModules": [],
+            "conditions": [
+                {
+                    "id": "e1a5df08fd144400a32132a9def590ef",
+                    "label": "2방향 분할 모듈 개수",
+                    "measure": 4,
+                    "stat": 0,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "f414d5e3527d6c94caba92a8f1ea4073",
+            "name": "화염방사 태그",
+            "phrase": "화염방사 태그 (발열 모듈 1개 이상, 연사 1 이상)",
+            "tagId": "b370a46a3f0c45a438dc174b4b9c8d32",
+            "unlockDay": 2,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                9
+            ],
+            "conditions": []
+        },
+        {
+            "id": "fdd2d5a8251468842be3744e7dba689f",
+            "name": "도탄(반사)",
+            "phrase": "도탄 태그 (반사 모듈 1개 이상)",
+            "tagId": "36dc9431816b1d84182d3e07c11a2c4c",
+            "unlockDay": 4,
+            "saleBonus": true,
+            "excludes": [],
+            "requiredModules": [
+                6
+            ],
+            "conditions": []
+        }
+    ],
+    "tags": [
+        {
+            "id": "1199a71d1cb406344b40eab02c202fd0",
+            "name": "중력건",
+            "color": {
+                "r": 0.43921568989753725,
+                "g": 0.27450981736183169,
+                "b": 0.6392157077789307,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "863658194d8545da862fc7d8db1fb189",
+                    "label": "중력 모듈 개수",
+                    "measure": 2,
+                    "stat": 5,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "3396cf208ef6d564bb1cd952a6fe598b",
+            "name": "소형핵",
+            "color": {
+                "r": 0.4431372582912445,
+                "g": 0.6078431606292725,
+                "b": 0.1568627506494522,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "09602f9cad214a56a3167920e97b366b",
+                    "label": "폭발력",
+                    "measure": 1,
+                    "stat": 2,
+                    "min": 11.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "36dc9431816b1d84182d3e07c11a2c4c",
+            "name": "도탄",
+            "color": {
+                "r": 0.2235294133424759,
+                "g": 0.49803921580314639,
+                "b": 0.5490196347236633,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "0d10d176a4f54cdabf34bee6cb9a1c9b",
+                    "label": "반사 모듈 개수",
+                    "measure": 2,
+                    "stat": 3,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "3912bb5b7da966a47995e32041938a6a",
+            "name": "물총",
+            "color": {
+                "r": 0.13725490868091584,
+                "g": 0.5529412031173706,
+                "b": 0.7215686440467835,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "e7ff2d7dff9244a0b6514b6543a237ed",
+                    "label": "물 모듈 개수",
+                    "measure": 2,
+                    "stat": 8,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "7d95d7b383516df44830a4c7b34f3568",
+            "name": "유도",
+            "color": {
+                "r": 0.23529411852359773,
+                "g": 0.5176470875740051,
+                "b": 0.33725491166114809,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "5f7eef445eff472aa5855ce68a786d42",
+                    "label": "유도 모듈 개수",
+                    "measure": 2,
+                    "stat": 9,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "9b6639978cc6faf49a0a539f89ad1ffb",
+            "name": "돌격소총",
+            "color": {
+                "r": 0.3333333432674408,
+                "g": 0.41960784792900088,
+                "b": 0.24705882370471955,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "131a51ff34db406ea3ad67140510102b",
+                    "label": "관통력",
+                    "measure": 1,
+                    "stat": 0,
+                    "min": 2.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                },
+                {
+                    "id": "98c168b9310846f4807a3bad9ebb53f7",
+                    "label": "연사력",
+                    "measure": 1,
+                    "stat": 1,
+                    "min": 3.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                },
+                {
+                    "id": "018c50ae57ed4c6c893c539c6f0c07e5",
+                    "label": "무게",
+                    "measure": 1,
+                    "stat": 11,
+                    "min": 15.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "aaf2e5c321465134bab63de10ee5e54a",
+            "name": "저격소총",
+            "color": {
+                "r": 0.2705882489681244,
+                "g": 0.3529411852359772,
+                "b": 0.3921568691730499,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "e30d1c214cff47f8b5084a097e3c66ce",
+                    "label": "관통력",
+                    "measure": 1,
+                    "stat": 0,
+                    "min": 2.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                },
+                {
+                    "id": "5a32f8746338407f968197068f0805b4",
+                    "label": "무게",
+                    "measure": 1,
+                    "stat": 11,
+                    "min": 15.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                },
+                {
+                    "id": "c2ab0b1ab62942739a5632f68913b417",
+                    "label": "탄속 배율",
+                    "measure": 1,
+                    "stat": 13,
+                    "min": 2.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                },
+                {
+                    "id": "f5efaab411884a5b9a31053927970eb0",
+                    "label": "스코프 개수",
+                    "measure": 1,
+                    "stat": 12,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "b370a46a3f0c45a438dc174b4b9c8d32",
+            "name": "화염방사",
+            "color": {
+                "r": 0.772549033164978,
+                "g": 0.2980392277240753,
+                "b": 0.13333334028720857,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "ef873257cdba40c8980fa01514e520e1",
+                    "label": "발열 모듈 개수",
+                    "measure": 2,
+                    "stat": 6,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                },
+                {
+                    "id": "f12e1fe427074a55954fae3c3ed6089f",
+                    "label": "연사력",
+                    "measure": 1,
+                    "stat": 1,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "b5d9e450608d02c448b9a7d3bba5ad92",
+            "name": "회전",
+            "color": {
+                "r": 0.32549020648002627,
+                "g": 0.41960784792900088,
+                "b": 0.6509804129600525,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "8ca1e54bb0ac4e62b604acf146241c4b",
+                    "label": "회전 모듈 개수",
+                    "measure": 2,
+                    "stat": 7,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "b89c88322f37da74cb6f1624397fce4d",
+            "name": "산탄총",
+            "color": {
+                "r": 0.545098066329956,
+                "g": 0.3529411852359772,
+                "b": 0.21176470816135407,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "73a08effdf864933bb84b361c5486c31",
+                    "label": "산탄 모듈 개수",
+                    "measure": 2,
+                    "stat": 10,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "cb2c1699ceedbb54084051bd0ed7a56b",
+            "name": "유탄",
+            "color": {
+                "r": 0.6392157077789307,
+                "g": 0.4156862795352936,
+                "b": 0.14509804546833039,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "c0b4ecdbd00d415bb287d9dbfb602020",
+                    "label": "폭발력",
+                    "measure": 1,
+                    "stat": 2,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                },
+                {
+                    "id": "d4b7c6142b6b409db7e142ffc1234b65",
+                    "label": "폭발력",
+                    "measure": 1,
+                    "stat": 2,
+                    "min": 0.0,
+                    "max": 10.0,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "f591f239c94e4f44dae9ea87c6bcdb26",
+            "name": "차지",
+            "color": {
+                "r": 0.6745098233222961,
+                "g": 0.5176470875740051,
+                "b": 0.250980406999588,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "2712e58edf614a48a556ba535a0b85fb",
+                    "label": "차지 모듈 개수",
+                    "measure": 2,
+                    "stat": 4,
+                    "min": 1.0,
+                    "max": 3.4028234663852887e38,
+                    "maxExclusive": false
+                }
+            ]
+        },
+        {
+            "id": "f9e8d0ecf0b963e4aa51f837b5ae8602",
+            "name": "권총",
+            "color": {
+                "r": 0.3803921639919281,
+                "g": 0.3960784375667572,
+                "b": 0.41960784792900088,
+                "a": 1.0
+            },
+            "sellMultiplier": 1.0,
+            "conditions": [
+                {
+                    "id": "8a9152156c354599b9bd1cca8b809a60",
+                    "label": "무게",
+                    "measure": 1,
+                    "stat": 11,
+                    "min": 0.0,
+                    "max": 20.0,
+                    "maxExclusive": true
+                }
+            ]
+        }
+    ],
+    "legacySlots": [
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "c8e35a29c16ae91459a744997e871c23",
+            "index": 0
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "7845d9dc6dfec7644bc4727e668fa871",
+            "index": 1
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "5c76f903d2f431541ba0ad0748212dca",
+            "index": 2
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "bfd5154c074e097469bfe8a36c7fd547",
+            "index": 3
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "0d8bdcf9176b9d144832800890380fe9",
+            "index": 4
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "f414d5e3527d6c94caba92a8f1ea4073",
+            "index": 5
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "2a84630bf124ec64ba0d101ec701cbe6",
+            "index": 6
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "c72d25cecff161540a6c693be4355a28",
+            "index": 7
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "91214fdaf5f33204b87af5b6e5faafc8",
+            "index": 8
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "a0eed031913cef84eab19bafbe2ff4df",
+            "index": 9
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "018d81c1a0e6af041832d131bd683963",
+            "index": 10
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "b2f89098d7e03e14ea82f271ee522562",
+            "index": 11
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "9dc28f49f1304f142a4751f178f39cdf",
+            "index": 12
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "4f973a10b24bb66429934674b59258d1",
+            "index": 13
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "6dd80349125f3384f99d6fce630dd64e",
+            "index": 14
+        },
+        {
+            "poolId": "4ed43104870c3e24f89f81d6ec6fd1bd",
+            "requestId": "a06ceb531cbb6a041b8f160acf2c8c1d",
+            "index": 15
+        }
+    ]
+}

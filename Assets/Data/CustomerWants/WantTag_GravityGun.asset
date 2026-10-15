@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: WantTag_GravityGun
   m_EditorClassIdentifier: 
-  displayName: "\uC911\uB825\uAC74 \uD0DC\uADF8"
-  request: "\uC911\uB825\uAC74 \uD0DC\uADF8 (\uC911\uB825 \uBAA8\uB4C8 1\uAC1C \uC774\uC0C1)"
+  tableId: 2a84630bf124ec64ba0d101ec701cbe6
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: 1199a71d1cb406344b40eab02c202fd0, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 7
-  requiredModules:
-  - {fileID: 11400000, guid: 36f778d16d639104b90e807dc937aaaa, type: 2}
+  unlockDay: 0
+  requiredModules: []

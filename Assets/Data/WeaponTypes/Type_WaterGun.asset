@@ -12,11 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
   m_Name: Type_WaterGun
   m_EditorClassIdentifier: 
-  displayName: "\uBB3C\uCD1D"
-  tagColor: {r: 0.13725491, g: 0.5529412, b: 0.72156864, a: 1}
-  conditions:
-  - stat: 8
-    comparison: 0
-    value: 1
-    source: 2
-  sellMultiplier: 1
+  tableId: 3912bb5b7da966a47995e32041938a6a
+  displayName: 
+  tagColor: {r: 0, g: 0, b: 0, a: 0}
+  conditions: []
+  sellMultiplier: 0

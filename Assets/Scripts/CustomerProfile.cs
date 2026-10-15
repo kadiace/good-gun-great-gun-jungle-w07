@@ -90,6 +90,10 @@ namespace WeaponWorkshop
     [CreateAssetMenu(menuName = "Weapon Workshop/Customer Profile")]
     public sealed class CustomerProfile : ScriptableObject
     {
+        [SerializeField, HideInInspector] private string profileId;
+        public string ProfileId => profileId;
+        [Tooltip("요청 정의는 TableManager.CustomerRequest에서 조회합니다.")]
+        public string[] requestIds = System.Array.Empty<string>();
         [TextArea, Tooltip("순서대로 말하는 대사. 마지막 줄 외에는 전부 '예?' 버튼.")]
         public string[] lines = { "총 하나 주세요." };
         [Tooltip("켜면 마지막 줄 버튼이 '알겠습니다!'. 끄면 끝까지 헛소리 → 마지막도 '예?'로 나감.")]
@@ -99,8 +103,10 @@ namespace WeaponWorkshop
         [Tooltip("처음 주문을 다 들은 뒤 실행할 안내 데이터")]
         public TutorialSequence orderTutorialSequence;
         [Tooltip("원하는 총 종류 (권총, 산탄총...). 전부 만족해야 함. 최소조건만 보므로 다른 모듈을 더 달아도 통과")]
+        [System.Obsolete("레거시 요청 참조. requestIds와 TableManager.CustomerRequest를 사용하세요."), HideInInspector]
         public GunArchetype[] archetypes;
         [Tooltip("종류 외 추가 조건")]
+        [System.Obsolete("레거시 요청 조건. requestIds와 TableManager.CustomerRequest를 사용하세요."), HideInInspector]
         public GunCondition[] conditions;
         [TextArea, Tooltip("조건에 맞는 총을 받았을 때")] public string happyLine;
         [TextArea, Tooltip("조건에 안 맞는 총을 받았을 때")] public string angryLine;
@@ -116,11 +122,7 @@ namespace WeaponWorkshop
 
         public bool Check(EquipableWeapon weapon)
         {
-            if (weapon == null) return false;
-            if (archetypes != null)
-                foreach (GunArchetype archetype in archetypes)
-                    if (archetype != null && !archetype.Check(weapon)) return false;
-            return GunCondition.AllMet(conditions, weapon);
+            return TableManager.Instance.CustomerRequest.MeetsOrder(requestIds, weapon);
         }
     }
 }

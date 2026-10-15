@@ -12,12 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D4_1_HangarCQC
   m_EditorClassIdentifier: 
+  profileId: d22429fd957afa44483eb23d1c989306
+  requestIds:
+  - afce91ece9f68f44b92e48a1652ea36b
   lines:
   - "\uACA9\uB0A9\uACE0 \uB0B4\uBD80 CQC\uB2E4."
-  - "권총 태그 붙여서 작게 만들어."
+  - "\uAD8C\uCD1D \uD0DC\uADF8 \uBD99\uC5EC\uC11C \uC791\uAC8C \uB9CC\uB4E4\uC5B4."
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: afce91ece9f68f44b92e48a1652ea36b, type: 2}
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
   happyLine: "...\uC774 \uC815\uB3C4\uBA74 \uACA9\uB0A9\uACE0\uC5D0\uC11C \uC368\uB3C4
     \uB418\uACA0\uAD70. (\uB2F4\uBC30 \uC5F0\uAE30)"

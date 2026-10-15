@@ -12,18 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D4_5_RipAndTear
   m_EditorClassIdentifier: 
+  profileId: d388b03377bb04d4097c8992aa687d9e
+  requestIds:
+  - 70d86a3c50472dd47b261b990ddd9210
+  - 485e61ed24d2490987931ad36a029e77
   lines:
   - "\uAC15\uD55C \uD654\uB825...... \uAC15\uD55C \uCD1D\uAE30..... \uCC22\uACE0
     \uB72F\uB294\uB2E4.."
-  - "산탄총 태그에, 2방향 분할도 달아줘..."
+  - "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uC5D0, 2\uBC29\uD5A5 \uBD84\uD560\uB3C4 \uB2EC\uC544\uC918..."
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: 70d86a3c50472dd47b261b990ddd9210, type: 2}
-  conditions:
-  - measure: 4
-    stat: 0
-    min: 1
-    max: 999
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
+  conditions: []
   happyLine: "\uCC22\uACE0... \uB72F\uB294\uB2E4...!!"
   angryLine: "\uCC22\uAE30\uC9C0\uB3C4... \uB72F\uAE30\uC9C0\uB3C4... \uC54A\uB294\uB2E4..."
   price: 600

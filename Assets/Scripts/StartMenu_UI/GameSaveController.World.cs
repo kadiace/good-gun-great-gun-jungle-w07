@@ -101,6 +101,7 @@ namespace WeaponWorkshop
                 if (t.GetComponentInParent<UnityEngine.Canvas>() != null || t.GetComponentInParent<UnityEngine.EventSystems.EventSystem>() != null ||
                     t.GetComponentInParent<FirstPersonPlayer>() != null || t.GetComponentInParent<EquipableWeapon>() != null ||
                     t.GetComponentInParent<Customer>() != null || t.GetComponent<Camera>() != null ||
+                    t.GetComponentInParent<ShootingTestLayout>() != null ||
                     t.GetComponent<GameSaveController>() != null || t.GetComponent<GameManager>() != null || t.GetComponent<_DayManager>() != null ||
                     t.GetComponentInParent<PoolManager>() != null) continue;
                 var identity = t.GetComponent<WorldSaveIdentity>();
@@ -182,6 +183,7 @@ namespace WeaponWorkshop
             var session = player.GetComponent<WorkshopSession>();
             if (data.inWorkshop && (workbenches == null || data.workbench < 0 || data.workbench >= workbenches.Length || workbenches[data.workbench] == null))
             { Debug.LogError("저장된 작업대가 없습니다.", this); return false; }
+            GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
             if (data.savedWeapons)
             {
                 player.GetComponent<WeaponHolder>()?.TakeWeapon();

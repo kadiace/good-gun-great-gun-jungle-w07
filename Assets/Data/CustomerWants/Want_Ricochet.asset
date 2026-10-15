@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Ricochet
   m_EditorClassIdentifier: 
-  displayName: "\uB3C4\uD0C4(\uBC18\uC0AC)"
-  request: "\uB3C4\uD0C4 \uD0DC\uADF8 (\uBC18\uC0AC \uBAA8\uB4C8 1\uAC1C \uC774\uC0C1)"
+  tableId: fdd2d5a8251468842be3744e7dba689f
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: 36dc9431816b1d84182d3e07c11a2c4c, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 4
-  requiredModules:
-  - {fileID: 11400000, guid: 8185707d079aa3d4eba1d33833009eb2, type: 2}
+  unlockDay: 0
+  requiredModules: []

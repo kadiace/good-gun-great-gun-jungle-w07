@@ -12,15 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
   m_Name: Type_Flamethrower
   m_EditorClassIdentifier: 
-  displayName: "\uD654\uC5FC\uBC29\uC0AC"
-  tagColor: {r: 0.77254903, g: 0.29803923, b: 0.13333334, a: 1}
-  conditions:
-  - stat: 6
-    comparison: 0
-    value: 1
-    source: 1
-  - stat: 1
-    comparison: 0
-    value: 1
-    source: 0
-  sellMultiplier: 1
+  tableId: b370a46a3f0c45a438dc174b4b9c8d32
+  displayName: 
+  tagColor: {r: 0, g: 0, b: 0, a: 0}
+  conditions: []
+  sellMultiplier: 0

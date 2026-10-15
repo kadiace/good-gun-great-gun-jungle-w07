@@ -62,7 +62,9 @@ namespace WeaponWorkshop
     }
     [Serializable] public sealed class CustomerOrderSave
     {
-        // Fixed profiles use their authored day/slot; generated profiles use pool indices.
+        public string profileId;
+        public string[] requestIds;
+        // New saves use stable profile/request IDs. Numeric slots only read pre-migration saves.
         public int sourceDay, sourceSlot = -1;
         public int[] requests = Array.Empty<int>();
         public string[] lines;
@@ -75,7 +77,7 @@ namespace WeaponWorkshop
         public string[] weaponPresets;
         public string weaponName;
         [NonSerialized] public CustomerDay travelCustomerDay;
-        public int version = 4, day, balance, paidCost;
+        public int version = 5, day, balance, paidCost;
         public int moduleCredits;
         public int[] unlockedModules = Array.Empty<int>();
         public RaidDeathDropSave[] raidDeathDrops = Array.Empty<RaidDeathDropSave>();
@@ -155,7 +157,7 @@ namespace WeaponWorkshop
             {
                 if (!File.Exists(path)) return false;
                 var read = JsonUtility.FromJson<GameSaveData>(File.ReadAllText(path));
-                if (read == null || (read.version != 2 && read.version != 3 && read.version != 4) || read.day < 0 ||
+                if (read == null || (read.version != 2 && read.version != 3 && read.version != 4 && read.version != 5) || read.day < 0 ||
                     read.paidCost < 0 || read.savedUtcTicks <= 0 || read.savedUtcTicks > DateTime.MaxValue.Ticks ||
                     read.completed < 0 || read.dissatisfied < 0 || read.killed < 0 || read.income < 0 ||
                     read.dissatisfied + read.killed > read.completed || read.nextCustomer < 0 ||

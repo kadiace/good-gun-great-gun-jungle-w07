@@ -12,11 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
   m_Name: Type_MiniNuke
   m_EditorClassIdentifier: 
-  displayName: "\uC18C\uD615\uD575"
-  tagColor: {r: 0.44313726, g: 0.60784316, b: 0.15686275, a: 1}
-  conditions:
-  - stat: 2
-    comparison: 0
-    value: 11
-    source: 0
-  sellMultiplier: 1
+  tableId: 3396cf208ef6d564bb1cd952a6fe598b
+  displayName: 
+  tagColor: {r: 0, g: 0, b: 0, a: 0}
+  conditions: []
+  sellMultiplier: 0

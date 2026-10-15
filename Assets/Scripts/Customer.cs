@@ -52,6 +52,7 @@ namespace WeaponWorkshop
         public event System.Action CustomerKilled;
         public CustomerProfile Profile => profile;
         public bool HasTalked { get; private set; }
+        public bool HasActiveOrder => HasTalked && atCounter && !deathStarted && saveStage < 3;
         public bool SaleSatisfied { get; private set; }
         public Transform OutlineRoot => transform;
 
@@ -98,10 +99,7 @@ namespace WeaponWorkshop
             SaleSatisfied = satisfied;
             // 만족은 실제 낸 제작비 × (1 + 태그비율 × 요청 태그 수) + 손님 보상(profile.price), 불만족은 제작비의 80%.
             int cost = weapon != null ? weapon.PaidConstructionCost : 0;
-            int tagCount = 0;
-            if (profile.archetypes != null)
-                foreach (GunArchetype archetype in profile.archetypes)
-                    if (archetype != null) tagCount++;
+            int tagCount = TableManager.Instance.CustomerRequest.SaleBonusCount(profile.requestIds);
             float tagRatio = paymentSettings != null ? paymentSettings.tagBonusRatio : 0.5f;
             int price = satisfied ? Mathf.RoundToInt(cost * (1f + tagRatio * tagCount)) + Mathf.Max(0, profile.price)
                 : cost / 5 * 4;
