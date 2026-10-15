@@ -2566,6 +2566,39 @@ MonoBehaviour:
     requiredSignal: 
     allowedActions:
     - none
+  - id: raid-tank-retry-guidance
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uC8FD\uC5C8\uC744\uB54C\uB294 \uD558\uB8E8\uAC00 \uB118\uC5B4\uAC00\uC9C0
+      \uC54A\uACE0, \uC7AC\uC2DC\uB3C4\uAC00 \uAC00\uB2A5\uD569\uB2C8\uB2E4.\n\uC785\uC7A5\uB8CC\uAC00
+      \uC788\uB294 \uACBD\uC6B0, \uC7AC\uC785\uC7A5\uC744 \uC704\uD574\uC11C\uB294
+      \uBE44\uC6A9\uC744 \uB0B4\uC57C\uB9CC\uD569\uB2C8\uB2E4."
+    objective: 
+    completion: 13
+    target: 0
+    targetLabel: 
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    discardHeldWeapon: 0
+    allowedModuleIds: 0100000002000000080000000700000009000000
+    requiredSignal: 
+    allowedActions: []
   - id: raid-approach-crate
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uBA3C\uC800 \uC548\uB0B4 \uD45C\uC2DC\uB97C \uB530\uB77C \uBAA8\uB4C8
@@ -2839,6 +2872,40 @@ MonoBehaviour:
     requiredSignal: 
     allowedActions:
     - none
+  - id: gameover-condition
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uC601\uC5C5 \uC885\uB8CC\uC2DC \uD604\uC7AC \uBCF4\uC720 \uAE08\uC561\uBCF4\uB2E4
+      \uCD5C\uC885 \uC815\uC0B0\uC561\uC774 \uB354 \uB9CE\uC73C\uBA74 \uAC8C\uC784\uC624\uBC84
+      \uB429\uB2C8\uB2E4."
+    objective: 
+    completion: 0
+    target: 0
+    targetLabel: 
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    discardHeldWeapon: 0
+    allowedModuleIds: 0100000002000000080000000700000009000000
+    requiredSignal: 
+    allowedActions:
+    - none
+    - 
   - id: tutorial-finish
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC774\uC81C\uB294 \uB2F9\uC2E0 \uCC28\uB840\uC785\uB2C8\uB2E4"
@@ -2870,3 +2937,4 @@ MonoBehaviour:
     requiredSignal: 
     allowedActions:
     - none
+    - 

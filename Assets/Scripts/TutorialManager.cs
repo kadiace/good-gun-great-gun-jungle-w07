@@ -106,6 +106,9 @@ namespace WeaponWorkshop
             return allowed;
         }
         private bool ownsDialogue;
+        private bool tankSpawnGuidanceOpen;
+
+        private void OnEnable() => RaidEnemyCore.Spawned += HandleRaidEnemySpawned;
 
         private void Awake()
         {
@@ -218,11 +221,45 @@ namespace WeaponWorkshop
                 if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼"))
                 { ownsDialogue = false; Finish(); }
             }
+            else if (step.completion == TutorialCompletion.RaidTankSpawned)
+            {
+                ReleaseDialogue();
+                if (HasActiveRaidTank()) ShowRaidTankGuidance();
+            }
             else ReleaseDialogue();
+        }
+        private static bool HasActiveRaidTank()
+        {
+            for (int i = 0; i < RaidEnemyCore.ActiveCount; i++)
+            {
+                var enemy = RaidEnemyCore.ActiveAt(i);
+                if (enemy != null && !enemy.IsDestroyed && enemy.EnemyType == RaidEnemyType.Tank) return true;
+            }
+            return false;
+        }
+        private void HandleRaidEnemySpawned(RaidEnemyCore enemy)
+        {
+            if (!TrainingRaidPending || enemy == null || enemy.EnemyType != RaidEnemyType.Tank ||
+                CurrentStep == null || CurrentStep.completion != TutorialCompletion.RaidTankSpawned) return;
+            ShowRaidTankGuidance();
+        }
+        private void ShowRaidTankGuidance()
+        {
+            if (CurrentStep == null || CurrentStep.completion != TutorialCompletion.RaidTankSpawned || ownsDialogue) return;
+            ResolvePresentation();
+            if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
+            ownsDialogue = true;
+            tankSpawnGuidanceOpen = true;
+            if (!dialogue.Show(CurrentStep.description, "확인", Confirm, "튜토리얼"))
+            { ownsDialogue = false; tankSpawnGuidanceOpen = false; Finish(); }
         }
         private void Confirm()
         {
-            if (CurrentStep == null || CurrentStep.completion != TutorialCompletion.Confirmation) return;
+            var step = CurrentStep;
+            if (step == null) return;
+            if (step.completion == TutorialCompletion.Confirmation) { Advance(); return; }
+            if (step.completion != TutorialCompletion.RaidTankSpawned || !tankSpawnGuidanceOpen) return;
+            tankSpawnGuidanceOpen = false;
             Advance();
         }
         public void NotifyTargetHit(DestructibleTarget target)
@@ -314,8 +351,9 @@ namespace WeaponWorkshop
                 (step.target == TutorialTarget.None || (source != null && source == CurrentInteractionTarget))) Advance();
         }
         public bool AllowsInteraction(IInteractable target) => !IsTutorialActive ||
-            (CurrentStep != null && CurrentStep.completion != TutorialCompletion.CustomerKilled &&
-                target is Component component && component != null && component == CurrentInteractionTarget);
+            (CurrentStep != null && (CurrentStep.completion == TutorialCompletion.RaidTankSpawned ||
+                (CurrentStep.completion != TutorialCompletion.CustomerKilled &&
+                    target is Component component && component != null && component == CurrentInteractionTarget)));
         public bool TryAuthorizeInteraction(IInteractable target)
         {
             if (AllowsInteraction(target)) return true;
@@ -338,6 +376,7 @@ namespace WeaponWorkshop
         {
             if (ownsDialogue && dialogue != null) dialogue.Hide();
             ownsDialogue = false;
+            tankSpawnGuidanceOpen = false;
         }
         private void Finish()
         {
@@ -365,6 +404,7 @@ namespace WeaponWorkshop
 #endif
         private void OnDisable()
         {
+            RaidEnemyCore.Spawned -= HandleRaidEnemySpawned;
             if (warningTurn != null) StopCoroutine(warningTurn);
             warningTurn = null;
             waiting.Clear(); ReleaseDialogue();
