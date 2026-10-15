@@ -308,7 +308,8 @@ namespace WeaponWorkshop
             controls.FindAction("ToggleDelete", true).performed += _ =>
             {
                 if (GameManager.GameplayBlocked || paintingMode) return;
-                if (!TutorialManager.ActionAllowed("delete")) return;
+                // 튜토리얼이 삭제를 막는 단계에서도 켜져 있는 삭제 모드는 끌 수 있어야 진행이 막히지 않는다.
+                if (!deleteMode && !TutorialManager.ActionAllowed("delete")) return;
                 CancelPreview();
                 CancelModuleColor();
                 deleteMode = !deleteMode;

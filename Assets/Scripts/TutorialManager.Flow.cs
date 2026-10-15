@@ -125,6 +125,18 @@ namespace WeaponWorkshop
             var assembly = TutorialAssembly;
             switch (step.completion)
             {
+                case TutorialCompletion.Signal:
+                    // 작업대 모드 전환 단계는 신호 외에 현재 상태로도 판정한다. 삭제 모드는 모듈 선택·작업대 퇴장 등으로
+                    // 신호 없이 꺼지고, 팔레트는 단계 시작 전에 이미 열려 있을 수 있어 신호만 기다리면 진행이 막힌다.
+                    var builder = player != null ? player.GetComponentInChildren<CubeBuilder>(true) : null;
+                    if (builder == null) return false;
+                    switch (step.requiredSignal)
+                    {
+                        case "delete-mode-enabled": return builder.DeleteMode;
+                        case "delete-mode-disabled": return !builder.DeleteMode;
+                        case "palette-opened": return builder.PaletteOpen;
+                        default: return false;
+                    }
                 case TutorialCompletion.TargetNearby:
                 case TutorialCompletion.TargetScanned:
                     var scanner = player != null ? player.GetComponent<PlayerScanMode>() : null;
