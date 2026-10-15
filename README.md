@@ -1,5 +1,9 @@
 # 무기 공방 — 에이전트 메모
 
+- 폭발 복셀 후보는 원본 메시 범위 밖이면 최초 분할을 생략하고, 범위 내 격자만 조회한 뒤 기존 거리·방향·거리층과 셀 순서로 판정한다. 활성 폭발 파동의 복셀 변경은 초기 Update 단계에서 각자 즉시 반영하고, PoolManager가 일반 Update 물리 조회 전에 대상별 콜라이더를 한 번 재구축·동기화한다. 배치보다 이른 탄환 물리 조회는 조회 직전 동기화하고, 늦게 갱신된 폭발과 관통 충돌 갱신은 즉시 처리한다.
+- 시각 파편은 주 카메라 6m 안쪽에서는 기존 이동·충돌·표시를 유지한다. 바깥에서는 격프레임 단순 이동(벽 검사·회전 생략), 안정된 파편별 표본 선택과 구름별 최대 256개 표시를 적용한다. 수명·원래 복셀 파괴·연결 낙하 덩어리는 제한하지 않는다. 카메라가 없으면 원래 동작을 유지한다.
+- ProjectileTest의 화면 내 임시 표적에서 폭발 11·샷건 1 총구 발사 A/B: GPU 프레임은 대체로 1ms 내외로 병목이 아니었고, 정상 명중 시 두 경로 모두 폭발 3회·복셀 1062~1063개 제거. 예열된 Editor 표본에서 파편 CPU 최대 약 9~10ms→0.6~0.7ms, 폭발 이후 CPU 프레임 P95 약 8.7~12.5ms→2.8~3.1ms. 실제 플레이어 화면/빌드 GPU와 파편 시각 품질은 별도 확인 필요.
+
 - 저장소 구조: 씬은 `Assets/Scenes/Intro`(메인메뉴·StartUI_Manager), `Assets/Scenes/Main`(공방·사격장), `Assets/Scenes/NightRaid`(습격·튜토리얼), `Assets/Scenes/Test`(시험). 씬 이름 문자열(`LoadSceneAsync`, `mainMenuScene`, `gameSceneName`, `standaloneWorkshopScene`, 에디터 스크립트 경로)는 실재 이름 Intro·Main과 NightRaid 폴더로 통일했다.
 - 자산 배치: 에디터 전용 도구는 `Assets/Editor`(플레이어 빌드에서 제외되어야 하므로 `Assets/Scripts`에 두지 않는다). `Prefabs` 루트는 `Player`·`Workbench`·`Range`·`Shop`·`NightRaid`로 나누고, NightRaid 출구 재질은 `Materials/NightRaid`, 출구 심볼 메시는 `Meshes/NightRaid`, 입력 액션 참조는 `Data/Input`, 배경 이미지는 `Textures/Backgrounds`에 둔다. URP 템플릿 잔재(`TutorialInfo`, `Readme.asset`, `Assets/Temp`)는 제거했다.
 - 경로 제약: `Resources/Sound/BGM|SFX`(SoundManager), `Resources/Stickers`·`Resources/Keyrings`(ModulePaletteUI), `Resources/RaidMapData.json`, `Prefabs/Managers/Resources/PoolManager.prefab`(PoolManager), `Assets/InputSystem_Actions.inputactions`(루트 유지)는 코드에 경로가 박혀 있어 옮길 때는 해당 로더와 에디터 스크립트의 경로를 함께 바꾼다. 프리팹/씬 참조는 `.meta`와 함께 이동하면 GUID가 보존된다.
@@ -149,6 +153,8 @@
 - FirstPersonPlayer 걷기3m/s, 기존 Player/Sprint 액션(왼쪽 Shift)을 누르는 동안 달리기10m/s. 공용 Player 프리팹과 인스펙터에서 속도 설정. 점프는 야간 습격 중에만 허용.
 - Player/F1 디버그 액션은 초기 잠금 모듈을 전부 해제하고 잔액과 모듈 크레딧을 각각 9,999,999로 설정.
 - 에디터 Tools/Weapon Workshop/Add Money 아래 1000·10000·100000은 플레이 모드에서 활성 플레이어 한 명의 소지금을 선택한 액수만큼 추가한다(재료/당일 수입 집계는 변경하지 않음).
+- 에디터 Tools/Weapon Workshop/Add 50 Module Materials는 플레이 모드에서 활성 플레이어의 공용 모듈 재화를 클릭마다 50씩 추가한다. 모듈 종류별 보유 재고는 없으며 모듈 재화는 구매에 사용한다.
+- 에디터 Tools/Weapon Workshop/Go To Day 아래 1~7일차별 Day (Before Opening)·Night (After Closing)로 실행 중 날짜를 이동한다. 낮은 손님 대기열·아침 시간대·닫힌 셔터로 초기화, 밤은 마감된 손님 목록·밤 시간대·정산창 닫힌 준비 상태로 이동한다. 7일차는 무한 모드 손님 생성. 현재 튜토리얼은 종료하며 점프 중 이전 일차의 판매·월세 청구·자동 저장은 실행하지 않고 돈/모듈 재화는 유지한다.
 - 목조주택·공항 씬의 DestructibleTerrain(잔디 표면·흙층)은 비파괴 지형. 메시·콜라이더 유지, 건물 바닥 파괴 유지. 다른 맵의 지형 설정은 기존대로.
 
 - Main 공방·사격장: Customer의 SommelierInterior/SommelierRange 장식과 Sommelier 재질을 적용. 기존 작업대·종·SpawnPoint·콜라이더 위치, DEV 모듈 UI·저장 관리자·야간 지도 연결 유지. 신규 장식은 개별 오브젝트이며 저장 ID/바인딩 포함; 시각 장식으로 물리 기능 없음.
