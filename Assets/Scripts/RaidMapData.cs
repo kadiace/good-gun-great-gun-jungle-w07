@@ -13,6 +13,7 @@ namespace WeaponWorkshop
             public string scene;
             public string name;
             public int materialCrates;
+            public int entryCost;
             public string[] moduleCodes;
             public bool helicopters;
             public bool tanks;

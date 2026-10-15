@@ -2,6 +2,7 @@
   "regions": [
     {
       "materialCrates": 4,
+      "entryCost": 1000,
       "name": "목조주택",
       "scene": "NightRaid_WoodenHouse",
       "moduleCodes": [
@@ -12,6 +13,7 @@
     },
     {
       "materialCrates": 10,
+      "entryCost": 1000,
       "name": "은행",
       "scene": "NightRaid_BankGrand",
       "moduleCodes": [
@@ -23,6 +25,7 @@
     },
     {
       "materialCrates": 18,
+      "entryCost": 1000,
       "name": "군사기지",
       "scene": "NightRaid_Millitary_base",
       "moduleCodes": [
@@ -34,6 +37,7 @@
     },
     {
       "materialCrates": 12,
+      "entryCost": 1000,
       "name": "정글 캠퍼스",
       "scene": "NightRaid_JungleCampus",
       "moduleCodes": [

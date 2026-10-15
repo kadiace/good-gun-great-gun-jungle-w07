@@ -92,6 +92,22 @@ namespace WeaponWorkshop
             ClearRegionInfo(hoveredRegion);
             if (show) mapPanel.transform.SetAsLastSibling();
             if(statusText!=null)statusText.gameObject.SetActive(false);
+            WatchWallet(show);
+            RefreshRegionButtons();
+        }
+        private PlayerWallet watchedWallet;
+        // 지도가 열려 있는 동안에만 잔액 변화를 구독해 버튼 상태를 다시 계산한다.
+        private void WatchWallet(bool watch)
+        {
+            var wallet = watch ? PlayerWallet.ForScene(this) : null;
+            if (watchedWallet == wallet) return;
+            if (watchedWallet != null) watchedWallet.Changed -= RefreshRegionButtons;
+            watchedWallet = wallet;
+            if (watchedWallet != null) watchedWallet.Changed += RefreshRegionButtons;
+        }
+        private void RefreshRegionButtons()
+        {
+            bool show = mapPanel != null && mapPanel.activeSelf;
             int listedCount = controller != null ? controller.RegionCount : regionButtons.Length;
             for (int i = 0; i < regionButtons.Length; i++)
             {
@@ -99,11 +115,24 @@ namespace WeaponWorkshop
                 // 테이블에 없는 칸은 계속 꺼 둠으로써 표의 행 수가 지도의 칸 수를 결정하게 한다.
                 bool listed = i < listedCount;
                 if (!listed) regionButtons[i].gameObject.SetActive(false);
-                regionButtons[i].interactable = show && listed &&
+                regionButtons[i].interactable = show && listed && CanAffordEntry(i) &&
                     (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(i));
             }
         }
-        private void OnDisable() => FeedbackUI.For(this)?.CancelChoice(this);
+        // 잔액이 입장 비용을 충족하는지. 0일차 안내 습격 중에는 비용 조건을 적용하지 않는다.
+        private bool CanAffordEntry(int index)
+        {
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return true;
+            if (watchedWallet == null || controller == null) return false;
+            var region = TableManager.Instance.RaidMap.Find(controller.RegionScene(index));
+            return region.CanAffordEntry(watchedWallet);
+        }
+        private void OnDisable()
+        {
+            FeedbackUI.For(this)?.CancelChoice(this); WatchWallet(false);
+        }
+        // 입장 확인은 지도 소유로 띄워 지도를 다시 열거나 닫으면(CancelChoice(this)) 함께 취소되게 한다.
+        public void ShowEntryConfirm(string message, System.Action onYes) => FeedbackUI.For(this)?.ShowChoice(this, message, onYes);
         public void ShowReturn(bool show)
         {
             if (show) FeedbackUI.For(this)?.ShowChoice(this, "공방으로 귀환하시겠습니까?", () => controller.ReturnHome(), () => controller.CancelReturn());

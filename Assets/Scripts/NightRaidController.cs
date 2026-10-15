@@ -278,12 +278,34 @@ namespace WeaponWorkshop
             if (!Application.CanStreamedLevelBeLoaded(regionScene))
             { ui.ShowError("습격 씬이 빌드 목록에 없습니다."); return; }
             player = uiManager.Player; if (player == null) return;
+            // 0일차 안내 습격은 무료다. 그 외에는 표 행의 입장 비용을 확인한다.
+            var region = training ? null : TableManager.Instance.RaidMap.Find(regionScene);
+            int cost = region.EntryCost();
+            // 잔액 검사는 버튼이 이미 꺼져 있어야 하므로 방어용이다.
+            if (cost > 0 && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))
+            { ui.ShowError("입장 비용이 부족합니다."); return; }
+            // 무료 구역은 확인 없이 바로 들어간다.
+            if (cost <= 0) { BeginRaid(regionScene, cost, training, tutorial); return; }
+            // 확인 시점에는 지도·잔액 상태가 바뀌었을 수 있으므로 다시 검사한 뒤 진입한다.
+            ui.ShowEntryConfirm($"$ {cost:N0}를 내고 {region.name}에 입장하시겠습니까?", () =>
+            {
+                if (!mapOpen || transitioning || player == null || !region.CanAffordEntry(player.GetComponent<PlayerWallet>())) return;
+                BeginRaid(regionScene, cost, training, tutorial);
+            });
+        }
+        // 검사(EnterRegion)·확인창 뒤의 확정 단계(차감+이동).
+        private void BeginRaid(string regionScene, int cost, bool training, TutorialManager tutorial)
+        {
+            var wallet = player.GetComponent<PlayerWallet>();
             player.GetComponent<WorkshopSession>()?.LeaveImmediately();
+            // 차감은 이동 체크포인트 캡처보다 반드시 앞에 둔다. 캡처가 현재 잔액을 저장하므로 뒤에 빼면 비용이 무효가 된다.
+            wallet?.Debit(cost);
             GameSaveData checkpoint = null; string error = null;
             if (workshopSave == null || !workshopSave.TryCaptureTravel(out checkpoint, out error))
-            { ui.ShowError(workshopSave == null ? "공방 저장 관리자가 연결되지 않았습니다." : error); return; }
+            { wallet?.Credit(cost); ui.ShowError(workshopSave == null ? "공방 저장 관리자가 연결되지 않았습니다." : error); return; }
             checkpoint.settlement = true;
-            if (training && !tutorial.PrepareTrainingRaid()) return;
+            if (training && !tutorial.PrepareTrainingRaid()) { wallet?.Credit(cost); return; }
+            // 여기서부터는 실제 진입 확정. 사망·귀환을 포함해 환불하지 않는다.
             transitioning = true; ui.SetLoading(); PoolManager.ClearActive();
             NightRaidTransfer.Begin(checkpoint);
             SceneManager.LoadSceneAsync(regionScene, LoadSceneMode.Single);
