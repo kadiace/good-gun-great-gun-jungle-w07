@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Charge
   m_EditorClassIdentifier: 
-  displayName: "\uCC28\uC9C0"
-  request: "\uCC28\uC9C0 \uD0DC\uADF8 (\uCC28\uC9C0 \uBAA8\uB4C8 1\uAC1C \uC774\uC0C1)"
+  tableId: db5262cea8401e542a56f9a2812196a3
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: f591f239c94e4f44dae9ea87c6bcdb26, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 1
-  requiredModules:
-  - {fileID: 11400000, guid: bf4a63288b8e9694787904964ba8acd4, type: 2}
+  unlockDay: 0
+  requiredModules: []

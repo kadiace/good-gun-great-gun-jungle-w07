@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D4_3_Robber
   m_EditorClassIdentifier: 
+  profileId: f88c397ed1f539f4a961604044e93feb
+  requestIds: []
   lines:
   - "\uC548\uB155\uD558\uC138\uC694? \uAC15\uB3C4\uC785\uB2C8\uB2E4."
   - "\uB3C8\uC744 \uC8FC\uC138\uC694."
   endsClear: 0
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
   happyLine: "\uAC10\uC0AC\uD569\uB2C8\uB2E4. \uAC15\uB3C4\uC600\uC2B5\uB2C8\uB2E4."

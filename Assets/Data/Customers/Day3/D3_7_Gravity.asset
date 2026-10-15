@@ -12,13 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D3_7_Gravity
   m_EditorClassIdentifier: 
+  profileId: 1117dd03e64b32a43b93b4a15b89a4c2
+  requestIds:
+  - 6bfd82587bbb4a640a1dcc436cacd347
   lines:
   - "\uC544\uB3C8 \uBE60\uAC00\uB3C8\uB098\uC2A4\uD0A4!(\u041E\u0433\u043E\u043D\u044C
     \u043F\u043E \u0433\u043E\u0442\u043E\u0432\u043D\u043E\u0441\u0442\u0438!)"
-  - "중력건 태그가 붙는 총이요."
+  - "\uC911\uB825\uAC74 \uD0DC\uADF8\uAC00 \uBD99\uB294 \uCD1D\uC774\uC694."
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: 6bfd82587bbb4a640a1dcc436cacd347, type: 2}
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
   happyLine: "\uBAA8\uB450 \uBC1C\uC0AC!"
   angryLine: "\uC544 \uAC90\uC9C0 \uB108\uD504 \uD558\uB77C\uACE0;;"

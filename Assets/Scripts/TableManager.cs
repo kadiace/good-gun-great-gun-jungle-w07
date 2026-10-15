@@ -20,11 +20,14 @@ namespace WeaponWorkshop
 
         /// <summary>습격 스테이지 테이블. 로드 실패 시 빈 표이며 원인은 이미 로그로 남았다.</summary>
         public RaidMapData RaidMap { get; private set; }
+        public CustomerRequestData CustomerRequest { get; private set; }
 
         private TableManager()
         {
             RaidMap = Load<RaidMapData>(RaidMapResource);
             RaidStageInfo.Validate(RaidMap, RaidMapResource);
+            CustomerRequest = Load<CustomerRequestData>(nameof(CustomerRequestData));
+            CustomerRequestInfo.Validate(CustomerRequest);
         }
 
         /// <summary>반복 호출해도 테이블을 다시 읽지 않는다.</summary>
@@ -33,6 +36,9 @@ namespace WeaponWorkshop
             if (instance == null) instance = new TableManager();
             return instance;
         }
+#if UNITY_EDITOR
+        public static void ReloadAfterTableEdit() { instance = null; Initialize(); }
+#endif
 
         // 테이블 파일을 한 번 읽는다. 실패하면 빈 객체를 주고 이유를 한 번만 남긴다.
         private static T Load<T>(string resourcePath) where T : class, new()

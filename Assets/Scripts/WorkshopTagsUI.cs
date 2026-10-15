@@ -18,16 +18,14 @@ namespace WeaponWorkshop
         {
             result.Clear();
             if (core == null) return;
-            var powered = WeaponAssemblyStats.PoweredCounts(core.GetComponent<CubeAssembly>());
-            // Hover uses the current assembly even when a display's behaviours are disabled or a cache is dirty.
-            var collector = core.GetComponent<StatCollector>();
-            var stats = WeaponAssemblyStats.Calculate(core.GetComponent<CubeAssembly>(),
-                collector != null && collector.BaseStats != null ? collector.BaseStats.Stats : default);
+            var snapshot = new CustomerRequestInfo.WeaponSnapshot(core);
             foreach (var tag in tags)
-                if (tag != null && tag.Matches(stats, powered, powered)) result.Add(tag);
+                if (tag != null && TableManager.Instance.CustomerRequest.MeetsTag(tag.TableId, snapshot)) result.Add(tag);
         }
         private TMPro.TextMeshProUGUI[] labels;
         private RectTransform[] pills;
+        private PowerCore lastCore;
+        private float nextRefresh;
 
         private void Awake()
         {
@@ -61,16 +59,17 @@ namespace WeaponWorkshop
             var core = bench != null ? bench.CurrentCore : null;
             bool visible = session != null && session.IsEditing && core != null;
             if (panel != null && panel.activeSelf != visible) panel.SetActive(visible);
-            if (!visible || labels == null) return;
+            if (!visible || labels == null) { lastCore = null; nextRefresh = 0f; return; }
+            if (lastCore == core && Time.unscaledTime < nextRefresh) return;
+            lastCore = core; nextRefresh = Time.unscaledTime + .1f;
             var assembly = core.GetComponent<CubeAssembly>();
             var stats = core.GetCurrentStats();
-            var powered = WeaponAssemblyStats.PoweredCounts(assembly);
-            var counts = powered;
+            var snapshot = new CustomerRequestInfo.WeaponSnapshot(core);
             if (weightText != null) weightText.text = $"무게  {stats.weight:0.##}";
             matchedTags.Clear();
             for (int i = 0; i < tags.Length; i++)
             {
-                bool matched = tags[i] != null && tags[i].Matches(stats, counts, powered);
+                bool matched = tags[i] != null && TableManager.Instance.CustomerRequest.MeetsTag(tags[i].TableId, snapshot);
                 if (matched) matchedTags.Add(tags[i]);
                 if (pills[i].gameObject.activeSelf != matched)
                 {

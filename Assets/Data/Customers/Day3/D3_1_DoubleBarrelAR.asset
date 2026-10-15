@@ -12,17 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D3_1_DoubleBarrelAR
   m_EditorClassIdentifier: 
+  profileId: 2ba099eab2272d940ae22970ff7731f3
+  requestIds:
+  - a953407380ff6594a942af751bf23efb
+  - f190a969535f4aa4b837f4edc6d7f313
   lines:
   - "\uB354\uBE14\uBC30\uB7F4 \uB3CC\uACA9\uC18C\uCD1D\uC774\uC694."
-  - "돌격소총 태그에 2방향 분할도 달아주세요."
+  - "\uB3CC\uACA9\uC18C\uCD1D \uD0DC\uADF8\uC5D0 2\uBC29\uD5A5 \uBD84\uD560\uB3C4
+    \uB2EC\uC544\uC8FC\uC138\uC694."
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: a953407380ff6594a942af751bf23efb, type: 2}
-  conditions:
-  - measure: 4
-    stat: 0
-    min: 1
-    max: 999
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
+  conditions: []
   happyLine: "\uB450 \uC904\uAE30! \uC774\uAC8C \uBC14\uB85C \uB354\uBE14\uBC30\uB7F4
     \uB3CC\uACA9\uC18C\uCD1D!"
   angryLine: "\uC774\uAC74 \uB354\uBE14\uB3C4, \uBC30\uB7F4\uB3C4, \uB3CC\uACA9\uB3C4

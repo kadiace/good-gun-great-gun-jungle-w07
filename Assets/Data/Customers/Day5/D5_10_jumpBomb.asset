@@ -12,17 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D5_10_jumpBomb
   m_EditorClassIdentifier: 
+  profileId: 5867799c1021bd247bdc32c3246d757f
+  requestIds:
+  - afce91ece9f68f44b92e48a1652ea36b
+  - 982660b8fcc3c1340adfa1edcdfb1257
   lines:
   - "\uC5EC\uAE30\uC11C\uB294 \uC810\uD504\uB85C \uCE94\uC2AC\uD558\uBA74\uC11C \uCD1D\uC744
     \uC3D8\uBA74\uC11C \uB5A8\uC5B4\uC9D1\uB2C8\uB2E4.\r\n\r\uC55E\uC5D0\uC788\uB294
     \uBAA8\uB374\uAD70 \uC81C\uAC70\uD558\uC2E0 \uB2E4\uC74C\uC5D0 \uC810\uD504 \uD3ED\uD0C4
     \uCC28\uB97C \uC81C\uAC70\uD558\uC8E0\r\n\r\uC5B4\uB54C\uC694 \uC815\uB9D0 \uC26C\uC785
     \uC8E0?"
-  - "유탄 태그랑 권총 태그를 둘 다 맞춰주세요."
+  - "\uC720\uD0C4 \uD0DC\uADF8\uB791 \uAD8C\uCD1D \uD0DC\uADF8\uB97C \uB458 \uB2E4
+    \uB9DE\uCDB0\uC8FC\uC138\uC694."
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: afce91ece9f68f44b92e48a1652ea36b, type: 2}
-  - {fileID: 11400000, guid: 982660b8fcc3c1340adfa1edcdfb1257, type: 2}
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
   happyLine: "\uC5B4\uB54C\uC694, \uC815\uB9D0 \uC27D\uC8E0?"
   angryLine: "\uC5EC\uAE30\uC11C\uB294 \uC810\uD504\uB85C \uCE94\uC2AC\uD558\uBA74\uC11C

@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D0_1_TutorialCustomer
   m_EditorClassIdentifier: 
+  profileId: a5308f1435d603f46aea8a8ee70cd591
+  requestIds: []
   lines:
   - "\uC81C\uAC00 \uC798 \uBAB0\uB77C\uC11C \uADF8\uB7EC\uB294\uB370, \uC801\uB2F9\uD788
     \uB9CC\uB4E4\uC5B4 \uC8FC\uC138\uC694."

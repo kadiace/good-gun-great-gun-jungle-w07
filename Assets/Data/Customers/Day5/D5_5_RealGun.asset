@@ -12,18 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D5_5_RealGun
   m_EditorClassIdentifier: 
+  profileId: 9f6cc4a608cdb4e4bbe4dcd2b1d6167d
+  requestIds:
+  - 70d86a3c50472dd47b261b990ddd9210
+  - 81d72487c62c42bb8a2c996de2071c0d
   lines:
   - "\uD0D5! \uC774\uAC8C \uC9C4\uC9DC \uCD1D\uC774\uC5C8\uC73C\uBA74 \uB2F9\uC2E0\uC740
     \uC8FD\uC5C8\uC2B5\uB2C8\uB2E4."
-  - "샷건 태그에, 2방향 분할도 장착해주세요."
+  - "\uC0F7\uAC74 \uD0DC\uADF8\uC5D0, 2\uBC29\uD5A5 \uBD84\uD560\uB3C4 \uC7A5\uCC29\uD574\uC8FC\uC138\uC694."
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: 70d86a3c50472dd47b261b990ddd9210, type: 2}
-  conditions:
-  - measure: 4
-    stat: 0
-    min: 1
-    max: 999
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
+  conditions: []
   happyLine: "\uD0D5! \uC774\uBC88\uC5D4 \uC9C4\uC9DC\uAD70\uC694. \uC644\uBCBD\uD558\uAC8C
     \uC791\uB3D9\uD569\uB2C8\uB2E4."
   angryLine: "\uC774\uAC83\uB3C4 \uC9C4\uC9DC \uCD1D\uC740 \uC544\uB2C8\uB124\uC694. 

@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Flame
   m_EditorClassIdentifier: 
-  displayName: "\uD654\uC5FC\uBC29\uC0AC(\uBC1C\uC5F4)"
-  request: "\uD654\uC5FC\uBC29\uC0AC \uD0DC\uADF8 (\uBC1C\uC5F4 \uBAA8\uB4C8 1\uAC1C \uC774\uC0C1, \uC5F0\uC0AC 1 \uC774\uC0C1)"
+  tableId: c45e9713dbf2ac3469b4a59283112118
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: b370a46a3f0c45a438dc174b4b9c8d32, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 2
-  requiredModules:
-  - {fileID: 11400000, guid: cf32abdb412c6124cabcbdd85c103cb5, type: 2}
+  unlockDay: 0
+  requiredModules: []

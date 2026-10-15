@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Shotgun
   m_EditorClassIdentifier: 
-  displayName: "\uC0B0\uD0C4\uCD1D"
-  request: "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8 (\uC0B0\uD0C4 \uBAA8\uB4C8 1\uAC1C \uC774\uC0C1)"
+  tableId: 70d86a3c50472dd47b261b990ddd9210
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: b89c88322f37da74cb6f1624397fce4d, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 1
-  requiredModules:
-  - {fileID: 11400000, guid: ac721da9683bfcc46b24fdba51a5b278, type: 2}
+  unlockDay: 0
+  requiredModules: []

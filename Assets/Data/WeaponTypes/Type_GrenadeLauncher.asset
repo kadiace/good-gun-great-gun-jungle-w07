@@ -12,15 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
   m_Name: Type_GrenadeLauncher
   m_EditorClassIdentifier: 
-  displayName: "\uC720\uD0C4"
-  tagColor: {r: 0.6392157, g: 0.41568628, b: 0.14509805, a: 1}
-  conditions:
-  - stat: 2
-    comparison: 0
-    value: 1
-    source: 0
-  - stat: 2
-    comparison: 2
-    value: 10
-    source: 0
-  sellMultiplier: 1
+  tableId: cb2c1699ceedbb54084051bd0ed7a56b
+  displayName: 
+  tagColor: {r: 0, g: 0, b: 0, a: 0}
+  conditions: []
+  sellMultiplier: 0

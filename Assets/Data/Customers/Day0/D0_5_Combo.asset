@@ -12,6 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D0_5_Combo
   m_EditorClassIdentifier: 
+  profileId: 8df14042c9325de4e9e896078ddebfc2
+  requestIds:
+  - e64de5a40aee4451b6b5fef4f2560b76
+  - a61fe9fb9a4d488788c1ec6b1072ae0f
   lines:
   - "\uAD00\uD1B5 \uBAA8\uB4C8\uC774\uB791 4\uBC29\uD5A5 \uBD84\uD560 \uBAA8\uB4C8,
     \uB458 \uB2E4 \uC368\uC11C \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694."
@@ -19,15 +23,7 @@ MonoBehaviour:
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
-  conditions:
-  - measure: 2
-    stat: 0
-    min: 1
-    max: 999
-  - measure: 5
-    stat: 0
-    min: 1
-    max: 999
+  conditions: []
   happyLine: "\uB458 \uB2E4 \uB4E4\uC5B4\uAC14\uB124\uC694. \uC644\uBCBD\uD55C \uC870\uD569!"
   angryLine: "\uC774\uB7F0\uAC83\uB3C4 \uBABB\uD558\uB294\uAC74\uAC00?"
   price: 240

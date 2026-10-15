@@ -58,12 +58,13 @@ namespace WeaponWorkshop
 
             var assembly = GetComponent<CubeAssembly>();
             currentStats = WeaponAssemblyStats.Calculate(assembly, currentStats);
-            var powered = WeaponAssemblyStats.PoweredCounts(assembly);
-            var counts = powered;
+            // Set the base before reading real muzzle stats; path effects never come from a stale whole-weapon cache.
+            if (statsSource != null && baseStats != null) statsSource.SetWeaponStats(baseStats.Stats);
+            var snapshot = new CustomerRequestInfo.WeaponSnapshot(GetComponent<PowerCore>());
             matchedTypes.Clear();
             if (weaponTypes != null)
                 foreach (WeaponTypeData type in weaponTypes)
-                    if (type != null && type.Matches(currentStats, counts, powered)) matchedTypes.Add(type);
+                    if (type != null && TableManager.Instance.CustomerRequest.MeetsTag(type.TableId, snapshot)) matchedTypes.Add(type);
 
             // Projectiles get only the core base; each muzzle adds the modules on its own route.
             if (statsSource != null && baseStats != null)

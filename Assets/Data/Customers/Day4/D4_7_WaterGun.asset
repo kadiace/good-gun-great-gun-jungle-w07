@@ -12,12 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D4_7_WaterGun
   m_EditorClassIdentifier: 
+  profileId: 89a6e2464d2d3824c92a161cb4ac7990
+  requestIds:
+  - 48aeae95d13c1f643817498a6dae1573
   lines:
   - ...
-  - "물총 태그가 붙는 총이면 돼요. 여름이잖아요!"
+  - "\uBB3C\uCD1D \uD0DC\uADF8\uAC00 \uBD99\uB294 \uCD1D\uC774\uBA74 \uB3FC\uC694.
+    \uC5EC\uB984\uC774\uC796\uC544\uC694!"
   endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: 48aeae95d13c1f643817498a6dae1573, type: 2}
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
   happyLine: "\uD558 \uD558 \uD558! \uCD09\uCD09\uD558\uAC8C \uB9CC\uB4E4\uC5B4\uC8FC\uC9C0!"
   angryLine: "\uB180\uB7EC\uAC00\uC11C \uC0B4\uC778\uC0AC\uAC74 \uB098\uAC8C \uC0DD\uACBC\uC796\uC544\uC694!!"
