@@ -106,7 +106,26 @@ namespace WeaponWorkshop
                 var player = TutorialPlayer;
                 var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
                 // A retry already carries the departure weapon; do not exchange it for a second practice core.
-                if (workbench.CurrentWeapon == null && (holder == null || holder.EquippedWeapon == null)) workbench.SpawnCore();
+                if (workbench.CurrentWeapon == null && (holder == null || holder.EquippedWeapon == null))
+                {
+                    if (step.preparedWeaponPrefab == null) workbench.SpawnCore();
+                    else
+                    {
+                        var prepared = Instantiate(step.preparedWeaponPrefab);
+                        prepared.name = step.preparedWeaponPrefab.name;
+                        var preparedAssembly = prepared.GetComponentInChildren<CubeAssembly>();
+                        bool placed = false;
+                        if (preparedAssembly != null && preparedAssembly.TryCaptureLayout(out var layout))
+                        {
+                            var blocks = new System.Collections.Generic.List<CubeAssembly.BlockSnapshot>();
+                            foreach (var block in layout.blocks)
+                                if (Array.IndexOf(step.preparedWeaponOpenCells, block.cell) < 0) blocks.Add(block);
+                            placed = preparedAssembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks.ToArray(), layout.paidConstructionCost)) &&
+                                workbench.PlaceWeapon(prepared);
+                        }
+                        if (!placed) Destroy(prepared.gameObject);
+                    }
+                }
                 var assembly = TutorialAssembly;
                 if (assembly != null)
                     foreach (var face in new[] { Vector3Int.right, Vector3Int.left, Vector3Int.up, Vector3Int.down, Vector3Int.back })

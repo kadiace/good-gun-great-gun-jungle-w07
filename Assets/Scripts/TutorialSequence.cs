@@ -38,6 +38,8 @@ namespace WeaponWorkshop
         [TextArea] public string blockedPlacementMessage = "안내된 위치와 방향에 모듈을 설치해 보세요.";
         [TextArea] public string wrongModuleMessage;
         [Tooltip("이미 배운 기본 5면 막기는 다음 주문에서 연습용 몸체로 준비합니다.")] public bool prepareBlockedCore;
+        [Tooltip("이 단계에서 작업대에 준비할 프리셋. 비우면 일반 코어를 놓습니다.")] public EquipableWeapon preparedWeaponPrefab;
+        [Tooltip("프리셋에서 플레이어가 채울 빈 모듈 자리.")] public Vector3Int[] preparedWeaponOpenCells = Array.Empty<Vector3Int>();
         [Tooltip("연습에만 쓰인 손의 무기를 정리합니다.")] public bool discardHeldWeapon;
         public int[] allowedModuleIds = Array.Empty<int>();
         [Tooltip("Signal 단계에서 기다릴 게임 행동 신호. NotifySignal로 전달합니다.")] public string requiredSignal;

@@ -13,6 +13,7 @@ namespace WeaponWorkshop
         {
             public WeaponStats stats;
             public ProjectileStatsSource source;
+            public ProjectileMotor projectile;
             public Vector3 point;
             public Vector3 direction;
             public TargetHealth target;
@@ -51,7 +52,7 @@ namespace WeaponWorkshop
             float radius = tuning.explosionRadiusPerPoint * Mathf.Pow(context.stats.explosion, 1f / 3f);
             if (radius <= 0f) return;
             WorkshopSoundEffects.RaiseExplosionTriggered(context.point);
-            ExpandingExplosion.Create(context.point, radius, context.stats, context.source, context.owner, context.weapon);
+            ExpandingExplosion.Create(context.point, radius, context.stats, context.source, context.owner, context.weapon, context.projectile);
         }
 
         // Gravity pulls nearby targets/physics objects toward the hit; penetration makes it stronger.

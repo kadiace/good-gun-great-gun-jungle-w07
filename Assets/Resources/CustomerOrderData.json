@@ -68,8 +68,12 @@
           "unlockDay": 4
         },
         {
+          "id": "module/shotgun/min-1",
+          "unlockDay": 2
+        },
+        {
           "id": "tag/shotgun",
-          "unlockDay": 1
+          "unlockDay": 3
         },
         {
           "id": "tag/sniper-rifle",
@@ -234,15 +238,15 @@
       "id": "c2e5e67315c2e684bb468481f9a2bc5b",
       "name": "D0_3_TagCustomer",
       "requestIds": [
-        "tag/shotgun"
+        "tag/assault-rifle"
       ],
       "price": 300,
       "lines": [
-        "산탄총을 하나 만들어 주세요."
+        "돌격소총 태그가 붙은 총을 만들어 주세요."
       ],
       "endsClear": true,
-      "happyLine": "산탄총이 잘 나왔네요. 잘 쓰겠습니다!",
-      "angryLine": "부탁드린 산탄총이 아닌 것 같은데요."
+      "happyLine": "돌격소총이 잘 나왔네요. 잘 쓰겠습니다!",
+      "angryLine": "부탁드린 돌격소총이 아닌 것 같은데요."
     },
     {
       "id": "6f6cf35ea746e344a93b1587938c685b",
@@ -366,17 +370,16 @@
       "id": "a00ebe5381d81494ba1d532eaa55a166",
       "name": "D2_1_Shotgun",
       "requestIds": [
-        "tag/shotgun"
+        "module/shotgun/min-1"
       ],
       "price": 400,
       "lines": [
-        "샷건 하나요.",
-        "산탄총 태그가 붙은 걸로요!",
-        "산탄총 태그가 붙도록 산탄 모듈에 전력이 연결되게 해주세요."
+        "방사 모듈이 연결된 총 하나요.",
+        "방사 모듈을 발사 경로에 하나 이상 달아주세요."
       ],
       "endsClear": true,
-      "happyLine": "이건 제대로된 샷건이다...!",
-      "angryLine": "혹시 샷건이 뭔지 모르시나요?"
+      "happyLine": "방사 모듈이 잘 연결됐네요!",
+      "angryLine": "방사 모듈이 연결되지 않은 것 같은데요?"
     },
     {
       "id": "d5398f48369de9044b8afcc0e73edc0d",

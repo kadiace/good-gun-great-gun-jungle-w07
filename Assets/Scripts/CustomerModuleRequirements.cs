@@ -82,7 +82,12 @@ namespace WeaponWorkshop
             foreach (var item in need)
             {
                 var module = unlocks != null ? unlocks.FindModule(item.Key) : null;
-                if (module != null) total += (long)item.Value * Mathf.Max(0, module.ModuleCreditCost);
+                if (module != null)
+                {
+                    long count = item.Value;
+                    long credits = Mathf.Max(0, module.ModuleCreditCost);
+                    total += item.Key == ModuleKind.Shotgun ? credits * count * (count + 1) / 2 : credits * count;
+                }
             }
             return (int)Math.Min(total, int.MaxValue);
         }

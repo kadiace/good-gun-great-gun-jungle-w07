@@ -35,7 +35,7 @@ namespace WeaponWorkshop
             stats.gravity = 0f;
             HitPayload.Apply(new HitPayload.Context
             {
-                stats = stats, source = source, point = point, direction = direction,
+                stats = stats, source = source, projectile = GetComponent<ProjectileMotor>(), point = point, direction = direction,
                 applyArea = true, owner = owner, weapon = weapon
             });
         }
@@ -45,7 +45,7 @@ namespace WeaponWorkshop
             if (source == null) return;
             HitPayload.Apply(new HitPayload.Context
             {
-                stats = projectileStats, source = source, point = point, direction = direction,
+                stats = projectileStats, source = source, projectile = GetComponent<ProjectileMotor>(), point = point, direction = direction,
                 target = hitTarget, damage = 0f, applyStatus = false, applyArea = true,
                 owner = owner, weapon = weapon
             });
@@ -59,6 +59,7 @@ namespace WeaponWorkshop
             {
                 stats = projectileStats,
                 source = source,
+                projectile = GetComponent<ProjectileMotor>(),
                 point = point,
                 direction = direction,
                 target = target,

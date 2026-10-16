@@ -31,6 +31,7 @@ namespace WeaponWorkshop
         private readonly Dictionary<(DestructibleTarget, int, int), Layer> grouped = new Dictionary<(DestructibleTarget, int, int), Layer>();
         private ProjectileStats impactStats;
         private readonly List<HealthHit> healthHits = new List<HealthHit>();
+        private readonly List<ProjectileMotor> projectileHits = new List<ProjectileMotor>();
         private readonly float[] energy = new float[384];
         private readonly HashSet<DestructibleTarget> dirty = new HashSet<DestructibleTarget>();
         private float radius, maximumRadius, speed, baseDamage;
@@ -38,6 +39,8 @@ namespace WeaponWorkshop
         private ProjectileTuning tuning;
         private int nextLayer, nextHealth;
         private float checkDistance;
+        private ProjectileMotor originatingProjectile;
+        private int originatingLaunchId;
         public Transform WeaponSource { get; private set; }
 
         // Fixed angular bins, independent of target dimensions and voxel size.
@@ -55,13 +58,15 @@ namespace WeaponWorkshop
         }
 
         public static void Create(Vector3 center, float maximumRadius, WeaponStats stats,
-            ProjectileStatsSource source, Transform owner, Transform weapon)
+            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile)
         {
             if (source == null || stats.explosion <= 0f || maximumRadius <= 0f) return;
             var wave = PoolManager.RentComponent<ExpandingExplosion>(center);
             var root = wave.gameObject;
             wave.ResetWave();
             wave.WeaponSource = weapon;
+            wave.originatingProjectile = projectile;
+            wave.originatingLaunchId = projectile != null ? projectile.LaunchId : 0;
             wave.maximumRadius = maximumRadius;
             wave.stats = stats; wave.impactStats = ProjectileStats.FromWeapon(stats); wave.tuning = source.Tuning; wave.baseDamage = source.BaseDamage;
             wave.speed = Mathf.Max(0.01f, wave.tuning.explosionExpansionSpeed);
@@ -132,10 +137,11 @@ namespace WeaponWorkshop
                 layer.target = null; layer.pieces.Clear();
                 if (layerCache.Count < 2048) layerCache.Push(layer);
             }
-            layers.Clear(); healthHits.Clear(); dirty.Clear(); targets.Clear(); nearest.Clear();
+            layers.Clear(); healthHits.Clear(); projectileHits.Clear(); dirty.Clear(); targets.Clear(); nearest.Clear();
             pieces.Clear(); grouped.Clear(); radius = 0f; nextLayer = nextHealth = 0;
             tuning = null; stats = default; impactStats = default;
             WeaponSource = null;
+            originatingProjectile = null;
         }
         private void OnDisable() => ResetWave();
 
@@ -144,6 +150,15 @@ namespace WeaponWorkshop
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
             radius = Mathf.Min(maximumRadius, radius + speed * dt);
+            ProjectileMotor.CopyActiveProjectiles(projectileHits);
+            foreach (var projectile in projectileHits)
+            {
+                if (projectile == null ||
+                    (projectile == originatingProjectile && projectile.LaunchId == originatingLaunchId) ||
+                    Vector3.SqrMagnitude(projectile.transform.position - transform.position) > radius * radius) continue;
+                projectile.DetonateFromExplosion();
+            }
+            projectileHits.Clear();
             dirty.Clear();
             // Equal distance layers use the same incoming energy, then pay all material costs.
             while (nextLayer < layers.Count)
