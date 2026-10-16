@@ -36,6 +36,7 @@ namespace WeaponWorkshop
         private int enemyKills, materialCrateCredits;
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.HashSet<string> discoveredEnemies = new System.Collections.Generic.HashSet<string>();
+        private readonly System.Collections.Generic.HashSet<string> loggedRaidWeaponAssemblies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
         private readonly System.Collections.Generic.SortedSet<int> trainingModules = new System.Collections.Generic.SortedSet<int>();
         public bool HasTrainingModule(int moduleId) => trainingModules.Contains(moduleId);
@@ -128,6 +129,7 @@ namespace WeaponWorkshop
             trainingModules.Clear();
             mapOpen = transitioning = inRaid = returnOpen = entryRestoreFailed = false;
             resultOpen = returningAfterDeath = false;
+            loggedRaidWeaponAssemblies.Clear();
             CancelExtraction();
             ui.Bind(this); ui.ShowMap(false); ui.ShowReturn(false);
         }
@@ -138,6 +140,7 @@ namespace WeaponWorkshop
             RaidEnemyCore.Killed += OnEnemyKilled;
             ModuleCreditPickup.CreditCollected += OnMaterialCollected;
             ModuleUnlockPickup.RewardCollected += OnModuleCollected;
+            if (inRaid) SubscribeWeaponEvents();
         }
         private void OnDisable()
         {
@@ -146,6 +149,7 @@ namespace WeaponWorkshop
             RaidEnemyCore.Killed -= OnEnemyKilled;
             ModuleCreditPickup.CreditCollected -= OnMaterialCollected;
             ModuleUnlockPickup.RewardCollected -= OnModuleCollected;
+            UnsubscribeWeaponEvents();
         }
         private void OnCellDestroyed(DestructibleTarget target, string blockId)
         {
@@ -171,6 +175,83 @@ namespace WeaponWorkshop
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
             if (inRaid && collector == player && moduleId > 0) moduleCrateRewards.Add(moduleId);
+        }
+        private static string CaptureAssemblyId(EquipableWeapon weapon, out string status)
+        {
+            if (weapon == null) { status = "no_weapon"; return ""; }
+            try
+            {
+                string key = weapon.TestAssemblyKey;
+                status = string.IsNullOrEmpty(key) ? "assembly_id_failed" : "ok";
+                return key ?? "";
+            }
+            catch (System.Exception) { status = "assembly_id_failed"; return ""; }
+        }
+        private static string CaptureWeaponCode(EquipableWeapon weapon, out string status)
+        {
+            if (weapon == null) { status = "no_weapon"; return ""; }
+            try { status = "ok"; return WeaponShareCode.Export(weapon); }
+            catch (System.Exception) { status = "export_failed"; return ""; }
+        }
+        private void LogRaidStart()
+        {
+            EquipableWeapon weapon = playerWeaponHolder != null ? playerWeaponHolder.EquippedWeapon : null;
+            var entry = new RaidStartLog { scene = gameObject.scene.name };
+            if (weapon != null)
+            {
+                entry.weaponCode = CaptureWeaponCode(weapon, out string codeStatus);
+                entry.weaponCodeStatus = codeStatus;
+                entry.weaponAssemblyId = CaptureAssemblyId(weapon, out string assemblyIdStatus);
+                entry.weaponAssemblyIdStatus = assemblyIdStatus;
+                if (entry.weaponCodeStatus == "ok" && !string.IsNullOrEmpty(entry.weaponAssemblyId))
+                    loggedRaidWeaponAssemblies.Add(entry.weaponAssemblyId);
+            }
+            GameLogger.Data("Info", "NightRaid", "습격 시작", entry);
+        }
+        private void LogRaidWeaponConfiguration(EquipableWeapon weapon, string assemblyId, string assemblyIdStatus)
+        {
+            if (weapon == null || string.IsNullOrEmpty(assemblyId) || !loggedRaidWeaponAssemblies.Add(assemblyId)) return;
+            string weaponCode = CaptureWeaponCode(weapon, out string codeStatus);
+            var entry = new RaidWeaponConfigLog
+            {
+                time = Time.timeSinceLevelLoad,
+                weaponAssemblyId = assemblyId,
+                weaponAssemblyIdStatus = assemblyIdStatus,
+                weaponCode = weaponCode,
+                weaponCodeStatus = codeStatus
+            };
+            GameLogger.Data("Info", "NightRaid", "raid_weapon_config", entry);
+        }
+        private void OnRaidWeaponChanged(EquipableWeapon previous, EquipableWeapon next)
+        {
+            if (!inRaid || next == null || next.gameObject.scene != gameObject.scene) return;
+            string assemblyId = CaptureAssemblyId(next, out string status);
+            LogRaidWeaponConfiguration(next, assemblyId, status);
+        }
+        private void OnRaidWeaponFired(EquipableWeapon weapon)
+        {
+            if (!inRaid || player == null || weapon == null || weapon.gameObject.scene != gameObject.scene) return;
+            string assemblyId = CaptureAssemblyId(weapon, out string status);
+            LogRaidWeaponConfiguration(weapon, assemblyId, status);
+            GameLogger.Data("Info", "NightRaid", "weapon_fired", new RaidWeaponFiredLog
+            {
+                time = Time.timeSinceLevelLoad,
+                position = player.transform.position,
+                weaponAssemblyId = assemblyId,
+                weaponAssemblyIdStatus = status
+            });
+        }
+        private void SubscribeWeaponEvents()
+        {
+            if (playerWeaponHolder == null) return;
+            playerWeaponHolder.EquippedWeaponChanged += OnRaidWeaponChanged;
+            playerWeaponHolder.ShotFired += OnRaidWeaponFired;
+        }
+        private void UnsubscribeWeaponEvents()
+        {
+            if (playerWeaponHolder == null) return;
+            playerWeaponHolder.EquippedWeaponChanged -= OnRaidWeaponChanged;
+            playerWeaponHolder.ShotFired -= OnRaidWeaponFired;
         }
         private void FixedUpdate()
         {
@@ -219,11 +300,9 @@ namespace WeaponWorkshop
             playerWeaponHolder = player != null ? player.GetComponent<WeaponHolder>() : null;
             raidCamera = playerWeaponHolder != null ? playerWeaponHolder.AimCamera : null;
             playerHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
-            inRaid = true;
-            GameLogger.Data("Info", "NightRaid", "습격 시작", new SceneBootLog { scene = gameObject.scene.name });
-            WorkshopSoundEffects.RaiseNightRaidStarted();
             if (player == null || area.SpawnPoint == null)
             { ui.ShowError("습격 플레이어 또는 시작 위치 연결이 없습니다."); return; }
+            WorkshopSoundEffects.RaiseNightRaidStarted();
             Teleport(area.SpawnPoint.position, area.SpawnPoint.rotation);
             player.SetViewRotation(Quaternion.identity);
             if (NightRaidTransfer.TryConsumeEntry(out int balance, out int moduleCredits, out var unlockedModules, out var weapon))
@@ -239,12 +318,16 @@ namespace WeaponWorkshop
                     return;
                 }
             }
+            inRaid = true;
             raidStartingCredits = player.GetComponent<PlayerWallet>().ModuleCredits;
             raidStartingBalance = player.GetComponent<PlayerWallet>().Balance;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
             enemyKills = materialCrateCredits = 0;
             moduleCrateRewards.Clear(); discoveredEnemies.Clear();
+            loggedRaidWeaponAssemblies.Clear();
+            LogRaidStart();
+            SubscribeWeaponEvents();
             // 보상 상자는 입장 상태(해금 모듈)를 복원한 뒤 한 번에 만든다. 이미 해금한 모듈 자리는 재료 상자가 된다.
             Object.FindFirstObjectByType<RaidCrateSpawner>()?.Spawn(player.GetComponent<PlayerModuleUnlocks>());
             if (playerHealth != null) playerHealth.Died += ShowDeathResult;

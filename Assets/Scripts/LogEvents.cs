@@ -27,4 +27,22 @@ namespace WeaponWorkshop
         public int tanks;
         public int helicopters;
     }
+    [Serializable] public sealed class RaidStartLog
+    {
+        public string scene;
+        public string weaponCode = "", weaponCodeStatus = "no_weapon";
+        public string weaponAssemblyId = "", weaponAssemblyIdStatus = "no_weapon";
+    }
+    [Serializable] public sealed class RaidWeaponConfigLog
+    {
+        public float time;
+        public string weaponCode = "", weaponCodeStatus = "no_weapon";
+        public string weaponAssemblyId = "", weaponAssemblyIdStatus = "no_weapon";
+    }
+    [Serializable] public sealed class RaidWeaponFiredLog
+    {
+        public float time;
+        public UnityEngine.Vector3 position;
+        public string weaponAssemblyId = "", weaponAssemblyIdStatus = "no_weapon";
+    }
 }

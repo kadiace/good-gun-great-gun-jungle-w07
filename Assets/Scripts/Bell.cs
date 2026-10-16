@@ -19,7 +19,7 @@ namespace WeaponWorkshop
         public event System.Action CustomerKilled;
         public event System.Action<CustomerProfile> CustomerInteracted;
         public event System.Action<CustomerProfile, bool, bool> OrderFinished;
-        public event System.Action<CustomerProfile, int, bool, int> WeaponSold;
+        public event System.Action<CustomerProfile, EquipableWeapon, int, bool, int> WeaponSold;
         public Transform OutlineRoot => transform;
         public Customer Current => current;
         public int RemainingCustomers => waiting.Count;
@@ -173,7 +173,8 @@ namespace WeaponWorkshop
         }
         private void OnCustomerInteracted(CustomerProfile order) => CustomerInteracted?.Invoke(order);
         private void OnOrderFinished(CustomerProfile order, bool success, bool dead) => OrderFinished?.Invoke(order, success, dead);
-        private void OnWeaponSold(CustomerProfile order, int price, bool satisfied, int tagCount) => WeaponSold?.Invoke(order, price, satisfied, tagCount);
+        private void OnWeaponSold(CustomerProfile order, EquipableWeapon weapon, int price, bool satisfied, int tagCount) =>
+            WeaponSold?.Invoke(order, weapon, price, satisfied, tagCount);
 
         private void OnDestroy() => ReleaseCustomer();
     }

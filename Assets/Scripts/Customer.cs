@@ -51,7 +51,7 @@ namespace WeaponWorkshop
         public event System.Action CustomerKilled;
         public event System.Action<CustomerProfile> Interacted;
         public event System.Action<CustomerProfile, bool, bool> OrderFinished;
-        public event System.Action<CustomerProfile, int, bool, int> WeaponSold;
+        public event System.Action<CustomerProfile, EquipableWeapon, int, bool, int> WeaponSold;
         public CustomerProfile Profile => profile;
         public bool HasTalked { get; private set; }
         public bool HasActiveOrder => HasTalked && atCounter && !deathStarted && saveStage < 3;
@@ -108,7 +108,7 @@ namespace WeaponWorkshop
             int price = satisfied ? Mathf.RoundToInt(cost * (1f + sale.tagBonusRatio * tagCount)) + Mathf.Max(0, profile.Price)
                 : Mathf.RoundToInt(cost * sale.dissatisfiedRatio);
             Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
-            WeaponSold?.Invoke(profile, price, satisfied, tagCount);
+            WeaponSold?.Invoke(profile, weapon, price, satisfied, tagCount);
             GameLogger.Count("WeaponSold");
             GameLogger.Measure("SalePrice", price);
             Destroy(weapon.gameObject);

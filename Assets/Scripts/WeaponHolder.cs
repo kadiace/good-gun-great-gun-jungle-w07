@@ -29,6 +29,7 @@ namespace WeaponWorkshop
         public EquipableWeapon EquippedWeapon { get; private set; }
         public event System.Action<EquipableWeapon, EquipableWeapon> EquippedWeaponChanged;
         public event System.Action<EquipableWeapon> AttackInput;
+        public event System.Action<EquipableWeapon> ShotFired;
         private void SetEquippedWeapon(EquipableWeapon next)
         {
             var previous = EquippedWeapon;
@@ -134,8 +135,10 @@ namespace WeaponWorkshop
             if (GameManager.GameplayBlocked) return;
             if (!Application.isFocused || player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
             UpdateAim();
-            if (EquippedWeapon.TryFire())
+            EquipableWeapon weapon = EquippedWeapon;
+            if (weapon.TryFire())
             {
+                ShotFired?.Invoke(weapon);
                 recoilOffset = recoilDistance;
                 ApplyRecoil();
             }
@@ -170,8 +173,10 @@ namespace WeaponWorkshop
                 return;
             }
             UpdateAim();
-            if (EquippedWeapon.ReleaseCharge())
+            EquipableWeapon weapon = EquippedWeapon;
+            if (weapon.ReleaseCharge())
             {
+                ShotFired?.Invoke(weapon);
                 recoilOffset = recoilDistance;
                 ApplyRecoil();
             }

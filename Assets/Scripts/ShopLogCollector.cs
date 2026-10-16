@@ -40,6 +40,7 @@ namespace WeaponWorkshop
                 workshop.WorkbenchExited += OnWorkbenchExited;
             }
             if (holder != null) holder.AttackInput += OnAttackInput;
+            if (holder != null) holder.ShotFired += OnWeaponFired;
             if (presets != null) presets.Stored += OnPresetStored;
             bound = true;
         }
@@ -59,6 +60,7 @@ namespace WeaponWorkshop
                 workshop.WorkbenchExited -= OnWorkbenchExited;
             }
             if (holder != null) holder.AttackInput -= OnAttackInput;
+            if (holder != null) holder.ShotFired -= OnWeaponFired;
             if (presets != null) presets.Stored -= OnPresetStored;
             bound = false;
         }
@@ -118,11 +120,16 @@ namespace WeaponWorkshop
                 state.completionLogged = true;
         }
 
-        private void OnWeaponSold(CustomerProfile order, int price, bool satisfied, int tagCount)
+        private void OnWeaponSold(CustomerProfile order, EquipableWeapon weapon, int price, bool satisfied, int tagCount)
         {
             if (!CanRecordAction) return;
             OnOrderRegistered(order, dayManager.DayNumber);
-            Write(new ShopSaleLogEvent { price = price, satisfied = satisfied, tagCount = tagCount }, "weapon_sold", order);
+            var capturedWeapon = CaptureWeapon(weapon);
+            Write(new ShopSaleLogEvent
+            {
+                price = price, satisfied = satisfied, tagCount = tagCount,
+                weaponCode = capturedWeapon.weaponCode, weaponCodeStatus = capturedWeapon.weaponCodeStatus
+            }, "weapon_sold", order);
         }
 
         private void OnWorkbenchEntered()
@@ -137,6 +144,19 @@ namespace WeaponWorkshop
         {
             if (CanRecordAction) Write(CaptureWeapon(weapon), "attack_input", ActiveOrder);
         }
+        private void OnWeaponFired(EquipableWeapon weapon)
+        {
+            if (!CanRecordAction) return;
+            string assemblyId = CaptureAssemblyId(weapon, out string assemblyIdStatus);
+            var entry = new ShopWeaponFiredLogEvent
+            {
+                time = Time.timeSinceLevelLoad,
+                position = player != null ? player.transform.position : Vector3.zero,
+                weaponAssemblyId = assemblyId,
+                weaponAssemblyIdStatus = assemblyIdStatus
+            };
+            Write(entry, "weapon_fired", ActiveOrder);
+        }
         private void OnPresetStored(int slot, string code)
         {
             if (CanRecordAction) Write(new ShopPresetLogEvent
@@ -150,6 +170,18 @@ namespace WeaponWorkshop
             try { entry.weaponCode = WeaponShareCode.Export(weapon); entry.weaponCodeStatus = "ok"; }
             catch (Exception) { entry.weaponCodeStatus = "export_failed"; }
             return entry;
+        }
+
+        private static string CaptureAssemblyId(EquipableWeapon weapon, out string status)
+        {
+            if (weapon == null) { status = "no_weapon"; return ""; }
+            try
+            {
+                string key = weapon.TestAssemblyKey;
+                status = string.IsNullOrEmpty(key) ? "assembly_id_failed" : "ok";
+                return key ?? "";
+            }
+            catch (Exception) { status = "assembly_id_failed"; return ""; }
         }
     }
 }

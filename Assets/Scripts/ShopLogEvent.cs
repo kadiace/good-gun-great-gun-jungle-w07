@@ -19,6 +19,8 @@ namespace WeaponWorkshop
     [Serializable] public sealed class ShopPresetLogEvent : ShopWeaponLogEvent { public int slot; }
     [Serializable] public sealed class ShopOrderCompletedLogEvent : ShopLogEvent
     { public bool success, customerDead; }
-    [Serializable] public sealed class ShopSaleLogEvent : ShopLogEvent
+    [Serializable] public sealed class ShopSaleLogEvent : ShopWeaponLogEvent
     { public int price, tagCount; public bool satisfied; }
+    [Serializable] public sealed class ShopWeaponFiredLogEvent : ShopLogEvent
+    { public float time; public UnityEngine.Vector3 position; public string weaponAssemblyId = "", weaponAssemblyIdStatus = "no_weapon"; }
 }
