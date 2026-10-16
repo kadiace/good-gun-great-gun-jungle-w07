@@ -14,6 +14,7 @@ namespace WeaponWorkshop
         private TMPro.TextMeshProUGUI label;
         private TMPro.TextMeshProUGUI priceLabel;
         private ModuleSelectionBorder highlight;
+        private ModuleSelectionBorder dropHighlight;
         private GameObject lockOverlay;
 
         public int FavoriteIndex { get; private set; } = -1;
@@ -39,15 +40,8 @@ namespace WeaponWorkshop
             priceLabel.alignment = TMPro.TextAlignmentOptions.MidlineLeft;
             priceLabel.color = new Color(.9f, .85f, .65f);
             priceLabel.raycastTarget = false;
-            highlight = new GameObject("SelectionBorder", typeof(RectTransform), typeof(CanvasRenderer),
-                typeof(ModuleSelectionBorder)).GetComponent<ModuleSelectionBorder>();
-            highlight.rectTransform.SetParent(transform, false);
-            highlight.rectTransform.anchorMin = Vector2.zero;
-            highlight.rectTransform.anchorMax = Vector2.one;
-            highlight.rectTransform.offsetMin = highlight.rectTransform.offsetMax = Vector2.zero;
-            highlight.color = new Color(1f, 0.8f, 0.2f, 1f);
-            highlight.raycastTarget = false;
-            highlight.gameObject.SetActive(false);
+            highlight = CreateBorder("SelectionBorder", new Color(1f, 0.8f, 0.2f, 1f));
+            dropHighlight = CreateBorder("DropBorder", new Color(.25f, .9f, 1f, 1f));
             lockOverlay = new GameObject("LockOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             var rect = lockOverlay.GetComponent<RectTransform>();
             rect.SetParent(transform, false);
@@ -67,6 +61,25 @@ namespace WeaponWorkshop
             lockOverlay.SetActive(false);
         }
 
+        private ModuleSelectionBorder CreateBorder(string objectName, Color color)
+        {
+            var border = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(ModuleSelectionBorder)).GetComponent<ModuleSelectionBorder>();
+            border.rectTransform.SetParent(transform, false);
+            border.rectTransform.anchorMin = Vector2.zero;
+            border.rectTransform.anchorMax = Vector2.one;
+            border.rectTransform.offsetMin = border.rectTransform.offsetMax = Vector2.zero;
+            border.color = color;
+            border.raycastTarget = false;
+            border.gameObject.SetActive(false);
+            return border;
+        }
+
+        public void SetDropHighlight(bool active)
+        {
+            if (dropHighlight != null) dropHighlight.gameObject.SetActive(active);
+        }
+
         public void Show(int moduleId, string text, Color color, bool selected, bool locked = false, string price = "")
         {
             ModuleId = moduleId;
@@ -82,7 +95,11 @@ namespace WeaponWorkshop
 
         public void OnPointerEnter(PointerEventData eventData) => owner?.SetHoveredSlot(this);
         public void OnPointerExit(PointerEventData eventData) => owner?.ClearHoveredSlot(this);
-        private void OnDisable() => owner?.ClearHoveredSlot(this);
+        private void OnDisable()
+        {
+            SetDropHighlight(false);
+            owner?.SlotDisabled(this);
+        }
         public void OnPointerClick(PointerEventData eventData)
         {
             if (eventData.button == PointerEventData.InputButton.Left && !eventData.dragging)
@@ -90,8 +107,8 @@ namespace WeaponWorkshop
         }
         public void OnBeginDrag(PointerEventData eventData) => owner?.BeginDrag(this, eventData);
         public void OnDrag(PointerEventData eventData) => owner?.Drag(eventData);
-        public void OnEndDrag(PointerEventData eventData) => owner?.EndDrag();
-        public void OnDrop(PointerEventData eventData) => owner?.Drop(this);
+        public void OnEndDrag(PointerEventData eventData) => owner?.EndDrag(eventData);
+        public void OnDrop(PointerEventData eventData) => owner?.Drop(this, eventData);
     }
 
     // A separate graphic keeps the selection border independent of the button's tint.

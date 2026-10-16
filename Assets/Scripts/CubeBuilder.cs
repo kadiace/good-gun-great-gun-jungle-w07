@@ -31,10 +31,11 @@ namespace WeaponWorkshop
         private int[] favorites = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
         private bool paletteOpen;
         private int hoveredPaletteModule;
+        private bool favoriteDragActive;
         public void SetHoveredPaletteModule(int moduleId) => hoveredPaletteModule = moduleId;
         private void HandleFavoriteKey(int index)
         {
-            if (GameManager.GameplayBlocked) return;
+            if (GameManager.GameplayBlocked || favoriteDragActive) return;
             if (PaletteOpen && hoveredPaletteModule > 0) { SetFavorite(index, hoveredPaletteModule); return; }
             SelectModule(GetFavorite(index));
         }
@@ -168,6 +169,8 @@ namespace WeaponWorkshop
             return unlocks == null || !unlocks.IsUnlocked(moduleId);
         }
         public int FavoriteCount => favorites.Length;
+        public bool CanEditFavorites => isActiveAndEnabled && !paintingMode && !ColorPickerOpen &&
+            !GameManager.GameplayBlocked && TutorialManager.ActionAllowed("palette");
         public int GetFavorite(int index) => index >= 0 && index < favorites.Length ? ValidModuleOrBlocker(favorites[index]) : 1;
 
         private int ValidModuleOrBlocker(int moduleId) => moduleCatalog != null &&
@@ -175,12 +178,29 @@ namespace WeaponWorkshop
 
         public void SetFavorite(int index, int moduleId)
         {
-            if (index < 0 || index >= favorites.Length) return;
+            if (!CanEditFavorites || index < 0 || index >= favorites.Length) return;
             moduleId = ValidModuleOrBlocker(moduleId);
             if (IsModuleLocked(moduleId)) return;
             int existing = System.Array.IndexOf(favorites, moduleId);
             if (existing >= 0 && existing != index) favorites[existing] = GetFavorite(index);
             favorites[index] = moduleId;
+        }
+
+        public bool SwapFavorites(int sourceIndex, int targetIndex)
+        {
+            if (!CanEditFavorites || sourceIndex < 0 || sourceIndex >= favorites.Length ||
+                targetIndex < 0 || targetIndex >= favorites.Length || sourceIndex == targetIndex) return false;
+            int sourceModule = GetFavorite(sourceIndex);
+            if (IsModuleLocked(sourceModule)) return false;
+            favorites[sourceIndex] = GetFavorite(targetIndex);
+            favorites[targetIndex] = sourceModule;
+            return true;
+        }
+
+        public void SetFavoriteDrag(bool active)
+        {
+            favoriteDragActive = active;
+            if (active) CancelPreview();
         }
 
         public void SelectModule(int moduleId)
@@ -245,6 +265,7 @@ namespace WeaponWorkshop
             deleteMode = false;
             paletteOpen = false;
             colorPickerOpen = false;
+            favoriteDragActive = false;
             paintFillMode = false;
             if (eraseModeUI != null) eraseModeUI.SetActive(false);
             view = GetComponent<Camera>();
@@ -293,7 +314,7 @@ namespace WeaponWorkshop
             attach.canceled += _ => paintPointerHeld = false;
             attach.performed += _ =>
             {
-                if (GameManager.GameplayBlocked || (!paintingMode && (paletteOpen || colorPickerOpen)) ||
+                if (GameManager.GameplayBlocked || favoriteDragActive || (!paintingMode && (paletteOpen || colorPickerOpen)) ||
                     IsPointerOverUI(AimPoint())) return;
                 if (controls.FindAction("Rotate", true).IsPressed()) return;
                 if (!paintingMode && !deleteMode && TutorialManager.Instance != null &&
@@ -333,6 +354,7 @@ namespace WeaponWorkshop
         }
         private void OnDisable()
         {
+            favoriteDragActive = false;
             CancelPreview();
             CancelModuleColor();
             deleteMode = false;
@@ -403,7 +425,7 @@ namespace WeaponWorkshop
         private void UpdateHoverPreview()
         {
             if (hoverPreview != null) hoverPreview.SetActive(false);
-            if (paintingMode || paletteOpen || colorPickerOpen || preview != null ||
+            if (paintingMode || paletteOpen || colorPickerOpen || favoriteDragActive || preview != null ||
                 GameManager.GameplayBlocked || view == null || controls == null ||
                 controls.FindAction("Rotate", true).IsPressed() || IsPointerOverUI(AimPoint())) return;
             var pointer = AimPoint();

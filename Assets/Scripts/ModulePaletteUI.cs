@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace WeaponWorkshop
 {
     // 공방 모듈 즐겨찾기(숫자키 1~9,0)와 TAB 모듈 창. 상태(선택·즐겨찾기·창 열림)는 CubeBuilder가 보유한다.
-    // TAB 창에서 클릭하면 선택, 목록 칸이나 즐겨찾기 칸을 즐겨찾기 칸으로 드래그하면 교체/맞바꿈.
+    // 목록 드래그로 등록하며, 즐겨찾기끼리의 맞바꿈은 TAB 창이 닫혀 있어도 가능.
     [RequireComponent(typeof(RectTransform))]
     public sealed class ModulePaletteUI : MonoBehaviour
     {
@@ -34,6 +34,8 @@ namespace WeaponWorkshop
 
         private static readonly Color SlotColor = new Color(41f / 255f, 45f / 255f, 51f / 255f, 1f);
         private RectTransform hotbar;
+        private TMPro.TextMeshProUGUI hotbarGuide;
+        private const string HotbarGuideText = "퀵슬롯을 다른 번호 칸으로 드래그하면 서로 바뀝니다 · Tab: 모듈 목록";
         private RectTransform palette;
         private RectTransform dragGhost;
         private Image dragGhostSwatch;
@@ -60,18 +62,35 @@ namespace WeaponWorkshop
         {
             if (builder == null || slot == null) return;
             hoveredSlot = slot; if (builder.PaletteOpen && slot.FavoriteIndex < 0) builder.SetHoveredPaletteModule(slot.ModuleId);
+            UpdateDropTarget();
         }
         public void ClearHoveredSlot(ModuleSlotUI slot)
         {
             if (hoveredSlot != slot) return;
             ClearHover();
         }
-        private void ClearHover() { hoveredSlot = null; builder?.SetHoveredPaletteModule(0); }
+        private void ClearHover()
+        {
+            hoveredSlot = null;
+            builder?.SetHoveredPaletteModule(0);
+            SetDropTarget(null);
+        }
+
+        public void SlotDisabled(ModuleSlotUI slot)
+        {
+            ClearHoveredSlot(slot);
+            if (dragSource == slot) CancelDrag();
+            else if (dropTarget == slot) SetDropTarget(null);
+        }
         private const float StickerViewportBottomInset = 96f;
         private const float StickerViewportTopInset = 138f;
         private const float KeyringViewportBottomInset = 144f;
         private const float KeyringViewportTopInset = 112f;
         private int draggingModule;
+        private ModuleSlotUI dragSource;
+        private ModuleSlotUI dropTarget;
+        private int dragPointerId;
+        private bool dragStartedWithPalette;
         private int lastState = int.MinValue;
         private int selectedPaintMaterial = -1;
         private int paintMaterialPage;
@@ -156,8 +175,10 @@ namespace WeaponWorkshop
             ResolveKeyringModels();
             Build();
             hotbar.gameObject.SetActive(false);
+            hotbarGuide.gameObject.SetActive(false);
             palette.gameObject.SetActive(false);
             dragGhost.gameObject.SetActive(false);
+            CancelDrag();
             customButtonRoot.gameObject.SetActive(false);
             selectedCustomPanel = null;
             RefreshCustomNavigation();
@@ -175,6 +196,7 @@ namespace WeaponWorkshop
             wasCustomMode = false;
             customColorMode = false;
             hotbar?.gameObject.SetActive(false);
+            hotbarGuide?.gameObject.SetActive(false);
             palette?.gameObject.SetActive(false);
             customButtonRoot?.gameObject.SetActive(false);
             FeedbackUI.For(this)?.CancelChoice(this);
@@ -209,6 +231,7 @@ namespace WeaponWorkshop
             bool customMode = active && builder.IsCustomMode;
             
             bool paletteOpen = active && !customMode && builder.PaletteOpen;
+            hotbarGuide.gameObject.SetActive(active && !customMode && builder.CanEditFavorites);
             if (hotbar.gameObject.activeSelf != (active && !customMode))
                 hotbar.gameObject.SetActive(active && !customMode);
             if (palette.gameObject.activeSelf != paletteOpen) palette.gameObject.SetActive(paletteOpen);
@@ -231,11 +254,16 @@ namespace WeaponWorkshop
             }
             UpdateCustomPanelVisibility(customMode);
             wasCustomMode = customMode;
-            if (!paletteOpen)
+            if (draggingModule != 0)
             {
-                CancelDrag();
-                if (!active || customMode || (hoveredSlot != null && hoveredSlot.FavoriteIndex < 0)) ClearHover();
+                if (!CanContinueDrag()) CancelDrag();
+                else
+                {
+                    if (paletteOpen) dragStartedWithPalette = true;
+                    UpdateDropTarget();
+                }
             }
+            if (!active || customMode || (!paletteOpen && hoveredSlot != null && hoveredSlot.FavoriteIndex < 0)) ClearHover();
             if (!active) return;
             if (customMode)
             {
@@ -289,37 +317,94 @@ namespace WeaponWorkshop
 
         public void BeginDrag(ModuleSlotUI slot, PointerEventData eventData)
         {
-            if (builder == null || !builder.PaletteOpen || slot == null || slot.ModuleId < 1 || builder.IsModuleLocked(slot.ModuleId)) return;
+            if (eventData.button != PointerEventData.InputButton.Left || draggingModule != 0 ||
+                !CanDragFrom(slot)) return;
+            dragSource = slot;
             draggingModule = slot.ModuleId;
+            dragPointerId = eventData.pointerId;
+            dragStartedWithPalette = builder.PaletteOpen;
+            eventData.eligibleForClick = false;
+            builder.SetFavoriteDrag(true);
             builder.Catalog.TryGet(draggingModule, out ModuleCatalog.Entry entry);
             dragGhostSwatch.color = entry.color;
             dragGhostLabel.text = entry.displayName;
             dragGhost.gameObject.SetActive(true);
             dragGhost.SetAsLastSibling();
             Drag(eventData);
+            UpdateDropTarget();
+            UpdateDragGuide();
         }
 
         public void Drag(PointerEventData eventData)
         {
-            if (draggingModule == 0) return;
+            if (draggingModule == 0 || eventData.pointerId != dragPointerId) return;
             RectTransform root = (RectTransform)transform;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(root, eventData.position,
                 eventData.pressEventCamera, out Vector2 local))
                 dragGhost.localPosition = local;
         }
 
-        public void Drop(ModuleSlotUI target)
+        private bool CanDragFrom(ModuleSlotUI slot) => builder != null && builder.Catalog != null &&
+            builder.CanEditFavorites && slot != null && slot.isActiveAndEnabled && slot.ModuleId > 0 &&
+            !builder.IsModuleLocked(slot.ModuleId) && (slot.FavoriteIndex >= 0 || builder.PaletteOpen);
+
+        private bool CanContinueDrag() => CanDragFrom(dragSource) &&
+            (!dragStartedWithPalette || builder.PaletteOpen) &&
+            (dragSource.FavoriteIndex < 0 || builder.GetFavorite(dragSource.FavoriteIndex) == draggingModule);
+
+        private bool CanDropOn(ModuleSlotUI target) => draggingModule != 0 && CanContinueDrag() &&
+            target != null && target.isActiveAndEnabled && target.FavoriteIndex >= 0 && target != dragSource &&
+            (dragSource.FavoriteIndex >= 0 || target.ModuleId != draggingModule);
+
+        private void UpdateDropTarget() => SetDropTarget(CanDropOn(hoveredSlot) ? hoveredSlot : null);
+
+        private void SetDropTarget(ModuleSlotUI target)
         {
-            if (draggingModule == 0 || target == null || builder == null || target.FavoriteIndex < 0 || builder.IsModuleLocked(draggingModule)) return;
-            builder.SetFavorite(target.FavoriteIndex, draggingModule);
-            lastState = int.MinValue;
+            if (dropTarget == target) return;
+            dropTarget?.SetDropHighlight(false);
+            dropTarget = target;
+            dropTarget?.SetDropHighlight(true);
+            UpdateDragGuide();
         }
 
-        public void EndDrag() => CancelDrag();
+        private void UpdateDragGuide()
+        {
+            if (hotbarGuide == null) return;
+            hotbarGuide.text = draggingModule == 0 ? HotbarGuideText : dropTarget == null
+                ? "교체할 퀵슬롯에 놓으세요 · 바깥에 놓으면 취소됩니다"
+                : $"{(dropTarget.FavoriteIndex + 1) % 10}번 퀵슬롯에 놓아 " +
+                  (dragSource.FavoriteIndex >= 0 ? "서로 교체합니다" : "등록합니다");
+        }
+
+        public void Drop(ModuleSlotUI target, PointerEventData eventData)
+        {
+            if (eventData.pointerId != dragPointerId || !CanDropOn(target) ||
+                eventData.pointerDrag != dragSource.gameObject) return;
+            if (dragSource.FavoriteIndex >= 0)
+            {
+                if (!builder.SwapFavorites(dragSource.FavoriteIndex, target.FavoriteIndex)) return;
+            }
+            else builder.SetFavorite(target.FavoriteIndex, draggingModule);
+            lastState = ComputeState();
+            Refresh();
+            CancelDrag();
+        }
+
+        public void EndDrag(PointerEventData eventData)
+        {
+            if (draggingModule != 0 && eventData.pointerId == dragPointerId) CancelDrag();
+        }
+
+        private void OnApplicationFocus(bool focused) { if (!focused) CancelDrag(); }
 
         private void CancelDrag()
         {
             draggingModule = 0;
+            dragSource = null;
+            dragStartedWithPalette = false;
+            builder?.SetFavoriteDrag(false);
+            SetDropTarget(null);
+            UpdateDragGuide();
             if (dragGhost != null) dragGhost.gameObject.SetActive(false);
         }
 
@@ -336,6 +421,17 @@ namespace WeaponWorkshop
             hotbar.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             hotbar.sizeDelta = new Vector2(0f, slotSize.y);
             for (int i = 0; i < 10; i++) hotbarSlots.Add(CreateSlot(hotbar, i));
+            hotbarGuide = CreateText("HotbarGuide", (RectTransform)transform, HotbarGuideText, 18);
+            hotbarGuide.rectTransform.anchorMin = hotbarGuide.rectTransform.anchorMax = new Vector2(.5f, 0f);
+            hotbarGuide.rectTransform.pivot = new Vector2(.5f, 0f);
+            hotbarGuide.rectTransform.anchoredPosition = new Vector2(0f, 26f + slotSize.y);
+            hotbarGuide.rectTransform.sizeDelta = new Vector2(slotSize.x * 10f + 54f, 30f);
+            hotbarGuide.alignment = TMPro.TextAlignmentOptions.Midline;
+            hotbarGuide.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+            hotbarGuide.enableAutoSizing = true;
+            hotbarGuide.fontSizeMin = 14f;
+            hotbarGuide.fontSizeMax = 18f;
+            hotbarGuide.gameObject.SetActive(false);
 
             palette = CreateRect("Palette", transform);
             palette.anchorMin = palette.anchorMax = palette.pivot = new Vector2(0.5f, 0.5f);
@@ -347,7 +443,8 @@ namespace WeaponWorkshop
             column.childForceExpandWidth = column.childForceExpandHeight = false;
             var fitter = palette.gameObject.AddComponent<ContentSizeFitter>();
             fitter.horizontalFit = fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            TMPro.TextMeshProUGUI title = CreateText("Title", palette, "모듈  (마우스 올리고 1~9·0: 등록 / 클릭: 선택 / 드래그: 교체)", 18);
+            TMPro.TextMeshProUGUI title = CreateText("Title", palette,
+                "모듈 · 클릭: 선택 · 마우스 올리고 1~9·0: 등록\n목록을 하단으로 드래그: 등록 · 퀵슬롯끼리 드래그: 교체", 18);
             title.alignment = TMPro.TextAlignmentOptions.Midline;
             int count = builder != null && builder.Catalog != null ? builder.Catalog.Count : 0;
             for (int i = 0; i < count; i++) paletteSlots.Add(null);
