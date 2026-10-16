@@ -63,7 +63,9 @@ namespace WeaponWorkshop
         private void Start()
         {
             // LogKit 자동 초기화(AfterSceneLoad)가 첫 씬 Awake보다 늦으므로 Start에서 기록한다.
-            GameLogger.Data("Info", "System", "씬 시작", new SceneBootLog { scene = gameObject.scene.name });
+            PlayerIdentity.LogSessionStart();
+            GameLogger.Data("Info", "System", "씬 시작", new SceneBootLog
+            { scene = gameObject.scene.name, installId = PlayerIdentity.InstallId, saveId = PlayerIdentity.SaveId });
             uiManager?.Refresh(this);
         }
         private void OnDisable()

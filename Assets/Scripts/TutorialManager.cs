@@ -139,7 +139,7 @@ namespace WeaponWorkshop
             dayZeroOwner = day;
             warningOpen = false; pendingWarnings.Clear();
             ResolvePresentation();
-            if (selection == null || !selection.Show(EndDayZero, StartDayZeroSequence)) StartDayZeroSequence();
+            if (selection == null || !selection.Show(() => { LogTutorialSkipped(); EndDayZero(); }, StartDayZeroSequence)) StartDayZeroSequence();
         }
         private void StartDayZeroSequence()
         {
@@ -202,6 +202,7 @@ namespace WeaponWorkshop
             while (CurrentSequence != null && StepIndex < CurrentSequence.steps.Length && CurrentSequence.steps[StepIndex] == null) StepIndex++;
             var step = CurrentStep;
             if (step == null) { Finish(); return; }
+            LogStepStarted(step);
             PrepareStep(step);
             if (step.target == TutorialTarget.ShootingTarget && shootingTarget == null &&
                 shootingTargetPrefab != null && shootingSpawnPoint != null)
@@ -216,10 +217,10 @@ namespace WeaponWorkshop
             Changed?.Invoke();
             if (step.completion == TutorialCompletion.Confirmation)
             {
-                if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
+                if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish("error"); return; }
                 ownsDialogue = true;
                 if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼"))
-                { ownsDialogue = false; Finish(); }
+                { ownsDialogue = false; Finish("error"); }
             }
             else if (step.completion == TutorialCompletion.RaidTankSpawned)
             {
@@ -247,11 +248,11 @@ namespace WeaponWorkshop
         {
             if (CurrentStep == null || CurrentStep.completion != TutorialCompletion.RaidTankSpawned || ownsDialogue) return;
             ResolvePresentation();
-            if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
+            if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish("error"); return; }
             ownsDialogue = true;
             tankSpawnGuidanceOpen = true;
             if (!dialogue.Show(CurrentStep.description, "확인", Confirm, "튜토리얼"))
-            { ownsDialogue = false; tankSpawnGuidanceOpen = false; Finish(); }
+            { ownsDialogue = false; tankSpawnGuidanceOpen = false; Finish("error"); }
         }
         private void Confirm()
         {
@@ -371,15 +372,61 @@ namespace WeaponWorkshop
             var allowed = CurrentStep?.allowedActions;
             return allowed == null || allowed.Length == 0 || Array.IndexOf(allowed, action) >= 0;
         }
-        private void Advance() { StepIndex++; ShowStep(); }
+        private void Advance() { LogStepCompleted(); StepIndex++; ShowStep(); }
+        // 튜토리얼 퍼널 로그. 시각은 씬 이동·일시정지와 무관한 실행 후 실제 시간이다.
+        private float stepStartedAt;
+        private bool debugSkipping;
+        private void LogStepStarted(TutorialStep step)
+        {
+            stepStartedAt = Time.realtimeSinceStartup;
+            LogKit.GameLogger.Data("Info", "Tutorial", "step_started", new TutorialStepLog
+            { sequence = CurrentSequence != null ? CurrentSequence.name : "", stepId = step.id ?? "", stepIndex = StepIndex, time = stepStartedAt });
+        }
+        private void LogStepCompleted()
+        {
+            var step = CurrentStep;
+            if (step == null) return;
+            float now = Time.realtimeSinceStartup;
+            LogKit.GameLogger.Data("Info", "Tutorial", "step_completed", new TutorialStepLog
+            {
+                sequence = CurrentSequence != null ? CurrentSequence.name : "", stepId = step.id ?? "", stepIndex = StepIndex,
+                time = now, duration = Mathf.Max(0f, now - stepStartedAt), debugSkipped = debugSkipping
+            });
+        }
+        private void LogTutorialEnded(string reason)
+        {
+            if (current == null || current.sequence == null) return;
+            var steps = current.sequence.steps;
+            // 끝까지 간 경우 StepIndex는 마지막 단계 다음을 가리킨다.
+            int last = Mathf.Clamp(StepIndex, 0, steps != null && steps.Length > 0 ? steps.Length - 1 : 0);
+            var step = steps != null && last < steps.Length ? steps[last] : null;
+            LogKit.GameLogger.Data("Info", "Tutorial", "tutorial_ended", new TutorialEndLog
+            {
+                sequence = current.sequence.name, lastStepId = step != null ? step.id ?? "" : "", lastStepIndex = last,
+                reason = reason, time = Time.realtimeSinceStartup
+            });
+        }
+        // 0일차 시작 선택에서 튜토리얼을 건너뛴 경우. 단계를 하나도 시작하지 않았다.
+        private void LogTutorialSkipped()
+        {
+            var sequence = dayZeroOwner != null && dayZeroOwner.CurrentCustomerDay != null ? dayZeroOwner.CurrentCustomerDay.startTutorial : null;
+            LogKit.GameLogger.Data("Info", "Tutorial", "tutorial_skipped", new TutorialEndLog
+            { sequence = sequence != null ? sequence.name : "", lastStepId = "", lastStepIndex = -1, reason = "skipped", time = Time.realtimeSinceStartup });
+        }
+        // 메뉴로 나가기·파산 복귀처럼 진행 중 튜토리얼을 버리는 경우.
+        private static void LogAbandoned()
+        {
+            if (Instance != null && Instance.current != null) Instance.LogTutorialEnded("abandoned");
+        }
         private void ReleaseDialogue()
         {
             if (ownsDialogue && dialogue != null) dialogue.Hide();
             ownsDialogue = false;
             tankSpawnGuidanceOpen = false;
         }
-        private void Finish()
+        private void Finish(string reason = "completed")
         {
+            LogTutorialEnded(reason);
             var done = current?.done;
             ReleaseDialogue(); current = null; StepIndex = 0; Changed?.Invoke();
             done?.Invoke(); BeginNext();
@@ -389,12 +436,14 @@ namespace WeaponWorkshop
             int count = waiting.Count;
             for (int i = 0; i < count; i++) { var request = waiting.Dequeue(); if (request.owner != owner) waiting.Enqueue(request); }
             if (current == null || current.owner != owner) return;
+            LogTutorialEnded("cancelled");
             ReleaseDialogue(); current = null; StepIndex = 0; Changed?.Invoke(); BeginNext();
         }
 #if UNITY_EDITOR
         public void DebugEndTutorial()
         {
             if (!IsTutorialActive && (selection == null || !selection.IsOpen)) return;
+            LogTutorialEnded("debug_ended");
             EndPractice();
             ClearShootingTarget();
             if (selection != null) { selection.enabled = false; selection.enabled = true; }
@@ -416,7 +465,8 @@ namespace WeaponWorkshop
             if (step.requiredSignal == "training-module-collected" && step.requiredModuleId > 0 && NightRaidController.Instance != null)
                 NightRaidController.Instance.TryCollectTrainingModule(step.requiredModuleId);
             Debug.Log($"[튜토리얼] 디버그 단계 스킵: {step.id}", this);
-            Advance();
+            debugSkipping = true;
+            try { Advance(); } finally { debugSkipping = false; }
         }
 #endif
         private void OnDisable()

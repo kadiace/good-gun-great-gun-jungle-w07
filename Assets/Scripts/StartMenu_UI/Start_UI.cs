@@ -19,6 +19,9 @@ public sealed class Start_UI : MonoBehaviour
         RefreshSaveAvailability();
     }
 
+    // LogKit 자동 초기화(AfterSceneLoad)가 Awake보다 늦으므로 세션 시작 기록은 Start에서 한다.
+    private void Start() => WeaponWorkshop.PlayerIdentity.LogSessionStart();
+
     // 세이브 파일 읽고 지 상태 결정하는쪽으로 로직 바꿈요
     public void RefreshSaveAvailability()
     {
@@ -48,6 +51,7 @@ public sealed class Start_UI : MonoBehaviour
         if (loading) return;
         if (!WeaponWorkshop.GameSaveFiles.TryReadSlot(slot, out var data)) return;
         WeaponWorkshop.GameSaveFiles.PendingLoad = data;
+        WeaponWorkshop.PlayerIdentity.Adopt(data.saveId);
         BeginGame(string.IsNullOrEmpty(data.sceneName) ? gameSceneName : data.sceneName);
     }
 
@@ -56,6 +60,7 @@ public sealed class Start_UI : MonoBehaviour
         if (loading) return;
         WeaponWorkshop.GameSaveFiles.PendingLoad = null;
         WeaponWorkshop.GameSaveFiles.ClearRaidRecovery();
+        WeaponWorkshop.PlayerIdentity.BeginNewSave();
         BeginGame();
     }
 
@@ -70,7 +75,12 @@ public sealed class Start_UI : MonoBehaviour
             return;
         }
         loading = true;
-        LogKit.GameLogger.Info("System", string.IsNullOrEmpty(savedScene) ? "새 게임 시작" : $"저장 게임 시작({savedScene})");
+        LogKit.GameLogger.Data("Info", "System", string.IsNullOrEmpty(savedScene) ? "새 게임 시작" : $"저장 게임 시작({savedScene})",
+            new WeaponWorkshop.GameStartLog
+            {
+                installId = WeaponWorkshop.PlayerIdentity.InstallId, saveId = WeaponWorkshop.PlayerIdentity.SaveId,
+                savedScene = savedScene ?? "", newGame = string.IsNullOrEmpty(savedScene)
+            });
         SceneManager.LoadSceneAsync(sceneToLoad);
     }
 

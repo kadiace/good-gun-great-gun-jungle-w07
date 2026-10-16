@@ -111,7 +111,7 @@ namespace WeaponWorkshop
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
-                savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null };
+                savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null, saveId = PlayerIdentity.SaveId };
             data.playerPosition = player.transform.position; data.playerEuler = player.transform.eulerAngles;
             data.weaponPresets = player.GetComponent<WeaponPresets>()?.Capture();
             data.viewEuler = player.ViewPoint.localEulerAngles;

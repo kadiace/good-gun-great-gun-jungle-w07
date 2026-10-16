@@ -136,6 +136,8 @@ namespace WeaponWorkshop
     {
         public string[] weaponPresets;
         public string weaponName;
+        // 로그용 진행 식별자(PlayerIdentity). 새 게임마다 새로 만들고 불러오면 이어 쓴다.
+        public string saveId;
         [NonSerialized] public CustomerDay travelCustomerDay;
         public string testAssemblyKey;
         public string[] passedTestIds = Array.Empty<string>();
