@@ -557,7 +557,7 @@ namespace WeaponWorkshop
             ModuleCatalog.Entry entry = default;
             int dollars = moduleCatalog != null && moduleCatalog.TryGet(slot, out entry)
                 ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
-            int materials = entry.data != null ? Mathf.Max(0, entry.moduleCreditCost) : 0;
+            int materials = WeaponPurchasePrices.ModuleCredits(entry.data, WeaponPurchasePrices.InstalledShotgunCount(assembly));
             bool purchased = wallet.TryPurchaseModule(dollars, materials,
                 () => assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell));
             if (purchased)
@@ -578,7 +578,7 @@ namespace WeaponWorkshop
             ModuleCatalog.Entry entry = default;
             int dollars = moduleCatalog != null && moduleCatalog.TryGet(slotToBuy, out entry)
                 ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
-            int materials = entry.data != null ? Mathf.Max(0, entry.moduleCreditCost) : 0;
+            int materials = GetNextModuleCreditCost(slotToBuy);
             if (!wallet.CheckModuleFunds(dollars, materials)) return;
             Vector2 pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer)) return;
@@ -655,6 +655,16 @@ namespace WeaponWorkshop
                 renderer.SetPropertyBlock(tint);
             }
             UpdatePreview();
+        }
+
+        public int GetNextModuleCreditCost(int slot)
+        {
+            if (moduleCatalog == null || !moduleCatalog.TryGet(slot, out var entry)) return 0;
+            if (entry.data.ModuleType != StatType.Shotgun) return WeaponPurchasePrices.ModuleCredits(entry.data, 0);
+            var weapon = FindWorkspaceWeapon();
+            var assembly = pendingAssembly != null ? pendingAssembly :
+                weapon != null ? weapon.GetComponentInChildren<CubeAssembly>(true) : null;
+            return WeaponPurchasePrices.ModuleCredits(entry.data, WeaponPurchasePrices.InstalledShotgunCount(assembly));
         }
 
         private static bool IsScope(CubeAssembly assembly, int slot)

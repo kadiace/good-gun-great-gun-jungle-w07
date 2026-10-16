@@ -15,11 +15,7 @@ namespace WeaponWorkshop
 
         // 산탄
         [Header("Shotgun")]
-        [Min(1), Tooltip("첫 산탄 포인트의 탄 수. 기본 3발.")]
-        public int shotgunBasePellets = 3;
-        [Min(0), Tooltip("첫 산탄 포인트 이후 모듈마다 추가되는 탄 수. 기본 1발.")]
-        public int pelletsPerShotgunPoint = 1;
-        [Min(0f), Tooltip("다각형 배치 원뿔의 지름 각도(도). 탄은 이 절반 각도만큼 벌어진 다각형 꼭짓점에 놓임(2발=가로 일자, 4발=사각형, 6발=육각형). 탄 수와 무관하게 크기 고정.")]
+        [Min(0f), Tooltip("방사 파츠 1개일 때 채워진 원형 탄 배치의 지름 각도(도). 파츠가 늘면 탄 수와 방사 범위도 증가합니다.")]
         public float shotgunSpreadDegrees = 10f;
 
         // 차지: 누르고 있으면 충전, 떼면 발사. 단계 배율을 총구의 거의 모든 수치에 곱함.
@@ -180,8 +176,8 @@ namespace WeaponWorkshop
         [Min(0f)] public float verticalRecoilDegreesPerPenetration = 0.08f;
         [Min(0f)] public float verticalRecoilDegreesPerExplosion = 0.12f;
         [Min(0f)] public float verticalRecoilDegreesPerShotgunPoint = 0.25f;
-        [Min(0f), Tooltip("Shotgun firing multiplies the full per-round vertical recoil by this value.")]
-        public float verticalRecoilShotgunMultiplier = 2f;
+        [Min(0f), Tooltip("방사 총구의 발사 1회당 전체 수직 반동 배율.")]
+        public float verticalRecoilShotgunMultiplier = 10f;
         [Min(0f), Tooltip("Charged shots multiply recoil by this value in addition to their charge-stage multiplier.")]
         public float verticalRecoilChargeMultiplier = 2f;
         [Min(0f)] public float verticalRecoilReductionPerWeight = 0.06f;

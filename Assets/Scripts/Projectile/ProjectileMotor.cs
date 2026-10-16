@@ -7,6 +7,7 @@ namespace WeaponWorkshop
     [DisallowMultipleComponent]
     public sealed class ProjectileMotor : MonoBehaviour
     {
+        private static readonly HashSet<ProjectileMotor> activeProjectiles = new HashSet<ProjectileMotor>();
         [SerializeField] private Renderer drawRenderer;
         [SerializeField] private ParticleSystem impactEffect;
 
@@ -32,12 +33,24 @@ namespace WeaponWorkshop
         private bool exploded;
         private int ricochetsRemaining;
         private bool terminal;
+        private int launchId;
         private float structureSweepLimit;
+        internal int LaunchId => launchId;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetActiveProjectiles() => activeProjectiles.Clear();
+
+        internal static void CopyActiveProjectiles(List<ProjectileMotor> destination)
+        {
+            destination.Clear();
+            destination.AddRange(activeProjectiles);
+        }
 
         public void Initialize(ProjectileStatsSource statsSource, Vector3 direction, float speed,
             Transform owner, Transform weapon)
         {
             source = statsSource;
+            launchId++;
             launchSpeed = Mathf.Max(0f, speed);
             effects = GetComponent<ProjectileEffects>();
             terminal = false;
@@ -75,6 +88,22 @@ namespace WeaponWorkshop
             }
             halfExtents = Vector3.Max(halfExtents, Vector3.one * 0.0001f);
             SetDirection(direction);
+            if (isActiveAndEnabled) activeProjectiles.Add(this);
+        }
+
+        private void OnEnable()
+        {
+            if (source != null) activeProjectiles.Add(this);
+        }
+
+        internal void DetonateFromExplosion()
+        {
+            if (terminal || !isActiveAndEnabled) return;
+            terminal = true;
+            exploded = true;
+            if (effects != null)
+                effects.ApplyStoppedArea(transform.position, velocity.normalized, null, ignoredOwner, ignoredWeapon);
+            PoolManager.Release(gameObject);
         }
 
         private void Update()
@@ -374,6 +403,7 @@ namespace WeaponWorkshop
 
         private void OnDisable()
         {
+            activeProjectiles.Remove(this);
             terminal = true; velocity = Vector3.zero; source = null; effects = null;
             ignoredOwner = ignoredWeapon = null; homingTarget = null;
             hitTargets.Clear(); hitStructures.Clear(); ignoredColliders.Clear();

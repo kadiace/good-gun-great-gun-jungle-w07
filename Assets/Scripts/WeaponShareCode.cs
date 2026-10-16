@@ -235,6 +235,7 @@ namespace WeaponWorkshop
         {
             if (unlocks == null) throw new ArgumentException("모듈 해금 정보를 확인할 수 없습니다.");
             long money = 0, credits = 0; var blocks = new List<CubeAssembly.BlockSnapshot>();
+            int shotgunCount = 0;
             foreach (var b in blueprint.blocks)
             {
                 int slot = 0; ModuleData module = null;
@@ -246,10 +247,12 @@ namespace WeaponWorkshop
                 }
                 if (module == null || assembly.GetPrefab(slot) == null) throw new ArgumentException("현재 게임에 없는 모듈입니다: " + b.module);
                 if (!unlocks.IsUnlocked(slot)) throw new ArgumentException("해금되지 않은 모듈이 포함된 코드입니다.");
-                money += module.BuyPrice; credits += module.ModuleCreditCost;
+                int moduleCredits = WeaponPurchasePrices.ModuleCredits(module, shotgunCount);
+                if (module.ModuleType == StatType.Shotgun) shotgunCount++;
+                money += module.BuyPrice; credits += moduleCredits;
                 blocks.Add(new CubeAssembly.BlockSnapshot { slot = slot, prefab = assembly.GetPrefab(slot), cell = b.cell,
                     outputDirection = b.output, orientationNormal = b.normal, paidPurchaseCost = module.BuyPrice,
-                    paidModuleCreditCost = module.ModuleCreditCost, hasColor = b.hasColor, color = b.color });
+                    paidModuleCreditCost = moduleCredits, hasColor = b.hasColor, color = b.color });
             }
             if (money + coreCost > int.MaxValue || credits > int.MaxValue) throw new ArgumentException("무기 제작비가 너무 큽니다.");
             dollars = (int)money; materials = (int)credits;
