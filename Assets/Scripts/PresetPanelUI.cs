@@ -38,7 +38,7 @@ namespace WeaponWorkshop
         {
             if (TutorialManager.Instance != null && TutorialManager.Instance.CurrentStep != null &&
                 TutorialManager.Instance.CurrentStep.requiredSignal == "preset-saved" && slot != 0) return;
-            if (!TutorialManager.ActionAllowed("preset-save")) return;
+            if (!TutorialManager.TryAction("preset-save")) return;
             if (GameManager.GameplayBlocked || Session == null || !Session.IsEditing || Presets == null) return;
             selectedSlot = slot; selectedWeapon = Session.ActiveWorkbench.CurrentWeapon;
             if (selectedWeapon == null) return;
@@ -68,7 +68,7 @@ namespace WeaponWorkshop
         }
         private void Load()
         {
-            if (!TutorialManager.ActionAllowed("preset-load")) return;
+            if (!TutorialManager.TryAction("preset-load")) return;
             try
             {
                 if (!StillEditing || Presets == null) return;

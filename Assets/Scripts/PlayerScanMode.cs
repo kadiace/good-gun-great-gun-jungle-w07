@@ -50,7 +50,9 @@ namespace WeaponWorkshop
         {
             if (GameManager.GameplayBlocked) { IsScanning = false; Target = null; ChestTarget = null; hoverElapsed = 0f; return; }
             bool wasScanning = IsScanning;
-            IsScanning = Application.isFocused && scanHold != null && scanHold.IsPressed();
+            if (Application.isFocused && scanHold != null && scanHold.WasPressedThisFrame())
+                TutorialManager.TryAction("scan");
+            IsScanning = Application.isFocused && TutorialManager.ActionAllowed("scan") && scanHold != null && scanHold.IsPressed();
             if (IsScanning && !wasScanning) GameLogger.Count("Scan");
             if (!IsScanning) { Target = null; ChestTarget = null; hoverElapsed = 0f; countedTarget = null; countedChest = null; }
         }

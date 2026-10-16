@@ -57,6 +57,7 @@ namespace WeaponWorkshop
         private CubeAssembly TutorialAssembly => workbench != null && workbench.CurrentWeapon != null
             ? workbench.CurrentWeapon.GetComponentInChildren<CubeAssembly>() : null;
         public static bool ActionAllowed(string action) => Instance == null || Instance.AllowsAction(action);
+        public static bool TryAction(string action) => Instance == null || Instance.TryAuthorizeAction(action);
         private void BeginPractice()
         {
             var player = TutorialPlayer;
@@ -205,7 +206,7 @@ namespace WeaponWorkshop
         }
         public bool TryAuthorizeRemoval(PlacedBlock block)
         {
-            if (!AllowsAction("delete")) return false;
+            if (!TryAuthorizeAction("delete")) return false;
             var step = CurrentStep;
             if (step != null && step.completion == TutorialCompletion.Signal &&
                 (step.requiredSignal == "delete-mode-enabled" || step.requiredSignal == "delete-mode-disabled"))

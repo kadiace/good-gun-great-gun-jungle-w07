@@ -146,15 +146,16 @@ namespace WeaponWorkshop
 
         private void OnAttackPerformed(InputAction.CallbackContext context)
         {
-            if (!TutorialManager.ActionAllowed("fire") || GameManager.GameplayBlocked || !Application.isFocused ||
+            if (GameManager.GameplayBlocked || !Application.isFocused ||
                 player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
+            if (!TutorialManager.TryAction("fire")) return;
             AttackInput?.Invoke(EquippedWeapon);
             TryAttack();
         }
 
         public bool TryDropWeapon()
         {
-            if (!TutorialManager.ActionAllowed("drop")) return false;
+            if (!TutorialManager.TryAction("drop")) return false;
             if (GameManager.GameplayBlocked || !Application.isFocused || player == null ||
                 !player.isActiveAndEnabled || EquippedWeapon == null || EquippedWeapon.IsMoving) return false;
             EquipableWeapon weapon = EquippedWeapon;

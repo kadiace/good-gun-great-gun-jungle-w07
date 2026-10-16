@@ -71,7 +71,7 @@ namespace WeaponWorkshop
             editingControls.FindAction("ResetRotation", true).performed += _ =>
             {
                 if (!IsEditing || GameManager.GameplayBlocked) return;
-                if (!TutorialManager.ActionAllowed("reset-rotation")) return;
+                if (!TutorialManager.TryAction("reset-rotation")) return;
                 rotationDrag = false;
                 activeWorkbench.ResetRotation();
                 if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("rotation-reset", activeWorkbench);
@@ -124,7 +124,7 @@ namespace WeaponWorkshop
 
         public void Leave()
         {
-            if (!TutorialManager.ActionAllowed("exit")) return;
+            if (!TutorialManager.TryAction("exit")) return;
             if (!IsInWorkshop) return;
             SetMode(false, true);
             if (cursorRestore != null) StopCoroutine(cursorRestore);
@@ -225,7 +225,7 @@ namespace WeaponWorkshop
         {
             rotationDragDegrees = 0f;
             if (!IsEditing || GameManager.GameplayBlocked) return;
-            if (!TutorialManager.ActionAllowed("rotate")) return;
+            if (!TutorialManager.TryAction("rotate")) return;
             Vector2 pointer = point.ReadValue<Vector2>();
             rotationDrag = RotationViewport.Contains(pointer);
             previousRollOffset = pointer - RotationViewport.center;
@@ -242,10 +242,15 @@ namespace WeaponWorkshop
 
         private void Update()
         {
-            if (IsInWorkshop && !activeWorkbench.CanInteract()) { Leave(); return; }
+            if (IsInWorkshop && !activeWorkbench.CanInteract())
+            {
+                if (TutorialManager.ActionAllowed("exit")) Leave();
+                return;
+            }
             if (!IsEditing || GameManager.GameplayBlocked || !Application.isFocused)
             { rotationDrag = false; return; }
             ApplyWorkshopZoom();
+            if (!TutorialManager.ActionAllowed("rotate")) { rotationDrag = false; return; }
             if (!rotationDrag || !rotate.IsPressed()) return;
             Transform target = activeWorkbench.RotationTarget;
             if (rollDrag)
@@ -288,6 +293,7 @@ namespace WeaponWorkshop
             Vector2 scroll = zoom.ReadValue<Vector2>();
             if (Mathf.Abs(scroll.y) < 0.01f ||
                 (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())) return;
+            if (!TutorialManager.TryAction("zoom")) return;
 
             float minFov = Mathf.Clamp(minWorkshopFieldOfView, 1f, 179f);
             float maxFov = Mathf.Clamp(maxWorkshopFieldOfView, minFov, 179f);

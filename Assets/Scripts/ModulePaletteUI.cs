@@ -306,19 +306,21 @@ namespace WeaponWorkshop
                 catalog.TryGet(id, out ModuleCatalog.Entry entry);
                 paletteSlots[i].Show(id, entry.displayName, entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}");
             }
+            UpdateDragGuide();
         }
 
         public void HandleClick(ModuleSlotUI slot)
         {
-            if (builder == null || slot == null || draggingModule != 0 ||
-                (!builder.PaletteOpen && slot.FavoriteIndex < 0) || builder.IsModuleLocked(slot.ModuleId)) return;
+            if (builder == null || slot == null || draggingModule != 0) return;
+            if (!TutorialManager.TryAction("select-module")) return;
+            if ((!builder.PaletteOpen && slot.FavoriteIndex < 0) || builder.IsModuleLocked(slot.ModuleId)) return;
             builder.SelectModule(slot.ModuleId);
         }
 
         public void BeginDrag(ModuleSlotUI slot, PointerEventData eventData)
         {
-            if (eventData.button != PointerEventData.InputButton.Left || draggingModule != 0 ||
-                !CanDragFrom(slot)) return;
+            if (eventData.button != PointerEventData.InputButton.Left || draggingModule != 0) return;
+            if (!CanDragFrom(slot)) { TutorialManager.Instance?.NotifyBlockedAction(); return; }
             dragSource = slot;
             draggingModule = slot.ModuleId;
             dragPointerId = eventData.pointerId;
@@ -346,7 +348,8 @@ namespace WeaponWorkshop
 
         private bool CanDragFrom(ModuleSlotUI slot) => builder != null && builder.Catalog != null &&
             builder.CanEditFavorites && slot != null && slot.isActiveAndEnabled && slot.ModuleId > 0 &&
-            !builder.IsModuleLocked(slot.ModuleId) && (slot.FavoriteIndex >= 0 || builder.PaletteOpen);
+            !builder.IsModuleLocked(slot.ModuleId) && (slot.FavoriteIndex >= 0 || builder.PaletteOpen) &&
+            (TutorialManager.Instance == null || TutorialManager.Instance.AllowsQuickslotSource(slot.ModuleId));
 
         private bool CanContinueDrag() => CanDragFrom(dragSource) &&
             (!dragStartedWithPalette || builder.PaletteOpen) &&
@@ -354,7 +357,8 @@ namespace WeaponWorkshop
 
         private bool CanDropOn(ModuleSlotUI target) => draggingModule != 0 && CanContinueDrag() &&
             target != null && target.isActiveAndEnabled && target.FavoriteIndex >= 0 && target != dragSource &&
-            (dragSource.FavoriteIndex >= 0 || target.ModuleId != draggingModule);
+            (dragSource.FavoriteIndex >= 0 || target.ModuleId != draggingModule) &&
+            (TutorialManager.Instance == null || TutorialManager.Instance.AllowsQuickslotChange(draggingModule, target.FavoriteIndex));
 
         private void UpdateDropTarget() => SetDropTarget(CanDropOn(hoveredSlot) ? hoveredSlot : null);
 
@@ -370,6 +374,12 @@ namespace WeaponWorkshop
         private void UpdateDragGuide()
         {
             if (hotbarGuide == null) return;
+            var step = TutorialManager.Instance?.CurrentStep;
+            if (step != null && step.restrictQuickslotChange && dropTarget == null)
+            {
+                hotbarGuide.text = step.objective;
+                return;
+            }
             hotbarGuide.text = draggingModule == 0 ? HotbarGuideText : dropTarget == null
                 ? "교체할 퀵슬롯에 놓으세요 · 바깥에 놓으면 취소됩니다"
                 : $"{(dropTarget.FavoriteIndex + 1) % 10}번 퀵슬롯에 놓아 " +
@@ -378,8 +388,13 @@ namespace WeaponWorkshop
 
         public void Drop(ModuleSlotUI target, PointerEventData eventData)
         {
-            if (eventData.pointerId != dragPointerId || !CanDropOn(target) ||
+            if (draggingModule == 0 || dragSource == null || eventData.pointerId != dragPointerId ||
                 eventData.pointerDrag != dragSource.gameObject) return;
+            if (!CanDropOn(target))
+            {
+                if (target != null && target != dragSource) TutorialManager.Instance?.NotifyBlockedAction();
+                return;
+            }
             if (dragSource.FavoriteIndex >= 0)
             {
                 if (!builder.SwapFavorites(dragSource.FavoriteIndex, target.FavoriteIndex)) return;

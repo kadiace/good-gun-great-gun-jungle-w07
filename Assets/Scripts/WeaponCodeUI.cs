@@ -32,7 +32,7 @@ namespace WeaponWorkshop
         }
         private void Open()
         {
-            if (!TutorialManager.ActionAllowed("share")) return;
+            if (!TutorialManager.TryAction("share")) return;
             if (GameManager.GameplayBlocked || Session == null || !Session.IsEditing) return;
             weapon = Session.ActiveWorkbench.CurrentWeapon;
             if (weapon == null) return;
@@ -63,7 +63,7 @@ namespace WeaponWorkshop
         }
         private void Import()
         {
-            if (!TutorialManager.ActionAllowed("share-import")) return;
+            if (!TutorialManager.TryAction("share-import")) return;
             try
             {
                 if (weapon == null || weapon.ConstructionLocked) throw new ArgumentException("커스텀을 제거한 후 코드를 가져와 주세요.");

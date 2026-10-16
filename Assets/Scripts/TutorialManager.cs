@@ -79,7 +79,7 @@ namespace WeaponWorkshop
                 FeedbackUI.For(this)?.ShowNotification("먼저 레시피를 확인하세요.");
                 return false;
             }
-            bool allowed = AllowsAction("attach");
+            bool allowed = TryAuthorizeAction("attach");
             if (!allowed && CurrentStep != null && CurrentStep.completion == TutorialCompletion.WorkshopExited)
                 FeedbackUI.For(this)?.ShowNotification("무기가 완성되었습니다. 작업대에서 나와 무기를 집으세요.");
             return allowed;
@@ -106,6 +106,8 @@ namespace WeaponWorkshop
             return allowed;
         }
         private bool ownsDialogue;
+        private bool stepIntroductionOpen;
+        private float nextBlockedActionNoticeTime;
         private bool tankSpawnGuidanceOpen;
 
         private void OnEnable() => RaidEnemyCore.Spawned += HandleRaidEnemySpawned;
@@ -113,7 +115,7 @@ namespace WeaponWorkshop
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(this); return; }
-            Instance = this; current = null; StepIndex = 0; ownsDialogue = false; dayZeroOwner = null;
+            Instance = this; current = null; StepIndex = 0; ownsDialogue = false; stepIntroductionOpen = false; dayZeroOwner = null;
             if (shutter == null) shutter = FindFirstObjectByType<NextDayInteractable>();
             if (customerBell == null) customerBell = FindFirstObjectByType<Bell>();
             if (workbench == null) workbench = FindFirstObjectByType<Workbench>();
@@ -198,6 +200,8 @@ namespace WeaponWorkshop
         }
         private void ShowStep()
         {
+            stepIntroductionOpen = false;
+            nextBlockedActionNoticeTime = 0f;
             ResolvePresentation();
             while (CurrentSequence != null && StepIndex < CurrentSequence.steps.Length && CurrentSequence.steps[StepIndex] == null) StepIndex++;
             var step = CurrentStep;
@@ -214,9 +218,12 @@ namespace WeaponWorkshop
                 body.WakeUp();
             }
             Changed?.Invoke();
-            if (step.completion == TutorialCompletion.Confirmation)
+            if (step.completion == TutorialCompletion.Confirmation ||
+                (step.completion == TutorialCompletion.Signal && step.showDescriptionBeforeObjective &&
+                    !string.IsNullOrWhiteSpace(step.description)))
             {
                 if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
+                stepIntroductionOpen = step.completion == TutorialCompletion.Signal;
                 ownsDialogue = true;
                 if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼"))
                 { ownsDialogue = false; Finish(); }
@@ -257,6 +264,12 @@ namespace WeaponWorkshop
         {
             var step = CurrentStep;
             if (step == null) return;
+            if (stepIntroductionOpen)
+            {
+                ReleaseDialogue();
+                Changed?.Invoke();
+                return;
+            }
             if (step.completion == TutorialCompletion.Confirmation) { Advance(); return; }
             if (step.completion != TutorialCompletion.RaidTankSpawned || !tankSpawnGuidanceOpen) return;
             tankSpawnGuidanceOpen = false;
@@ -281,7 +294,8 @@ namespace WeaponWorkshop
         {
             bool saleCompleted = CurrentStep != null && (CurrentStep.completion == TutorialCompletion.CustomerSold ||
                 CurrentStep.completion == TutorialCompletion.CustomerKilled);
-            if ((!GameManager.GameplayBlocked || saleCompleted) && !warningOpen && (AreFiveFacesBlocked() || IsActionStepComplete())) Advance();
+            if (!stepIntroductionOpen && (!GameManager.GameplayBlocked || saleCompleted) &&
+                !warningOpen && (AreFiveFacesBlocked() || IsActionStepComplete())) Advance();
             if (pendingWarnings.Count == 0 || warningOpen || dialogue == null || dialogue.IsOpen ||
                 (dayTransition != null && dayTransition.IsTransitioning)) return;
             var customer = pendingWarnings.Dequeue();
@@ -345,6 +359,7 @@ namespace WeaponWorkshop
         }
         public void NotifySignal(string signal, Component source = null)
         {
+            if (stepIntroductionOpen) return;
             var step = CurrentStep;
             if (step != null && step.completion == TutorialCompletion.Signal && !string.IsNullOrEmpty(step.requiredSignal) &&
                 string.Equals(step.requiredSignal, signal, StringComparison.Ordinal) &&
@@ -363,17 +378,58 @@ namespace WeaponWorkshop
         // Gameplay components query the same authored action permissions as the interaction policy.
         public bool AllowsAction(string action)
         {
+            if (stepIntroductionOpen) return false;
             if (!IsTutorialActive) return true;
-            if (action == "fire") return true;
-            if (action == "rotate" && IsEditingTutorialWorkbench) return true;
-            if (CurrentStep == null || CurrentStep.completion == TutorialCompletion.Confirmation) return false;
-            if (CurrentStep.requiresWorkbenchEditing && !IsEditingTutorialWorkbench) return false;
-            var allowed = CurrentStep?.allowedActions;
-            return allowed == null || allowed.Length == 0 || Array.IndexOf(allowed, action) >= 0;
+            var step = CurrentStep;
+            if (step == null || !step.strictAllowedActions)
+            {
+                if (action == "fire") return true;
+                if (action == "rotate" && IsEditingTutorialWorkbench) return true;
+                // These inputs were unrestricted before strict steps were introduced.
+                if (action == "select-module" || action == "zoom" || action == "scan") return true;
+                if (action == "quickslot") action = "palette";
+            }
+            if (step == null || step.completion == TutorialCompletion.Confirmation) return false;
+            if (step.requiresWorkbenchEditing && !IsEditingTutorialWorkbench) return false;
+            var allowed = step.allowedActions;
+            return (allowed != null && Array.IndexOf(allowed, action) >= 0) ||
+                (!step.strictAllowedActions && (allowed == null || allowed.Length == 0));
+        }
+        public bool AllowsQuickslotSource(int moduleId) => AllowsAction("quickslot") &&
+            (!IsTutorialActive || CurrentStep == null || !CurrentStep.restrictQuickslotChange ||
+             moduleId == CurrentStep.requiredModuleId);
+
+        public bool AllowsQuickslotChange(int moduleId, int targetIndex) => AllowsQuickslotSource(moduleId) &&
+            (!IsTutorialActive || CurrentStep == null || !CurrentStep.restrictQuickslotChange ||
+             targetIndex + 1 == CurrentStep.requiredQuickslotNumber);
+        // Permission queries remain silent; only actual input attempts request feedback.
+        public bool TryAuthorizeAction(string action)
+        {
+            if (AllowsAction(action)) return true;
+            NotifyBlockedAction();
+            return false;
+        }
+        public bool TryAuthorizeQuickslotChange(int moduleId, int targetIndex)
+        {
+            if (AllowsQuickslotChange(moduleId, targetIndex)) return true;
+            NotifyBlockedAction();
+            return false;
+        }
+        public void NotifyBlockedAction()
+        {
+            var step = CurrentStep;
+            if (!IsTutorialActive || step == null || !step.strictAllowedActions || stepIntroductionOpen ||
+                GameManager.GameplayBlocked || !Application.isFocused ||
+                string.IsNullOrWhiteSpace(step.blockedActionMessage) || Time.unscaledTime < nextBlockedActionNoticeTime) return;
+            var feedback = FeedbackUI.For(this);
+            if (feedback == null) return;
+            nextBlockedActionNoticeTime = Time.unscaledTime + 2.6f;
+            feedback.ShowNotification(step.blockedActionMessage);
         }
         private void Advance() { StepIndex++; ShowStep(); }
         private void ReleaseDialogue()
         {
+            stepIntroductionOpen = false;
             if (ownsDialogue && dialogue != null) dialogue.Hide();
             ownsDialogue = false;
             tankSpawnGuidanceOpen = false;
