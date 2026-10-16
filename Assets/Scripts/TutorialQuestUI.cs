@@ -58,10 +58,10 @@ namespace WeaponWorkshop
             if (compact != tutorialObjective)
             {
                 compact = tutorialObjective;
-                panelRect.anchorMin = compact ? new Vector2(0f, .5f) : originalAnchorMin;
-                panelRect.anchorMax = compact ? new Vector2(0f, .5f) : originalAnchorMax;
-                panelRect.pivot = compact ? new Vector2(0f, .5f) : originalPivot;
-                panelRect.anchoredPosition = compact ? new Vector2(54f, 0f) : originalPosition;
+                panelRect.anchorMin = originalAnchorMin;
+                panelRect.anchorMax = originalAnchorMax;
+                panelRect.pivot = originalPivot;
+                panelRect.anchoredPosition = originalPosition;
                 panelRect.sizeDelta = compact ? new Vector2(300f, originalSize.y) : originalSize;
                 panelRect.localScale = originalScale;
             }

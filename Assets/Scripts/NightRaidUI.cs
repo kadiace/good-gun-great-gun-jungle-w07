@@ -133,6 +133,7 @@ namespace WeaponWorkshop
         }
         // 입장 확인은 지도 소유로 띄워 지도를 다시 열거나 닫으면(CancelChoice(this)) 함께 취소되게 한다.
         public void ShowEntryConfirm(string message, System.Action onYes) => FeedbackUI.For(this)?.ShowChoice(this, message, onYes);
+        public void ShowUnarmedNotice() => FeedbackUI.For(this)?.ShowAcknowledgement(this, "무기를 장착해야 야간 습격에 입장할 수 있습니다.");
         public void ShowReturn(bool show)
         {
             if (show) FeedbackUI.For(this)?.ShowChoice(this, "공방으로 귀환하시겠습니까?", () => controller.ReturnHome(), () => controller.CancelReturn());

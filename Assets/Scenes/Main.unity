@@ -49045,6 +49045,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1527637746965127308, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1591767498022004722, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
       propertyPath: nightRaid
       value: 
@@ -49252,6 +49256,10 @@ PrefabInstance:
     - target: {fileID: 1969057106988426629, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2038595064660975237, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2101785455075423619, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
       propertyPath: m_AnchorMax.y

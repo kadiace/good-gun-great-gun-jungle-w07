@@ -17,8 +17,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 819
   muzzleFlashEffect: {fileID: 3318018436952283046, guid: 97b79d0929b545e485dbe8b963558888, type: 3}
-  shotgunBasePellets: 3
-  pelletsPerShotgunPoint: 1
   shotgunSpreadDegrees: 10
   chargeSecondsPerLevel: 0.5
   chargeBaseStages: 3
@@ -86,7 +84,7 @@ MonoBehaviour:
   verticalRecoilDegreesPerPenetration: 0.08
   verticalRecoilDegreesPerExplosion: 0.12
   verticalRecoilDegreesPerShotgunPoint: 0.25
-  verticalRecoilShotgunMultiplier: 2
+  verticalRecoilShotgunMultiplier: 10
   verticalRecoilChargeMultiplier: 2
   verticalRecoilReductionPerWeight: 0.06
   verticalRecoilMaximumDegrees: 178

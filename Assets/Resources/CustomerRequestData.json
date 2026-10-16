@@ -115,6 +115,24 @@
       ]
     },
     {
+      "id": "module/shotgun/min-1",
+      "name": "방사 모듈 개수",
+      "phrase": "방사 모듈이 연결된 총",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "5d5a59e500204e9eb6f0c2bafa42ab7b",
+          "label": "방사 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Shotgun",
+          "min": 1.0
+        }
+      ],
+      "legacyIds": []
+    },
+    {
       "id": "module/shotgun/min-3",
       "name": "산탄 모듈 개수",
       "phrase": "",
@@ -418,7 +436,7 @@
     {
       "id": "tag/shotgun",
       "name": "산탄총 태그",
-      "phrase": "산탄총 태그 (산탄 모듈 1개 이상)",
+      "phrase": "산탄총 태그 (폭발 2, 관통 16, 방사 1 이상)",
       "tagId": "b89c88322f37da74cb6f1624397fce4d",
       "saleBonus": true,
       "requiredTestIds": [],
@@ -708,10 +726,24 @@
       "conditions": [
         {
           "id": "73a08effdf864933bb84b361c5486c31",
-          "label": "산탄 모듈 개수",
+          "label": "방사 모듈 개수",
           "measure": "PathModules",
           "stat": "Shotgun",
           "min": 1.0
+        },
+        {
+          "id": "d4a7b5ac47da40cab1dd2d9404f625a1",
+          "label": "폭발력",
+          "measure": "WeaponStat",
+          "stat": "Explosion",
+          "min": 2.0
+        },
+        {
+          "id": "21e43d38241e4e7588c1886a820c0b96",
+          "label": "관통력",
+          "measure": "WeaponStat",
+          "stat": "Penetration",
+          "min": 16.0
         }
       ]
     },

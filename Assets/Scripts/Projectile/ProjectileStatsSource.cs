@@ -175,6 +175,14 @@ namespace WeaponWorkshop
             }
             // 연사 = 코어 기본 × 배율^(연사 모듈 연사 합) + 다른 모듈의 연사. 배율 1.5면 1·1.5·2.25·3.375배.
             stats.fireRate += baseFireRate * (Mathf.Pow(Tuning.fireRateMultiplierPerModule, fireRateModules) - 1f);
+            CubeAssembly assembly = GetComponent<CubeAssembly>();
+            if (stats.shotgun > 0f || ModuleCounter.TotalCount(assembly, ModuleKind.Shotgun) > 0)
+            {
+                stats.explosion *= 0.5f;
+                stats.penetration *= 0.5f;
+                stats.water *= 0.5f;
+                stats.heat *= 0.5f;
+            }
             return stats;
         }
 
@@ -307,18 +315,27 @@ namespace WeaponWorkshop
             direction = Scatter(direction, powerCore != null ? powerCore.SpawningSpread : BaseSpread);
 
             var pelletDirections = new System.Collections.Generic.List<Vector3>();
-            // Count-type stats round half up, so a charged ×1.5 turns 1 shotgun into 2.
-            int shotgunPoints = Mathf.Max(1, Mathf.FloorToInt(stats.shotgun + 0.5f));
-            int pellets = stats.shotgun > 0f
-                ? Mathf.Max(1, Tuning.shotgunBasePellets) +
-                  (shotgunPoints - 1) * Mathf.Max(0, Tuning.pelletsPerShotgunPoint)
-                : 1;
-            // Shotgun: pellets sit on the corners of a regular polygon around the shot (3 = triangle,
-            // 4 = square, 5 = pentagon), same cone size for any count. Up-axis muzzles use the core's right axis.
+            // Charge scales the number of radial parts before rounding; diameter 2n+1 gives (2n+1)^2 shots.
+            int shotgunPoints = Mathf.Max(0, Mathf.FloorToInt(stats.shotgun + 0.5f));
+            int diameter = 2 * shotgunPoints + 1;
+            int pellets = diameter * diameter;
+            // Up-axis muzzles use the core's right axis.
             Vector3 fanAxis = Mathf.Abs(Vector3.Dot(direction, transform.up)) > 0.9f ? transform.right : transform.up;
             var shotgunDirections = new System.Collections.Generic.List<Vector3>();
             if (pellets <= 1) shotgunDirections.Add(direction);
-            else AddPolygon(shotgunDirections, direction, fanAxis, pellets, Tuning.shotgunSpreadDegrees * 0.5f, 90f);
+            else
+            {
+                Vector3 side = Vector3.Cross(fanAxis, direction).normalized;
+                Vector3 up = Vector3.Cross(direction, side).normalized;
+                float spread = diameter / 3f * Mathf.Tan(Tuning.shotgunSpreadDegrees * 0.5f * Mathf.Deg2Rad);
+                float phase = Random.Range(0f, 2f * Mathf.PI);
+                for (int i = 0; i < pellets; i++)
+                {
+                    float angle = phase + i * 137.50776f * Mathf.Deg2Rad;
+                    float radialOffset = Mathf.Sqrt((i + Random.Range(0.3f, 0.7f)) / pellets) * spread;
+                    shotgunDirections.Add((direction + radialOffset * (Mathf.Cos(angle) * side + Mathf.Sin(angle) * up)).normalized);
+                }
+            }
             foreach (Vector3 pellet in shotgunDirections)
             {
                 // Heat: every pellet becomes a pentagon of 5 shots (first corner up) that drift apart with distance.

@@ -255,7 +255,10 @@ namespace WeaponWorkshop
             int state = builder.DeleteMode ? -1 : builder.SelectedSlot;
             for (int i = 0; i < builder.FavoriteCount; i++) state = state * 31 + builder.GetFavorite(i);
             for (int id = 1; id <= builder.Catalog.Count; id++)
+            {
                 state = state * 31 + (builder.IsModuleLocked(id) ? 1 : 0);
+                state = state * 31 + builder.GetNextModuleCreditCost(id);
+            }
             return state;
         }
 
@@ -267,13 +270,13 @@ namespace WeaponWorkshop
             {
                 int id = builder.GetFavorite(i);
                 catalog.TryGet(id, out ModuleCatalog.Entry entry);
-                hotbarSlots[i].Show(id, $"{(i + 1) % 10}  {entry.displayName}", entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{entry.moduleCreditCost}");
+                hotbarSlots[i].Show(id, $"{(i + 1) % 10}  {entry.displayName}", entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}");
             }
             for (int i = 0; i < paletteSlots.Count; i++)
             {
                 int id = i + 1;
                 catalog.TryGet(id, out ModuleCatalog.Entry entry);
-                paletteSlots[i].Show(id, entry.displayName, entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{entry.moduleCreditCost}");
+                paletteSlots[i].Show(id, entry.displayName, entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}");
             }
         }
 
