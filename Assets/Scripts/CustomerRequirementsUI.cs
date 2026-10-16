@@ -10,6 +10,7 @@ namespace WeaponWorkshop
     {
         [SerializeField] private RectTransform content;
         [SerializeField] private RectTransform rowTemplate;
+        [SerializeField] private QuestInfoTextSizing textSizing;
         private UIManager ui;
         private Bell bell;
         private readonly List<(RectTransform rect, TMP_Text status, TMP_Text description)> rows =
@@ -69,7 +70,12 @@ namespace WeaponWorkshop
                     Row((test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, grouped ? 1 : 0);
                 }
             }
-            for (int i = used; i < rows.Count; i++) rows[i].rect.gameObject.SetActive(false);
+            for (int i = used; i < rows.Count; i++)
+                if (rows[i].rect.gameObject.activeSelf)
+                {
+                    rows[i].rect.gameObject.SetActive(false);
+                    textSizing?.MarkDirty();
+                }
         }
         private static string Describe(CustomerRequestData.Condition condition, float current)
         {
@@ -86,8 +92,12 @@ namespace WeaponWorkshop
                 rows.Add((rect, labels[0], labels[1]));
             }
             var row = rows[used++];
-            row.rect.gameObject.SetActive(true);
             var layout = row.rect.GetComponent<HorizontalLayoutGroup>();
+            bool changed = !row.rect.gameObject.activeSelf || row.description.text != text ||
+                row.status.gameObject.activeSelf == heading ||
+                row.description.fontStyle != (heading ? FontStyles.Bold : FontStyles.Normal) ||
+                layout.padding.left != depth * 14;
+            row.rect.gameObject.SetActive(true);
             layout.padding.left = depth * 14;
             Color color = heading ? Color.white : met ? new Color(.5f, .88f, .65f) : new Color(1f, .63f, .56f);
             row.status.text = heading ? string.Empty : met ? "[O]" : "[ ]";
@@ -95,12 +105,16 @@ namespace WeaponWorkshop
             row.status.color = row.description.color = color;
             row.description.text = text;
             row.description.fontStyle = heading ? FontStyles.Bold : FontStyles.Normal;
-            row.status.fontSize = row.description.fontSize = 20f;
-            row.description.enableAutoSizing = row.status.enableAutoSizing = false;
+            if (changed) textSizing?.MarkDirty();
         }
         private void HideRows()
         {
-            foreach (var row in rows) row.rect.gameObject.SetActive(false);
+            foreach (var row in rows)
+                if (row.rect.gameObject.activeSelf)
+                {
+                    row.rect.gameObject.SetActive(false);
+                    textSizing?.MarkDirty();
+                }
         }
         private void OnDisable() { HideRows(); previousCustomer = null; previousWeapon = null; nextUpdate = 0f; }
     }
