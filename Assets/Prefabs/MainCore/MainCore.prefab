@@ -112,6 +112,8 @@ MonoBehaviour:
   powerCore: {fileID: 7313246474861131638}
   workbench: {fileID: 0}
   constructionLocked: 0
+  selectedScopeCell: {x: 0, y: 0, z: 0}
+  hasSelectedScopeCell: 0
 --- !u!114 &5500972312890462711
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -143,7 +145,7 @@ MonoBehaviour:
     color: 0
     spread: 0
   tuning: {fileID: 11400000, guid: a95de7cfe4ac01e478131c8ecc921140, type: 2}
-  projectileSpeed: 10
+  projectileSpeed: 24
   baseDamage: 10
 --- !u!114 &8648328610272899558
 MonoBehaviour:
