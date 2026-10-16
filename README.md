@@ -1,4 +1,5 @@
 # 무기 공방 — 에이전트 메모
+- 야간 습격 입장 차단 팝업은 확인 버튼을 카드 중앙에 배치하고, UIManager 캔버스는 1920×1080 기준 CanvasScaler로 4K 등 고해상도에서도 비율에 맞춰 확대한다. 확인 시 팝업만 닫혀 이전 지도가 유지된다.
 - 무기별 시험 통과: EquipableWeapon.cs에 통과 ID와 구성 키를 런타임 보관(partial 분리 없이 통합). WeaponShareCode의 구성 수집을 재사용하며 이름·선택색·결제값은 키에서 제외한다. 모듈 설치/삭제/방향/구성 변경 시 즉시 전체 폐기, 되돌리기로 되살리지 않음. 총 이동·장착·거치와 도색은 통과 기록 유지. 저장 v6은 무기별 기록을 일반 저장·습격 왕복에 복원하고 이전 v2~v5는 미인증으로 읽는다. 프리셋/공유 코드/새 총에는 인증을 복사하지 않는다. 성능 데이터 자체를 조정한 경우 기존 통과 기록의 자동 버전 무효화는 미구현.
 - 시험 요청 ID: shooting-test/behind-barrier, shooting-test/wide-targets, shooting-test/around-cover. 주문 표 손님 행 requestIds 또는 손님 풀 requests에 지정 가능(일회성 이관 메뉴는 제거). 시험 실패 후 F는 손에 든 총으로 재시도하며, 손이 비었거나 다른 상호작용을 보고 있으면 기존 줍기/작업대 입력을 우선한다.
 - 손님 요청 목록(CustomerRequirementsUI)은 UIManager/QuestInfoPanel/Text_QuestDesc의 VerticalLayoutGroup 아래 조건별 행으로 표시(20pt 고정·자동 축소 없음, 충족 표시 칸과 줄바꿈 본문 분리, 현재 값은 다음 줄). NPC 조건 문구에는 한 방향/한 발사 경로 등의 범위 접두어를 생략하며 판정 규칙은 유지한다. 주문을 들은 현재 손님이 있을 때 표시하고 빈손에도 목록·미충족 상태 유지. 작업대 편집 중에는 작업대 총, 그 외에는 장착 총을 비교. 튜토리얼 목표는 별도 ObjectiveText 자식으로 분리. UI·태그·판매 판정은 CustomerRequestInfo 공유, NPC requiredTestIds도 표시·판정에 반영. 2/4방향 분할 모듈은 실제 발사 경로 전체의 고유 모듈 수를 합산(공유 모듈 중복·막힌 경로 제외), 서로 다른 경로에 설치해도 인정.

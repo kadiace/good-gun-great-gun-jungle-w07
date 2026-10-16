@@ -20,6 +20,8 @@ namespace WeaponWorkshop
         private float elapsed = -1f;
         private int openedFrame;
         private bool confirmRequested;
+        private RectTransform yesButtonRect;
+        private Vector2 yesAnchorMin, yesAnchorMax;
         public bool IsChoiceOpen => owner != null;
         public RectTransform TutorialConfirmButton => yesButton != null && yesButton.interactable ? yesButton.transform as RectTransform : null;
 
@@ -31,6 +33,9 @@ namespace WeaponWorkshop
         }
         private void Awake()
         {
+            yesButtonRect = yesButton != null ? yesButton.transform as RectTransform : null;
+            if (yesButtonRect != null)
+            { yesAnchorMin = yesButtonRect.anchorMin; yesAnchorMax = yesButtonRect.anchorMax; }
             HideNotification();
             if (choicePanel != null) choicePanel.SetActive(false);
             if (yesButton != null) yesButton.onClick.AddListener(Confirm);
@@ -78,8 +83,29 @@ namespace WeaponWorkshop
             openedFrame = Time.frameCount; confirmRequested = false;
             choiceMessage.text = message;
             yesButton.interactable = canConfirm;
+            RestoreYesButtonPosition();
+            noButton.gameObject.SetActive(true);
             yesButton.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = yesLabel;
             noButton.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = noLabel;
+            choicePanel.SetActive(true);
+            choicePanel.transform.SetAsLastSibling();
+            GameManager.Instance?.RefreshInputState();
+            return true;
+        }
+        public bool ShowAcknowledgement(object requester, string message, string buttonLabel = "확인했습니다")
+        {
+            if (!isActiveAndEnabled || IsChoiceOpen || requester == null || choicePanel == null || choiceMessage == null || yesButton == null || noButton == null) return false;
+            owner = requester; yes = no = null;
+            openedFrame = Time.frameCount; confirmRequested = false;
+            choiceMessage.text = message;
+            yesButton.interactable = true;
+            if (yesButtonRect != null)
+            {
+                yesButtonRect.anchorMin = new Vector2(.5f, yesAnchorMin.y);
+                yesButtonRect.anchorMax = new Vector2(.5f, yesAnchorMax.y);
+            }
+            yesButton.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = buttonLabel;
+            noButton.gameObject.SetActive(false);
             choicePanel.SetActive(true);
             choicePanel.transform.SetAsLastSibling();
             GameManager.Instance?.RefreshInputState();
@@ -94,8 +120,16 @@ namespace WeaponWorkshop
             Action callback = accepted ? yes : no;
             owner = null; yes = no = null; confirmRequested = false;
             if (choicePanel != null) choicePanel.SetActive(false);
+            RestoreYesButtonPosition();
+            if (noButton != null) noButton.gameObject.SetActive(true);
             callback?.Invoke();
             GameManager.Instance?.RefreshInputState();
+        }
+        private void RestoreYesButtonPosition()
+        {
+            if (yesButtonRect == null) return;
+            yesButtonRect.anchorMin = yesAnchorMin;
+            yesButtonRect.anchorMax = yesAnchorMax;
         }
         private void LateUpdate()
         {

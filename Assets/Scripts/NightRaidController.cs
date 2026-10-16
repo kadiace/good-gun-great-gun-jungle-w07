@@ -271,12 +271,17 @@ namespace WeaponWorkshop
             if (!mapOpen || transitioning || index < 0 || index >= RegionCount) return;
             var tutorial = TutorialManager.Instance;
             if (tutorial != null && !tutorial.AllowsRaidRegion(index)) return;
+            player = uiManager.Player;
+            var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
+            var weapon = holder != null ? holder.EquippedWeapon : null;
+            if (weapon == null || !weapon.IsEquipped || weapon.IsMoving)
+            { ui.ShowUnarmedNotice(); return; }
             bool training = tutorial != null && tutorial.IsGuidedDayZero;
             string regionScene = training ? TutorialManager.TrainingScene : RegionScene(index);
             if (string.IsNullOrEmpty(regionScene)) return;
             if (!Application.CanStreamedLevelBeLoaded(regionScene))
             { ui.ShowError("습격 씬이 빌드 목록에 없습니다."); return; }
-            player = uiManager.Player; if (player == null) return;
+            if (player == null) return;
             // 0일차 안내 습격은 무료다. 그 외에는 표 행의 입장 비용을 확인한다.
             var region = training ? null : TableManager.Instance.RaidMap.Find(regionScene);
             if (!training && region == null)
