@@ -401,6 +401,23 @@ namespace WeaponWorkshop
             enabled = false;
             enabled = true;
         }
+        // 에디터 치트(F3): 현재 단계를 성공 처리한다. 습격 입장·복귀 단계는 실제 씬 이동이 함께 일어나야 해서 넘기지 않는다.
+        public void DebugSkipStep()
+        {
+            var step = CurrentStep;
+            if (step == null) return;
+            if (step.completion == TutorialCompletion.Signal &&
+                (step.requiredSignal == "raid-entered" || step.requiredSignal == "home-returned"))
+            {
+                FeedbackUI.For(this)?.ShowNotification("습격 입장·복귀 단계는 직접 진행하세요.");
+                return;
+            }
+            // 연습 모듈 획득 단계는 결과창·복귀 판정이 획득 기록을 보므로 기록을 남긴다.
+            if (step.requiredSignal == "training-module-collected" && step.requiredModuleId > 0 && NightRaidController.Instance != null)
+                NightRaidController.Instance.TryCollectTrainingModule(step.requiredModuleId);
+            Debug.Log($"[튜토리얼] 디버그 단계 스킵: {step.id}", this);
+            Advance();
+        }
 #endif
         private void OnDisable()
         {

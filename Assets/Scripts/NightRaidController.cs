@@ -30,7 +30,7 @@ namespace WeaponWorkshop
         public bool IsExtracting => extractionExit != null || resultOpen;
         private float extractionElapsed;
         private const float ExtractionDuration = 5f;
-        private int raidStartingCredits, raidStartingBalance;
+        private int raidStartingBalance;
         private int[] raidStartingModules;
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
@@ -51,8 +51,12 @@ namespace WeaponWorkshop
         {
             var wallet = player.GetComponent<PlayerWallet>();
             var unlocks = player.GetComponent<PlayerModuleUnlocks>();
-            var text = new System.Text.StringBuilder("획득 정산\n\n");
-            text.Append("모듈 재료  +").Append(Mathf.Max(0, wallet.ModuleCredits - raidStartingCredits)).AppendLine();
+            // 튜토리얼 습격은 복귀 때 출발 상태로 되돌린다(NightRaidTransfer.PrepareReturn). 획득량을 실제 보상처럼 보이지 않게 표시한다.
+            bool training = TutorialManager.TrainingRaidPending;
+            var text = new System.Text.StringBuilder(training ? "획득 정산 (튜토리얼 연습)\n\n" : "획득 정산\n\n");
+            if (training) text.AppendLine("연습 습격의 획득물은 공방에 반영되지 않습니다.").AppendLine();
+            // 지갑 차이는 디버그 재화·무기 환급까지 섞이므로 상자에서 실제로 주운 재료만 보여준다.
+            text.Append("모듈 재료  +").Append(materialCrateCredits).AppendLine();
             int money = Mathf.Max(0, wallet.Balance - raidStartingBalance);
             if (money > 0) text.Append("돈  +").Append(money).AppendLine();
             int count = 0;
@@ -313,13 +317,13 @@ namespace WeaponWorkshop
                 travelPaints = PaintMaterialLibrary.CreateDefaults();
                 if (!GameSaveController.TryRestoreCarried(weapon, carriedWeaponPrefab, player, travelPaints, out var error))
                 {
-                    entryRestoreFailed = true; returnOpen = true;
+                    // 복귀 버튼(ReturnHome)은 inRaid일 때만 동작한다.
+                    inRaid = true; entryRestoreFailed = true; returnOpen = true;
                     ui.ShowReturn(true); ui.ShowError(error); gameManager.SetDialogue(true);
                     return;
                 }
             }
             inRaid = true;
-            raidStartingCredits = player.GetComponent<PlayerWallet>().ModuleCredits;
             raidStartingBalance = player.GetComponent<PlayerWallet>().Balance;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;

@@ -22,6 +22,12 @@ namespace WeaponWorkshop
 
             controls = inputActions.FindActionMap("Player", true).Clone();
             controls.FindAction("DebugUnlockAll", true).performed += _ => ApplyDebugUnlocks();
+            controls.FindAction("DebugSkipTutorialStep", true).performed += _ => SkipTutorialStep();
+        }
+
+        private static void SkipTutorialStep()
+        {
+            if (TutorialManager.Instance != null) TutorialManager.Instance.DebugSkipStep();
         }
 
         private void OnEnable() => controls?.Enable();

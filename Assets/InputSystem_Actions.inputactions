@@ -124,6 +124,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "DebugSkipTutorialStep",
+                    "type": "Button",
+                    "id": "1a157204-25c4-46be-821e-5853870a6750",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Scan",
                     "type": "Button",
                     "id": "ff6dd1d6-8a44-43ab-8f66-1220c74b7b9e",
@@ -560,6 +569,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "DebugUnlockAll",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2a2df0eb-c80c-4cdb-8754-bb2c4bcc725b",
+                    "path": "<Keyboard>/f3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "DebugSkipTutorialStep",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

@@ -223,6 +223,16 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""priority"": 0
                 },
                 {
+                    ""name"": ""DebugSkipTutorialStep"",
+                    ""type"": ""Button"",
+                    ""id"": ""1a157204-25c4-46be-821e-5853870a6750"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
+                },
+                {
                     ""name"": ""Scan"",
                     ""type"": ""Button"",
                     ""id"": ""ff6dd1d6-8a44-43ab-8f66-1220c74b7b9e"",
@@ -660,6 +670,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse"",
                     ""action"": ""DebugUnlockAll"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2a2df0eb-c80c-4cdb-8754-bb2c4bcc725b"",
+                    ""path"": ""<Keyboard>/f3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""DebugSkipTutorialStep"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1821,6 +1842,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_CycleScope = m_Player.FindAction("CycleScope", throwIfNotFound: true);
         m_Player_DropWeapon = m_Player.FindAction("DropWeapon", throwIfNotFound: true);
         m_Player_DebugUnlockAll = m_Player.FindAction("DebugUnlockAll", throwIfNotFound: true);
+        m_Player_DebugSkipTutorialStep = m_Player.FindAction("DebugSkipTutorialStep", throwIfNotFound: true);
         m_Player_Scan = m_Player.FindAction("Scan", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
@@ -1960,6 +1982,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_CycleScope;
     private readonly InputAction m_Player_DropWeapon;
     private readonly InputAction m_Player_DebugUnlockAll;
+    private readonly InputAction m_Player_DebugSkipTutorialStep;
     private readonly InputAction m_Player_Scan;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
@@ -2024,6 +2047,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/DebugUnlockAll".
         /// </summary>
         public InputAction @DebugUnlockAll => m_Wrapper.m_Player_DebugUnlockAll;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/DebugSkipTutorialStep".
+        /// </summary>
+        public InputAction @DebugSkipTutorialStep => m_Wrapper.m_Player_DebugSkipTutorialStep;
         /// <summary>
         /// Provides access to the underlying input action "Player/Scan".
         /// </summary>
@@ -2093,6 +2120,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @DebugUnlockAll.started += instance.OnDebugUnlockAll;
             @DebugUnlockAll.performed += instance.OnDebugUnlockAll;
             @DebugUnlockAll.canceled += instance.OnDebugUnlockAll;
+            @DebugSkipTutorialStep.started += instance.OnDebugSkipTutorialStep;
+            @DebugSkipTutorialStep.performed += instance.OnDebugSkipTutorialStep;
+            @DebugSkipTutorialStep.canceled += instance.OnDebugSkipTutorialStep;
             @Scan.started += instance.OnScan;
             @Scan.performed += instance.OnScan;
             @Scan.canceled += instance.OnScan;
@@ -2146,6 +2176,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @DebugUnlockAll.started -= instance.OnDebugUnlockAll;
             @DebugUnlockAll.performed -= instance.OnDebugUnlockAll;
             @DebugUnlockAll.canceled -= instance.OnDebugUnlockAll;
+            @DebugSkipTutorialStep.started -= instance.OnDebugSkipTutorialStep;
+            @DebugSkipTutorialStep.performed -= instance.OnDebugSkipTutorialStep;
+            @DebugSkipTutorialStep.canceled -= instance.OnDebugSkipTutorialStep;
             @Scan.started -= instance.OnScan;
             @Scan.performed -= instance.OnScan;
             @Scan.canceled -= instance.OnScan;
@@ -3048,6 +3081,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnDebugUnlockAll(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "DebugSkipTutorialStep" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDebugSkipTutorialStep(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Scan" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
