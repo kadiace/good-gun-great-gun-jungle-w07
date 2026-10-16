@@ -20,6 +20,7 @@ namespace WeaponWorkshop
         public bool IsInRaid => inRaid;
         private bool mapOpen, transitioning, inRaid, returnOpen, openedFromPreparation, entryRestoreFailed;
         private bool returningAfterDeath;
+        private bool firstWallDestroyed;
         private FirstPersonPlayer player;
         private WeaponHolder playerWeaponHolder;
         private Camera raidCamera;
@@ -82,6 +83,9 @@ namespace WeaponWorkshop
             }
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             returningAfterDeath = died;
+            // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
+            if (!SoundManager.IsTutorialMusicContext)
+                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, IsRaidClear(died));
             GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog
             {
                 scene = gameObject.scene.name, survived = !died,
@@ -94,6 +98,8 @@ namespace WeaponWorkshop
             { returnOpen = true; ReturnHome(); });
         }
         public void ShowDeathResult() => ShowRaidResult(true);
+        // 향후 목표 조건을 추가할 단일 확장 지점. 지금은 생존한 추출 성공만 클리어다.
+        private bool IsRaidClear(bool died) => !died;
         public void BeginExtraction(FirstPersonPlayer entrant, NightRaidBoundary exit)
         {
             if (!inRaid || transitioning || resultOpen || returnOpen || entrant != player || exit == null || !exit.Contains(player) ||
@@ -134,6 +140,7 @@ namespace WeaponWorkshop
             mapOpen = transitioning = inRaid = returnOpen = entryRestoreFailed = false;
             resultOpen = returningAfterDeath = false;
             loggedRaidWeaponAssemblies.Clear();
+            firstWallDestroyed = false;
             CancelExtraction();
             ui.Bind(this); ui.ShowMap(false); ui.ShowReturn(false);
         }
@@ -158,6 +165,12 @@ namespace WeaponWorkshop
         private void OnCellDestroyed(DestructibleTarget target, string blockId)
         {
             if (!inRaid || target.gameObject.scene != gameObject.scene) return;
+            // 씬에 진입한 뒤 최초 1회만 전환하며 훈련 판정은 사운드 매니저에서도 방어한다.
+            if (!firstWallDestroyed && !resultOpen && !transitioning && !entryRestoreFailed)
+            {
+                firstWallDestroyed = true;
+                SoundManager.OnRaidFirstWallDestroyed(gameObject.scene.name);
+            }
             GameLogger.Data("Info", "NightRaid", "블록 파괴", new RaidBlockDestroyedLog
             { stageId = gameObject.scene.name, time = Time.timeSinceLevelLoad, blockId = blockId });
         }
@@ -401,6 +414,7 @@ namespace WeaponWorkshop
             // 여기서부터는 실제 진입 확정. 사망·귀환을 포함해 환불하지 않는다.
             transitioning = true; ui.SetLoading(); PoolManager.ClearActive();
             NightRaidTransfer.Begin(checkpoint);
+            SoundManager.CaptureRaidDeparture();
             SceneManager.LoadSceneAsync(regionScene, LoadSceneMode.Single);
         }
         private void Teleport(Vector3 position, Quaternion rotation)
@@ -435,11 +449,16 @@ namespace WeaponWorkshop
             }
             else
             {
+                // 에디터에서 습격 씬을 직접 연 경우에도 확정 결과를 넘긴다.
+                int raidNumber = NightRaidTransfer.ResultRaidNumber;
+                bool cleared = NightRaidTransfer.ResultCleared;
                 NightRaidTransfer.Abandon();
-                if (returningAfterDeath) NightRaidTransfer.MarkStandaloneDeathReturn();
+                NightRaidTransfer.RecordResult(raidNumber, cleared);
+                NightRaidTransfer.MarkStandaloneReturn();
             }
             transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false); PoolManager.ClearActive();
-            NightRaidTransfer.ReturnDayFadePending = !returningAfterDeath;
+            // 무기 복원 실패로 즉시 돌아온 경우에는 클리어/다음날 처리를 하지 않는다.
+            NightRaidTransfer.ReturnDayFadePending = !returningAfterDeath && (!entryRestoreFailed || TutorialManager.TrainingRaidPending);
             SceneManager.LoadSceneAsync(homeScene, LoadSceneMode.Single);
         }
         public void ReturnAfterDeath()
@@ -447,6 +466,9 @@ namespace WeaponWorkshop
             if (!inRaid || transitioning) return;
             CancelExtraction();
             returningAfterDeath = true;
+            // 기존 사망 UI가 직접 호출하는 경로에서도 성공 결과가 남지 않게 한다.
+            if (!SoundManager.IsTutorialMusicContext)
+                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, false);
             returnOpen = true;
             ReturnHome();
         }
