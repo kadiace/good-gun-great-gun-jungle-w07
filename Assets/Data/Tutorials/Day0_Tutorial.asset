@@ -1659,8 +1659,7 @@ MonoBehaviour:
   - id: inspect-recipe
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "\uBB34\uAE30 \uB808\uC2DC\uD53C\uB97C \uD655\uC778\uD558\uACE0, \uB808\uC2DC\uD53C\uC5D0
-      \uB9DE\uCDB0 \uC0B0\uD0C4\uCD1D\uC744 \uB9CC\uB4E4\uC5B4 \uBCF4\uC138\uC694."
+    objective: "무기 태그 조건은 레시피에 정리되어있습니다. 무기 레시피를 확인해보세요."
     completion: 1
     target: 0
     targetLabel: 
@@ -1692,8 +1691,7 @@ MonoBehaviour:
   - id: third-shotgun
     title: "\uB808\uC2DC\uD53C\uC5D0 \uB9DE\uCDB0 \uC0B0\uD0C4 \uBAA8\uB4C8 \uC124\uCE58"
     description: 
-    objective: "\uB808\uC2DC\uD53C\uC5D0 \uB9DE\uCDB0 \uC0B0\uD0C4 \uBAA8\uB4C8\uC744
-      \uC124\uCE58\uD558\uC138\uC694."
+    objective: "산탄총 태그에 맞춰 산탄 모듈을 설치하세요."
     completion: 3
     target: 4
     targetLabel: 
