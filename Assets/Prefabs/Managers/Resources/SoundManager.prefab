@@ -1,0 +1,135 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6442189128341866832
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8273641672993498232}
+  - component: {fileID: 8549607141102546984}
+  - component: {fileID: 8750000000000000001}
+  m_Layer: 0
+  m_Name: SoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8273641672993498232
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6442189128341866832}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8549607141102546984
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6442189128341866832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4da91f50b0cd339488cf2ba9b777af11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.SoundManager
+  musicFadeDuration: 0.75
+  defaultMusicClip: {fileID: 8300000, guid: ec5d530fa8e997446968da8879dae5b6, type: 3}
+  daySecondMusicClip: {fileID: 8300000, guid: ee0440be00c934443ac4cec96cd99681, type: 3}
+  dayThirdMusicClip: {fileID: 8300000, guid: cade4c46ba7c4af4f80c7b6a8d2020d6, type: 3}
+  dayFourthMusicClip: {fileID: 8300000, guid: bef3b32cc8ddf3047acce6a1310f3c00, type: 3}
+  dayLastMusicClip: {fileID: 8300000, guid: cdcf268b2dda99e4cb102115f343985b, type: 3}
+  dayAttack0MusicClip: {fileID: 8300000, guid: 17137df706be2ba458f686264e51e2cd, type: 3}
+  dayAttack1MusicClip: {fileID: 8300000, guid: 164f71bd85e548540a150568da0f8148, type: 3}
+  dayAttack2MusicClip: {fileID: 8300000, guid: f16c3fa34749ac04f9afe12d75696ea6, type: 3}
+  tutorialRainMusicClip: {fileID: 8300000, guid: 7f170654648d23e428beaea4e338d58d, type: 3}
+  tutorialWorkshopMusicVolume: 0.35
+  nightMusicClip: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+  tutorialRaidMusicVolume: 0.35
+  raidMusicSets:
+  - stage: 1
+    travel: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+    firstWall: {fileID: 8300000, guid: ee0440be00c934443ac4cec96cd99681, type: 3}
+    clear: {fileID: 8300000, guid: cdcf268b2dda99e4cb102115f343985b, type: 3}
+  - stage: 2
+    travel: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+    firstWall: {fileID: 8300000, guid: 17137df706be2ba458f686264e51e2cd, type: 3}
+    clear: {fileID: 8300000, guid: cade4c46ba7c4af4f80c7b6a8d2020d6, type: 3}
+  - stage: 3
+    travel: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+    firstWall: {fileID: 8300000, guid: 164f71bd85e548540a150568da0f8148, type: 3}
+    clear: {fileID: 8300000, guid: bef3b32cc8ddf3047acce6a1310f3c00, type: 3}
+  - stage: 4
+    travel: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+    firstWall: {fileID: 8300000, guid: f16c3fa34749ac04f9afe12d75696ea6, type: 3}
+    clear: {fileID: 8300000, guid: ec5d530fa8e997446968da8879dae5b6, type: 3}
+  basicShotMinimumInterval: 0.05
+  chargedShotMinimumInterval: 0.05
+  shotgunMinimumInterval: 0.05
+  waterShotMinimumInterval: 0.05
+  explosionMinimumInterval: 0.05
+  collapseMinimumInterval: 0.05
+  helicopterAttackMinimumInterval: 0.05
+  playerWeaponSoundVolumeMultiplier: 0.7
+  enemySoundVolumeMultiplier: 1.25
+  tankMoveVolume: 0.03
+  helicopterAmbientVolume: 0.4
+  helicopterAmbientMinDistance: 5
+  helicopterAmbientMaxDistance: 35
+  helicopterAttackVolume: 0.5
+  shopMusicVolume: 0.35
+  raidMusicVolume: 0.35
+  uiClickVolume: 0.65
+  spawnButtonClickVolume: 0.7
+  workbenchSounds: {fileID: 0}
+--- !u!114 &8750000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6442189128341866832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed53748b73954de78b13473d65fb1fa3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.WorkbenchSoundSettings
+  installation:
+    clips:
+    - {fileID: 8300000, guid: 588c6e5b474f8164da82910fc30b25f2, type: 3}
+    volume: 0.65
+  installationExtra:
+    clips:
+    - {fileID: 8300000, guid: 4567bd6d73c3d974b855eb3ad4703767, type: 3}
+    volume: 0.65
+  removal:
+    clips:
+    - {fileID: 8300000, guid: f91e23593bd1b3b4282065a8f51c0404, type: 3}
+    volume: 0.65
+  weaponPlacement:
+    clips:
+    - {fileID: 8300000, guid: 396de8506b2a4f24f9b98393e0913857, type: 3}
+    volume: 0.8
+  assemblyComplete:
+    clips: []
+    volume: 0.8
+  paper:
+    clips:
+    - {fileID: 8300000, guid: 7dd9efb6d60120c4cba89bc8b8ee87bc, type: 3}
+    volume: 0.8
+  limitReached:
+    clips:
+    - {fileID: 8300000, guid: 8bc1f96b645ca6b47be49315bc2f67a9, type: 3}
+    volume: 0.85
