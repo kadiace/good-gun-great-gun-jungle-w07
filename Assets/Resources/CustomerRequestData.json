@@ -115,6 +115,24 @@
       ]
     },
     {
+      "id": "module/shotgun/min-1",
+      "name": "방사 모듈 개수",
+      "phrase": "방사 모듈이 연결된 총",
+      "tagId": "",
+      "saleBonus": false,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "5d5a59e500204e9eb6f0c2bafa42ab7b",
+          "label": "방사 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Shotgun",
+          "min": 1.0
+        }
+      ],
+      "legacyIds": []
+    },
+    {
       "id": "module/shotgun/min-3",
       "name": "산탄 모듈 개수",
       "phrase": "",
