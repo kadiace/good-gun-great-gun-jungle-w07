@@ -1,6 +1,6 @@
 {
   "sale": {
-    "tagBonusRatio": 0.5,
+    "tagBonusRatio": 0.2,
     "dissatisfiedRatio": 0.8
   },
   "pools": [
