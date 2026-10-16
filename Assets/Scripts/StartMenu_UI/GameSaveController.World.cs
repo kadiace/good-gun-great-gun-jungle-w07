@@ -258,6 +258,7 @@ namespace WeaponWorkshop
             player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(data.unlockedModules);
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
+            RestoreRaidProgress(data);
             return true;
         }
     }

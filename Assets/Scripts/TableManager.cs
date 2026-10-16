@@ -23,6 +23,7 @@ namespace WeaponWorkshop
         public CustomerRequestData CustomerRequest { get; private set; }
         public ShootingTestTableData ShootingTestTable { get; private set; }
         public CustomerOrderData CustomerOrder { get; private set; }
+        public SoundData Sound { get; private set; }
 
         private TableManager()
         {
@@ -34,6 +35,8 @@ namespace WeaponWorkshop
             CustomerRequestInfo.Validate(CustomerRequest, ShootingTestTable);
             CustomerOrder = Load<CustomerOrderData>(nameof(CustomerOrderData));
             CustomerOrderInfo.Validate(CustomerOrder, CustomerRequest);
+            // 사운드 규칙과 곡 경로도 기존 테이블 저장 방식을 따른다.
+            Sound = Load<SoundData>(nameof(SoundData));
         }
 
         /// <summary>반복 호출해도 테이블을 다시 읽지 않는다.</summary>
@@ -55,7 +58,14 @@ namespace WeaponWorkshop
                 Debug.LogError($"테이블 {resourcePath}를 Resources에서 찾지 못했습니다. 빈 테이블로 동작합니다.");
                 return new T();
             }
-            T table = JsonUtility.FromJson<T>(asset.text);
+            T table;
+            // 사운드 표를 비롯해 JSON이 손상된 경우에도 빈 표와 기본곡 폴백으로 진행한다.
+            try { table = JsonUtility.FromJson<T>(asset.text); }
+            catch (System.ArgumentException exception)
+            {
+                Debug.LogError($"테이블 {resourcePath}의 JSON을 읽지 못했습니다: {exception.Message}");
+                return new T();
+            }
             if (table == null)
             {
                 Debug.LogError($"테이블 {resourcePath}의 형식을 읽지 못했습니다. 빈 테이블로 동작합니다.");

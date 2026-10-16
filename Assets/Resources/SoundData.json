@@ -1,0 +1,20 @@
+{
+  "tracks": [
+    { "id": "DayFirst", "label": "day-first", "unlockRaid": 0, "selectableInMain": true },
+    { "id": "Night", "label": "Night", "unlockRaid": -1, "selectableInMain": false },
+    { "id": "DaySecond", "label": "day-second", "unlockRaid": 1, "selectableInMain": true },
+    { "id": "DayThird", "label": "day-third", "unlockRaid": 2, "selectableInMain": true },
+    { "id": "DayFourth", "label": "day-fourth", "unlockRaid": 3, "selectableInMain": true },
+    { "id": "DayAttack0", "label": "day-attack0", "unlockRaid": -1, "selectableInMain": false },
+    { "id": "DayAttack1", "label": "day-attack1", "unlockRaid": -1, "selectableInMain": false },
+    { "id": "DayAttack2", "label": "day-attack2", "unlockRaid": -1, "selectableInMain": false },
+    { "id": "DayLast", "label": "day-last", "unlockRaid": 4, "selectableInMain": true },
+    { "id": "Raining", "label": "Raining", "unlockRaid": -1, "selectableInMain": false }
+  ],
+  "raids": [
+    { "scene": "NightRaid_WoodenHouse", "number": 1 },
+    { "scene": "NightRaid_BankGrand", "number": 2 },
+    { "scene": "NightRaid_Millitary_base", "number": 3 },
+    { "scene": "NightRaid_JungleCampus", "number": 4 }
+  ]
+}

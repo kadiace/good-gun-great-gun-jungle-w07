@@ -12,6 +12,10 @@ namespace WeaponWorkshop
         [SerializeField, HideInInspector] private EquipableWeapon corePrefab;
         [SerializeField, HideInInspector] private Workbench[] workbenches;
         private Coroutine autoSaveRoutine;
+        // 진행도는 현재 세이브에 속한다. 다른 슬롯을 로드할 때는 해당 슬롯 값으로 복원한다.
+        private int raidClearProgress;
+        private int pendingClearedRaid;
+        private bool unsuccessfulRaidReturn;
         private const int AutoSaveRetryCount = 10;
         private const float AutoSaveRetryDelay = 0.5f;
         private void OnEnable()
@@ -110,6 +114,7 @@ namespace WeaponWorkshop
             var wallet = player.GetComponent<PlayerWallet>();
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
+                raidClearProgress = raidClearProgress,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
                 savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null, saveId = PlayerIdentity.SaveId };
             data.playerPosition = player.transform.position; data.playerEuler = player.transform.eulerAngles;
@@ -149,9 +154,14 @@ namespace WeaponWorkshop
         private void Start()
         {
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) InitializeSaveState();
+            // 저장/복귀 복원이 끝난 뒤에만 새 Main BGM을 허용한다.
+            SoundManager.InitializeMainMusic(raidClearProgress, unsuccessfulRaidReturn);
         }
         private void InitializeSaveState()
         {
+            // TryConsumeReturn이 정적 데이터를 비우기 전에 결과를 지역 변수로 받는다.
+            int resultRaid = NightRaidTransfer.ResultRaidNumber;
+            bool cleared = NightRaidTransfer.ResultCleared;
             bool showReturnFade = NightRaidTransfer.ReturnDayFadePending;
             NightRaidTransfer.ReturnDayFadePending = false;
             if(NightRaidTransfer.TryConsumeReturn(out var workshop, out int creditsBeforeLoss))
@@ -167,17 +177,22 @@ namespace WeaponWorkshop
                 {
                     if (TutorialManager.TrainingReturnPending && TutorialManager.Instance != null &&
                         TutorialManager.Instance.ResumeTrainingHome(dayManager)) return;
+                    pendingClearedRaid = cleared ? resultRaid : 0;
+                    unsuccessfulRaidReturn = !cleared;
                     if (showReturnFade) AdvanceAfterRaid(true);
                     player.GetComponent<PlayerWallet>()?.ShowModuleCreditLoss(creditsBeforeLoss);
                 }
                 else NightRaidTransfer.KeepRecovery(workshop);
                 return;
             }
-            if (NightRaidTransfer.TryConsumeStandaloneDeathReturn())
+            if (NightRaidTransfer.TryConsumeStandaloneReturn())
             {
+                pendingClearedRaid = cleared ? resultRaid : 0;
+                unsuccessfulRaidReturn = !cleared;
+                if (cleared) AdvanceAfterRaid(true);
                 if (dayManager != null)
                 {
-                    dayManager.CloseShop();
+                    if (!cleared) dayManager.CloseShop();
                 }
                 return;
             }
@@ -193,6 +208,14 @@ namespace WeaponWorkshop
         }
         private void AdvanceAfterRaid(bool showFade)
         {
+            // 날짜 증가/습격 건너뛰기가 아닌 확정된 귀환 결과로만 진행도를 전진시킨다.
+            if (pendingClearedRaid > 0 && !SoundManager.IsTutorialMusicContext)
+            {
+                raidClearProgress = Math.Max(raidClearProgress, SoundInfo.ClampProgress(pendingClearedRaid));
+                pendingClearedRaid = 0;
+                SoundManager.CompleteRaidReturn(raidClearProgress);
+                QueueAutoSave(dayManager.DayNumber, false);
+            }
             if (!dayManager.CanStartNextDay) { dayManager.ShowSettlement(); return; }
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
             var transition = ui != null ? ui.GetComponent<DayTransitionUI>() : null;
@@ -242,6 +265,9 @@ namespace WeaponWorkshop
             player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(data.unlockedModules);
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
+            RestoreRaidProgress(data);
         }
+        // 구버전 세이브의 누락 필드는 기본값 0이다. 음수는 0으로 보정하고 진행도를 보존한다.
+        private void RestoreRaidProgress(GameSaveData data) => raidClearProgress = SoundInfo.ClampProgress(data.raidClearProgress);
     }
 }

@@ -154,6 +154,8 @@ namespace WeaponWorkshop
         {
             nightRaidUI?.Initialize();
             foreach (var slots in GetComponentsInChildren<SaveSlotsUI>(true)) slots.Initialize();
+            // 사운드 설정도 비활성 상태에서 초기 연결하고 닫힌 화면으로 시작한다.
+            foreach (var sound in GetComponentsInChildren<SoundSettingsUI>(true)) sound.Initialize();
             // CanvasScaler controls UI sizing; a zero authored root scale hides every panel.
             transform.localScale = Vector3.one;
             if (frontMark != null)
@@ -271,6 +273,8 @@ namespace WeaponWorkshop
         public void Refresh(GameManager game)
         {
             bool pauseChanged = pausePanel != null && pausePanel.activeSelf != game.IsPaused;
+            // 일시정지를 닫으면 하위 설정 화면도 닫아 다음 열기에서 메뉴가 겹치지 않게 한다.
+            if (pauseChanged && !game.IsPaused) GetComponent<SoundSettingsUI>()?.Close();
             pausePanel?.SetActive(game.IsPaused);
             if (pauseChanged && UnityEngine.EventSystems.EventSystem.current != null)
                 UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
