@@ -210,12 +210,31 @@ namespace WeaponWorkshop
             try { status = "ok"; return WeaponShareCode.Export(weapon); }
             catch (System.Exception) { status = "export_failed"; return ""; }
         }
+        // 주문 판정(CustomerRequestInfo의 총구 스탯)과 같은 총구별 계산의 최댓값. 산탄 절반은 GetMuzzleStats에 포함, 차지 배율은 발사 때만 붙어 제외.
+        private static void CaptureMuzzleMax(EquipableWeapon weapon, out float penetration, out float explosion)
+        {
+            penetration = explosion = 0f;
+            var core = weapon.GetComponentInChildren<PowerCore>(true);
+            var assembly = core != null ? core.GetComponent<CubeAssembly>() : null;
+            if (assembly == null) return;
+            try
+            {
+                foreach (var path in assembly.GetProjectilePaths())
+                {
+                    var stats = core.GetMuzzleStats(path.path);
+                    penetration = Mathf.Max(penetration, stats.penetration);
+                    explosion = Mathf.Max(explosion, stats.explosion);
+                }
+            }
+            catch (System.Exception) { penetration = explosion = 0f; }
+        }
         private void LogRaidStart()
         {
             EquipableWeapon weapon = playerWeaponHolder != null ? playerWeaponHolder.EquippedWeapon : null;
-            var entry = new RaidStartLog { scene = gameObject.scene.name };
+            var entry = new RaidStartLog { scene = gameObject.scene.name, day = NightRaidTransfer.Workshop != null ? NightRaidTransfer.Workshop.day : -1 };
             if (weapon != null)
             {
+                CaptureMuzzleMax(weapon, out entry.penetration, out entry.explosion);
                 entry.weaponCode = CaptureWeaponCode(weapon, out string codeStatus);
                 entry.weaponCodeStatus = codeStatus;
                 entry.weaponAssemblyId = CaptureAssemblyId(weapon, out string assemblyIdStatus);

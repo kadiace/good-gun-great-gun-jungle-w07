@@ -116,7 +116,7 @@ namespace WeaponWorkshop
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
                 raidClearProgress = raidClearProgress,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
-                savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null };
+                savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null, saveId = PlayerIdentity.SaveId };
             data.playerPosition = player.transform.position; data.playerEuler = player.transform.eulerAngles;
             data.weaponPresets = player.GetComponent<WeaponPresets>()?.Capture();
             data.viewEuler = player.ViewPoint.localEulerAngles;

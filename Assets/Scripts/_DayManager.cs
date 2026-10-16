@@ -207,6 +207,8 @@ public class _DayManager : MonoBehaviour
         if (wallet != null && wallet.Balance < TodayRent)
         {
             IsBankrupt = true;
+            LogKit.GameLogger.Data("Info", "Game", "bankrupt",
+                new GameBankruptLog { day = DayNumber, balance = wallet.Balance, rent = TodayRent });
             CanStartNextDay = false;
             IsSettlementOpen = true;
             gameManager.SetNight(true);
@@ -323,6 +325,9 @@ public class _DayManager : MonoBehaviour
         wallet?.RestoreTodayConstructionCost(0);
         startedDayInDebt = wallet != null && Money < 0;
         DayNumber = nextDay.day;
+        // 고정 일차(CustomerDay 에셋)가 끝나고 처음 맞는 무한 모드 일차.
+        if (FindCustomerDay(DayNumber) == null && FindCustomerDay(DayNumber - 1) != null)
+            LogKit.GameLogger.Data("Info", "Game", "endless_started", new GameDayLog { day = DayNumber });
         CompletedGuests = 0;
         DissatisfiedGuests = 0;
         KilledGuests = 0;

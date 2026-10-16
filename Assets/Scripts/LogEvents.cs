@@ -2,7 +2,7 @@ using System;
 
 namespace WeaponWorkshop
 {
-    [Serializable] public sealed class SceneBootLog { public string scene; }
+    [Serializable] public sealed class SceneBootLog { public string scene, installId, saveId; }
     [Serializable] public sealed class RaidResultLog
     {
         public string scene;
@@ -30,8 +30,12 @@ namespace WeaponWorkshop
     [Serializable] public sealed class RaidStartLog
     {
         public string scene;
+        // 출발한 공방 일차. 습격 씬을 직접 재생하면 -1.
+        public int day = -1;
         public string weaponCode = "", weaponCodeStatus = "no_weapon";
         public string weaponAssemblyId = "", weaponAssemblyIdStatus = "no_weapon";
+        // 총구 중 최댓값(코어 기본 + 경로 모듈, 산탄 절반 반영, 차지 배율 제외). 무기가 없으면 0.
+        public float penetration, explosion;
     }
     [Serializable] public sealed class RaidWeaponConfigLog
     {
@@ -44,5 +48,24 @@ namespace WeaponWorkshop
         public float time;
         public UnityEngine.Vector3 position;
         public string weaponAssemblyId = "", weaponAssemblyIdStatus = "no_weapon";
+    }
+    [Serializable] public sealed class SessionStartLog { public string installId; }
+    [Serializable] public sealed class GameStartLog { public string installId, saveId, savedScene = ""; public bool newGame; }
+    [Serializable] public sealed class GameDayLog { public int day; }
+    [Serializable] public sealed class GameBankruptLog { public int day, balance, rent; }
+    [Serializable] public sealed class TutorialStepLog
+    {
+        public string sequence, stepId;
+        public int stepIndex;
+        // time은 게임 실행 후 실제 시간(초, 씬 이동·일시정지와 무관). duration은 단계 시작부터 완료까지.
+        public float time, duration;
+        // 에디터 F3 치트로 넘긴 단계.
+        public bool debugSkipped;
+    }
+    [Serializable] public sealed class TutorialEndLog
+    {
+        public string sequence, lastStepId, reason;
+        public int lastStepIndex;
+        public float time;
     }
 }

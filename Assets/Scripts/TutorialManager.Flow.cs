@@ -45,7 +45,7 @@ namespace WeaponWorkshop
         public bool IsGuidedDayZero => dayZeroOwner != null || trainingSequence != null;
         public static bool TrainingRaidPending => trainingSequence != null && !trainingReturning;
         public static bool TrainingReturnPending => trainingSequence != null && trainingReturning;
-        public static void AbandonTraining() => ResetTraining();
+        public static void AbandonTraining() { LogAbandoned(); ResetTraining(); }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetTraining()
         {
@@ -224,6 +224,8 @@ namespace WeaponWorkshop
         {
             if (!IsGuidedDayZero) return false;
             if (CurrentStep == null || CurrentStep.requiredSignal != "raid-entered") return false;
+            // 입장 단계는 Advance 대신 씬 이동으로 넘어가므로 완료 기록을 여기서 남긴다.
+            LogStepCompleted();
             trainingSequence = CurrentSequence; trainingStep = StepIndex + 1; trainingReturning = false;
             return true;
         }
@@ -243,7 +245,7 @@ namespace WeaponWorkshop
             {
                 trainingStep = Array.FindIndex(trainingSequence.steps, s => s != null && s.id == "raid-retry");
             }
-            else if (Instance != null) trainingStep = Instance.StepIndex + 1;
+            else if (Instance != null) { Instance.LogStepCompleted(); trainingStep = Instance.StepIndex + 1; }
         }
         public bool ResumeTrainingHome(_DayManager day)
         {
