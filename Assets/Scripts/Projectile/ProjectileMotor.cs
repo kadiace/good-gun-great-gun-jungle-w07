@@ -26,6 +26,7 @@ namespace WeaponWorkshop
         private Transform ignoredOwner;
         private Transform ignoredWeapon;
         public Transform WeaponSource => ignoredWeapon;
+        internal Vector3 CurrentDirection => velocity.normalized;
         private Vector3 halfExtents;
         private int penetrationsRemaining;
         private float penetrationPower;
@@ -97,12 +98,15 @@ namespace WeaponWorkshop
         }
 
         internal void DetonateFromExplosion()
+            => DetonateFromExplosion(transform.position, velocity.normalized);
+
+        internal void DetonateFromExplosion(Vector3 point, Vector3 direction)
         {
             if (terminal || !isActiveAndEnabled) return;
             terminal = true;
             exploded = true;
             if (effects != null)
-                effects.ApplyStoppedArea(transform.position, velocity.normalized, null, ignoredOwner, ignoredWeapon);
+                effects.ApplyStoppedArea(point, direction, null, ignoredOwner, ignoredWeapon);
             PoolManager.Release(gameObject);
         }
 

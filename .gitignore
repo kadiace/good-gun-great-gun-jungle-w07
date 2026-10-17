@@ -119,3 +119,9 @@ InitTestScene*.unity*
 # 로컬 비공개 설정·빌드 시 생성되는 로그 서버 주소
 .env
 /[Aa]ssets/[Rr]esources/LogKitServerUrl.txt*
+
+# 프로파일러 워커 출력
+Tools/Profiling/last_report.txt
+Tools/Profiling/*.data
+ProfilerCaptures/
+Tools/Profiling/report_*.txt

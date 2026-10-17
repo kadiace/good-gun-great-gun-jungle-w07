@@ -15,10 +15,16 @@ namespace WeaponWorkshop
             [Min(0)] public int maximumRetained = 64;
         }
         [SerializeField] private PrefabPool[] prefabPools = Array.Empty<PrefabPool>();
-        [SerializeField, Min(0)] private int explosionPrewarm = 32;
+        [SerializeField, Min(0)] private int explosionPrewarm = 256;
         [SerializeField, Min(0)] private int gravityPrewarm = 32;
-        [SerializeField, Min(0)] private int maximumRetainedWaves = 128;
+        [SerializeField, Min(0)] private int maximumRetainedWaves = 256;
         [SerializeField, Min(0)] private int defaultMaximumRetained = 256;
+        [SerializeField, Min(0), Tooltip("폭발 파티클 풀의 최소 프리웜 수. 기존 풀 설정이 더 낮아도 이 수까지 확보합니다.")]
+        private int explosionEffectPrewarm = 128;
+        [SerializeField, Min(1), Tooltip("연쇄 기폭으로 한 프레임에 생성할 수 있는 추가 폭발 수.")]
+        private int maximumChainDetonationsPerFrame = 64;
+        [SerializeField, Min(0), Tooltip("한 프레임에 재생할 수 있는 폭발 파티클 효과 수.")]
+        private int maximumExplosionEffectsPerFrame = 32;
         [SerializeField, Min(0)] private int debrisPrewarm = 16;
         [SerializeField, Min(0)] private int maximumRetainedDebris = 64;
         [SerializeField, Min(0), Tooltip("파편 컴포넌트 하나당 미리 확보할 데이터 슬롯 수. 부족하면 확장하며 파편을 생략하지 않습니다.")]
@@ -39,12 +45,15 @@ namespace WeaponWorkshop
             public GameObject prefab;
             public Type componentType;
             public int maximumRetained;
+            public int prewarmTarget;
             public readonly Stack<PooledCombatObject> idle = new Stack<PooledCombatObject>();
         }
         private readonly Dictionary<GameObject, Pool> prefabs = new Dictionary<GameObject, Pool>();
         private readonly Dictionary<Type, Pool> components = new Dictionary<Type, Pool>();
         private readonly HashSet<PooledCombatObject> active = new HashSet<PooledCombatObject>();
         private readonly HashSet<VisualDebrisCloud> activeDebris = new HashSet<VisualDebrisCloud>();
+        private int explosionBudgetFrame = -1;
+        private int chainDetonationsThisFrame, explosionEffectsThisFrame;
         private readonly List<DestructibleTarget> explosionDirty = new List<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> explosionDirtySet = new HashSet<DestructibleTarget>();
         private int explosionFlushFrame = -1;
@@ -90,17 +99,21 @@ namespace WeaponWorkshop
         {
             if (prepared) return;
             prepared = true;
+            maximumChainDetonationsPerFrame = Mathf.Max(1, maximumChainDetonationsPerFrame);
             storage = new GameObject("Inactive").transform;
             storage.SetParent(transform, false);
             storage.gameObject.SetActive(false);
             foreach (var entry in prefabPools)
             {
                 if (entry == null || entry.prefab == null || prefabs.ContainsKey(entry.prefab)) continue;
-                var pool = new Pool { prefab = entry.prefab, maximumRetained = Mathf.Max(0, entry.maximumRetained) };
+                var pool = new Pool { prefab = entry.prefab, maximumRetained = Mathf.Max(0, entry.maximumRetained),
+                    prewarmTarget = Mathf.Max(0, entry.prewarm) };
                 prefabs.Add(entry.prefab, pool);
                 Prewarm(pool, entry.prewarm);
             }
-            Prewarm(ComponentPool(typeof(ExpandingExplosion)), explosionPrewarm);
+            int effectiveExplosionPrewarm = Mathf.Max(explosionPrewarm, 256);
+            maximumRetainedWaves = Mathf.Max(maximumRetainedWaves, effectiveExplosionPrewarm);
+            Prewarm(ComponentPool(typeof(ExpandingExplosion)), effectiveExplosionPrewarm);
             Prewarm(ComponentPool(typeof(GravityField)), gravityPrewarm);
             Prewarm(ComponentPool(typeof(VisualDebrisCloud)), debrisPrewarm);
         }
@@ -164,6 +177,57 @@ namespace WeaponWorkshop
             }
             return manager.Rent(pool, position, rotation, parent).gameObject;
         }
+
+        internal static void EnsureExplosionEffectPrewarm(GameObject prefab)
+        {
+            if (prefab == null) return;
+            var manager = Ensure();
+            if (!manager.prefabs.TryGetValue(prefab, out var pool))
+            {
+                pool = new Pool { prefab = prefab, maximumRetained = Mathf.Max(0, manager.defaultMaximumRetained) };
+                manager.prefabs.Add(prefab, pool);
+            }
+            manager.EnsurePrewarm(pool, manager.explosionEffectPrewarm);
+        }
+
+        private void EnsurePrewarm(Pool pool, int count)
+        {
+            count = Mathf.Max(0, count);
+            if (pool.prewarmTarget >= count) return;
+            int activeForPool = 0;
+            foreach (var member in active)
+                if (member != null && member.OwnerPool == pool) activeForPool++;
+            int currentCount = pool.idle.Count + activeForPool;
+            pool.maximumRetained = Mathf.Max(pool.maximumRetained, count);
+            Prewarm(pool, Mathf.Max(0, count - currentCount));
+            pool.prewarmTarget = count;
+        }
+
+        internal static bool TryConsumeChainDetonation()
+        {
+            if (instance == null) Ensure();
+            instance.ResetExplosionBudgets();
+            if (instance.chainDetonationsThisFrame >= instance.maximumChainDetonationsPerFrame) return false;
+            instance.chainDetonationsThisFrame++;
+            return true;
+        }
+
+        internal static bool TryUseExplosionEffectSlot()
+        {
+            if (instance == null) Ensure();
+            instance.ResetExplosionBudgets();
+            if (instance.explosionEffectsThisFrame >= instance.maximumExplosionEffectsPerFrame) return false;
+            instance.explosionEffectsThisFrame++;
+            return true;
+        }
+
+        private void ResetExplosionBudgets()
+        {
+            if (explosionBudgetFrame == Time.frameCount) return;
+            explosionBudgetFrame = Time.frameCount;
+            chainDetonationsThisFrame = explosionEffectsThisFrame = 0;
+        }
+
         public static T RentComponent<T>(Vector3 position) where T : MonoBehaviour
         {
             var manager = Ensure();
@@ -202,7 +266,10 @@ namespace WeaponWorkshop
         {
             FlushExplosionFinish();
             explosionFlushFrame = Time.frameCount;
+            ExpandingExplosion.ProcessPendingChainDetonations();
         }
+
+        private void LateUpdate() => ExpandingExplosion.FlushPending();
 
         private void Return(PooledCombatObject member)
         {
@@ -227,6 +294,7 @@ namespace WeaponWorkshop
         public static void ClearActive()
         {
             if (instance == null) return;
+            ExpandingExplosion.ClearPendingRequests();
             var snapshot = new PooledCombatObject[instance.active.Count];
             instance.active.CopyTo(snapshot);
             foreach (var member in snapshot) if (member != null) instance.Return(member);
@@ -234,6 +302,7 @@ namespace WeaponWorkshop
         private void OnDestroy()
         {
             if (instance != this) return;
+            ExpandingExplosion.ClearPendingRequests();
             if (explosionDirty.Count > 0) DestructibleTarget.FinishExplosionStep(explosionDirty);
             instance = null;
         }

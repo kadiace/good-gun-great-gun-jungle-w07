@@ -656,6 +656,10 @@ namespace WeaponWorkshop
         }
         public static void FinishExplosionStep(IEnumerable<DestructibleTarget> targets)
         {
+            using (explosionFinishMarker.Auto()) FinishExplosionStepCore(targets);
+        }
+        private static void FinishExplosionStepCore(IEnumerable<DestructibleTarget> targets)
+        {
             bool changed = false;
             foreach (var target in targets)
                 if (target != null) changed |= target.UpdateCollisionRunsCore();
@@ -891,6 +895,10 @@ namespace WeaponWorkshop
         private void Subdivide(bool createCollisions = true)
         {
             if (subdivided) return;
+            using (subdivideMarker.Auto()) SubdivideCore(createCollisions);
+        }
+        private void SubdivideCore(bool createCollisions)
+        {
             subdivided = true;
             Material material = originalRenderer.sharedMaterial;
             instancedMaterial = new Material(material) { enableInstancing = true };
