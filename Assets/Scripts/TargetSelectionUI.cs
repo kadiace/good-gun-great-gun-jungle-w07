@@ -51,7 +51,7 @@ namespace WeaponWorkshop
                 var label = new GameObject("Label"+i, typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
                 label.transform.SetParent(root,false);
                 var text = label.GetComponent<TMPro.TextMeshProUGUI>();
-                text.font = font; text.fontSize = 18; text.text = labels[i]; text.color = Color.white;
+                text.font = font; text.fontSize = 22; text.text = labels[i]; text.color = Color.white;
                 text.raycastTarget = false;
                 var r = text.rectTransform; r.anchorMin=r.anchorMax=new Vector2(0f,1f);
                 r.pivot=new Vector2(0f,1f); r.anchoredPosition=new Vector2(24f,-18f-i*38f);
@@ -64,7 +64,7 @@ namespace WeaponWorkshop
                 input.GetComponent<UnityEngine.UI.Image>().color=new Color(0.2f,0.24f,0.3f);
                 var value = new GameObject("Text",typeof(RectTransform),typeof(TMPro.TextMeshProUGUI));
                 value.transform.SetParent(input.transform,false);
-                var vt=value.GetComponent<TMPro.TextMeshProUGUI>(); vt.font=font; vt.fontSize=18;
+                var vt=value.GetComponent<TMPro.TextMeshProUGUI>(); vt.font=font; vt.fontSize=22;
                 vt.color=Color.white; vt.alignment=TMPro.TextAlignmentOptions.MidlineLeft; vt.raycastTarget=false;
                 vt.rectTransform.anchorMin=Vector2.zero; vt.rectTransform.anchorMax=Vector2.one;
                 vt.rectTransform.offsetMin=new Vector2(8f,2f); vt.rectTransform.offsetMax=new Vector2(-8f,-2f);
@@ -158,7 +158,7 @@ namespace WeaponWorkshop
             statusText = statusRoot.GetComponent<TMPro.TextMeshProUGUI>();
             var templateText = buttonTemplate.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
             statusText.font = templateText.font;
-            statusText.fontSize = 16;
+            statusText.fontSize = 20;
             statusText.color = new Color(1f,0.35f,0.35f,1f);
             statusText.alignment = TMPro.TextAlignmentOptions.Midline;
             statusText.raycastTarget = false;

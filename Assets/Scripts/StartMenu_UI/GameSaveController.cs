@@ -114,6 +114,7 @@ namespace WeaponWorkshop
             var wallet = player.GetComponent<PlayerWallet>();
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
+                slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
                 outstandingLoans = wallet.OutstandingLoans,
                 lastLoanDay = wallet.LastLoanDay,
@@ -274,6 +275,7 @@ namespace WeaponWorkshop
             else if (restored != null && !player.GetComponent<WeaponHolder>().Equip(restored))
             { Destroy(restored.gameObject); Debug.LogError("저장 무기를 장착하지 못했습니다.", this); return; }
             player.GetComponent<PlayerWallet>().RestoreBalance(data.balance);
+            FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.RestoreSpins(data.slotMachineSpins);
             player.GetComponent<PlayerWallet>().RestoreLoans(data.outstandingLoans);
             player.GetComponent<PlayerWallet>().RestoreLastLoanDay(data.lastLoanDay);
             player.GetComponent<PlayerWallet>().RestoreModuleCredits(data.moduleCredits);

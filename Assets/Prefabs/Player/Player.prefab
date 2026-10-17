@@ -458,8 +458,6 @@ MonoBehaviour:
   viewPoint: {fileID: 3422745031646211550}
   moveSpeed: 3
   sprintSpeed: 10
-  walkingSoundInterval: 0.45
-  sprintSoundIntervalMultiplier: 2.5
   jumpForce: 7
   lookSensitivity: 0.15
   gravity: -20

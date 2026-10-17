@@ -96,7 +96,7 @@ namespace WeaponWorkshop
 
             TMPro.TextMeshProUGUI title = CreateRect("Title", panel.transform, new Vector2(300f, 30f), new Vector2(0f, 128f)).AddComponent<TMPro.TextMeshProUGUI>();
             title.font = font;
-            title.fontSize = 20;
+            title.fontSize = 24;
             title.alignment = TMPro.TextAlignmentOptions.Midline;
             title.color = Color.white;
             title.text = "탄 색 선택";
@@ -141,7 +141,7 @@ namespace WeaponWorkshop
             button.AddComponent<Button>().onClick.AddListener(onClick);
             TMPro.TextMeshProUGUI text = CreateRect("Label", button.transform, new Vector2(120f, 34f), Vector2.zero).AddComponent<TMPro.TextMeshProUGUI>();
             text.font = font;
-            text.fontSize = 18;
+            text.fontSize = 22;
             text.alignment = TMPro.TextAlignmentOptions.Midline;
             text.color = Color.white;
             text.text = label;

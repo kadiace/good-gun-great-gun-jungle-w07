@@ -16,6 +16,12 @@ namespace WeaponWorkshop
     }
     [Serializable] public sealed class RaidBlockDestroyedLog { public string stageId; public float time; public string blockId; }
     [Serializable] public sealed class RaidEnemyLog { public float time; public string enemyId; }
+    [Serializable] public sealed class RaidPlayerHitLog
+    {
+        public string stageId, enemyId, enemyType;
+        public float time, duration, damage, health;
+        public UnityEngine.Vector3 position;
+    }
     [Serializable] public sealed class RaidPlayerStateLog
     {
         public float time;

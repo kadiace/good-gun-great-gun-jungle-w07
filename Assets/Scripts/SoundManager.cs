@@ -11,6 +11,7 @@ namespace WeaponWorkshop
     {
         private const string ResourcePath = "Sound/SFX/";
         private static SoundManager instance;
+        internal bool IsActiveInstance => instance == this && isActiveAndEnabled;
 
         [Header("Sound Playback Limits")]
         [SerializeField, Min(0f), Tooltip("Minimum time between basic shot sound plays. 0.05 seconds allows at most 20 plays per second.")]
@@ -228,8 +229,6 @@ namespace WeaponWorkshop
             WorkshopSoundEffects.ShotgunFired += OnShotgunFired;
             WorkshopSoundEffects.WaterFired += OnWaterFired;
             WorkshopSoundEffects.ExplosionTriggered += OnExplosionTriggered;
-            WorkshopSoundEffects.FootstepPlayed += OnFootstepPlayed;
-            WorkshopSoundEffects.PlayerJumped += OnPlayerJumped;
             WorkshopSoundEffects.GravityFieldStarted += OnGravityFieldStarted;
             WorkshopSoundEffects.GravityFieldStopped += OnGravityFieldStopped;
             SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -273,8 +272,6 @@ namespace WeaponWorkshop
             WorkshopSoundEffects.ShotgunFired -= OnShotgunFired;
             WorkshopSoundEffects.WaterFired -= OnWaterFired;
             WorkshopSoundEffects.ExplosionTriggered -= OnExplosionTriggered;
-            WorkshopSoundEffects.FootstepPlayed -= OnFootstepPlayed;
-            WorkshopSoundEffects.PlayerJumped -= OnPlayerJumped;
             WorkshopSoundEffects.GravityFieldStarted -= OnGravityFieldStarted;
             WorkshopSoundEffects.GravityFieldStopped -= OnGravityFieldStopped;
             SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -353,8 +350,6 @@ namespace WeaponWorkshop
 
         // 헬기 전용 음원에 기존 최종 음량의 0.7배를 적용한다. 마스터/SFX 슬라이더는 이후 별도로 곱한다.
         private float HelicopterVolume(float volume) => Mathf.Clamp01(volume * enemySoundVolumeMultiplier) * .7f;
-        private void OnFootstepPlayed(Vector3 position) => Play("Walking", position, 0.35f * 0.6f);
-        private void OnPlayerJumped(Vector3 position) => Play("Jumping", position, 0.85f);
 
         private void OnHelicopterAmbientStarted(Transform helicopter)
         {

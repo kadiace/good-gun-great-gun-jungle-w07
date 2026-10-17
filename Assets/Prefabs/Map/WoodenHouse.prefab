@@ -648,11 +648,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1102,11 +1102,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1372,11 +1372,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2464,11 +2464,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3192,11 +3192,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3376,11 +3376,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4194,11 +4194,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4554,11 +4554,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5188,11 +5188,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5368,11 +5368,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5732,11 +5732,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5912,11 +5912,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6092,11 +6092,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6362,11 +6362,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6542,11 +6542,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6722,11 +6722,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6812,11 +6812,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -7086,11 +7086,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -7176,11 +7176,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -7446,11 +7446,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -7716,11 +7716,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -8264,11 +8264,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -8354,11 +8354,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -8534,11 +8534,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -8988,11 +8988,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -9078,11 +9078,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -9348,11 +9348,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -9888,11 +9888,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -9978,11 +9978,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -10068,11 +10068,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -10792,11 +10792,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -10972,11 +10972,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -11152,11 +11152,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -11422,11 +11422,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -11790,11 +11790,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -11880,11 +11880,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -12244,11 +12244,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -12424,11 +12424,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -12514,11 +12514,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -12968,11 +12968,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -13152,11 +13152,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -13422,11 +13422,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -13692,11 +13692,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -13872,11 +13872,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -14330,11 +14330,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -14510,11 +14510,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -15054,11 +15054,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -15508,11 +15508,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -16330,11 +16330,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -16690,11 +16690,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -17230,11 +17230,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -17594,11 +17594,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -17868,11 +17868,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -18956,11 +18956,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -19504,11 +19504,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -19684,11 +19684,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -19954,11 +19954,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -21492,11 +21492,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -21942,11 +21942,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -22032,11 +22032,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -22302,11 +22302,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -23034,11 +23034,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -23214,11 +23214,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -23394,11 +23394,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: explosionResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5440281562306184717, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: penetrationResistance
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5877983408914116721, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
       propertyPath: m_LocalPosition.x

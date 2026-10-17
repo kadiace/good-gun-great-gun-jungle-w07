@@ -185,6 +185,20 @@ namespace WeaponWorkshop
             enemyKills++;
             GameLogger.Data("Info", "NightRaid", "적 처치", new RaidEnemyLog { time = Time.timeSinceLevelLoad, enemyId = core.EnemyId });
         }
+        public void RecordPlayerHit(RaidPlayerHealth health, string enemyId, RaidEnemyType enemyType, float damage)
+        {
+            if (!inRaid || health == null || health != playerHealth || health.gameObject.scene != gameObject.scene || damage <= 0f) return;
+            try
+            {
+                GameLogger.Data("Info", "NightRaid", "player_hit", new RaidPlayerHitLog
+                {
+                    stageId = gameObject.scene.name, enemyId = enemyId ?? "", enemyType = enemyType.ToString(),
+                    time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
+                    damage = damage, health = health.CurrentHealth, position = health.transform.position
+                });
+            }
+            catch (System.Exception exception) { Debug.LogWarning("습격 피격 로그 기록 실패: " + exception.Message); }
+        }
         private void OnMaterialCollected(FirstPersonPlayer collector, int amount)
         {
             if (inRaid && collector == player) materialCrateCredits += amount;

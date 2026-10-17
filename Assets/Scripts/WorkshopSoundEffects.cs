@@ -37,8 +37,9 @@ namespace WeaponWorkshop
         internal static event Action<Vector3> ShotgunFired;
         internal static event Action<Vector3> WaterFired;
         internal static event Action<Vector3> ExplosionTriggered;
-        internal static event Action<Vector3> FootstepPlayed;
-        internal static event Action<Vector3> PlayerJumped;
+        internal static event Action<FirstPersonPlayer, float, float, bool, bool, float> PlayerMovementUpdated;
+        internal static event Action<FirstPersonPlayer> PlayerMovementStopped;
+        internal static event Action<FirstPersonPlayer> PlayerJumped;
         internal static event Action<GravityField> GravityFieldStarted;
         internal static event Action<GravityField> GravityFieldStopped;
 
@@ -74,8 +75,11 @@ namespace WeaponWorkshop
         internal static void RaiseShotgunFired(Vector3 position) => ShotgunFired?.Invoke(position);
         internal static void RaiseWaterFired(Vector3 position) => WaterFired?.Invoke(position);
         internal static void RaiseExplosionTriggered(Vector3 position) => ExplosionTriggered?.Invoke(position);
-        internal static void RaiseFootstepPlayed(Vector3 position) => FootstepPlayed?.Invoke(position);
-        internal static void RaisePlayerJumped(Vector3 position) => PlayerJumped?.Invoke(position);
+        internal static void RaisePlayerMovementUpdated(FirstPersonPlayer player, float horizontalSpeed,
+            float walkingSpeed, bool grounded, bool sprinting, float deltaTime)
+            => PlayerMovementUpdated?.Invoke(player, horizontalSpeed, walkingSpeed, grounded, sprinting, deltaTime);
+        internal static void RaisePlayerMovementStopped(FirstPersonPlayer player) => PlayerMovementStopped?.Invoke(player);
+        internal static void RaisePlayerJumped(FirstPersonPlayer player) => PlayerJumped?.Invoke(player);
         internal static void RaiseGravityFieldStarted(GravityField field) => GravityFieldStarted?.Invoke(field);
         internal static void RaiseGravityFieldStopped(GravityField field) => GravityFieldStopped?.Invoke(field);
 
@@ -114,7 +118,8 @@ namespace WeaponWorkshop
             ShotgunFired = null;
             WaterFired = null;
             ExplosionTriggered = null;
-            FootstepPlayed = null;
+            PlayerMovementUpdated = null;
+            PlayerMovementStopped = null;
             PlayerJumped = null;
             GravityFieldStarted = null;
             GravityFieldStopped = null;

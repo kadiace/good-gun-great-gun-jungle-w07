@@ -5,6 +5,7 @@ namespace WeaponWorkshop
 {
     public sealed partial class DestructibleTarget : MonoBehaviour
     {
+        // 블록 ID와 파편 생성 여부에 무관한 실제 셀 제거 알림. 저장 복원은 제외한다.
         public static event System.Action<DestructibleTarget> PartDestroyed;
         public static event System.Action<DestructibleTarget, string> CellDestroyed;
         [SerializeField, HideInInspector] private string targetId;
@@ -918,7 +919,6 @@ namespace WeaponWorkshop
             EnsureDebrisCloud();
             RemoveCell(cellIndex);
             debrisCloud.Emit(cell.Snapshot, velocity, debrisLifetime, debrisFadeDuration);
-            PartDestroyed?.Invoke(this);
 
         }
 
@@ -944,6 +944,7 @@ namespace WeaponWorkshop
             renderDirty = true;
             if (cells.Count == 0) MarkDebrisIndexDirty();
             if (cellId != null) CellDestroyed?.Invoke(this, cellId);
+            if (!restoringSave) PartDestroyed?.Invoke(this);
         }
 
         private void DropUnsupported()
