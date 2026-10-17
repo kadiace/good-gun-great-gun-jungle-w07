@@ -255,7 +255,7 @@ namespace WeaponWorkshop
                 int cost = retire ? RetireUI.Cost : SlotMachineReels.SpinPrice;
                 if (wallet == null || wallet.Balance < cost)
                 {
-                    string amount = retire ? "$1,000,000" : "$1,000";
+                    string amount = retire ? "$100,000" : "$1,000";
                     condition = condition.Replace(amount, $"<color=#FF0000>{amount}</color>");
                 }
             }

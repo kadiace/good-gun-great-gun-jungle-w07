@@ -7,7 +7,7 @@ namespace WeaponWorkshop
 {
     public sealed class RetireUI : MonoBehaviour
     {
-        public const int Cost = 1000000;
+        public const int Cost = 100000;
         [SerializeField] private GameObject panel;
         [SerializeField] private TMP_Text continueText;
         [SerializeField] private Button lobbyButton;
