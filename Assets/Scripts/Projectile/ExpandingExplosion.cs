@@ -58,12 +58,12 @@ namespace WeaponWorkshop
         private static readonly HashSet<ProjectileMotor> pendingChainSet = new HashSet<ProjectileMotor>(2048);
         private static int pendingFrame = -1;
 
-        private readonly List<Layer> layers = new List<Layer>(128);
-        private readonly List<Piece> pieces = new List<Piece>(8192);
-        private readonly List<TargetCandidate> targetCandidates = new List<TargetCandidate>(256);
+        private readonly List<Layer> layers = new List<Layer>();
+        private readonly List<Piece> pieces = new List<Piece>();
+        private readonly List<TargetCandidate> targetCandidates = new List<TargetCandidate>();
         private ProjectileStats impactStats;
-        private readonly List<HealthHit> healthHits = new List<HealthHit>(64);
-        private readonly float[] energy = new float[384];
+        private readonly List<HealthHit> healthHits = new List<HealthHit>();
+        private float[] energy;
         private float radius, maximumRadius, speed, baseDamage;
         private WeaponStats stats;
         private ProjectileTuning tuning;
@@ -277,6 +277,7 @@ namespace WeaponWorkshop
             wave.maximumRadius = maximumRadius;
             wave.stats = stats; wave.impactStats = ProjectileStats.FromWeapon(stats); wave.tuning = source.Tuning; wave.baseDamage = source.BaseDamage;
             wave.speed = Mathf.Max(0.01f, wave.tuning.explosionExpansionSpeed);
+            if (wave.energy == null) wave.energy = new float[384];
             for (int i = 0; i < wave.energy.Length; i++) wave.energy[i] = stats.explosion;
             collectTargetDistances.Clear(); collectNearest.Clear();
             DestructibleTarget settingsTarget = null;

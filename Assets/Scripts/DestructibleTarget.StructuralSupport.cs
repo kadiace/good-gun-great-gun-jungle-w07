@@ -109,7 +109,7 @@ namespace WeaponWorkshop
             if (!externallyHeld || !BelowSupportOnly) return;
             if (supportValidated)
                 foreach (int cellIndex in cells) changedBoundary.Add(preparedCells[cellIndex].coordinate);
-            structureDirty = true;
+            MarkStructureDirty();
         }
 
         private bool HasExternalSupport(int cellIndex)
@@ -131,6 +131,8 @@ namespace WeaponWorkshop
         {
             bool wasPhysical = UsesPhysicalGravity;
             CachePhysicalGravityComponents();
+            CacheTransformMovement();
+            RefreshUpdaterRegistration();
             if (wasPhysical != UsesPhysicalGravity) StructuralSupportGraph.Changed(this);
         }
 

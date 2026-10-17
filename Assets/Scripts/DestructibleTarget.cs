@@ -94,9 +94,9 @@ namespace WeaponWorkshop
             if (targetMesh == null) targetMesh = GetComponentInChildren<MeshFilter>(true);
             targetMesh.transform.localScale = size;
             targetMesh.transform.localPosition = new Vector3(0f, size.y * 0.5f, 0f);
+            MarkDebrisIndexDirty();
         }
 
-        internal static readonly HashSet<DestructibleTarget> ActiveDebrisObstacles = new HashSet<DestructibleTarget>();
         internal bool TryDebrisBounds(out Bounds bounds)
         {
             bounds = default;
@@ -214,7 +214,7 @@ namespace WeaponWorkshop
             if (!subdivided) Subdivide(false);
             var removed = CollectParticleCells(center, rotation, halfExtents);
             foreach (int cellIndex in removed) Detach(cellIndex);
-            if (removed.Count > 0) structureDirty = true;
+            if (removed.Count > 0) MarkStructureDirty();
             UpdateCollisionRuns();
         }
 
@@ -304,6 +304,8 @@ namespace WeaponWorkshop
         private bool HasCell(Vector3Int coordinate) => TryGetCell(coordinate, out _);
         private bool subdivided;
         private bool restoringSave;
+        private bool transformMayMove;
+        private bool debrisIndexDirty = true;
         private Vector3 initialPosition;
         private Quaternion initialRotation;
         private Vector3 initialScale;
@@ -337,29 +339,63 @@ namespace WeaponWorkshop
                 originalColliders.Add(collider, collider.enabled);
             // Collision colliders grow on demand (AcquireCollisionCollider) and stay pooled; a worst-case prewarm
             // here would add hundreds of BoxColliders per target at scene load.
+            CacheTransformMovement();
             StructuralSupportGraph.Register(this);
         }
 
         private void OnEnable()
         {
             debrisIndexed = false;
-            ActiveDebrisObstacles.Add(this); RefreshDebrisIndex();
+            debrisIndexDirty = true;
+            RefreshDebrisIndex();
             if (originalRenderer != null) StructuralSupportGraph.Register(this);
+            CacheTransformMovement();
+            RefreshUpdaterRegistration();
         }
 
-        // Re-bin only when the transform moved or the target is subdivided (cells can empty it);
-        // untouched static walls skip the bounds math entirely.
+        internal bool NeedsLateUpdate => isActiveAndEnabled &&
+            (structureDirty || debrisIndexDirty || (subdivided && cells.Count > 0) || (transformMayMove && !subdivided));
+        internal bool TracksDebrisTransform => isActiveAndEnabled && transformMayMove && (!subdivided || cells.Count > 0);
+
+        private void CacheTransformMovement()
+        {
+            transformMayMove = attachedToMovingBody || GetComponentInParent<Rigidbody>() != null ||
+                (targetMesh != null && targetMesh.GetComponentInParent<Rigidbody>() != null);
+        }
+
+        private void OnTransformParentChanged()
+        {
+            CacheTransformMovement();
+            RefreshUpdaterRegistration();
+        }
+
+        internal void RefreshUpdaterRegistration() => DestructibleTargetUpdater.RefreshRegistration(this);
+
+        private void MarkStructureDirty()
+        {
+            structureDirty = true;
+            RefreshUpdaterRegistration();
+        }
+
+        private void MarkDebrisIndexDirty()
+        {
+            debrisIndexDirty = true;
+            RefreshUpdaterRegistration();
+        }
+
+        // Static intact targets are indexed on enable and need no per-frame transform checks.
         private bool debrisIndexed;
         internal void RefreshDebrisIndex()
         {
             Transform root = targetMesh != null ? targetMesh.transform : null;
-            if (debrisIndexed && !subdivided && root != null && !root.hasChanged) return;
+            if (debrisIndexed && !debrisIndexDirty && root != null && !root.hasChanged) return;
             if (root != null) root.hasChanged = false;
             DebrisTargetIndex.Update(this);
             debrisIndexed = true;
+            debrisIndexDirty = false;
         }
 
-        private void LateUpdate()
+        internal void ProcessLateUpdate()
         {
             RefreshDebrisIndex();
             if (structureDirty)
@@ -428,7 +464,7 @@ namespace WeaponWorkshop
                 if (gravityImpact) Detach(index);
                 else RemoveCell(index);
             }
-            structureDirty = true;
+            MarkStructureDirty();
             UpdateCollisionRuns();
             penetrated = !zeroImpact;
             penetratedMaterial = true;
@@ -549,7 +585,7 @@ namespace WeaponWorkshop
                 changed = true;
                 remainingPower = Mathf.Max(0f, remainingPower - resistance);
             }
-            if (changed) structureDirty = true;
+            if (changed) MarkStructureDirty();
             UpdateCollisionRuns();
         }
 
@@ -575,7 +611,7 @@ namespace WeaponWorkshop
                 Detach(cellIndex, (cell.position - center).normalized * debrisSpeed + Vector3.up);
             }
             int count = boxBreakCells.Count;
-            if (count > 0) { structureDirty = true; UpdateCollisionRuns(); }
+            if (count > 0) { MarkStructureDirty(); UpdateCollisionRuns(); }
             return count;
         }
 
@@ -622,7 +658,7 @@ namespace WeaponWorkshop
                 power = Mathf.Max(0f, power - resistance);
                 changed = true;
             }
-            if (changed) structureDirty = true;
+            if (changed) MarkStructureDirty();
             UpdateCollisionRuns();
         }
 
@@ -704,7 +740,7 @@ namespace WeaponWorkshop
             if (!isActiveAndEnabled || !TryGetCell(coordinate, out var cell)) return false;
             Vector3 direction = (cell.position - center).normalized;
             Detach(CellIndex(coordinate), direction * force + Vector3.up * (force * 0.05f));
-            structureDirty = true;
+            MarkStructureDirty();
             return true;
         }
         public static void FinishExplosionStep(IEnumerable<DestructibleTarget> targets)
@@ -762,7 +798,7 @@ namespace WeaponWorkshop
             }
             foreach (int cellIndex in removed) Detach(cellIndex);
             // Sphere deletion is immediate; detached unsupported chunks use the same suction animation.
-            if (removed.Count > 0) structureDirty = true;
+            if (removed.Count > 0) MarkStructureDirty();
             EndGravityImpact();
             UpdateCollisionRuns();
         }
@@ -790,6 +826,7 @@ namespace WeaponWorkshop
             if (!subdivided) Subdivide();
             cells.Clear();
             System.Array.Clear(grid, 0, grid.Length);
+            MarkDebrisIndexDirty();
             InvalidateAllCollisionColumns();
             UpdateCollisionRuns();
             debrisCloud?.ClearDebris();
@@ -831,6 +868,7 @@ namespace WeaponWorkshop
                 structureDirty = false; renderDirty = true;
             }
             transform.localPosition = state.position; transform.localRotation = state.rotation; transform.localScale = state.scale;
+            MarkDebrisIndexDirty();
             StructuralSupportGraph.Changed(this);
         }
 
@@ -856,6 +894,7 @@ namespace WeaponWorkshop
                 cells.Add(index);
                 grid[index] = true;
             }
+            MarkDebrisIndexDirty();
             InvalidateRenderChunks();
             changedBoundary.Clear();
             if (supportValidated)
@@ -903,6 +942,7 @@ namespace WeaponWorkshop
             cell.slot = -1;
             preparedCells[cellIndex] = cell;
             renderDirty = true;
+            if (cells.Count == 0) MarkDebrisIndexDirty();
             if (cellId != null) CellDestroyed?.Invoke(this, cellId);
         }
 
@@ -1082,6 +1122,7 @@ namespace WeaponWorkshop
             renderDirty = true;
             InvalidateAllCollisionColumns();
             if (createCollisions) UpdateCollisionRuns();
+            MarkDebrisIndexDirty();
         }
 
 
@@ -1205,7 +1246,9 @@ namespace WeaponWorkshop
         private void OnDisable()
         {
             debrisIndexed = false;
-            ActiveDebrisObstacles.Remove(this); DebrisTargetIndex.Remove(this);
+            debrisIndexDirty = true;
+            DestructibleTargetUpdater.Unregister(this);
+            DebrisTargetIndex.Remove(this);
             supportValidated = false; changedBoundary.Clear(); externallyHeld = false;
             StructuralSupportGraph.Unregister(this);
             if (debrisCloud != null) PoolManager.Release(debrisCloud.gameObject);
@@ -1213,6 +1256,8 @@ namespace WeaponWorkshop
 
         private void OnDestroy()
         {
+            DestructibleTargetUpdater.Unregister(this);
+            DebrisTargetIndex.Remove(this);
             if (instancedMaterial != null) Destroy(instancedMaterial);
             foreach (var chunk in renderChunks.Values) if (chunk.mesh != null) Destroy(chunk.mesh);
             if (collisionColumns != null)
@@ -1225,12 +1270,6 @@ namespace WeaponWorkshop
         }
     }
 }
-
-
-
-
-
-
 
 
 
