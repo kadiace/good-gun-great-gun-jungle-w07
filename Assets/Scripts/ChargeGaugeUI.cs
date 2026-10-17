@@ -87,7 +87,7 @@ namespace WeaponWorkshop
 
             label = CreateRect("Label", root).gameObject.AddComponent<TMPro.TextMeshProUGUI>();
             label.font = font;
-            label.fontSize = 14;
+            label.fontSize = 18;
             label.alignment = TMPro.TextAlignmentOptions.Top;
             label.raycastTarget = false;
             var labelRect = label.rectTransform;

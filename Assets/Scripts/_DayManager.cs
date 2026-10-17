@@ -56,6 +56,8 @@ public class _DayManager : MonoBehaviour
     [SerializeField, Min(0), Tooltip("무한 모드 하루마다 오르는 월세")] private int endlessRentGrowth = 50;
     public int DayNumber { get; private set; } = 1;
     public bool IsNight { get; private set; }
+    private float dayNightStartedAt;
+    public float SecondsSinceDayNightTransition => Mathf.Max(0f, Time.time - dayNightStartedAt);
     public bool IsAwaitingOpening => !IsNight && customerBell != null && !customerBell.DayStarted;
     public bool IsSettlementOpen { get; private set; }
     public bool CanStartNextDay { get; private set; }
@@ -84,6 +86,7 @@ public class _DayManager : MonoBehaviour
     private void Awake()
     {
         IsNight = false;
+        dayNightStartedAt = Time.time;
         IsSettlementOpen = false;
         CanStartNextDay = false;
         IsBankrupt = false;
@@ -181,6 +184,7 @@ public class _DayManager : MonoBehaviour
     }
     private void ApplyMorning()
     {
+        dayNightStartedAt = Time.time;
         CurrentPeriod = setTimer.morning;
         hasCurrentPeriod = true;
         SetTimerData morning = settings.timing?.Find(t => t != null && t.period == setTimer.morning);
@@ -228,6 +232,7 @@ public class _DayManager : MonoBehaviour
         if (isSettled || CurrentPeriod != setTimer.night) return;
         isSettled = true;
         IsNight = true;
+        dayNightStartedAt = Time.time;
         WorkshopSoundEffects.RaiseBusinessEnded();
         customerBell?.EndDay();
         TodayRent = CurrentCustomerDay != null ? CurrentCustomerDay.Rent : 0;
@@ -414,6 +419,7 @@ public class _DayManager : MonoBehaviour
         CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodaySoldConstructionCost = TodayRent = 0;
         TodayLoanIncome = 0;
         isSettled = IsNight = night;
+        dayNightStartedAt = Time.time;
         IsSettlementOpen = IsBankrupt = bankruptcyResultOpen = returningToStart = startedDayInDebt = false;
         CanStartNextDay = night && HasNextDay;
         if (night)
@@ -532,6 +538,7 @@ public class _DayManager : MonoBehaviour
         CurrentPeriod = (setTimer)data.period;
         wallet?.RestoreTodayConstructionCost(data.constructionCost);
         hasCurrentPeriod = true; isSettled = IsNight = data.night; IsSettlementOpen = data.settlement;
+        dayNightStartedAt = Time.time;
         startedDayInDebt = data.startedDayInDebt;
         // The saved wallet already includes rent; restore its display without charging again.
         TodayRent = IsNight ? CurrentCustomerDay.Rent : 0;
