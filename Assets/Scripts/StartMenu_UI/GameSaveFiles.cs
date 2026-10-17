@@ -142,9 +142,13 @@ namespace WeaponWorkshop
         public string testAssemblyKey;
         public string[] passedTestIds = Array.Empty<string>();
         public int version = 7, day, balance, paidCost;
+        public int slotMachineSpins;
         public int moduleCredits;
         // 필드가 없는 이전 JSON은 0으로 읽힌다. 슬롯별 최고 클리어 습격 번호다.
         public int raidClearProgress;
+        public int outstandingLoans, todayLoanRepayment, todayLoanInterest;
+        public int todayLoanIncome;
+        public int lastLoanDay = -1;
         public int[] unlockedModules = Array.Empty<int>();
         public CustomerOrderSave[] dailyOrders;
         public CustomerOrderSave[] deferredCustomers;

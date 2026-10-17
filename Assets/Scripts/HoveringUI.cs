@@ -36,6 +36,7 @@ namespace WeaponWorkshop
         private readonly List<WeaponTypeData> weaponTags = new List<WeaponTypeData>();
         private readonly List<RectTransform> tagPills = new List<RectTransform>();
         private CubeBuilder builder;
+        private bool muzzleTooltipObserved;
         private Color bodyColor;
         private readonly StringBuilder text = new StringBuilder();
         private readonly Dictionary<ModuleData, int> counts = new Dictionary<ModuleData, int>();
@@ -43,7 +44,7 @@ namespace WeaponWorkshop
 
         public void Initialize(CubeBuilder source, Interaction interactionSource) { interaction = interactionSource; builder = source; if (tagTemplate != null) tagTemplate.gameObject.SetActive(false); if (tagGrid != null) tagGrid.gameObject.SetActive(false); bodyColor = description != null ? description.color : Color.white; Hide(); }
         private void Awake() { Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
-        private void OnDisable() { Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
+        private void OnDisable() { muzzleTooltipObserved = false; Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
         private void Hide() { if (interact != null) interact.SetActive(false); if (panel != null) panel.SetActive(false); if (scanLoading != null) scanLoading.gameObject.SetActive(false); }
         private void CreateScanLoading()
         {
@@ -60,7 +61,7 @@ namespace WeaponWorkshop
             label.transform.SetParent(root.transform, false);
             scanLoadingText = label.GetComponent<TextMeshProUGUI>();
             scanLoadingText.font = title.font;
-            scanLoadingText.fontSize = 22f;
+            scanLoadingText.fontSize = 26f;
             scanLoadingText.alignment = TextAlignmentOptions.Center;
             scanLoadingText.raycastTarget = false;
             scanLoadingText.color = scanLoading.color;
@@ -93,6 +94,9 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
+            bool hoveringMuzzle = false;
+            try
+            {
             if (scanner == null && interaction != null && interaction.Player != null)
                 scanner = interaction.Player.GetComponent<PlayerScanMode>();
             bool scanning = scanner != null && scanner.isActiveAndEnabled && scanner.IsScanning && !GameManager.GameplayBlocked;
@@ -201,12 +205,31 @@ namespace WeaponWorkshop
                     // An exposed output must be reachable from the core, on this exact block and face.
                     if (end != block || muzzle.direction != face || cell != (end != null ? end.Cell : Vector3Int.zero) + face) continue;
                     PowerCore core = assembly.GetComponent<PowerCore>();
-                    if (core != null) { ShowMuzzle(core, muzzle.path); return; }
+                    if (core != null)
+                    {
+                        ShowMuzzle(core, muzzle.path);
+                        var tutorial = TutorialManager.Instance;
+                        if (panel != null && panel.activeInHierarchy && title != null && description != null &&
+                            tutorial != null && tutorial.CurrentStep?.requiredSignal == "muzzle-stats-viewed" &&
+                            tutorial.TutorialWorkbench != null && tutorial.TutorialWorkbench.CurrentWeapon != null &&
+                            assembly == tutorial.TutorialWorkbench.CurrentWeapon.GetComponentInChildren<CubeAssembly>())
+                            hoveringMuzzle = true;
+                        return;
+                    }
                 }
             }
             ModuleData data = block != null ? block.GetComponent<ModuleStats>()?.Data : null;
             if (data == null && block != null && builder.Catalog != null && builder.Catalog.TryGet(block.ModuleSlot, out var module)) data = module.data;
             if (data != null) ShowModule(data); else Hide();
+            }
+            finally
+            {
+                var tutorial = TutorialManager.Instance;
+                if (!hoveringMuzzle && muzzleTooltipObserved && !GameManager.GameplayBlocked &&
+                    tutorial != null && tutorial.CurrentStep?.requiredSignal == "muzzle-stats-viewed")
+                    tutorial.NotifySignal("muzzle-stats-viewed", tutorial.TutorialWorkbench);
+                muzzleTooltipObserved = hoveringMuzzle;
+            }
         }
         private bool ShowInteractionTitle()
         {

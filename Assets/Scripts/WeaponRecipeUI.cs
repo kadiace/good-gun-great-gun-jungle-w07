@@ -47,8 +47,9 @@ namespace WeaponWorkshop
         }
         public void Open()
         {
-            if (!TutorialManager.TryAction("recipe") || GameManager.GameplayBlocked || IsOpen ||
+            if (GameManager.GameplayBlocked || IsOpen ||
                 panel == null || weaponInfo == null || !weaponInfo.gameObject.activeInHierarchy) return;
+            if (!TutorialManager.TryAction("recipe")) return;
             var table = TableManager.Instance.CustomerRequest;
             foreach (var recipe in recipes)
             {

@@ -64,7 +64,12 @@ namespace WeaponWorkshop
                 if (carried != null) weapons.Add(carried);
                 Workshop.weapons = weapons.ToArray(); Workshop.hasWeapon = carried != null;
             }
-            if (!died) Workshop.balance = player.GetComponent<PlayerWallet>().Balance;
+            if (!died)
+            {
+                Workshop.balance = player.GetComponent<PlayerWallet>().Balance;
+                Workshop.outstandingLoans = player.GetComponent<PlayerWallet>().OutstandingLoans;
+                Workshop.lastLoanDay = player.GetComponent<PlayerWallet>().LastLoanDay;
+            }
             moduleCreditsBeforeLoss = died ? player.GetComponent<PlayerWallet>().ModuleCredits : 0;
             // Death forfeits raid module credits and unlocks; keep the departure snapshot.
             if (!died)

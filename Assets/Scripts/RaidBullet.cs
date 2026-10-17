@@ -11,10 +11,18 @@ namespace WeaponWorkshop
         [SerializeField, Min(0f)] private float playerDamage = 0.5f;
         [SerializeField, Min(0f)] private float playerPush = 0.3f;
         private Transform launcher;
+        private string enemyId;
+        private RaidEnemyType enemyType;
         private float elapsed;
 
         // Rented from PoolManager, so every per-shot field is reset here.
-        public void Initialize(Transform owner) { launcher = owner; elapsed = 0f; }
+        public void Initialize(Transform owner)
+        {
+            launcher = owner; elapsed = 0f;
+            var enemy = owner != null ? RaidEnemyCore.FindForPart(owner) : null;
+            enemyId = enemy != null ? enemy.EnemyId : "";
+            enemyType = enemy != null ? enemy.EnemyType : RaidEnemyType.None;
+        }
 
         private void Update()
         {
@@ -37,7 +45,7 @@ namespace WeaponWorkshop
             if (health != null)
             {
                 Vector3 push = transform.forward; push.y = 0f;
-                health.ApplyHit(playerDamage, push.normalized * playerPush, -transform.forward);
+                health.ApplyHit(playerDamage, push.normalized * playerPush, -transform.forward, enemyId, enemyType);
             }
             PoolManager.Release(gameObject);
         }

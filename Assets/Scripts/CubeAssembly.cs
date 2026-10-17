@@ -71,6 +71,7 @@ namespace WeaponWorkshop
                 return false;
             int refund = refundWallet != null ? target.TakePurchaseCost() : 0;
             int creditRefund = refundWallet != null ? target.TakeModuleCreditCost() : 0;
+            string partKind = refundWallet != null ? ModuleCounter.LogName(target) : "";
             RemoveObject(target);
             var cells = new System.Collections.Generic.Dictionary<Vector3Int, PlacedBlock>();
             foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>())
@@ -95,8 +96,10 @@ namespace WeaponWorkshop
                     if (refundWallet != null) creditRefund += entry.Value.TakeModuleCreditCost();
                     RemoveObject(entry.Value);
                 }
-            GetComponentInParent<EquipableWeapon>()?.RefundModulePurchases(refund, refundWallet);
+            int moneyRefund = GetComponentInParent<EquipableWeapon>()?.RefundModulePurchases(refund, refundWallet) ?? 0;
             refundWallet?.CreditModuleCredits(creditRefund);
+            // Disconnected blocks refund with the removed one, so the log names only the removed part.
+            refundWallet?.NotifyPartRefunded(partKind, moneyRefund, creditRefund);
             NotifyStructureChanged();
             return true;
         }

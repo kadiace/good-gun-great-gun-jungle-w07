@@ -28,15 +28,50 @@ namespace WeaponWorkshop
         [SerializeField, Tooltip("기존 1~3 모듈 표시. 즐겨찾기 표시로 대체되어 시작 시 끈다.")]
         private GameObject legacyModuleLegend;
         [SerializeField] private Vector2 slotSize = new Vector2(110f, 84f);
+        [Header("Quickslot Layout")]
+        [SerializeField, Tooltip("부모 영역 기준 좌측·하단 시작 비율(0~1).")]
+        private Vector2 hotbarAnchorMin = new Vector2(.08f, .02f);
+        [SerializeField, Tooltip("부모 영역 기준 우측·상단 끝 비율(0~1).")]
+        private Vector2 hotbarAnchorMax = new Vector2(.92f, .12f);
+        [SerializeField, Tooltip("패널 너비·높이 기준 외곽 여백 비율(0~1).")]
+        private Vector2 hotbarPaddingRatio = new Vector2(.00232515f, .03472222f);
+        [SerializeField, Tooltip("각 슬롯 너비·높이 기준 내부 텍스트 여백 비율(0~1).")]
+        private Vector2 hotbarTextPaddingRatio = new Vector2(.02875767f, .04477612f);
+        [SerializeField, Min(0f)] private float hotbarSpacingPixels = 6f;
         [SerializeField, Range(1, 6)] private int paletteColumns = 6;
+        [Header("Module List Layout")]
+        [SerializeField, Tooltip("부모 영역 기준 목록 너비·높이 비율. QHD 기존 크기에서 가로 16%, 세로 10% 확대한 기본값.")]
+        private Vector2 paletteSizeRatio = new Vector2(.32715625f, .42062014f);
         [SerializeField, Tooltip("직접 지정하지 않으면 기본 재질 팔레트를 생성합니다.")]
         private PaintMaterialOption[] paintMaterials = System.Array.Empty<PaintMaterialOption>();
 
         private static readonly Color SlotColor = new Color(41f / 255f, 45f / 255f, 51f / 255f, 1f);
         private RectTransform hotbar;
+        private HorizontalLayoutGroup hotbarLayout;
+        private Canvas hotbarCanvas;
+        private Vector2 lastHotbarSize = new Vector2(-1f, -1f);
+        private float lastHotbarScale = -1f;
+        private Vector2 lastHotbarPadding = new Vector2(-1f, -1f);
+        private Vector2 lastHotbarTextPadding = new Vector2(-1f, -1f);
+        private float lastHotbarSpacing = -1f;
         private TMPro.TextMeshProUGUI hotbarGuide;
         private const string HotbarGuideText = "퀵슬롯을 다른 번호 칸으로 드래그하면 서로 바뀝니다 · Tab: 모듈 목록";
         private RectTransform palette;
+        private VerticalLayoutGroup paletteLayout;
+        private LayoutElement paletteTitleLayout;
+        private Vector2 paletteReferenceSize;
+        private float paletteReferenceTitleHeight;
+        private Vector2 lastPaletteSize = new Vector2(-1f, -1f);
+        private float lastPaletteScale = -1f;
+        private readonly List<PaletteCategoryLayout> paletteCategories = new List<PaletteCategoryLayout>();
+        private sealed class PaletteCategoryLayout
+        {
+            public VerticalLayoutGroup Layout;
+            public LayoutElement Heading;
+            public GridLayoutGroup Grid;
+            public LayoutElement GridSize;
+            public int Rows;
+        }
         private RectTransform dragGhost;
         private Image dragGhostSwatch;
         private TMPro.TextMeshProUGUI dragGhostLabel;
@@ -221,6 +256,8 @@ namespace WeaponWorkshop
 
         private void LateUpdate()
         {
+            UpdateHotbarLayout();
+            UpdatePaletteLayout();
             if (builder == null)
             {
                 CubeBuilder[] builders = FindObjectsByType<CubeBuilder>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -278,6 +315,85 @@ namespace WeaponWorkshop
             Refresh();
         }
 
+        private void UpdateHotbarLayout()
+        {
+            if (hotbar == null || hotbarLayout == null) return;
+            bool anchorsChanged = hotbar.anchorMin != hotbarAnchorMin || hotbar.anchorMax != hotbarAnchorMax;
+            if (anchorsChanged)
+            {
+                hotbar.anchorMin = hotbarAnchorMin;
+                hotbar.anchorMax = hotbarAnchorMax;
+                hotbar.offsetMin = hotbar.offsetMax = Vector2.zero;
+            }
+            if (hotbarGuide != null)
+            {
+                Vector2 guideMin = new Vector2(hotbarAnchorMin.x, hotbarAnchorMax.y + .01f);
+                Vector2 guideMax = new Vector2(hotbarAnchorMax.x, hotbarAnchorMax.y + .04f);
+                if (hotbarGuide.rectTransform.anchorMin != guideMin || hotbarGuide.rectTransform.anchorMax != guideMax)
+                {
+                    hotbarGuide.rectTransform.anchorMin = guideMin;
+                    hotbarGuide.rectTransform.anchorMax = guideMax;
+                    hotbarGuide.rectTransform.offsetMin = hotbarGuide.rectTransform.offsetMax = Vector2.zero;
+                }
+            }
+            float scale = hotbarCanvas != null ? Mathf.Max(.01f, hotbarCanvas.scaleFactor) : 1f;
+            Vector2 size = hotbar.rect.size;
+            if (size.x <= 0f || size.y <= 0f) return;
+            if (!anchorsChanged && size == lastHotbarSize && Mathf.Approximately(scale, lastHotbarScale) &&
+                hotbarPaddingRatio == lastHotbarPadding &&
+                hotbarTextPaddingRatio == lastHotbarTextPadding &&
+                Mathf.Approximately(hotbarSpacingPixels, lastHotbarSpacing)) return;
+            lastHotbarSize = size;
+            lastHotbarScale = scale;
+            lastHotbarPadding = hotbarPaddingRatio;
+            lastHotbarTextPadding = hotbarTextPaddingRatio;
+            lastHotbarSpacing = hotbarSpacingPixels;
+            int horizontalPadding = Mathf.RoundToInt(size.x * Mathf.Clamp(hotbarPaddingRatio.x, 0f, .49f));
+            int verticalPadding = Mathf.RoundToInt(size.y * Mathf.Clamp(hotbarPaddingRatio.y, 0f, .49f));
+            hotbarLayout.padding = new RectOffset(horizontalPadding, horizontalPadding, verticalPadding, verticalPadding);
+            hotbarLayout.spacing = hotbarSpacingPixels / scale;
+            foreach (var slot in hotbarSlots) slot.SetContentPaddingRatio(hotbarTextPaddingRatio);
+            LayoutRebuilder.MarkLayoutForRebuild(hotbar);
+        }
+
+        private void UpdatePaletteLayout()
+        {
+            if (palette == null || paletteLayout == null || paletteReferenceSize.x <= 0f || paletteReferenceSize.y <= 0f) return;
+            Vector2 ratio = new Vector2(Mathf.Clamp(paletteSizeRatio.x, .01f, 1f), Mathf.Clamp(paletteSizeRatio.y, .01f, 1f));
+            Vector2 anchorMin = Vector2.one * .5f - ratio * .5f;
+            Vector2 anchorMax = Vector2.one * .5f + ratio * .5f;
+            bool anchorsChanged = palette.anchorMin != anchorMin || palette.anchorMax != anchorMax;
+            if (anchorsChanged)
+            {
+                palette.anchorMin = anchorMin;
+                palette.anchorMax = anchorMax;
+                palette.offsetMin = palette.offsetMax = Vector2.zero;
+            }
+            Vector2 size = palette.rect.size;
+            if (size.x <= 0f || size.y <= 0f) return;
+            float canvasScale = hotbarCanvas != null ? Mathf.Max(.01f, hotbarCanvas.scaleFactor) : 1f;
+            if (!anchorsChanged && size == lastPaletteSize && Mathf.Approximately(canvasScale, lastPaletteScale)) return;
+            lastPaletteSize = size;
+            lastPaletteScale = canvasScale;
+            float scaleX = size.x / paletteReferenceSize.x;
+            float scaleY = size.y / paletteReferenceSize.y;
+            paletteLayout.padding = new RectOffset(Mathf.RoundToInt(16f * scaleX), Mathf.RoundToInt(16f * scaleX),
+                Mathf.RoundToInt(12f * scaleY), Mathf.RoundToInt(16f * scaleY));
+            paletteLayout.spacing = 10f * scaleY;
+            paletteTitleLayout.preferredHeight = paletteReferenceTitleHeight * scaleY;
+            foreach (var category in paletteCategories)
+            {
+                category.Layout.spacing = 6f * scaleY;
+                category.Heading.preferredHeight = 28f * scaleY;
+                category.Grid.cellSize = new Vector2(slotSize.x * scaleX, slotSize.y * scaleY);
+                category.Grid.spacing = new Vector2(6f * scaleX, 6f * scaleY);
+                category.GridSize.preferredHeight = category.Rows * category.Grid.cellSize.y +
+                    Mathf.Max(0, category.Rows - 1) * category.Grid.spacing.y;
+            }
+            foreach (var slot in paletteSlots) if (slot != null) slot.SetContentPadding(5f / canvasScale);
+            LayoutRebuilder.MarkLayoutForRebuild(palette);
+        }
+
         private int ComputeState()
         {
             int state = builder.DeleteMode ? -1 : builder.SelectedSlot;
@@ -298,7 +414,7 @@ namespace WeaponWorkshop
             {
                 int id = builder.GetFavorite(i);
                 catalog.TryGet(id, out ModuleCatalog.Entry entry);
-                hotbarSlots[i].Show(id, $"{(i + 1) % 10}  {entry.displayName}", entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}");
+                hotbarSlots[i].Show(id, entry.displayName, entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}");
             }
             for (int i = 0; i < paletteSlots.Count; i++)
             {
@@ -427,61 +543,73 @@ namespace WeaponWorkshop
         {
             slotSize.y = Mathf.Max(slotSize.y, 84f);
             hotbar = CreateRect("Hotbar", transform);
-            hotbar.anchorMin = hotbar.anchorMax = new Vector2(0.5f, 0f);
-            hotbar.pivot = new Vector2(0.5f, 0f);
-            hotbar.anchoredPosition = new Vector2(0f, 16f);
-            var row = hotbar.gameObject.AddComponent<HorizontalLayoutGroup>();
-            row.spacing = 6f;
-            row.childControlWidth = row.childControlHeight = false;
-            hotbar.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            hotbar.sizeDelta = new Vector2(0f, slotSize.y);
+            hotbar.anchorMin = hotbarAnchorMin;
+            hotbar.anchorMax = hotbarAnchorMax;
+            hotbar.offsetMin = hotbar.offsetMax = Vector2.zero;
+            hotbarCanvas = GetComponentInParent<Canvas>();
+            hotbarLayout = hotbar.gameObject.AddComponent<HorizontalLayoutGroup>();
+            hotbarLayout.childControlWidth = hotbarLayout.childControlHeight = true;
+            hotbarLayout.childForceExpandWidth = hotbarLayout.childForceExpandHeight = true;
             for (int i = 0; i < 10; i++) hotbarSlots.Add(CreateSlot(hotbar, i));
             hotbarGuide = CreateText("HotbarGuide", (RectTransform)transform, HotbarGuideText, 18);
-            hotbarGuide.rectTransform.anchorMin = hotbarGuide.rectTransform.anchorMax = new Vector2(.5f, 0f);
-            hotbarGuide.rectTransform.pivot = new Vector2(.5f, 0f);
-            hotbarGuide.rectTransform.anchoredPosition = new Vector2(0f, 26f + slotSize.y);
-            hotbarGuide.rectTransform.sizeDelta = new Vector2(slotSize.x * 10f + 54f, 30f);
+            hotbarGuide.rectTransform.anchorMin = new Vector2(hotbarAnchorMin.x, hotbarAnchorMax.y + .01f);
+            hotbarGuide.rectTransform.anchorMax = new Vector2(hotbarAnchorMax.x, hotbarAnchorMax.y + .04f);
+            hotbarGuide.rectTransform.offsetMin = hotbarGuide.rectTransform.offsetMax = Vector2.zero;
             hotbarGuide.alignment = TMPro.TextAlignmentOptions.Midline;
             hotbarGuide.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
             hotbarGuide.enableAutoSizing = true;
-            hotbarGuide.fontSizeMin = 14f;
-            hotbarGuide.fontSizeMax = 18f;
+            hotbarGuide.fontSizeMin = 18f;
+            hotbarGuide.fontSizeMax = 22f;
             hotbarGuide.gameObject.SetActive(false);
+            UpdateHotbarLayout();
 
             palette = CreateRect("Palette", transform);
             palette.anchorMin = palette.anchorMax = palette.pivot = new Vector2(0.5f, 0.5f);
             palette.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.75f);
-            var column = palette.gameObject.AddComponent<VerticalLayoutGroup>();
+            var column = paletteLayout = palette.gameObject.AddComponent<VerticalLayoutGroup>();
             column.padding = new RectOffset(16, 16, 12, 16);
             column.spacing = 10f;
             column.childControlWidth = column.childControlHeight = true;
-            column.childForceExpandWidth = column.childForceExpandHeight = false;
-            var fitter = palette.gameObject.AddComponent<ContentSizeFitter>();
-            fitter.horizontalFit = fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            column.childForceExpandWidth = true;
+            column.childForceExpandHeight = false;
             TMPro.TextMeshProUGUI title = CreateText("Title", palette,
                 "모듈 · 클릭: 선택 · 마우스 올리고 1~9·0: 등록\n목록을 하단으로 드래그: 등록 · 퀵슬롯끼리 드래그: 교체", 18);
             title.alignment = TMPro.TextAlignmentOptions.Midline;
+            Vector2 titlePreferred = title.GetPreferredValues(title.text);
+            paletteReferenceTitleHeight = titlePreferred.y;
+            title.enableAutoSizing = true;
+            title.fontSizeMin = 18f;
+            title.fontSizeMax = 22f;
+            paletteTitleLayout = title.gameObject.AddComponent<LayoutElement>();
+            paletteTitleLayout.preferredHeight = paletteReferenceTitleHeight;
             int count = builder != null && builder.Catalog != null ? builder.Catalog.Count : 0;
             for (int i = 0; i < count; i++) paletteSlots.Add(null);
+            float referenceContentWidth = titlePreferred.x;
+            float referenceContentHeight = titlePreferred.y + 30f;
             for (int category = 0; category < 3; category++)
             {
                 RectTransform group = CreateRect("ModuleCategory" + category, palette);
                 var layout = group.gameObject.AddComponent<VerticalLayoutGroup>();
                 layout.spacing = 6f;
                 layout.childControlWidth = true;
-                layout.childControlHeight = false;
-                layout.childForceExpandWidth = layout.childForceExpandHeight = false;
+                layout.childControlHeight = true;
+                layout.childForceExpandWidth = true;
+                layout.childForceExpandHeight = false;
                 layout.childAlignment = TextAnchor.UpperLeft;
                 var heading = CreateText("CategoryTitle", group,
                     category == 0 ? "제어 모듈" : category == 1 ? "기능 모듈" : "치장 모듈", 18);
                 heading.rectTransform.sizeDelta = new Vector2(110f, 28f);
+                heading.enableAutoSizing = true;
+                heading.fontSizeMin = 18f;
+                heading.fontSizeMax = 22f;
+                var headingSize = heading.gameObject.AddComponent<LayoutElement>();
+                headingSize.preferredHeight = 28f;
                 RectTransform grid = CreateRect("Grid", group);
                 var gridLayout = grid.gameObject.AddComponent<GridLayoutGroup>();
                 gridLayout.cellSize = slotSize;
                 gridLayout.spacing = new Vector2(6f, 6f);
                 gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-                var gridFitter = grid.gameObject.AddComponent<ContentSizeFitter>();
-                gridFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                var gridSize = grid.gameObject.AddComponent<LayoutElement>();
                 int categoryCount = 0;
                 for (int id = 1; id <= count; id++)
                 {
@@ -497,7 +625,19 @@ namespace WeaponWorkshop
                     }
                 }
                 gridLayout.constraintCount = Mathf.Clamp(categoryCount, 1, Mathf.Clamp(paletteColumns, 1, 6));
+                int rows = Mathf.CeilToInt(categoryCount / (float)gridLayout.constraintCount);
+                float gridHeight = rows * slotSize.y + Mathf.Max(0, rows - 1) * 6f;
+                referenceContentWidth = Mathf.Max(referenceContentWidth,
+                    gridLayout.constraintCount * slotSize.x + (gridLayout.constraintCount - 1) * 6f);
+                referenceContentHeight += 28f + 6f + gridHeight;
+                paletteCategories.Add(new PaletteCategoryLayout
+                {
+                    Layout = layout, Heading = headingSize, Grid = gridLayout, GridSize = gridSize, Rows = rows
+                });
             }
+            // Preserve the old content proportions inside the independently anchored panel.
+            paletteReferenceSize = new Vector2(referenceContentWidth + 32f, referenceContentHeight + 28f);
+            UpdatePaletteLayout();
 
             dragGhost = CreateRect("DragGhost", transform);
             dragGhost.sizeDelta = slotSize;
@@ -910,7 +1050,7 @@ namespace WeaponWorkshop
                 new Vector2(156f, 32f), controlAnchor, controlAnchor, new Vector2(-82f, -98f),
                 new Color(0.18f, 0.22f, 0.25f, 1f));
             stickerMirrorButtonLabel = stickerMirrorButton.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-            if (stickerMirrorButtonLabel != null) stickerMirrorButtonLabel.fontSize = 14;
+            if (stickerMirrorButtonLabel != null) stickerMirrorButtonLabel.fontSize = 18;
             stickerMirrorButton.onClick.AddListener(() =>
             {
                 builder?.ToggleStickerHorizontalFlip();
@@ -2037,6 +2177,10 @@ namespace WeaponWorkshop
             ApplyButtonColors(button);
             Image swatch = CreateSwatch(rect);
             TMPro.TextMeshProUGUI label = CreateText("Label", rect, "", 16);
+            label.enableAutoSizing = true;
+            label.fontSize = favoriteIndex >= 0 ? 24f : 20f;
+            label.fontSizeMin = favoriteIndex >= 0 ? 20f : 16f;
+            label.fontSizeMax = favoriteIndex >= 0 ? 24f : 20f;
             Stretch(label.rectTransform, 18f);
             label.rectTransform.offsetMin = new Vector2(18f, 28f);
             var slot = rect.gameObject.AddComponent<ModuleSlotUI>();
@@ -2061,7 +2205,7 @@ namespace WeaponWorkshop
         {
             var text = CreateRect(name, parent).gameObject.AddComponent<TMPro.TextMeshProUGUI>();
             text.font = font;
-            text.fontSize = size;
+            text.fontSize = size + 4;
             UIFonts.ApplyWeight(text, name.Contains("Title") ? 800 : parent.GetComponent<UnityEngine.UI.Button>() != null ? 700 : 400);
             text.text = value;
             text.color = Color.white;

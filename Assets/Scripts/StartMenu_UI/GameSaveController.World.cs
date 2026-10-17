@@ -254,6 +254,9 @@ namespace WeaponWorkshop
                 session?.Enter(bench, false);
             }
             player.GetComponent<PlayerWallet>().RestoreBalance(data.balance);
+            FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.RestoreSpins(data.slotMachineSpins);
+            player.GetComponent<PlayerWallet>().RestoreLoans(data.outstandingLoans);
+            player.GetComponent<PlayerWallet>().RestoreLastLoanDay(data.lastLoanDay);
             player.GetComponent<PlayerWallet>().RestoreModuleCredits(data.moduleCredits);
             player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(data.unlockedModules);
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);

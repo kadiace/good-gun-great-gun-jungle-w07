@@ -187,26 +187,35 @@ public sealed class DaySettlementUI : MonoBehaviour
         dailyRentText?.gameObject.SetActive(hasDailyRent);
         if (hasDailyRent && dailyRentText != null)
         {
-            int rent = dayManager.CurrentCustomerDay.Rent;
-            dailyRentText.text = rent > 0 ? $"자리세: −$ {rent:N0}" : $"자리세: $ {rent:N0}";
-            dailyRentText.color = rent > 0 ? NegativeValueColor : Color.white;
+            int rent = dayManager.IsNight && dayManager.IsSettlementOpen
+                ? dayManager.TodayRent : dayManager.NextSettlementRent;
+            int loans = wallet.OutstandingLoans;
+            long principal = dayManager.IsNight && dayManager.IsSettlementOpen
+                ? dayManager.TodayLoanRepayment : (long)loans * WeaponWorkshop.PlayerWallet.LoanAmount;
+            long interest = dayManager.IsNight && dayManager.IsSettlementOpen
+                ? dayManager.TodayLoanInterest : (long)rent * loans / 5;
+            dailyRentText.text = $"자리세: −$ {rent:N0}";
+            if (principal > 0)
+                dailyRentText.text += $"\n대출 원금: −$ {principal:N0}\n대출 이자: −$ {interest:N0}";
+            dailyRentText.color = rent > 0 || principal > 0 ? NegativeValueColor : Color.white;
         }
         if (moduleCreditText != null && wallet != null)
             moduleCreditCounter.SetTarget(wallet.ModuleCredits, moneyCountDuration);
         if (moneyText != null && wallet != null)
         {
             moneyCounter.SetTarget(wallet.Balance, moneyCountDuration);
-            int rent = dayManager != null && dayManager.CurrentCustomerDay != null
-                ? dayManager.CurrentCustomerDay.Rent : 0;
-            long balanceAfterRent = (long)wallet.Balance - (dayManager != null && dayManager.IsNight ? 0 : rent);
-            moneyCounter.SetNegative(balanceAfterRent <= 0);
+            long due = dayManager != null && !dayManager.IsNight
+                ? (long)dayManager.NextSettlementRent * (5L + wallet.OutstandingLoans) / 5
+                    + (long)wallet.OutstandingLoans * WeaponWorkshop.PlayerWallet.LoanAmount : 0;
+            moneyCounter.SetNegative((long)wallet.Balance - due <= 0);
         }
         if (todayIncomeText != null)
         {
             todayIncomeText.gameObject.SetActive(show);
             if (show)
             {
-                long netIncome = (long)dayManager.TodayIncome - dayManager.TodayRent - dayManager.TodaySoldConstructionCost;
+                long netIncome = (long)dayManager.TodayIncome + dayManager.TodayLoanIncome - dayManager.TodayRent - dayManager.TodaySoldConstructionCost
+                    - dayManager.TodayLoanRepayment - dayManager.TodayLoanInterest;
                 string amount = netIncome < 0 ? $"−$ {-netIncome:N0}" : $"$ {netIncome:N0}";
                 if (netIncome < 0) amount = $"<color=#D5443F>{amount}</color>";
                 int balance = wallet != null ? wallet.Balance : 0;
@@ -215,9 +224,9 @@ public sealed class DaySettlementUI : MonoBehaviour
                 string settlementAmount = netIncome < 0 ? $"(−$ {-netIncome:N0})" : $"$ {netIncome:N0}";
                 string currentAmount = balance < 0 ? $"−$ {-(long)balance:N0}" : $"$ {balance:N0}";
                 if (balance < 0) currentAmount = $"<color=#D5443F>{currentAmount}</color>";
-                todayIncomeText.text = $"<size=56.25%>최종 정산액</size>\n{amount}\n" +
-                    $"<size=43.75%>기존 보유 금액 + 최종 정산액 = 현재 보유 금액</size>\n" +
-                    $"<size=56.25%>{previousAmount} + {settlementAmount} = {currentAmount}</size>";
+                todayIncomeText.text = $"<size=61.11111%>최종 정산액</size>\n{amount}\n" +
+                    $"<size=50%>기존 보유 금액 + 최종 정산액 = 현재 보유 금액</size>\n" +
+                    $"<size=61.11111%>{previousAmount} + {settlementAmount} = {currentAmount}</size>";
             }
         }
         if (show && receiptTitle != null) receiptTitle.text = dayManager.DayNumber == 0 ? "튜토리얼 - 영업 정산" : $"DAY {dayManager.DayNumber:00} - 영업 정산";
@@ -232,9 +241,13 @@ public sealed class DaySettlementUI : MonoBehaviour
             summaryText.text = $"완료한 손님<pos=78%>{dayManager.CompletedGuests}명\n" +
                 $"불만족 손님<pos=78%>{dayManager.DissatisfiedGuests}명\n" +
                 $"살해한 손님<pos=78%>{dayManager.KilledGuests}명\n" +
-                $"수입<pos=65%>+$ {dayManager.TodayIncome:N0}\n" +
-                $"총기 제작비<pos=65%>{constructionAmount}\n" +
-                $"자리세<pos=65%>{rentAmount}";
+                 $"수입<pos=65%>+$ {dayManager.TodayIncome:N0}\n" +
+                (dayManager.TodayLoanIncome > 0 ? $"대출 원금<pos=65%>+$ {dayManager.TodayLoanIncome:N0}\n" : "") +
+                 $"총기 제작비<pos=65%>{constructionAmount}\n" +
+                 $"자리세<pos=65%>{rentAmount}";
+            if (dayManager.TodayLoanRepayment > 0)
+                summaryText.text += $"\n대출 원금<pos=65%><color=#D5443F>−$ {dayManager.TodayLoanRepayment:N0}</color>" +
+                    $"\n대출 이자<pos=65%><color=#D5443F>−$ {dayManager.TodayLoanInterest:N0}</color>";
             if (dayManager.IsBankrupt)
                 summaryText.text += "\n\n<color=#D5443F>자릿세를 낼 돈이 부족합니다.</color>";
         }
@@ -261,7 +274,7 @@ public sealed class DaySettlementUI : MonoBehaviour
         rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.anchoredPosition = new Vector2(moneyDisplay.sizeDelta.x + dailyRentGap, 0f);
-        rect.sizeDelta = new Vector2(dailyRentWidth, moneyDisplay.sizeDelta.y);
+        rect.sizeDelta = new Vector2(dailyRentWidth, moneyDisplay.sizeDelta.y * 3f);
 
         var text = textObject.GetComponent<TMPro.TextMeshProUGUI>();
         text.font = moneyText.font;
@@ -269,7 +282,7 @@ public sealed class DaySettlementUI : MonoBehaviour
         text.fontWeight = moneyText.fontWeight;
         text.fontStyle = moneyText.fontStyle;
         text.color = moneyText.color;
-        text.alignment = TMPro.TextAlignmentOptions.MidlineLeft;
+        text.alignment = TMPro.TextAlignmentOptions.TopLeft;
         text.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
         text.overflowMode = TMPro.TextOverflowModes.Overflow;
         text.raycastTarget = false;

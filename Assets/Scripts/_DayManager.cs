@@ -34,6 +34,24 @@ public class _DayManager : MonoBehaviour
     public int TodayIncome { get; private set; }
     public int TodaySoldConstructionCost { get; private set; }
     public int TodayRent { get; private set; }
+    public int TodayLoanRepayment { get; private set; }
+    public int TodayLoanInterest { get; private set; }
+    public int TodayLoanIncome { get; private set; }
+    public int NextSettlementRent
+    {
+        get
+        {
+            if (!IsNight) return CurrentCustomerDay != null ? CurrentCustomerDay.Rent : 0;
+            int nextDay = DayNumber + 1;
+            var fixedDay = FindCustomerDay(nextDay);
+            if (fixedDay != null) return fixedDay.Rent;
+            int firstEndlessDay = 1;
+            if (customerDays != null)
+                foreach (var day in customerDays)
+                    if (day != null) firstEndlessDay = Mathf.Max(firstEndlessDay, day.day + 1);
+            return endlessRent + endlessRentGrowth * Mathf.Max(0, nextDay - firstEndlessDay);
+        }
+    }
     [SerializeField, Min(0), Tooltip("무한 모드 첫날 월세")] private int endlessRent = 2000;
     [SerializeField, Min(0), Tooltip("무한 모드 하루마다 오르는 월세")] private int endlessRentGrowth = 50;
     public int DayNumber { get; private set; } = 1;
@@ -48,6 +66,11 @@ public class _DayManager : MonoBehaviour
     public event Action<int, int> BusinessOpened;
     public event Action<int, int> ManualCloseRequested;
     public event Action<CustomerProfile, int> OrderRegistered;
+    // Shop telemetry: (runtime order, day it was pushed from, reason).
+    public event Action<CustomerProfile, int, string> OrderDeferred;
+    // Shop telemetry before night starts: manual or automatic close.
+    public event Action<bool> ShopClosing;
+    public int DailyGuestCount => dailyGuestCount;
     public bool CanCollectShopLogs => shopLogsReady && shopLogSuppression == 0;
     private bool shopLogsReady;
     private int shopLogSuppression;
@@ -74,6 +97,8 @@ public class _DayManager : MonoBehaviour
         TodayIncome = 0;
         TodaySoldConstructionCost = 0;
         TodayRent = 0;
+        TodayLoanRepayment = TodayLoanInterest = 0;
+        TodayLoanIncome = 0;
         wallet = PlayerWallet.ForScene(this);
         DayNumber = startingDay;
         CurrentCustomerDay = null;
@@ -120,6 +145,7 @@ public class _DayManager : MonoBehaviour
         wallet?.RestoreTodayConstructionCost(0);
         DayNumber = 1;
         CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodaySoldConstructionCost = TodayRent = 0;
+        TodayLoanIncome = 0;
         isSettled = IsNight = IsSettlementOpen = CanStartNextDay = false;
         startedDayInDebt = wallet != null && Money < 0;
         ApplyMorning(); gameManager.SetNight(false); Changed?.Invoke();
@@ -189,6 +215,7 @@ public class _DayManager : MonoBehaviour
     {
         if (IsNight || IsAwaitingOpening || isSettled || !HasRequiredReferences()) return;
         if (manual) ManualCloseRequested?.Invoke(DayNumber, Money);
+        ShopClosing?.Invoke(manual);
         CurrentPeriod = setTimer.night;
         hasCurrentPeriod = true;
         var night = settings.timing?.Find(t => t != null && t.period == setTimer.night);
@@ -204,9 +231,18 @@ public class _DayManager : MonoBehaviour
         WorkshopSoundEffects.RaiseBusinessEnded();
         customerBell?.EndDay();
         TodayRent = CurrentCustomerDay != null ? CurrentCustomerDay.Rent : 0;
-        if (wallet != null && wallet.Balance < TodayRent)
+        int balanceBefore = Money;
+        int loans = wallet != null ? wallet.OutstandingLoans : 0;
+        long principal = (long)loans * PlayerWallet.LoanAmount;
+        long interest = (long)TodayRent * loans / 5;
+        long due = (long)TodayRent + principal + interest;
+        TodayLoanRepayment = (int)Math.Min(int.MaxValue, principal);
+        TodayLoanIncome = TodayLoanRepayment;
+        TodayLoanInterest = (int)Math.Min(int.MaxValue, interest);
+        if (wallet != null && (due > int.MaxValue || wallet.Balance < due))
         {
             IsBankrupt = true;
+            LogDaySettled(balanceBefore);
             LogKit.GameLogger.Data("Info", "Game", "bankrupt",
                 new GameBankruptLog { day = DayNumber, balance = wallet.Balance, rent = TodayRent });
             CanStartNextDay = false;
@@ -215,13 +251,23 @@ public class _DayManager : MonoBehaviour
             Changed?.Invoke();
             return;
         }
-        wallet?.Debit(TodayRent);
+        wallet?.Debit((int)due);
+        wallet?.RestoreLoans(0);
+        LogDaySettled(balanceBefore);
         IsSettlementOpen = true;
         gameManager.SetNight(true);
         CanStartNextDay = HasNextDay && !(TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero);
         Changed?.Invoke();
         // Stay at night until the player chooses a raid or the next morning.
     }
+    private void LogDaySettled(int balanceBefore) =>
+        LogKit.GameLogger.Data("Info", "Game", "day_settled", new GameDaySettledLog
+        {
+            day = DayNumber, balanceBefore = balanceBefore, income = TodayIncome,
+            constructionCost = wallet != null ? wallet.TodayConstructionCost : 0, soldConstructionCost = TodaySoldConstructionCost,
+            rent = TodayRent, balanceAfter = Money, completedGuests = CompletedGuests, dissatisfiedGuests = DissatisfiedGuests,
+            killedGuests = KilledGuests, moduleCredits = ModuleCredits, bankrupt = IsBankrupt
+        });
     public void DeclineNextDay()
     {
         if (!IsNight || !IsSettlementOpen || !HasRequiredReferences()) return;
@@ -334,6 +380,8 @@ public class _DayManager : MonoBehaviour
         TodayIncome = 0;
         TodaySoldConstructionCost = 0;
         TodayRent = 0;
+        TodayLoanRepayment = TodayLoanInterest = 0;
+        TodayLoanIncome = 0;
         isSettled = false;
         IsNight = false;
         IsSettlementOpen = false;
@@ -364,6 +412,7 @@ public class _DayManager : MonoBehaviour
         DayNumber = day;
         wallet?.RestoreTodayConstructionCost(0);
         CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodaySoldConstructionCost = TodayRent = 0;
+        TodayLoanIncome = 0;
         isSettled = IsNight = night;
         IsSettlementOpen = IsBankrupt = bankruptcyResultOpen = returningToStart = startedDayInDebt = false;
         CanStartNextDay = night && HasNextDay;
@@ -391,6 +440,9 @@ public class _DayManager : MonoBehaviour
         data.period = (int)CurrentPeriod; data.night = IsNight;
         data.settlement = IsSettlementOpen; data.timer = timerController.CaptureSave();
         data.startedDayInDebt = startedDayInDebt;
+        data.todayLoanRepayment = TodayLoanRepayment;
+        data.todayLoanInterest = TodayLoanInterest;
+        data.todayLoanIncome = TodayLoanIncome;
         customerBell.CaptureSave(data);
         if (CurrentCustomerDay != null)
         {
@@ -483,6 +535,9 @@ public class _DayManager : MonoBehaviour
         startedDayInDebt = data.startedDayInDebt;
         // The saved wallet already includes rent; restore its display without charging again.
         TodayRent = IsNight ? CurrentCustomerDay.Rent : 0;
+        TodayLoanRepayment = IsNight ? data.todayLoanRepayment : 0;
+        TodayLoanInterest = IsNight ? data.todayLoanInterest : 0;
+        TodayLoanIncome = data.todayLoanIncome;
         CanStartNextDay = IsNight && HasNextDay;
         timerController.RestoreSave(data.timer);
         gameManager.SetNight(data.night && data.settlement);
@@ -628,7 +683,12 @@ public class _DayManager : MonoBehaviour
         {
             var profile = day.customers[i];
             if (profile == null || canServe(profile, dayNumber)) continue;
-            if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile)) deferredCustomers.Add(CreateRuntimeOrder(profile));
+            if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile))
+            {
+                var deferred = CreateRuntimeOrder(profile);
+                deferredCustomers.Add(deferred);
+                OrderDeferred?.Invoke(deferred, dayNumber, CanServe(profile, dayNumber) ? "credits" : "module_locked");
+            }
             day.customers[i] = CreateCombination(dayNumber, day.MinRequests, day.MaxRequests);
         }
         foreach (var profile in pending)

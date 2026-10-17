@@ -34,7 +34,7 @@ namespace WeaponWorkshop
         private TextMeshProUGUI Label(string labelName, float top, float size, float height)
         {
             var label = new GameObject(labelName, typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
-            label.transform.SetParent(panel, false); label.font = font; label.fontSize = size;
+            label.transform.SetParent(panel, false); label.font = font; label.fontSize = size + 4f;
             label.alignment = TextAlignmentOptions.TopLeft; label.raycastTarget = false;
             var rect = label.rectTransform;
             rect.anchorMin = new Vector2(0f, 1f); rect.anchorMax = new Vector2(1f, 1f); rect.pivot = new Vector2(.5f, 1f);

@@ -11,7 +11,7 @@ namespace WeaponWorkshop
         [Serializable] public sealed class Sale
         {
             // 만족 판매: 제작비 × (1 + tagBonusRatio × 보너스 요청 수) + 손님 보상. 불만족: 제작비 × dissatisfiedRatio.
-            public float tagBonusRatio = 0.5f;
+            public float tagBonusRatio = 0.2f;
             public float dissatisfiedRatio = 0.8f;
         }
         [Serializable] public sealed class PoolRequest

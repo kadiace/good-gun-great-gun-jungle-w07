@@ -15,13 +15,21 @@ namespace WeaponWorkshop
         [SerializeField, Min(0f)] private float playerPush = 2f;
         private FirstPersonPlayer player;
         private Transform launcher;
+        private string enemyId;
+        private RaidEnemyType enemyType;
         private ProjectileStatsSource source;
         private float elapsed;
         private bool exploded;
         // Player health can subscribe here without treating the player as a disposable TargetHealth.
         public static event System.Action<FirstPersonPlayer, float> PlayerHit;
         private void Awake() { source = GetComponent<ProjectileStatsSource>(); source.SetBaseDamage(damage); }
-        public void Initialize(FirstPersonPlayer target, Transform owner) { player = target; launcher = owner; }
+        public void Initialize(FirstPersonPlayer target, Transform owner)
+        {
+            player = target; launcher = owner;
+            var enemy = owner != null ? RaidEnemyCore.FindForPart(owner) : null;
+            enemyId = enemy != null ? enemy.EnemyId : "";
+            enemyType = enemy != null ? enemy.EnemyType : RaidEnemyType.None;
+        }
         private void Update()
         {
             if (exploded || GameManager.GameplayBlocked) return;
@@ -61,7 +69,7 @@ namespace WeaponWorkshop
                 Vector3 push = player.transform.position - hit.point; push.y = 0f;
                 var health = player.GetComponent<RaidPlayerHealth>();
                 if (health != null)
-                    health.ApplyHit(playerDamage, push.normalized * playerPush, hit.point - player.transform.position);
+                    health.ApplyHit(playerDamage, push.normalized * playerPush, hit.point - player.transform.position, enemyId, enemyType);
             }
             Destroy(gameObject);
         }

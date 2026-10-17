@@ -20,9 +20,11 @@ namespace WeaponWorkshop
         private float elapsed = -1f;
         private int openedFrame;
         private bool confirmRequested;
+        private bool choiceInputSuspended;
         private RectTransform yesButtonRect;
         private Vector2 yesAnchorMin, yesAnchorMax;
         public bool IsChoiceOpen => owner != null;
+        public bool IsChoiceInputSuspended => choiceInputSuspended;
         public RectTransform TutorialConfirmButton => yesButton != null && yesButton.interactable ? yesButton.transform as RectTransform : null;
 
         public static FeedbackUI For(Component caller)
@@ -44,7 +46,7 @@ namespace WeaponWorkshop
             {
                 controls = inputActions.FindActionMap("Workshop", true).Clone();
                 controls.FindAction("Interact", true).performed += _ =>
-                { if (IsChoiceOpen && Time.frameCount > openedFrame) confirmRequested = true; };
+                { if (IsChoiceOpen && !choiceInputSuspended && Time.frameCount > openedFrame) confirmRequested = true; };
             }
         }
         private void OnEnable() => controls?.Enable();
@@ -80,6 +82,7 @@ namespace WeaponWorkshop
         {
             if (!isActiveAndEnabled || IsChoiceOpen || requester == null || choicePanel == null || choiceMessage == null || yesButton == null || noButton == null) return false;
             owner = requester; yes = onYes; no = onNo;
+            choiceInputSuspended = false;
             openedFrame = Time.frameCount; confirmRequested = false;
             choiceMessage.text = message;
             yesButton.interactable = canConfirm;
@@ -91,6 +94,22 @@ namespace WeaponWorkshop
             choicePanel.transform.SetAsLastSibling();
             GameManager.Instance?.RefreshInputState();
             return true;
+        }
+        public void SuspendChoiceInput()
+        {
+            if (!IsChoiceOpen) return;
+            choiceInputSuspended = true;
+            confirmRequested = false;
+            if (yesButton != null) yesButton.interactable = false;
+            if (noButton != null) noButton.interactable = false;
+        }
+        public void ResumeChoiceInput()
+        {
+            if (!IsChoiceOpen || !choiceInputSuspended) return;
+            choiceInputSuspended = false;
+            openedFrame = Time.frameCount;
+            if (yesButton != null) yesButton.interactable = true;
+            if (noButton != null) noButton.interactable = true;
         }
         public bool ShowAcknowledgement(object requester, string message, string buttonLabel = "확인했습니다")
         {
@@ -113,12 +132,13 @@ namespace WeaponWorkshop
         }
         public void CancelChoice(object requester) { if (ReferenceEquals(owner, requester)) Cancel(); }
         public void Cancel() => Complete(false);
-        private void Confirm() { if (yesButton != null && yesButton.interactable) Complete(true); }
+        private void Confirm() { if (!choiceInputSuspended && yesButton != null && yesButton.interactable) Complete(true); }
         private void Complete(bool accepted)
         {
             if (!IsChoiceOpen) return;
             Action callback = accepted ? yes : no;
             owner = null; yes = no = null; confirmRequested = false;
+            choiceInputSuspended = false;
             if (choicePanel != null) choicePanel.SetActive(false);
             RestoreYesButtonPosition();
             if (noButton != null) noButton.gameObject.SetActive(true);
