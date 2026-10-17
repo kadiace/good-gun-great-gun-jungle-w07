@@ -82,6 +82,10 @@ namespace WeaponWorkshop
 
         // 폭발
         [Header("Explosion")]
+        [Min(0f), Tooltip("같은 프레임 같은 무기의 폭발 병합 거리 배율. 두 폭발 중 작은 반경에 곱합니다. 기존 0.5배보다 크게 설정하면 파동 수가 줄어듭니다.")]
+        public float explosionMergeRadiusMultiplier = 1.5f;
+        [Min(0), InspectorName("Explosion Subdivisions per Frame"), Tooltip("폭발 수집이 프레임당 새로 분할할 수 있는 대상 수. 수집 중인 파동은 양수 값 중 가장 작은 제한을 공유합니다. 이미 분할된 대상은 제한을 소비하지 않으며, 0은 제한 후보에서 제외합니다.")]
+        public int explosionSubdivisionsPerFrame = 16;
         [Min(0f), InspectorName("Explosion Radius Per Point"), Tooltip("폭발력의 세제곱근당 최대 반경 증가량(m). 최대 반경 = 이 값 × ∛폭발력. 기본 폭발력 1→0.5m, 8→1m, 27→1.5m.")] public float explosionRadiusPerPoint = 0.5f;
         [Min(0.01f), InspectorName("Explosion Visual Scale Multiplier"), Tooltip("폭발 이펙트 크기 배율. 폭발 최대 반경에 곱해지며 피해/검색 범위에는 영향이 없습니다. 기본 2배.")]
         public float explosionVisualScaleMultiplier = 2f;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Profiling;
 
 namespace WeaponWorkshop
 {
@@ -8,6 +9,7 @@ namespace WeaponWorkshop
     [DefaultExecutionOrder(-999)]
     public sealed class PoolManager : MonoBehaviour
     {
+        private static readonly ProfilerMarker ReturnCachedChildrenMarker = new ProfilerMarker("PoolManager.ReturnCachedChildren");
         [Serializable] public sealed class PrefabPool
         {
             public GameObject prefab;
@@ -146,7 +148,7 @@ namespace WeaponWorkshop
             var member = go.GetComponent<PooledCombatObject>();
             if (member == null) member = go.AddComponent<PooledCombatObject>();
             member.Initialize(this, pool);
-            var debris = go.GetComponent<VisualDebrisCloud>();
+            var debris = member.DebrisCloud;
             if (debris != null) debris.ReserveBuffers(debrisFragmentCapacity, maximumCachedDebrisGroups);
             return member;
         }
@@ -157,9 +159,11 @@ namespace WeaponWorkshop
             { member = pool.idle.Pop(); cachedCount = Mathf.Max(0, cachedCount - 1); }
             if (member == null) member = Create(pool);
             member.transform.SetParent(parent != null ? parent : transform, false);
+            if (parent != null && parent.TryGetComponent<PooledCombatObject>(out var parentMember))
+                parentMember.RegisterPooledChild(member);
             member.transform.SetPositionAndRotation(position, rotation);
             member.ResetForRent();
-            var debris = member.GetComponent<VisualDebrisCloud>();
+            var debris = member.DebrisCloud;
             if(debris != null) { debris.ConfigureMotion(debrisRollingFriction,debrisBounceMultiplier,debrisMotionMultiplier,debrisWallSearchRadius); activeDebris.Add(debris); }
             active.Add(member);
             activeCount = active.Count;
@@ -274,13 +278,20 @@ namespace WeaponWorkshop
         private void Return(PooledCombatObject member)
         {
             if (!active.Remove(member)) return;
-            var debris = member.GetComponent<VisualDebrisCloud>();
+            Transform previousParent = member.transform.parent;
+            if (previousParent != null && previousParent.TryGetComponent<PooledCombatObject>(out var parentMember))
+                parentMember.UnregisterPooledChild(member);
+            var debris = member.DebrisCloud;
             if(debris != null) activeDebris.Remove(debris);
             // Owned child effects return first, so trails/lenses cannot accumulate on a reused root.
-            for (int i = member.transform.childCount - 1; i >= 0; i--)
+            var children = member.PooledChildren;
+            using (ReturnCachedChildrenMarker.Auto())
             {
-                var child = member.transform.GetChild(i).GetComponent<PooledCombatObject>();
-                if (child != null && child.Manager == this) Return(child);
+                for (int i = children.Count - 1; i >= 0; i--)
+                {
+                    var child = children[i];
+                    if (child != null && child.transform.parent == member.transform && child.Manager == this) Return(child);
+                }
             }
             member.ResetForReturn();
             member.gameObject.SetActive(false);

@@ -481,10 +481,10 @@ namespace WeaponWorkshop
                 NightRaidTransfer.RecordResult(raidNumber, cleared);
                 NightRaidTransfer.MarkStandaloneReturn();
             }
-            transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false); PoolManager.ClearActive();
+            transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false);
             // 무기 복원 실패로 즉시 돌아온 경우에는 클리어/다음날 처리를 하지 않는다.
             NightRaidTransfer.ReturnDayFadePending = !returningAfterDeath && (!entryRestoreFailed || TutorialManager.TrainingRaidPending);
-            SceneManager.LoadSceneAsync(homeScene, LoadSceneMode.Single);
+            NightRaidReturnOverlay.BeginReturn(homeScene);
         }
         public void ReturnAfterDeath()
         {

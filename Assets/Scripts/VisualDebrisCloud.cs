@@ -168,7 +168,7 @@ namespace WeaponWorkshop
                     Vector3.down, 1000f, ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore))
                 {
                     if (hit.normal.y < 0.5f || hit.collider.transform.IsChildOf(reference) ||
-                        hit.collider.GetComponentInParent<DestructibleTarget>() != null) continue;
+                        HasDestructibleParent(hit.collider)) continue;
                     if (hit.distance < nearest) { nearest = hit.distance; floorHeight = hit.point.y; }
                 }
             }
@@ -203,6 +203,12 @@ namespace WeaponWorkshop
             material.SetOverrideTag("RenderType", "Transparent");
             material.renderQueue = (int)RenderQueue.Transparent;
             ReserveBuffers(0, maximumCachedGroups);
+        }
+        private static bool HasDestructibleParent(Collider collider)
+        {
+            for (Transform current = collider != null ? collider.transform : null; current != null; current = current.parent)
+                if (current.TryGetComponent<DestructibleTarget>(out _)) return true;
+            return false;
         }
 
         public struct Piece
