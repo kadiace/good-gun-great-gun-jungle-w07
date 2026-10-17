@@ -58,7 +58,7 @@ namespace WeaponWorkshop
         internal static void RefreshRegistration(DestructibleTarget target)
         {
             if (!Application.isPlaying || ReferenceEquals(target, null)) return;
-            if (!target.NeedsLateUpdate)
+            if (!target.NeedsLateUpdate && !target.NeedsRenderUpdate)
             {
                 if (instance != null) instance.QueueRefresh(target);
                 return;
@@ -109,7 +109,8 @@ namespace WeaponWorkshop
 
             bool moving = active && target.TracksDebrisTransform;
             UpdateMembership(target, moving, movingTargets, registeredMovingTargets);
-            UpdateMembership(target, active && target.NeedsRenderUpdate, renderTargets, registeredRenderTargets);
+            // Drawing is independent of state updates: a settled subdivided target still has to draw its cells.
+            UpdateMembership(target, target != null && target.NeedsRenderUpdate, renderTargets, registeredRenderTargets);
         }
 
         private static void UpdateMembership(DestructibleTarget target, bool shouldContain,

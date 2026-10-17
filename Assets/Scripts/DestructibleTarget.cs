@@ -355,7 +355,7 @@ namespace WeaponWorkshop
         }
 
         internal bool NeedsLateUpdate => isActiveAndEnabled &&
-            (collisionDirty || renderDirty || structureDirty || debrisIndexDirty ||
+            (collisionDirty || (renderDirty && subdivided && cells.Count > 0) || structureDirty || debrisIndexDirty ||
                 (transformMayMove && (!subdivided || cells.Count > 0)));
         internal bool NeedsRenderUpdate => isActiveAndEnabled && subdivided && cells.Count > 0;
         internal bool TracksDebrisTransform => isActiveAndEnabled && transformMayMove && (!subdivided || cells.Count > 0);
