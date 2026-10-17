@@ -240,8 +240,16 @@ namespace WeaponWorkshop
             if (tagGrid != null) tagGrid.gameObject.SetActive(false);
             bool available = interaction.CanInteractTarget;
             bool tutorialBlocked = TutorialManager.Instance != null && !TutorialManager.Instance.AllowsInteraction(interaction.AimedTarget);
-            if (description != null) description.gameObject.SetActive(!available && !tutorialBlocked);
-            Show(label.Title, available || tutorialBlocked ? string.Empty : label.UnavailableCondition);
+            bool slotMachine = target is SlotMachineReels;
+            bool manual = target is WorkshopManual && label.Title == "매뉴얼";
+            if (description != null)
+            {
+                description.gameObject.SetActive(!tutorialBlocked && (slotMachine || manual || !available));
+                var wallet = slotMachine ? PlayerWallet.ForPlayer(interaction.Player) : null;
+                description.color = slotMachine && (wallet == null || wallet.Balance < SlotMachineReels.SpinPrice)
+                    ? Color.red : slotMachine ? Color.white : bodyColor;
+            }
+            Show(label.Title, tutorialBlocked || (!slotMachine && !manual && available) ? string.Empty : label.UnavailableCondition);
             ShowInteract();
             if (title != null) title.color = Color.white;
             return true;
