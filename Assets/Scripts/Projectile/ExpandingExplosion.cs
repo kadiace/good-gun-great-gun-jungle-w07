@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -20,28 +22,116 @@ namespace WeaponWorkshop
             public DestructibleTarget target;
             public int direction, shell;
             public float distance;
-            public readonly List<Piece> pieces = new List<Piece>();
+            public int pieceStart, pieceCount;
         }
         private struct HealthHit { public TargetHealth target; public float distance; }
+        private struct TargetCandidate { public DestructibleTarget target; public float distanceSqr; }
+        private struct ExplosionRequest
+        {
+            public Vector3 center;
+            public float maximumRadius, strongestPower, totalPower;
+            public WeaponStats stats;
+            public ProjectileStatsSource source;
+            public Transform owner, weapon;
+            public ProjectileMotor projectile;
+            public int projectileLaunchId;
+        }
+        private struct ChainRequest
+        {
+            public ProjectileMotor projectile;
+            public int launchId;
+            public Vector3 point, direction;
+        }
+
+        private const float MaximumMergedPowerMultiplier = 4f;
+        private static readonly List<ExplosionRequest> pending = new List<ExplosionRequest>(2048);
+        private static readonly Dictionary<DestructibleTarget, float> collectTargetDistances = new Dictionary<DestructibleTarget, float>(256);
+        private static readonly Dictionary<TargetHealth, float> collectNearest = new Dictionary<TargetHealth, float>(512);
+        private static readonly Stack<Layer> sharedLayerCache = new Stack<Layer>(8192);
+        private static int collectionBudgetFrame = -1;
+        private static readonly List<ProjectileMotor> activeProjectileBuffer = new List<ProjectileMotor>(2048);
+        private static int activeProjectileFrame = -1;
+        private static readonly HashSet<DestructibleTarget> dirtyTargets = new HashSet<DestructibleTarget>(256);
+        private static readonly Queue<ChainRequest> pendingChainDetonations = new Queue<ChainRequest>(2048);
+        private static readonly HashSet<ProjectileMotor> pendingChainSet = new HashSet<ProjectileMotor>(2048);
+        private static int pendingFrame = -1;
+
         private readonly List<Layer> layers = new List<Layer>();
-        private readonly Stack<Layer> layerCache = new Stack<Layer>();
-        private readonly HashSet<DestructibleTarget> targets = new HashSet<DestructibleTarget>();
-        private readonly Dictionary<TargetHealth, float> nearest = new Dictionary<TargetHealth, float>();
         private readonly List<Piece> pieces = new List<Piece>();
-        private readonly Dictionary<(DestructibleTarget, int, int), Layer> grouped = new Dictionary<(DestructibleTarget, int, int), Layer>();
+        private readonly List<TargetCandidate> targetCandidates = new List<TargetCandidate>();
         private ProjectileStats impactStats;
         private readonly List<HealthHit> healthHits = new List<HealthHit>();
-        private readonly List<ProjectileMotor> projectileHits = new List<ProjectileMotor>();
-        private readonly float[] energy = new float[384];
-        private readonly HashSet<DestructibleTarget> dirty = new HashSet<DestructibleTarget>();
+        private float[] energy;
         private float radius, maximumRadius, speed, baseDamage;
         private WeaponStats stats;
         private ProjectileTuning tuning;
-        private int nextLayer, nextHealth;
+        private int nextLayer, nextHealth, nextTargetCandidate;
+        private bool collectionPending;
         private float checkDistance;
         private ProjectileMotor originatingProjectile;
         private int originatingLaunchId;
         public Transform WeaponSource { get; private set; }
+        private static readonly ProfilerMarker createMarker = new ProfilerMarker("ExpandingExplosion.Create");
+        private static readonly ProfilerMarker mergeMarker = new ProfilerMarker("ExpandingExplosion.Merge");
+        private static readonly ProfilerMarker buildMarker = new ProfilerMarker("ExpandingExplosion.Build");
+        private static readonly ProfilerMarker collectMarker = new ProfilerMarker("ExpandingExplosion.CollectPieces");
+        private static readonly ProfilerMarker collectionWaitMarker = new ProfilerMarker("ExpandingExplosion.CollectionWait");
+        private static readonly ProfilerMarker stepMarker = new ProfilerMarker("ExpandingExplosion.Step");
+        private static readonly Comparison<Layer> layerComparison = CompareLayers;
+        private static readonly Comparison<HealthHit> healthHitComparison = CompareHealthHits;
+        private static readonly Comparison<Piece> pieceComparison = ComparePieces;
+        private static readonly Comparison<TargetCandidate> targetCandidateComparison = CompareTargetCandidates;
+
+        private static int CompareLayers(Layer a, Layer b)
+        {
+            int shell = a.shell.CompareTo(b.shell);
+            return shell != 0 ? shell : a.direction.CompareTo(b.direction);
+        }
+
+        private static int CompareHealthHits(HealthHit a, HealthHit b) => a.distance.CompareTo(b.distance);
+
+        private static int ComparePieces(Piece a, Piece b)
+        {
+            int aTargetId = a.target != null ? a.target.GetInstanceID() : 0;
+            int bTargetId = b.target != null ? b.target.GetInstanceID() : 0;
+            int target = aTargetId.CompareTo(bTargetId);
+            if (target != 0) return target;
+            int shell = a.shell.CompareTo(b.shell);
+            return shell != 0 ? shell : a.direction.CompareTo(b.direction);
+        }
+
+        private static int CompareTargetCandidates(TargetCandidate a, TargetCandidate b)
+        {
+            int distance = a.distanceSqr.CompareTo(b.distanceSqr);
+            if (distance != 0) return distance;
+            int aTargetId = a.target != null ? a.target.GetInstanceID() : 0;
+            int bTargetId = b.target != null ? b.target.GetInstanceID() : 0;
+            return aTargetId.CompareTo(bTargetId);
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            pending.Clear();
+            collectTargetDistances.Clear(); collectNearest.Clear();
+            sharedLayerCache.Clear(); activeProjectileBuffer.Clear(); dirtyTargets.Clear();
+            pendingChainDetonations.Clear(); pendingChainSet.Clear();
+            collectionBudgetFrame = -1;
+            activeProjectileFrame = -1;
+            pendingFrame = -1;
+        }
+
+        private static void BeginCollectionBudget(float timeBudgetMilliseconds)
+        {
+            float requested = Mathf.Max(0f, timeBudgetMilliseconds);
+            if (collectionBudgetFrame != Time.frameCount)
+            {
+                collectionBudgetFrame = Time.frameCount;
+                DestructibleTarget.SubdivisionBudgetMilliseconds = requested;
+            }
+            else DestructibleTarget.SubdivisionBudgetMilliseconds =
+                Mathf.Min(DestructibleTarget.SubdivisionBudgetMilliseconds, requested);
+        }
 
         // Fixed angular bins, independent of target dimensions and voxel size.
         public static int DirectionBin(Vector3 offset)
@@ -60,19 +150,127 @@ namespace WeaponWorkshop
         public static void Create(Vector3 center, float maximumRadius, WeaponStats stats,
             ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile)
         {
-            if (source == null || stats.explosion <= 0f || maximumRadius <= 0f) return;
+            using (createMarker.Auto())
+            {
+                if (source == null || stats.explosion <= 0f || maximumRadius <= 0f) return;
+                using (mergeMarker.Auto()) QueueRequest(center, maximumRadius, stats, source, owner, weapon, projectile);
+            }
+        }
+
+        private static void QueueRequest(Vector3 center, float maximumRadius, WeaponStats stats,
+            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile)
+        {
+            if (pendingFrame != Time.frameCount)
+            {
+                if (pending.Count > 0) FlushPending();
+                pendingFrame = Time.frameCount;
+            }
+
+            var request = new ExplosionRequest
+            {
+                center = center, maximumRadius = maximumRadius, strongestPower = stats.explosion,
+                totalPower = stats.explosion, stats = stats, source = source,
+                owner = owner, weapon = weapon, projectile = projectile,
+                projectileLaunchId = projectile != null ? projectile.LaunchId : 0
+            };
+            if (weapon != null)
+            {
+                for (int i = pending.Count - 1; i >= 0; i--)
+                {
+                    var existing = pending[i];
+                    if (existing.weapon != weapon) continue;
+                    float mergeDistance = Mathf.Min(existing.maximumRadius, maximumRadius) *
+                        Mathf.Max(0f, source.Tuning.explosionMergeRadiusMultiplier);
+                    if ((existing.center - center).sqrMagnitude > mergeDistance * mergeDistance) continue;
+
+                    float previousStrongest = existing.strongestPower;
+                    existing.totalPower += stats.explosion;
+                    if (stats.explosion > previousStrongest)
+                    {
+                        existing.strongestPower = stats.explosion;
+                        existing.stats = stats;
+                        existing.source = source;
+                        existing.owner = owner;
+                        existing.projectile = projectile;
+                        existing.projectileLaunchId = projectile != null ? projectile.LaunchId : 0;
+                    }
+                    existing.maximumRadius = Mathf.Max(existing.maximumRadius, maximumRadius);
+                    float mergedPower = Mathf.Min(existing.totalPower,
+                        existing.strongestPower * MaximumMergedPowerMultiplier);
+                    existing.stats.explosion = mergedPower;
+                    existing.maximumRadius = Mathf.Max(existing.maximumRadius,
+                        source.Tuning.explosionRadiusPerPoint * Mathf.Pow(mergedPower, 1f / 3f));
+                    pending[i] = existing;
+                    return;
+                }
+            }
+            pending.Add(request);
+        }
+
+        internal static void FlushPending()
+        {
+            if (pending.Count == 0) { pendingFrame = -1; return; }
+            for (int i = 0; i < pending.Count; i++)
+            {
+                var request = pending[i];
+                if (request.source == null) continue;
+                using (buildMarker.Auto())
+                    CreateWave(request.center, request.maximumRadius, request.stats, request.source,
+                        request.owner, request.weapon, request.projectile, request.projectileLaunchId);
+            }
+            pending.Clear();
+            pendingFrame = -1;
+        }
+
+        internal static void ClearPendingRequests()
+        {
+            pending.Clear(); pendingFrame = -1;
+            pendingChainDetonations.Clear(); pendingChainSet.Clear();
+        }
+
+        internal static void ProcessPendingChainDetonations()
+        {
+            if (Time.deltaTime <= 0f) return;
+            while (pendingChainDetonations.Count > 0)
+            {
+                var request = pendingChainDetonations.Dequeue();
+                pendingChainSet.Remove(request.projectile);
+                if (request.projectile == null || !request.projectile.isActiveAndEnabled ||
+                    request.projectile.LaunchId != request.launchId) continue;
+                if (!PoolManager.TryConsumeChainDetonation())
+                {
+                    pendingChainDetonations.Enqueue(request);
+                    pendingChainSet.Add(request.projectile);
+                    break;
+                }
+                request.projectile.DetonateFromExplosion(request.point, request.direction);
+            }
+        }
+
+        private static void QueueChainDetonation(ProjectileMotor projectile, Vector3 point, Vector3 direction)
+        {
+            if (projectile == null || !pendingChainSet.Add(projectile)) return;
+            pendingChainDetonations.Enqueue(new ChainRequest
+            {
+                projectile = projectile, launchId = projectile.LaunchId, point = point, direction = direction
+            });
+        }
+
+        private static void CreateWave(Vector3 center, float maximumRadius, WeaponStats stats,
+            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile, int projectileLaunchId)
+        {
             var wave = PoolManager.RentComponent<ExpandingExplosion>(center);
             var root = wave.gameObject;
             wave.ResetWave();
             wave.WeaponSource = weapon;
             wave.originatingProjectile = projectile;
-            wave.originatingLaunchId = projectile != null ? projectile.LaunchId : 0;
+            wave.originatingLaunchId = projectileLaunchId;
             wave.maximumRadius = maximumRadius;
             wave.stats = stats; wave.impactStats = ProjectileStats.FromWeapon(stats); wave.tuning = source.Tuning; wave.baseDamage = source.BaseDamage;
             wave.speed = Mathf.Max(0.01f, wave.tuning.explosionExpansionSpeed);
+            if (wave.energy == null) wave.energy = new float[384];
             for (int i = 0; i < wave.energy.Length; i++) wave.energy[i] = stats.explosion;
-            var targets = wave.targets;
-            var nearest = wave.nearest;
+            collectTargetDistances.Clear(); collectNearest.Clear();
             DestructibleTarget settingsTarget = null;
             float closest = float.PositiveInfinity;
             int count = CombatPhysicsQueries.OverlapSphere(center, maximumRadius, source.CollisionLayers, out var overlaps);
@@ -86,8 +284,10 @@ namespace WeaponWorkshop
                 if (RaidEnemyImmune.Protects(target, owner)) continue;
                 if (target != null)
                 {
-                    targets.Add(target);
                     float distance = (collider.ClosestPoint(center) - center).sqrMagnitude;
+                    if (stats.water <= 0f &&
+                        (!collectTargetDistances.TryGetValue(target, out float oldDistance) || distance < oldDistance))
+                        collectTargetDistances[target] = distance;
                     if (distance < closest || (distance == closest && settingsTarget != null && target.GetInstanceID() < settingsTarget.GetInstanceID()))
                     { closest = distance; settingsTarget = target; }
                 }
@@ -95,37 +295,84 @@ namespace WeaponWorkshop
                 if (health != null && !health.IsDead)
                 {
                     float distance = Vector3.Distance(center, collider.ClosestPoint(center));
-                    if (!nearest.TryGetValue(health, out float old) || distance < old) nearest[health] = distance;
+                    if (!collectNearest.TryGetValue(health, out float old) || distance < old) collectNearest[health] = distance;
                 }
             }
             // The closest struck material supplies wave settings; empty-space impacts use projectile tuning.
             wave.speed = settingsTarget != null ? settingsTarget.ExplosionExpansionSpeed : Mathf.Max(0.01f,wave.tuning.explosionExpansionSpeed);
             wave.checkDistance = settingsTarget != null ? settingsTarget.ExplosionCheckDistance : Mathf.Max(0.01f,wave.tuning.explosionCheckDistance);
-            var pieces = wave.pieces;
-            foreach (var target in targets)
-                if (stats.water <= 0f) target.CollectExplosionPieces(center, maximumRadius, wave.checkDistance, pieces);
-            // Group cost by target, direction and fixed world-distance layer, never by voxel count.
-            var grouped = wave.grouped;
-            foreach (var piece in pieces)
-            {
-                var key = (piece.target, piece.direction, piece.shell);
-                if (!grouped.TryGetValue(key, out var layer))
-                {
-                    layer = wave.layerCache.Count > 0 ? wave.layerCache.Pop() : new Layer();
-                    layer.target = piece.target; layer.direction = piece.direction;
-                    layer.shell = piece.shell; layer.distance = Mathf.Min(maximumRadius, (piece.shell + 1) * wave.checkDistance);
-                    grouped.Add(key, layer); wave.layers.Add(layer);
-                }
-                layer.pieces.Add(piece);
-            }
-            wave.layers.Sort((a,b) => { int shell = a.shell.CompareTo(b.shell); return shell != 0 ? shell : a.direction.CompareTo(b.direction); });
-            foreach (var entry in nearest) wave.healthHits.Add(new HealthHit { target = entry.Key, distance = entry.Value });
-            wave.healthHits.Sort((a,b) => a.distance.CompareTo(b.distance));
+            foreach (var entry in collectTargetDistances)
+                wave.targetCandidates.Add(new TargetCandidate { target = entry.Key, distanceSqr = entry.Value });
+            wave.targetCandidates.Sort(targetCandidateComparison);
+            foreach (var entry in collectNearest) wave.healthHits.Add(new HealthHit { target = entry.Key, distance = entry.Value });
+            collectTargetDistances.Clear(); collectNearest.Clear();
+            wave.collectionPending = true;
             root.SetActive(true);
-            if (wave.tuning.explosionEffect != null)
+            wave.ContinuePieceCollection();
+        }
+
+        private bool ContinuePieceCollection()
+        {
+            if (!collectionPending) return true;
+            using (collectionWaitMarker.Auto())
             {
-                var effect = PoolManager.RentPrefab(wave.tuning.explosionEffect.gameObject, center, Quaternion.identity);
-                effect.transform.localScale = Vector3.one * Mathf.Max(0.001f, maximumRadius * wave.tuning.explosionVisualScaleMultiplier);
+                BeginCollectionBudget(tuning != null ? tuning.subdivisionBudgetMilliseconds : 4f);
+                using (collectMarker.Auto())
+                {
+                    while (nextTargetCandidate < targetCandidates.Count)
+                    {
+                        var target = targetCandidates[nextTargetCandidate].target;
+                        if (target == null)
+                        {
+                            nextTargetCandidate++;
+                            continue;
+                        }
+                        if (!target.CanCollectExplosionPiecesNow(transform.position, maximumRadius)) break;
+                        if (!target.TryCollectExplosionPieces(transform.position, maximumRadius, checkDistance, pieces)) break;
+                        nextTargetCandidate++;
+                    }
+                }
+
+                if (nextTargetCandidate < targetCandidates.Count) return false;
+                CompletePieceCollection();
+                return true;
+            }
+        }
+
+        private void CompletePieceCollection()
+        {
+            using (buildMarker.Auto())
+            {
+                // Keep each wave's pieces in one reusable buffer until every target has been collected.
+                pieces.Sort(pieceComparison);
+                for (int pieceIndex = 0; pieceIndex < pieces.Count;)
+                {
+                    var piece = pieces[pieceIndex];
+                    int end = pieceIndex + 1;
+                    while (end < pieces.Count)
+                    {
+                        var next = pieces[end];
+                        if (next.target != piece.target || next.direction != piece.direction || next.shell != piece.shell) break;
+                        end++;
+                    }
+                    var layer = sharedLayerCache.Count > 0 ? sharedLayerCache.Pop() : new Layer();
+                    layer.target = piece.target; layer.direction = piece.direction; layer.shell = piece.shell;
+                    layer.distance = Mathf.Min(maximumRadius, (piece.shell + 1) * checkDistance);
+                    layer.pieceStart = pieceIndex; layer.pieceCount = end - pieceIndex;
+                    layers.Add(layer);
+                    pieceIndex = end;
+                }
+                layers.Sort(layerComparison);
+                healthHits.Sort(healthHitComparison);
+            }
+            targetCandidates.Clear();
+            nextTargetCandidate = 0;
+            collectionPending = false;
+            if (tuning.explosionEffect != null && PoolManager.TryUseExplosionEffectSlot())
+            {
+                PoolManager.EnsureExplosionEffectPrewarm(tuning.explosionEffect.gameObject);
+                var effect = PoolManager.RentPrefab(tuning.explosionEffect.gameObject, transform.position, Quaternion.identity);
+                effect.transform.localScale = Vector3.one * Mathf.Max(0.001f, maximumRadius * tuning.explosionVisualScaleMultiplier);
                 effect.GetComponent<PooledCombatObject>().PlayParticles(returnWhenFinished: true);
             }
         }
@@ -134,32 +381,45 @@ namespace WeaponWorkshop
         {
             foreach (var layer in layers)
             {
-                layer.target = null; layer.pieces.Clear();
-                if (layerCache.Count < 2048) layerCache.Push(layer);
+                layer.target = null; layer.pieceStart = layer.pieceCount = 0;
+                if (sharedLayerCache.Count < 8192) sharedLayerCache.Push(layer);
             }
-            layers.Clear(); healthHits.Clear(); projectileHits.Clear(); dirty.Clear(); targets.Clear(); nearest.Clear();
-            pieces.Clear(); grouped.Clear(); radius = 0f; nextLayer = nextHealth = 0;
+            layers.Clear(); pieces.Clear(); targetCandidates.Clear(); healthHits.Clear(); radius = 0f;
+            nextLayer = nextHealth = nextTargetCandidate = 0;
+            collectionPending = false;
             tuning = null; stats = default; impactStats = default;
             WeaponSource = null;
-            originatingProjectile = null;
+            originatingProjectile = null; originatingLaunchId = 0;
         }
         private void OnDisable() => ResetWave();
 
         private void Update()
         {
+            using (stepMarker.Auto()) Step();
+        }
+
+        private void Step()
+        {
+            if (collectionPending && !ContinuePieceCollection()) return;
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
+            ProcessPendingChainDetonations();
             radius = Mathf.Min(maximumRadius, radius + speed * dt);
-            ProjectileMotor.CopyActiveProjectiles(projectileHits);
-            foreach (var projectile in projectileHits)
+            if (activeProjectileFrame != Time.frameCount)
             {
-                if (projectile == null ||
+                activeProjectileBuffer.Clear();
+                ProjectileMotor.CopyActiveProjectiles(activeProjectileBuffer);
+                activeProjectileFrame = Time.frameCount;
+            }
+            foreach (var projectile in activeProjectileBuffer)
+            {
+                if (projectile == null || !projectile.isActiveAndEnabled ||
                     (projectile == originatingProjectile && projectile.LaunchId == originatingLaunchId) ||
                     Vector3.SqrMagnitude(projectile.transform.position - transform.position) > radius * radius) continue;
-                projectile.DetonateFromExplosion();
+                if (PoolManager.TryConsumeChainDetonation()) projectile.DetonateFromExplosion();
+                else QueueChainDetonation(projectile, projectile.transform.position, projectile.CurrentDirection);
             }
-            projectileHits.Clear();
-            dirty.Clear();
+            dirtyTargets.Clear();
             // Equal distance layers use the same incoming energy, then pay all material costs.
             while (nextLayer < layers.Count)
             {
@@ -179,14 +439,17 @@ namespace WeaponWorkshop
                     if (incoming <= 0f || incoming < resistance ||
                         !layer.target.AllowsImpact(impactStats)) { blocked = true; continue; }
                     bool changed = false;
-                    foreach (var piece in layer.pieces)
-                        changed |= layer.target.DestroyExplosionPiece(piece.coordinate, transform.position, incoming * tuning.explosionDebrisPushPerPower);
-                    if (changed) { cost += resistance; dirty.Add(layer.target); }
+                    int pieceEnd = layer.pieceStart + layer.pieceCount;
+                    for (int pieceIndex = layer.pieceStart; pieceIndex < pieceEnd; pieceIndex++)
+                        changed |= layer.target.DestroyExplosionPiece(pieces[pieceIndex].coordinate, transform.position,
+                            incoming * tuning.explosionDebrisPushPerPower);
+                    if (changed) { cost += resistance; dirtyTargets.Add(layer.target); }
                 }
                 energy[first.direction] = blocked ? 0f : Mathf.Max(0f, incoming - cost);
                 nextLayer = end;
             }
-            PoolManager.QueueExplosionFinish(dirty);
+            PoolManager.QueueExplosionFinish(dirtyTargets);
+            dirtyTargets.Clear();
             if (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius)
                 PoolManager.FlushExplosionFinish();
             while (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius)

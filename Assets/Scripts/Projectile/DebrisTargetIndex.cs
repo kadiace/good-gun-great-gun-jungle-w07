@@ -22,7 +22,7 @@ namespace WeaponWorkshop
         {
             if (frame == Time.frameCount) return;
             frame = Time.frameCount;
-            foreach (var target in DestructibleTarget.ActiveDebrisObstacles) target.RefreshDebrisIndex();
+            DestructibleTargetUpdater.RefreshMovingTargets();
         }
         internal static void Update(DestructibleTarget target)
         {

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Profiling;
 using LogKit;
 
 namespace WeaponWorkshop
@@ -7,13 +8,33 @@ namespace WeaponWorkshop
     [DisallowMultipleComponent]
     public sealed class ProjectileMotor : MonoBehaviour
     {
+        private static readonly ProfilerMarker CollisionQueryMarker = new ProfilerMarker("ProjectileMotor.CollisionQuery");
+        private static readonly ProfilerMarker ImpactEffectMarker = new ProfilerMarker("ProjectileMotor.ImpactEffect");
         private static readonly HashSet<ProjectileMotor> activeProjectiles = new HashSet<ProjectileMotor>();
+        // LayerMask APIs throw inside a type initializer when Unity first touches this type from a
+        // serialization/constructor context (e.g. prefab import), which poisons the type. Resolve lazily.
+        private static bool layersResolved;
+        private static int endChestLayer, endChestShieldLayer, projectileExtraCollisionLayers;
+        private static int EndChestLayer { get { ResolveLayers(); return endChestLayer; } }
+        private static int EndChestShieldLayer { get { ResolveLayers(); return endChestShieldLayer; } }
+        private static int ProjectileExtraCollisionLayers { get { ResolveLayers(); return projectileExtraCollisionLayers; } }
+        private static void ResolveLayers()
+        {
+            if (layersResolved) return;
+            endChestLayer = LayerMask.NameToLayer("EndChest");
+            endChestShieldLayer = LayerMask.NameToLayer("EndChestShield");
+            projectileExtraCollisionLayers = LayerMask.GetMask("Weapon", "EndChest", "EndChestShield") & ~LayerMask.GetMask("Energy");
+            layersResolved = true;
+        }
         [SerializeField] private Renderer drawRenderer;
         [SerializeField] private ParticleSystem impactEffect;
 
         private readonly HashSet<TargetHealth> hitTargets = new HashSet<TargetHealth>();
         private readonly HashSet<DestructibleTarget> hitStructures = new HashSet<DestructibleTarget>();
         private readonly HashSet<Collider> ignoredColliders = new HashSet<Collider>();
+        private readonly List<Collider> staleIgnoredColliders = new List<Collider>();
+        private readonly List<Collider> targetColliderBuffer = new List<Collider>();
+        private MaterialPropertyBlock debrisTint;
         private ProjectileStatsSource source;
         private ProjectileEffects effects;
         private Vector3 velocity;
@@ -26,6 +47,7 @@ namespace WeaponWorkshop
         private Transform ignoredOwner;
         private Transform ignoredWeapon;
         public Transform WeaponSource => ignoredWeapon;
+        internal Vector3 CurrentDirection => velocity.normalized;
         private Vector3 halfExtents;
         private int penetrationsRemaining;
         private float penetrationPower;
@@ -36,6 +58,19 @@ namespace WeaponWorkshop
         private int launchId;
         private float structureSweepLimit;
         internal int LaunchId => launchId;
+
+        private static T GetComponentInParents<T>(Collider collider) where T : Component
+        {
+            for (Transform current = collider != null ? collider.transform : null; current != null; current = current.parent)
+                if (current.TryGetComponent(out T component)) return component;
+            return null;
+        }
+        private static bool HasLayerInParents(Collider collider, int layer)
+        {
+            for (Transform current = collider != null ? collider.transform : null; current != null; current = current.parent)
+                if (current.gameObject.layer == layer) return true;
+            return false;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetActiveProjectiles() => activeProjectiles.Clear();
@@ -97,12 +132,15 @@ namespace WeaponWorkshop
         }
 
         internal void DetonateFromExplosion()
+            => DetonateFromExplosion(transform.position, velocity.normalized);
+
+        internal void DetonateFromExplosion(Vector3 point, Vector3 direction)
         {
             if (terminal || !isActiveAndEnabled) return;
             terminal = true;
             exploded = true;
             if (effects != null)
-                effects.ApplyStoppedArea(transform.position, velocity.normalized, null, ignoredOwner, ignoredWeapon);
+                effects.ApplyStoppedArea(point, direction, null, ignoredOwner, ignoredWeapon);
             PoolManager.Release(gameObject);
         }
 
@@ -184,8 +222,11 @@ namespace WeaponWorkshop
             nearestHit = default;
             float nearestDistance = float.PositiveInfinity;
             bool found = false;
-            int layers = (source.CollisionLayers | LayerMask.GetMask("Weapon", "EndChest", "EndChestShield")) & ~LayerMask.GetMask("Energy");
-            int count = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction, rotation, distance, layers, out var hits);
+            int layers = source.CollisionLayers | ProjectileExtraCollisionLayers;
+            int count;
+            RaycastHit[] hits;
+            using (CollisionQueryMarker.Auto())
+                count = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction, rotation, distance, layers, out hits);
             for (int i = 0; i < count; i++)
             {
                 RaycastHit hit = hits[i];
@@ -203,7 +244,7 @@ namespace WeaponWorkshop
             structureSweepLimit = 0f;
             if (found)
             {
-                var hitStructure = nearestHit.collider.GetComponentInParent<DestructibleTarget>();
+                var hitStructure = GetComponentInParents<DestructibleTarget>(nearestHit.collider);
                 if (hitStructure != null)
                 {
                     structureSweepLimit = Mathf.Max(0f, distance - nearestHit.distance);
@@ -216,7 +257,7 @@ namespace WeaponWorkshop
                             (ignoredOwner != null && t.IsChildOf(ignoredOwner)) ||
                             (ignoredWeapon != null && t.IsChildOf(ignoredWeapon)) ||
                             ignoredColliders.Contains(other.collider) ||
-                            other.collider.GetComponentInParent<DestructibleTarget>() == hitStructure) continue;
+                            GetComponentInParents<DestructibleTarget>(other.collider) == hitStructure) continue;
                         structureSweepLimit = Mathf.Min(structureSweepLimit,
                             Mathf.Max(0f, other.distance - nearestHit.distance));
                     }
@@ -228,15 +269,17 @@ namespace WeaponWorkshop
         // 엔드 상자: 코어는 중력·유도 조건을 갖춘 탄만 맞고, 방어막은 조건을 못 채운 탄만 막는다. 나머지는 통과한다.
         private bool PassesEndChestGate(Collider collider)
         {
-            var endChestCore = collider.GetComponentInParent<EndChestCore>();
+            var endChestCore = HasLayerInParents(collider, EndChestLayer)
+                ? GetComponentInParents<EndChestCore>(collider) : null;
             if (endChestCore != null) return effects != null && endChestCore.AcceptsHit(effects.Stats);
-            var shield = collider.GetComponentInParent<EndChestShield>();
+            var shield = HasLayerInParents(collider, EndChestShieldLayer)
+                ? GetComponentInParents<EndChestShield>(collider) : null;
             return shield == null || effects == null || shield.Deflects(effects.Stats);
         }
 
         private void HandleImpact(RaycastHit hit, Vector3 incomingDirection, ref float remaining)
         {
-            if (hit.collider.GetComponentInParent<EndChestShield>() != null)
+            if (HasLayerInParents(hit.collider, EndChestShieldLayer) && GetComponentInParents<EndChestShield>(hit.collider) != null)
             {
                 ShowImpact(hit.point, hit.normal, incomingDirection);
                 velocity = Vector3.Reflect(velocity, hit.normal);
@@ -245,12 +288,13 @@ namespace WeaponWorkshop
                 remaining = Mathf.Max(0f, remaining - 0.05f);
                 return;
             }
-            var endChestCore = hit.collider.GetComponentInParent<EndChestCore>();
+            var endChestCore = HasLayerInParents(hit.collider, EndChestLayer)
+                ? GetComponentInParents<EndChestCore>(hit.collider) : null;
             if (endChestCore != null) endChestCore.NotifyHit();
             bool water = effects != null && effects.IsWater;
-            DestructibleTarget structure = hit.collider.GetComponentInParent<DestructibleTarget>();
+            DestructibleTarget structure = GetComponentInParents<DestructibleTarget>(hit.collider);
             if (structure != null && TutorialManager.Instance != null) TutorialManager.Instance.NotifyTargetHit(structure);
-            TargetHealth target = hit.collider.GetComponentInParent<TargetHealth>();
+            TargetHealth target = GetComponentInParents<TargetHealth>(hit.collider);
             bool firstHitOnTarget = target != null && hitTargets.Add(target);
             bool firstHitOnStructure = structure != null && hitStructures.Add(structure);
             // 명중률 지표: 탄 하나당 처음 맞은 순간만 센다.
@@ -288,7 +332,7 @@ namespace WeaponWorkshop
                 }
             }
             // 손님은 한 발에 죽음 (예전 EnergyCube 동작). 물총은 살상력 없음.
-            Customer customer = hit.collider.GetComponentInParent<Customer>();
+            Customer customer = GetComponentInParents<Customer>(hit.collider);
             if (customer != null && (effects == null || !effects.IsWater)) customer.Kill();
 
             bool canPenetrate = target != null && penetrationsRemaining > 0 &&
@@ -332,13 +376,19 @@ namespace WeaponWorkshop
 
         private void AddTargetCollidersToIgnore(TargetHealth target)
         {
-            foreach (Collider collider in target.GetComponentsInChildren<Collider>(true))
+            target.GetComponentsInChildren(true, targetColliderBuffer);
+            foreach (Collider collider in targetColliderBuffer)
                 if (collider != null) ignoredColliders.Add(collider);
+            targetColliderBuffer.Clear();
         }
 
         private void UpdateIgnoredColliders()
         {
-            ignoredColliders.RemoveWhere(collider => collider == null || !collider.bounds.Contains(transform.position));
+            staleIgnoredColliders.Clear();
+            foreach (Collider collider in ignoredColliders)
+                if (collider == null || !collider.bounds.Contains(transform.position)) staleIgnoredColliders.Add(collider);
+            for (int i = 0; i < staleIgnoredColliders.Count; i++) ignoredColliders.Remove(staleIgnoredColliders[i]);
+            staleIgnoredColliders.Clear();
         }
 
         private void SetDirection(Vector3 direction)
@@ -365,11 +415,22 @@ namespace WeaponWorkshop
 
         private void ShowImpact(Vector3 point, Vector3 normal, Vector3 direction)
         {
+            using (ImpactEffectMarker.Auto())
+                ShowImpactEffect(point, normal, direction);
+        }
+
+        private void ShowImpactEffect(Vector3 point, Vector3 normal, Vector3 direction)
+        {
             if (impactEffect == null) return;
             if (normal.sqrMagnitude < 0.0001f) normal = -direction;
             GameObject effect = PoolManager.RentPrefab(impactEffect.gameObject, point + normal * 0.01f,
                 RotationForDirection(normal));
-            foreach (ParticleSystem particles in effect.GetComponentsInChildren<ParticleSystem>(true))
+            if (!effect.TryGetComponent(out PooledCombatObject pooledEffect))
+            {
+                PoolManager.Release(effect);
+                return;
+            }
+            foreach (ParticleSystem particles in pooledEffect.Particles)
             {
                 var main = particles.main;
                 main.startColor = Color.white;
@@ -387,18 +448,19 @@ namespace WeaponWorkshop
             if (tinted)
             {
                 Color debrisColor = source.Tuning.waterColor;
-                debrisTint = new MaterialPropertyBlock();
+                if (debrisTint == null) debrisTint = new MaterialPropertyBlock();
+                debrisTint.Clear();
                 debrisTint.SetColor("_BaseColor", debrisColor);
                 debrisTint.SetColor("_Color", debrisColor);
             }
             if (drawRenderer != null && drawRenderer.sharedMaterial != null)
-                foreach (ParticleSystemRenderer renderer in effect.GetComponentsInChildren<ParticleSystemRenderer>(true))
+                foreach (ParticleSystemRenderer renderer in pooledEffect.ParticleRenderers)
                 {
                     renderer.sharedMaterial = drawRenderer.sharedMaterial;
                     renderer.trailMaterial = drawRenderer.sharedMaterial;
                     if (debrisTint != null) renderer.SetPropertyBlock(debrisTint);
                 }
-            effect.GetComponent<PooledCombatObject>().PlayParticles(true);
+            pooledEffect.PlayParticles(true);
         }
 
         private void OnDisable()
@@ -407,6 +469,7 @@ namespace WeaponWorkshop
             terminal = true; velocity = Vector3.zero; source = null; effects = null;
             ignoredOwner = ignoredWeapon = null; homingTarget = null;
             hitTargets.Clear(); hitStructures.Clear(); ignoredColliders.Clear();
+            staleIgnoredColliders.Clear(); targetColliderBuffer.Clear();
         }
 
         private void OnValidate()

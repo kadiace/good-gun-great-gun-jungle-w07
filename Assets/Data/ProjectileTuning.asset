@@ -45,6 +45,8 @@ MonoBehaviour:
   homingTurnRatePerPoint: 180
   moduleSpinDegreesPerSecond: 180
   spinFireRateBonus: 0.5
+  explosionMergeRadiusMultiplier: 1.5
+  explosionSubdivisionsPerFrame: 16
   explosionRadiusPerPoint: 0.5
   explosionVisualScaleMultiplier: 2
   explosionExpansionSpeed: 10

@@ -197,7 +197,7 @@ namespace WeaponWorkshop
                     pendingClearedRaid = cleared ? resultRaid : 0;
                     _pendingClearedRaidScene = cleared ? resultRaidScene : null;
                     unsuccessfulRaidReturn = !cleared;
-                    if (showReturnFade) AdvanceAfterRaid(true);
+                    if (showReturnFade) StartCoroutine(AdvanceAfterRaidNextFrame());
                     player.GetComponent<PlayerWallet>()?.ShowModuleCreditLoss(creditsBeforeLoss);
                 }
                 else NightRaidTransfer.KeepRecovery(workshop);
@@ -249,6 +249,11 @@ namespace WeaponWorkshop
             if (showFade && transition != null && transition.BeginReturn(dayManager)) return;
             dayManager.StartNextDay();
         }
+        private IEnumerator AdvanceAfterRaidNextFrame()
+        {
+            yield return null;
+            AdvanceAfterRaid(true);
+        }
         private void Restore(GameSaveData data)
         {
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) RestoreCore(data);
@@ -272,13 +277,19 @@ namespace WeaponWorkshop
                 restored = Instantiate(corePrefab, player.transform.position + Vector3.up, Quaternion.identity);
                 restored.SetWeaponName(data.weaponName);
                 var assembly = restored.GetComponentInChildren<CubeAssembly>();
-                if (assembly == null || data.blocks.Any(b => assembly.GetPrefab(b.slot) == null))
+                bool missingPrefab = assembly == null;
+                if (!missingPrefab)
+                    foreach (var savedBlock in data.blocks)
+                        if (assembly.GetPrefab(savedBlock.slot) == null) { missingPrefab = true; break; }
+                if (missingPrefab)
                 { Destroy(restored.gameObject); Debug.LogError("저장된 모듈 프리팹을 찾을 수 없습니다.", this); return; }
                 var blocks = data.blocks.Select(b => new CubeAssembly.BlockSnapshot { slot = b.slot,
                     prefab = assembly.GetPrefab(b.slot), cell = b.cell, outputDirection = b.output,
                     orientationNormal = b.normal, paidPurchaseCost = b.paidCost, paidModuleCreditCost = b.paidModuleCreditCost, hasColor = b.hasColor, color = b.color }).ToArray();
-                if (!assembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks, data.paidCost)) ||
-                    player.GetComponent<WeaponHolder>() == null)
+                bool restoredLayout;
+                using (restored.DeferPlayerCollisionIgnore())
+                    restoredLayout = assembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks, data.paidCost));
+                if (!restoredLayout || player.GetComponent<WeaponHolder>() == null)
                 { Destroy(restored.gameObject); Debug.LogError("저장 무기를 복원하지 못했습니다.", this); return; }
                 restored.RestorePassedTests(data.passedTestIds, data.testAssemblyKey);
             }

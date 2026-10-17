@@ -31,7 +31,8 @@ namespace WeaponWorkshop
         private void OnDisable()
         {
             if (reader != null) reader.Close();
-            PutDown();
+            // SetActive is not allowed while this object is being deactivated; restore the pose only.
+            PutDown(false);
         }
 
         public bool CanInteract(Interaction interactor) => isActiveAndEnabled && reader == null &&
@@ -84,12 +85,14 @@ namespace WeaponWorkshop
             pan.y = Mathf.Clamp(pan.y, -limit, limit);
         }
 
-        public void PutDown()
+        public void PutDown() => PutDown(true);
+
+        private void PutDown(bool activateDocument)
         {
             bool wasBeingRead = reader != null;
             reader = null;
             if (!initialized) return;
-            deskDocument.SetActive(true);
+            if (activateDocument) deskDocument.SetActive(true);
             deskDocument.transform.localPosition = restingPosition;
             deskDocument.transform.localRotation = restingRotation;
             deskDocument.transform.localScale = restingScale;

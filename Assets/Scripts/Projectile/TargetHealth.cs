@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace WeaponWorkshop
 {
@@ -22,6 +23,7 @@ namespace WeaponWorkshop
         private float burnTickTimer;
         private ParticleSystem burnEffect;
         private float burnEffectBaseRate;
+        private readonly List<Collider> aimColliders = new List<Collider>();
 
         public float MaximumHealth => maximumHealth;
         public float CurrentHealth => currentHealth;
@@ -36,7 +38,8 @@ namespace WeaponWorkshop
             {
                 Bounds bounds = default;
                 bool hasBounds = false;
-                foreach (Collider collider in GetComponentsInChildren<Collider>())
+                GetComponentsInChildren(false, aimColliders);
+                foreach (Collider collider in aimColliders)
                 {
                     if (!collider.enabled) continue;
                     if (hasBounds) bounds.Encapsulate(collider.bounds);
