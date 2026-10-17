@@ -32,6 +32,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8750000000000000003}
+  - {fileID: 9100000000000000012}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8549607141102546984
@@ -189,3 +190,69 @@ MonoBehaviour:
   sprintStartVolume: 0.6
   jumpClip: {fileID: 8300000, guid: aece8a9789efa444dbf2088a6f7420fa, type: 3}
   jumpVolume: 0.65
+--- !u!1 &9100000000000000011
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9100000000000000012}
+  - component: {fileID: 9100000000000000013}
+  m_Layer: 0
+  m_Name: Customer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9100000000000000012
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9100000000000000011}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8273641672993498232}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9100000000000000013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9100000000000000011}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91e4c2a6b8d043f5a7c9e1b3d5f7082a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.CustomerSound
+  commonScreams:
+  - {fileID: 8300000, guid: a1291a263733e824aaa0a0a3699a6d19, type: 3}
+  - {fileID: 8300000, guid: 4cf3a567b44f8334c853362ddb43744f, type: 3}
+  - {fileID: 8300000, guid: 46dc468a923ee14439222ae59c783910, type: 3}
+  - {fileID: 8300000, guid: aeb81fe72dbe5854e939e2f97dca08d6, type: 3}
+  commonVolume: 1
+  _manScreams:
+  - {fileID: 8300000, guid: adde3c5f120cb0a46aa4bb5f8104b801, type: 3}
+  - {fileID: 8300000, guid: 44ad5d031fce35e4c94535421c856673, type: 3}
+  _manVolume: 1
+  _d2_7Ricochet1Clip: {fileID: 8300000, guid: 44ad5d031fce35e4c94535421c856673, type: 3}
+  _d2_7Ricochet1Volume: 1
+  _d3_5LakeParkClip: {fileID: 8300000, guid: 48c55b902ef6ffe4a84504073a47ca10, type: 3}
+  _d3_5LakeParkVolume: 1
+  _d3_9ChristClip: {fileID: 8300000, guid: 21a545775dc0bf64f97b331f2b5fd5ff, type: 3}
+  _d3_9ChristVolume: 1
+  _d4_3RobberClip: {fileID: 8300000, guid: 9c38033f9a915c841a572c40c91dfebd, type: 3}
+  _d4_3RobberVolume: 1
+  _d5_11RicsMonkeyClip: {fileID: 8300000, guid: ab704fb878007d34792d99e6f5b6b618, type: 3}
+  _d5_11RicsMonkeyVolume: 1
+  _d6_7RobberAgainClip: {fileID: 8300000, guid: 9c38033f9a915c841a572c40c91dfebd, type: 3}
+  _d6_7RobberAgainVolume: 1
