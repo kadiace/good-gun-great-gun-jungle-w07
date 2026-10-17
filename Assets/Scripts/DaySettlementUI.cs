@@ -224,9 +224,9 @@ public sealed class DaySettlementUI : MonoBehaviour
                 string settlementAmount = netIncome < 0 ? $"(−$ {-netIncome:N0})" : $"$ {netIncome:N0}";
                 string currentAmount = balance < 0 ? $"−$ {-(long)balance:N0}" : $"$ {balance:N0}";
                 if (balance < 0) currentAmount = $"<color=#D5443F>{currentAmount}</color>";
-                todayIncomeText.text = $"<size=56.25%>최종 정산액</size>\n{amount}\n" +
-                    $"<size=43.75%>기존 보유 금액 + 최종 정산액 = 현재 보유 금액</size>\n" +
-                    $"<size=56.25%>{previousAmount} + {settlementAmount} = {currentAmount}</size>";
+                todayIncomeText.text = $"<size=61.11111%>최종 정산액</size>\n{amount}\n" +
+                    $"<size=50%>기존 보유 금액 + 최종 정산액 = 현재 보유 금액</size>\n" +
+                    $"<size=61.11111%>{previousAmount} + {settlementAmount} = {currentAmount}</size>";
             }
         }
         if (show && receiptTitle != null) receiptTitle.text = dayManager.DayNumber == 0 ? "튜토리얼 - 영업 정산" : $"DAY {dayManager.DayNumber:00} - 영업 정산";

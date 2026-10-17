@@ -61,7 +61,7 @@ namespace WeaponWorkshop
             label.transform.SetParent(root.transform, false);
             scanLoadingText = label.GetComponent<TextMeshProUGUI>();
             scanLoadingText.font = title.font;
-            scanLoadingText.fontSize = 22f;
+            scanLoadingText.fontSize = 26f;
             scanLoadingText.alignment = TextAlignmentOptions.Center;
             scanLoadingText.raycastTarget = false;
             scanLoadingText.color = scanLoading.color;

@@ -103,7 +103,9 @@ namespace WeaponWorkshop
             digits.Clear();
             string initial = amount.ToString(CultureInfo.InvariantCulture).PadLeft(width, '0');
             digitHeight = Mathf.Max(1f, root.rect.height);
-            float fontSize = Mathf.Min(source.fontSize, digitHeight * 0.75f);
+            float maximumFontSize = digitHeight * 0.75f;
+            if (source.GetComponentInParent<UIManager>(true) != null) maximumFontSize += 4f;
+            float fontSize = Mathf.Min(source.fontSize, maximumFontSize);
             int separators = (width - 1) / 3;
             float unit = Mathf.Min(fontSize * 0.65f, root.rect.width / (width + separators * 0.45f));
             float totalWidth = unit * (width + separators * 0.45f);

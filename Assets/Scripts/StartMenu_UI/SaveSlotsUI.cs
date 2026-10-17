@@ -222,7 +222,7 @@ namespace WeaponWorkshop
             var label = labelObject.GetComponent<TMPro.TextMeshProUGUI>();
             label.font = font;
             label.text = "삭제";
-            label.fontSize = 24f;
+            label.fontSize = parent.GetComponentInParent<UIManager>(true) != null ? 28f : 24f;
             label.fontStyle = TMPro.FontStyles.Bold;
             label.alignment = TMPro.TextAlignmentOptions.Center;
             label.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
