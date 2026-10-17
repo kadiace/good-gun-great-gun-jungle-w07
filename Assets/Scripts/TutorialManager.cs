@@ -110,6 +110,7 @@ namespace WeaponWorkshop
         private bool stepIntroductionOpen;
         private float nextBlockedActionNoticeTime;
         private bool tankSpawnGuidanceOpen;
+        private bool loanGuideShown;
 
         private void OnEnable() => RaidEnemyCore.Spawned += HandleRaidEnemySpawned;
 
@@ -197,7 +198,7 @@ namespace WeaponWorkshop
         private void BeginNext()
         {
             if (current != null || waiting.Count == 0) return;
-            current = waiting.Dequeue(); StepIndex = 0; ShowStep();
+            current = waiting.Dequeue(); StepIndex = 0; withheldBalance = 0; loanGuideShown = false; ShowStep();
         }
         private void ShowStep()
         {
@@ -236,6 +237,28 @@ namespace WeaponWorkshop
                 if (HasActiveRaidTank()) ShowRaidTankGuidance();
             }
             else ReleaseDialogue();
+        }
+        public bool ShowLoanGuide(FeedbackUI feedback)
+        {
+            var step = CurrentStep;
+            if (loanGuideShown || step == null || step.requiredSignal != "loan-taken" ||
+                string.IsNullOrEmpty(step.choiceGuidance) || feedback == null || !feedback.IsChoiceOpen) return false;
+            ResolvePresentation();
+            if (dialogue == null || dialogue.IsOpen) return false;
+            feedback.SuspendChoiceInput();
+            ownsDialogue = true;
+            if (dialogue.Show(step.choiceGuidance, "확인", () =>
+                {
+                    ReleaseDialogue();
+                    feedback.ResumeChoiceInput();
+                }, "튜토리얼"))
+            {
+                loanGuideShown = true;
+                return true;
+            }
+            ownsDialogue = false;
+            feedback.ResumeChoiceInput();
+            return false;
         }
         private static bool HasActiveRaidTank()
         {
@@ -408,7 +431,9 @@ namespace WeaponWorkshop
         public bool TryAuthorizeAction(string action)
         {
             if (AllowsAction(action)) return true;
-            NotifyBlockedAction();
+            if (CurrentStep?.requiredSignal == "loan-taken")
+                FeedbackUI.For(this)?.ShowNotification(blockedInteractionMessage);
+            else NotifyBlockedAction();
             return false;
         }
         public bool TryAuthorizeQuickslotChange(int moduleId, int targetIndex)
@@ -428,7 +453,17 @@ namespace WeaponWorkshop
             nextBlockedActionNoticeTime = Time.unscaledTime + 2.6f;
             feedback.ShowNotification(step.blockedActionMessage);
         }
-        private void Advance() { LogStepCompleted(); StepIndex++; ShowStep(); }
+        private void Advance()
+        {
+            LogStepCompleted();
+            if (CurrentStep != null && CurrentStep.restoreWithheldBalanceOnComplete && withheldBalance > 0)
+            {
+                TutorialPlayer?.GetComponent<PlayerWallet>()?.Credit(withheldBalance);
+                withheldBalance = 0;
+            }
+            StepIndex++;
+            ShowStep();
+        }
         // 튜토리얼 퍼널 로그. 시각은 씬 이동·일시정지와 무관한 실행 후 실제 시간이다.
         private float stepStartedAt;
         private bool debugSkipping;

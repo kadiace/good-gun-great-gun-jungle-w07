@@ -92,9 +92,19 @@ namespace WeaponWorkshop
         }
         private TutorialStep scannedStep;
         private ModuleUnlockCrate scannedCrate;
+        private int withheldBalance;
         private void PrepareStep(TutorialStep step)
         {
             scannedStep = null; scannedCrate = null;
+            if (step.setBalanceOnStart >= 0)
+            {
+                var wallet = TutorialPlayer != null ? TutorialPlayer.GetComponent<PlayerWallet>() : null;
+                if (wallet != null)
+                {
+                    withheldBalance = Mathf.Max(0, wallet.Balance - step.setBalanceOnStart);
+                    wallet.RestoreBalance(step.setBalanceOnStart);
+                }
+            }
             if (step.discardHeldWeapon)
             {
                 var player = TutorialPlayer;

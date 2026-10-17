@@ -348,6 +348,8 @@ namespace WeaponWorkshop
             if (NightRaidTransfer.TryConsumeEntry(out int balance, out int moduleCredits, out var unlockedModules, out var weapon))
             {
                 player.GetComponent<PlayerWallet>().RestoreBalance(balance);
+                player.GetComponent<PlayerWallet>().RestoreLoans(NightRaidTransfer.Workshop.outstandingLoans);
+                player.GetComponent<PlayerWallet>().RestoreLastLoanDay(NightRaidTransfer.Workshop.lastLoanDay);
                 player.GetComponent<PlayerWallet>().RestoreModuleCredits(moduleCredits);
                 player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(unlockedModules);
                 travelPaints = PaintMaterialLibrary.CreateDefaults();

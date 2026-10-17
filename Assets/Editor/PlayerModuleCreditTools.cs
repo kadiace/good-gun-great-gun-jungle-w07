@@ -4,10 +4,18 @@ using WeaponWorkshop;
 
 internal static class PlayerModuleCreditTools
 {
-    private const string MenuPath = "Tools/Weapon Workshop/Add 50 Module Materials";
+    private const string MenuRoot = "Tools/Weapon Workshop/Add Module Materials/";
 
-    [MenuItem(MenuPath)]
-    private static void AddMaterials()
+    [MenuItem(MenuRoot + "50")]
+    private static void Add50() => AddMaterials(50);
+
+    [MenuItem(MenuRoot + "500")]
+    private static void Add500() => AddMaterials(500);
+
+    [MenuItem(MenuRoot + "5000")]
+    private static void Add5000() => AddMaterials(5000);
+
+    private static void AddMaterials(int amount)
     {
         if (!EditorApplication.isPlaying) return;
 
@@ -20,10 +28,12 @@ internal static class PlayerModuleCreditTools
 
         PlayerWallet wallet = PlayerWallet.ForPlayer(players[0]);
         if (wallet == null || !wallet.isActiveAndEnabled) return;
-        wallet.CreditModuleCredits(50);
-        Debug.Log($"플레이어 모듈 재화 +50 (현재 {wallet.ModuleCredits:N0})");
+        wallet.CreditModuleCredits(amount);
+        Debug.Log($"플레이어 모듈 재화 +{amount:N0} (현재 {wallet.ModuleCredits:N0})");
     }
 
-    [MenuItem(MenuPath, true)]
+    [MenuItem(MenuRoot + "50", true)]
+    [MenuItem(MenuRoot + "500", true)]
+    [MenuItem(MenuRoot + "5000", true)]
     private static bool CanAddMaterials() => EditorApplication.isPlaying;
 }

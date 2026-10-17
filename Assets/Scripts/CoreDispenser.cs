@@ -106,6 +106,11 @@ namespace WeaponWorkshop
                 }
             }
             if (dollarTotal > int.MaxValue || materialTotal > int.MaxValue) return false;
+            if (wallet.Balance < dollarTotal)
+            {
+                wallet.CheckPurchaseFunds((int)dollarTotal, false);
+                return false;
+            }
             EquipableWeapon purchasedCore = null;
             // Preset purchases include their modules, so they are logged apart from a bare core.
             string partKind = presetPlan != null ? corePrefab.name + "+preset" : corePrefab.name;
