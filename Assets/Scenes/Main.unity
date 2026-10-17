@@ -15153,6 +15153,7 @@ MonoBehaviour:
   marquee: {fileID: 66214492}
   payoutBills: {fileID: 847541730}
   interaction: {fileID: 2087899907347993065}
+  dayManager: {fileID: 366749157}
   costPanel: {fileID: 1503175446}
   costText: {fileID: 1555103873}
   statusText: {fileID: 884316159}
