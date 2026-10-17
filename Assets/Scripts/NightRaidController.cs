@@ -69,6 +69,10 @@ namespace WeaponWorkshop
             if (count == 0) text.AppendLine("획득한 신규 모듈 없음");
             return text.ToString();
         }
+        /// <summary>
+        /// 습격 결과를 표시하고 씬 키와 클리어 여부를 복귀 데이터에 기록한다.
+        /// died 상태에 따라 사망·탈출 결과와 UI 동작을 결정한다.
+        /// </summary>
         private void ShowRaidResult(bool died)
         {
             if (!inRaid || transitioning) return;
@@ -85,7 +89,7 @@ namespace WeaponWorkshop
             returningAfterDeath = died;
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
-                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, IsRaidClear(died));
+                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, IsRaidClear(died));
             GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog
             {
                 scene = gameObject.scene.name, survived = !died,
@@ -468,6 +472,10 @@ namespace WeaponWorkshop
             returnOpen = false; returnCooldown = Time.unscaledTime + .75f;
             ui.ShowReturn(false); gameManager.SetDialogue(false);
         }
+        /// <summary>
+        /// 복귀 상태를 보존하고 공방 씬으로 돌아간다.
+        /// 확정된 습격 씬 키와 클리어 결과를 Main에 전달한다.
+        /// </summary>
         public void ReturnHome()
         {
             if (!inRaid || transitioning || !returnOpen) return;
@@ -490,9 +498,10 @@ namespace WeaponWorkshop
             {
                 // 에디터에서 습격 씬을 직접 연 경우에도 확정 결과를 넘긴다.
                 int raidNumber = NightRaidTransfer.ResultRaidNumber;
+                string raidScene = NightRaidTransfer.ResultRaidScene;
                 bool cleared = NightRaidTransfer.ResultCleared;
                 NightRaidTransfer.Abandon();
-                NightRaidTransfer.RecordResult(raidNumber, cleared);
+                NightRaidTransfer.RecordResult(raidNumber, raidScene, cleared);
                 NightRaidTransfer.MarkStandaloneReturn();
             }
             transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false); PoolManager.ClearActive();
@@ -500,6 +509,10 @@ namespace WeaponWorkshop
             NightRaidTransfer.ReturnDayFadePending = !returningAfterDeath && (!entryRestoreFailed || TutorialManager.TrainingRaidPending);
             SceneManager.LoadSceneAsync(homeScene, LoadSceneMode.Single);
         }
+        /// <summary>
+        /// 사망 복귀를 클리어 실패로 기록하고 공방으로 이동한다.
+        /// 현재 씬 키를 결과 데이터에 담아 보상 곡이 지급되지 않게 한다.
+        /// </summary>
         public void ReturnAfterDeath()
         {
             if (!inRaid || transitioning) return;
@@ -507,7 +520,7 @@ namespace WeaponWorkshop
             returningAfterDeath = true;
             // 기존 사망 UI가 직접 호출하는 경로에서도 성공 결과가 남지 않게 한다.
             if (!SoundManager.IsTutorialMusicContext)
-                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, false);
+                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, false);
             returnOpen = true;
             ReturnHome();
         }

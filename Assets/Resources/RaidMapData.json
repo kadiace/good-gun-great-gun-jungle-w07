@@ -30,30 +30,30 @@
       "tanks": true
     },
     {
-      "entryCost": 1500,
+      "entryCost": 2500,
       "name": "군사기지",
       "scene": "NightRaid_Millitary_base",
       "reward": {
         "materialCrates": 18,
         "materialPerCrate": 250,
         "moduleCodes": [
-          "36f778d16d639104b90e807dc937aaaa",
-          "cf32abdb412c6124cabcbdd85c103cb5"
+          "0277d45126374004b802798d93561da2",
+          "8d0c0ddd9cf586745abb86717c7cc6b6"
         ]
       },
       "helicopters": true,
       "tanks": true
     },
     {
-      "entryCost": 2500,
+      "entryCost": 1500,
       "name": "정글 캠퍼스",
       "scene": "NightRaid_JungleCampus",
       "reward": {
         "materialCrates": 12,
         "materialPerCrate": 250,
         "moduleCodes": [
-          "0277d45126374004b802798d93561da2",
-          "8d0c0ddd9cf586745abb86717c7cc6b6"
+          "36f778d16d639104b90e807dc937aaaa",
+          "cf32abdb412c6124cabcbdd85c103cb5"
         ]
       },
       "helicopters": true,

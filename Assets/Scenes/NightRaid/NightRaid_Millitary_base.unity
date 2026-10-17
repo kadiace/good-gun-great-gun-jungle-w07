@@ -4163,7 +4163,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab23d9b2a894dfd478f4fac4f097e8b1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.RaidModuleCrateSpot
-  module: {fileID: 11400000, guid: cf32abdb412c6124cabcbdd85c103cb5, type: 2}
+  module: {fileID: 11400000, guid: 0277d45126374004b802798d93561da2, type: 2}
 --- !u!1 &730003213
 GameObject:
   m_ObjectHideFlags: 0
@@ -6485,7 +6485,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab23d9b2a894dfd478f4fac4f097e8b1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.RaidModuleCrateSpot
-  module: {fileID: 11400000, guid: 36f778d16d639104b90e807dc937aaaa, type: 2}
+  module: {fileID: 11400000, guid: 8d0c0ddd9cf586745abb86717c7cc6b6, type: 2}
 --- !u!1 &1083485046
 GameObject:
   m_ObjectHideFlags: 0

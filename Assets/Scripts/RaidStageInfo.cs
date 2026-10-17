@@ -11,8 +11,13 @@ namespace WeaponWorkshop
     {
         public static int Count(this RaidMapData table) => table != null && table.regions != null ? table.regions.Length : 0;
 
-        public static string SceneAt(this RaidMapData table, int index) =>
-            table != null && table.regions != null && index >= 0 && index < table.regions.Length ? table.regions[index].scene : null;
+        /// <summary>스테이지 번호에 해당하는 씬 이름을 SoundData의 씬 키로 찾아 반환한다.</summary>
+        public static string SceneAt(this RaidMapData table, int index)
+        {
+            if (table == null || table.regions == null || index < 0 || index >= table.regions.Length) return null;
+            SoundData.Raid raid = SoundInfo.Raid(index + 1);
+            return raid != null && table.Find(raid.scene) != null ? raid.scene : null;
+        }
 
         public static RaidMapData.Region Find(this RaidMapData table, string scene)
         {

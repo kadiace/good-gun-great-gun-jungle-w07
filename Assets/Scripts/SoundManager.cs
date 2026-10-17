@@ -162,8 +162,7 @@ namespace WeaponWorkshop
                 if (workbenchSounds == null) workbenchSounds = GetComponent<WorkbenchSoundSettings>();
                 LoadSoundSettings();
                 // 필수 음원 누락은 명확히 알리고 새 자동 재생을 차단한다.
-                musicConfigurationValid = ValidateBgmConfiguration(out string error);
-                if (!musicConfigurationValid) Debug.LogError(error, this);
+                if (!ValidateBgmConfiguration(out string error)) Debug.LogError(error, this);
             }
             DontDestroyOnLoad(gameObject);
             Subscribe();
@@ -425,22 +424,31 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 배경음악 클립을 반복 재생하거나 현재 재생 중인 클립의 음량을 갱신한다.
-        /// 튜토리얼의 기존 곡과 volume을 사용하며 페이드 없이 원래 재생 동작을 보존한다.
+        /// 튜토리얼 곡과 음량을 사용하며 실제 재생 곡 변경을 구독자에게 알린다.
         /// </summary>
         private void PlayLegacyMusic(BgmId id, float volume)
         {
             // 기존 튜토리얼 재생 경로에서도 Main의 공격곡 금지 조건을 우회하지 못하게 한다.
             if (SceneManager.GetActiveScene().name == "Main" && IsAttackMusic(id)) return;
             AudioClip clip = GetMusicClip(id);
-            if (clip == null) return;
+            if (clip == null)
+            {
+                id = BgmId.DayFirst;
+                clip = defaultMusicClip;
+            }
+            if (clip == null)
+            {
+                StopBackgroundMusic();
+                return;
+            }
             CancelMusicFade();
             EnsureMusicSource();
             currentBgm = id;
-            playingBgm = id;
             musicBaseVolume = volume;
             musicFade = 1f;
             if (backgroundMusicSource.clip == clip && backgroundMusicSource.isPlaying)
             {
+                SetPlayingBgm(id);
                 ApplyChannelVolumes();
                 return;
             }
@@ -450,20 +458,25 @@ namespace WeaponWorkshop
             backgroundMusicSource.loop = true;
             ApplyChannelVolumes();
             backgroundMusicSource.Play();
+            SetPlayingBgm(id);
         }
 
         /// <summary>
         /// 배경음악 재생을 멈추고 AudioSource에서 현재 클립 참조를 지운다.
-        /// backgroundMusicSource가 없으면 아무 상태도 변경하지 않는다.
+        /// 재생 식별자를 None으로 갱신해 변경 이벤트를 알린다.
         /// </summary>
         private void StopBackgroundMusic()
         {
             CancelMusicFade();
             currentBgm = BgmId.None;
-            playingBgm = BgmId.None;
-            if (backgroundMusicSource == null) return;
+            if (backgroundMusicSource == null)
+            {
+                SetPlayingBgm(BgmId.None);
+                return;
+            }
             backgroundMusicSource.Stop();
             backgroundMusicSource.clip = null;
+            SetPlayingBgm(BgmId.None);
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
