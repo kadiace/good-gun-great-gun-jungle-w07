@@ -7,7 +7,7 @@ int topOther = 6;        // 렌더 스레드 상위 몇 개
 string[] watch = {       // 가설 검증용 마커(이름 앞부분 일치, 모든 스레드 합산)
     "ExpandingExplosion.", "DestructibleTarget.", "ParticleSystem", "Physics.SyncTransforms", "Physics.Simulate",
     "GC.Alloc", "GC.Collect", "Gfx.WaitForPresent", "RenderLoop", "Drawing", "Transparent", "Shadows",
-    "PoolManager", "VisualDebrisCloud", "Instantiate", "Destroy", "Batch", "SRPBatcher" };
+    "PoolManager", "VisualDebrisCloud", "EquipableWeapon.", "GameSaveController.", "NightRaidReturnOverlay.", "Instantiate", "Destroy", "Batch", "SRPBatcher" };
 string[] counters = { "Batches Count", "SetPass Calls Count", "Draw Calls Count", "Triangles Count", "Vertices Count",
     "Shadow Casters Count", "Dynamic Batched Draw Calls Count", "GC Allocated In Frame", "Rigidbody Count" };
 

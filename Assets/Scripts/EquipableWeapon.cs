@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Collections;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace WeaponWorkshop
 {
     public sealed class EquipableWeapon : MonoBehaviour, IInteractable
     {
+        private static readonly ProfilerMarker IgnorePlayerCollisionsMarker = new ProfilerMarker("EquipableWeapon.IgnorePlayerCollisions");
+        private static readonly ProfilerMarker IgnoreBlockPlayerCollisionsMarker = new ProfilerMarker("EquipableWeapon.IgnoreBlockPlayerCollisions");
         // Runtime state belongs to this gun. Only world/travel saves restore it, never blueprints or prefabs.
         private readonly HashSet<string> passedTestIds = new HashSet<string>(StringComparer.Ordinal);
         private string certifiedAssemblyKey;
@@ -120,6 +123,9 @@ namespace WeaponWorkshop
         private readonly Dictionary<Collider, bool> colliderStates = new Dictionary<Collider, bool>();
         private readonly Dictionary<Collider, bool> triggerStates = new Dictionary<Collider, bool>();
         private readonly Dictionary<Rigidbody, bool> rigidbodyStates = new Dictionary<Rigidbody, bool>();
+        private readonly List<Collider> playerColliders = new List<Collider>();
+        private int collisionIgnoreBatchDepth;
+        private bool collisionIgnoreCacheReady;
         public bool IsEquipped { get; private set; }
         public bool IsMoving { get; private set; }
         private Coroutine movement;
@@ -172,19 +178,74 @@ namespace WeaponWorkshop
         private ProjectileStatsSource statsSource;
         public void IgnorePlayerCollisions()
         {
-            var weaponColliders = GetComponentsInChildren<Collider>(true);
+            using (IgnorePlayerCollisionsMarker.Auto())
+            {
+                if (collisionIgnoreBatchDepth > 0) { collisionIgnoreCacheReady = false; return; }
+                var weaponColliders = GetComponentsInChildren<Collider>(true);
+                if (!collisionIgnoreCacheReady) RefreshPlayerColliderCache();
+                foreach (var playerCollider in playerColliders)
+                {
+                    if (playerCollider == null || playerCollider.gameObject.scene != gameObject.scene) continue;
+                    foreach (var weaponCollider in weaponColliders)
+                        if (weaponCollider != null && playerCollider != weaponCollider) Physics.IgnoreCollision(playerCollider, weaponCollider, true);
+                }
+            }
+        }
+        internal void IgnorePlayerCollisions(PlacedBlock block)
+        {
+            using (IgnoreBlockPlayerCollisionsMarker.Auto())
+            {
+                if (block == null) return;
+                if (collisionIgnoreBatchDepth > 0) { collisionIgnoreCacheReady = false; return; }
+                if (!collisionIgnoreCacheReady) RefreshPlayerColliderCache();
+                var blockColliders = block.GetComponentsInChildren<Collider>(true);
+                foreach (var playerCollider in playerColliders)
+                {
+                    if (playerCollider == null || playerCollider.gameObject.scene != gameObject.scene) continue;
+                    foreach (var blockCollider in blockColliders)
+                        if (blockCollider != null && playerCollider != blockCollider) Physics.IgnoreCollision(playerCollider, blockCollider, true);
+                }
+            }
+        }
+        public IDisposable DeferPlayerCollisionIgnore()
+        {
+            collisionIgnoreBatchDepth++;
+            return new CollisionIgnoreBatch(this);
+        }
+        private void EndCollisionIgnoreBatch()
+        {
+            if (collisionIgnoreBatchDepth == 0 || --collisionIgnoreBatchDepth > 0) return;
+            collisionIgnoreCacheReady = false;
+            IgnorePlayerCollisions();
+        }
+        private void RefreshPlayerColliderCache()
+        {
+            playerColliders.Clear();
             foreach (var player in UnityEngine.Object.FindObjectsByType<FirstPersonPlayer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 if (player.gameObject.scene != gameObject.scene) continue;
                 foreach (var playerCollider in player.GetComponentsInChildren<Collider>(true))
-                {
-                    if (playerCollider.GetComponentInParent<EquipableWeapon>() != null) continue;
-                    foreach (var weaponCollider in weaponColliders)
-                        if (playerCollider != weaponCollider) Physics.IgnoreCollision(playerCollider, weaponCollider, true);
-                }
+                    if (playerCollider != null && playerCollider.GetComponentInParent<EquipableWeapon>() == null)
+                        playerColliders.Add(playerCollider);
+            }
+            collisionIgnoreCacheReady = true;
+        }
+        private sealed class CollisionIgnoreBatch : IDisposable
+        {
+            private EquipableWeapon owner;
+            public CollisionIgnoreBatch(EquipableWeapon owner) => this.owner = owner;
+            public void Dispose()
+            {
+                if (owner == null) return;
+                owner.EndCollisionIgnoreBatch();
+                owner = null;
             }
         }
-        private void OnEnable() => IgnorePlayerCollisions();
+        private void OnEnable()
+        {
+            collisionIgnoreCacheReady = false;
+            IgnorePlayerCollisions();
+        }
         private void Awake()
         {
             if (powerCore == null) powerCore = GetComponentInChildren<PowerCore>(true);

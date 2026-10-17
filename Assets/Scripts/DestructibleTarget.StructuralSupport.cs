@@ -10,7 +10,7 @@ namespace WeaponWorkshop
         internal bool structuralAnchor;
         private readonly List<Collider> externalSupportColliders = new List<Collider>();
         private readonly List<Collider> neighborSupportColliders = new List<Collider>();
-        private readonly HashSet<Cell> externallySupportedCells = new HashSet<Cell>();
+        private readonly HashSet<int> externallySupportedCells = new HashSet<int>();
 
         private void CollectExternalSupport()
         {
@@ -49,8 +49,11 @@ namespace WeaponWorkshop
                 for (int x=first.x;x<=last.x;x++)
                     for (int y=first.y;y<=last.y;y++)
                         for (int z=first.z;z<=last.z;z++)
-                            if (grid.TryGetValue(new Vector3Int(x,y,z),out var cell) && (!belowOnly || RestsOn(cell, contact)))
-                                externallySupportedCells.Add(cell);
+                        {
+                            var coordinate = new Vector3Int(x,y,z);
+                            if (TryGetCell(coordinate,out var cell) && (!belowOnly || RestsOn(cell, contact)))
+                                externallySupportedCells.Add(CellIndex(coordinate));
+                        }
             }
         }
 
@@ -65,9 +68,9 @@ namespace WeaponWorkshop
                 if (pivotGrounded == null)
                 {
                     bool grounded = false;
-                    foreach (var cell in preparedCells)
-                        if (CellBottom(cell) <= transform.position.y + .001f) { grounded = true; break; }
-                    if (preparedCells.Count > 0) pivotGrounded = grounded;
+                    for (int index = 0; index < preparedCells.Length; index++)
+                        if (CellBottom(preparedCells[index]) <= transform.position.y + .001f) { grounded = true; break; }
+                    if (preparedCells.Length > 0) pivotGrounded = grounded;
                     return grounded;
                 }
                 return pivotGrounded.Value;
@@ -104,17 +107,32 @@ namespace WeaponWorkshop
         internal void RecheckIfHeldByNeighbors()
         {
             if (!externallyHeld || !BelowSupportOnly) return;
-            supportValidated = false; structureDirty = true;
+            if (supportValidated)
+                foreach (int cellIndex in cells) changedBoundary.Add(preparedCells[cellIndex].coordinate);
+            structureDirty = true;
         }
 
-        private bool HasExternalSupport(Cell cell)
+        private bool HasExternalSupport(int cellIndex)
         {
             // Conservative bounds contact; only overlapping grid ranges are visited once above.
-            return externallySupportedCells.Contains(cell);
+            return externallySupportedCells.Contains(cellIndex);
         }
         internal bool HasStructuralGeometry => !subdivided || cells.Count > 0;
-        internal bool UsesPhysicalGravity => GetComponent<FallingRangeTarget>() != null ||
+        private bool hasFallingRangeTarget;
+        internal bool UsesPhysicalGravity => hasFallingRangeTarget ||
             (TryGetComponent<Rigidbody>(out var body) && body != null && !body.isKinematic);
+
+        private void CachePhysicalGravityComponents()
+        {
+            hasFallingRangeTarget = GetComponent<FallingRangeTarget>() != null;
+        }
+
+        private void Start()
+        {
+            bool wasPhysical = UsesPhysicalGravity;
+            CachePhysicalGravityComponents();
+            if (wasPhysical != UsesPhysicalGravity) StructuralSupportGraph.Changed(this);
+        }
 
         internal void CollectSupportColliders(List<Collider> result)
         {
@@ -136,7 +154,7 @@ namespace WeaponWorkshop
             if (!enabled || UsesPhysicalGravity || (subdivided && cells.Count == 0)) return;
             if (!subdivided) Subdivide(false);
             groupPieces.Clear();
-            foreach (var cell in cells) groupPieces.Add(cell.Snapshot);
+            foreach (int cellIndex in cells) groupPieces.Add(preparedCells[cellIndex].Snapshot);
             if (groupPieces.Count == 0) return;
             EnsureDebrisCloud();
             debrisCloud.EmitGroup(groupPieces, debrisLifetime, debrisFadeDuration);

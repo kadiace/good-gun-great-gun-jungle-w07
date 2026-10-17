@@ -93,7 +93,7 @@ namespace WeaponWorkshop
         private void OnEnable()
         {
             RefreshDraw();
-            GetComponentInParent<EquipableWeapon>()?.IgnorePlayerCollisions();
+            GetComponentInParent<EquipableWeapon>()?.IgnorePlayerCollisions(this);
         }
 
         public void RefreshDraw()

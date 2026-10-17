@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace WeaponWorkshop
 {
@@ -9,10 +10,13 @@ namespace WeaponWorkshop
         internal PoolManager.Pool OwnerPool { get; private set; }
         public GameObject SourcePrefab => OwnerPool?.prefab;
         private ParticleSystem[] particles;
+        private ParticleSystemRenderer[] particleRenderers;
         private Renderer[] renderers;
         private Material[][] originalMaterials;
         private Material[] originalTrailMaterials;
         private TrailRenderer[] trails;
+        private VisualDebrisCloud debrisCloud;
+        private readonly List<PooledCombatObject> pooledChildren = new List<PooledCombatObject>();
         private Vector3 originalScale;
         private bool autoReturn, playPending;
         private float remaining, age;
@@ -21,8 +25,13 @@ namespace WeaponWorkshop
         {
             Manager = manager; OwnerPool = pool;
             originalScale = transform.localScale;
+            TryGetComponent(out debrisCloud);
+            pooledChildren.Clear();
+            foreach (var child in GetComponentsInChildren<PooledCombatObject>(true))
+                if (child != this && child.transform.parent == transform) pooledChildren.Add(child);
             particles = GetComponentsInChildren<ParticleSystem>(true);
             renderers = GetComponentsInChildren<Renderer>(true);
+            particleRenderers = GetComponentsInChildren<ParticleSystemRenderer>(true);
             trails = GetComponentsInChildren<TrailRenderer>(true);
             originalMaterials = new Material[renderers.Length][];
             originalTrailMaterials = new Material[renderers.Length];
@@ -40,6 +49,15 @@ namespace WeaponWorkshop
             }
             enabled = false;
         }
+        internal VisualDebrisCloud DebrisCloud => debrisCloud;
+        internal ParticleSystem[] Particles => particles;
+        internal ParticleSystemRenderer[] ParticleRenderers => particleRenderers;
+        internal IReadOnlyList<PooledCombatObject> PooledChildren => pooledChildren;
+        internal void RegisterPooledChild(PooledCombatObject child)
+        {
+            if (child != null && child != this && !pooledChildren.Contains(child)) pooledChildren.Add(child);
+        }
+        internal void UnregisterPooledChild(PooledCombatObject child) => pooledChildren.Remove(child);
         internal void ResetForRent()
         {
             transform.localScale = originalScale;

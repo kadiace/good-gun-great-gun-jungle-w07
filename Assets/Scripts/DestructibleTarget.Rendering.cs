@@ -20,6 +20,45 @@ namespace WeaponWorkshop
         private static readonly ProfilerMarker collisionMarker = new ProfilerMarker("DestructibleTarget.UpdateCollisionRuns");
         private static readonly ProfilerMarker subdivideMarker = new ProfilerMarker("DestructibleTarget.Subdivide");
         private static readonly ProfilerMarker explosionFinishMarker = new ProfilerMarker("DestructibleTarget.FinishExplosionStep");
+        private static readonly ProfilerMarker subdivisionBudgetMarker = new ProfilerMarker("DestructibleTarget.SubdivisionBudget");
+        // 0 keeps existing callers unlimited until they adopt the resumable collection contract.
+        public static int MaxSubdivisionsPerFrame { get; set; }
+        private static int subdivisionBudgetFrame = -1;
+        private static int subdivisionsThisFrame;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSubdivisionBudget()
+        {
+            subdivisionBudgetFrame = -1;
+            subdivisionsThisFrame = 0;
+            MaxSubdivisionsPerFrame = 0;
+        }
+
+        private static bool IsSubdivisionBudgetAvailable()
+        {
+            using (subdivisionBudgetMarker.Auto())
+            {
+                int limit = MaxSubdivisionsPerFrame;
+                return limit <= 0 || subdivisionBudgetFrame != Time.frameCount || subdivisionsThisFrame < limit;
+            }
+        }
+
+        private static bool TryReserveSubdivisionBudget()
+        {
+            using (subdivisionBudgetMarker.Auto())
+            {
+                int limit = MaxSubdivisionsPerFrame;
+                if (limit <= 0) return true;
+                if (subdivisionBudgetFrame != Time.frameCount)
+                {
+                    subdivisionBudgetFrame = Time.frameCount;
+                    subdivisionsThisFrame = 0;
+                }
+                if (subdivisionsThisFrame >= limit) return false;
+                subdivisionsThisFrame++;
+                return true;
+            }
+        }
         private static Vector3Int RenderKey(Vector3Int cell) => new Vector3Int(
             cell.x / RenderChunkWidth, cell.y / RenderChunkWidth, cell.z / RenderChunkWidth);
 
@@ -52,15 +91,15 @@ namespace WeaponWorkshop
                         for (int x = origin.x; x < Mathf.Min(origin.x + RenderChunkWidth, divisions.x); x++)
                             for (int y = origin.y; y < Mathf.Min(origin.y + RenderChunkWidth, divisions.y); y++)
                                 for (int z = origin.z; z < Mathf.Min(origin.z + RenderChunkWidth, divisions.z); z++)
-                                    if (grid.ContainsKey(new Vector3Int(x,y,z))) count++;
+                                    if (HasCell(new Vector3Int(x,y,z))) count++;
                         if (chunk.combines.Length != count) chunk.combines = new CombineInstance[count];
                         int used = 0;
                         for (int x = origin.x; x < Mathf.Min(origin.x + RenderChunkWidth, divisions.x); x++)
                             for (int y = origin.y; y < Mathf.Min(origin.y + RenderChunkWidth, divisions.y); y++)
                                 for (int z = origin.z; z < Mathf.Min(origin.z + RenderChunkWidth, divisions.z); z++)
-                                    if (grid.TryGetValue(new Vector3Int(x,y,z), out var cell))
+                                    if (TryGetCell(new Vector3Int(x,y,z), out var cell))
                                         chunk.combines[used++] = new CombineInstance { mesh = cellMesh,
-                                            transform = Matrix4x4.TRS(cell.localPosition,cell.localRotation,cell.localScale) };
+                                            transform = Matrix4x4.TRS(cell.localPosition,Quaternion.identity,cell.localScale) };
                         if (chunk.mesh == null && used > 0)
                         {
                             chunk.mesh = new Mesh { name = "RemainingTargetChunk" };
@@ -85,51 +124,27 @@ namespace WeaponWorkshop
         private readonly HashSet<Vector3Int> changedBoundary = new HashSet<Vector3Int>();
         private readonly HashSet<Vector3Int> localSupportVisited = new HashSet<Vector3Int>();
         private readonly Queue<Vector3Int> localSupportQueue = new Queue<Vector3Int>();
-        private bool supportValidated, removedGroundSupport;
-        private void RecordSupportRemoval(Cell cell, Vector3Int coordinate)
+        private bool supportValidated, resolvingSupportDrop;
+        private static readonly ProfilerMarker localSupportMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport.Local");
+        private static readonly ProfilerMarker supportFallbackMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport.FullFallback");
+        private void RecordSupportRemoval(Vector3Int coordinate)
         {
-            // Full checks are already required in these cases; do not build a boundary cache.
-            if (!supportValidated || removedGroundSupport) return;
-            float halfHeight = Mathf.Abs(cell.TransformVector(Vector3.right * .5f).y)
-                + Mathf.Abs(cell.TransformVector(Vector3.up * .5f).y)
-                + Mathf.Abs(cell.TransformVector(Vector3.forward * .5f).y);
-            if (cell.position.y - halfHeight <= transform.position.y + .001f)
-            {
-                removedGroundSupport = true; changedBoundary.Clear(); return;
-            }
+            if (!supportValidated || resolvingSupportDrop) return;
             foreach (var direction in neighbors) changedBoundary.Add(coordinate + direction);
-        }
-        private bool PreservesSupportLocally()
-        {
-            if (!supportValidated || removedGroundSupport) return false;
-            changedBoundary.RemoveWhere(c => !grid.ContainsKey(c));
-            if (changedBoundary.Count == 0) return true;
-            localSupportVisited.Clear(); localSupportQueue.Clear();
-            foreach (var coordinate in changedBoundary)
-            { localSupportQueue.Enqueue(coordinate); localSupportVisited.Add(coordinate); break; }
-            int remaining = changedBoundary.Count;
-            // Reaching every surviving neighbor proves connectivity was preserved.
-            // An inconclusive bounded search falls back to the original full calculation.
-            while (localSupportQueue.Count > 0 && localSupportVisited.Count <= 512)
-            {
-                var coordinate = localSupportQueue.Dequeue();
-                if (changedBoundary.Contains(coordinate) && --remaining == 0) return true;
-                foreach (var direction in neighbors)
-                {
-                    var next = coordinate + direction;
-                    if (grid.ContainsKey(next) && localSupportVisited.Add(next)) localSupportQueue.Enqueue(next);
-                }
-            }
-            return false;
         }
         private void ResolveSupport()
         {
             if (attachedToMovingBody) return;
             using (supportMarker.Auto())
             {
-                if (!PreservesSupportLocally()) DropUnsupported();
+                if (!supportValidated)
+                {
+                    using (supportFallbackMarker.Auto()) DropUnsupported();
+                }
+                else if (changedBoundary.Count > 0)
+                    using (localSupportMarker.Auto()) DropUnsupportedNearRemovedBoundary();
                 supportValidated = true;
-                changedBoundary.Clear(); removedGroundSupport = false;
+                changedBoundary.Clear();
             }
         }
     }

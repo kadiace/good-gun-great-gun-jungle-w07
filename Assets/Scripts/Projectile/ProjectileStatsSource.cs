@@ -32,6 +32,8 @@ namespace WeaponWorkshop
         private bool hasPathTint;
         private Color pathTint;
         private readonly System.Collections.Generic.List<Color> pathColors = new System.Collections.Generic.List<Color>();
+        private StatCollector statCollector;
+        private CubeAssembly cubeAssembly;
 
         public WeaponStats CurrentStats => weaponStats;
         public ProjectileTuning Tuning
@@ -89,7 +91,7 @@ namespace WeaponWorkshop
             get
             {
                 float weight = 0f;
-                StatCollector collector = GetComponent<StatCollector>();
+                StatCollector collector = statCollector;
                 if (collector != null) weight = collector.CurrentStats.weight;
                 else
                     foreach (ModuleStats module in GetComponentsInChildren<ModuleStats>())
@@ -114,7 +116,7 @@ namespace WeaponWorkshop
             get
             {
                 float weight = 0f;
-                StatCollector collector = GetComponent<StatCollector>();
+                StatCollector collector = statCollector;
                 if (collector != null) weight = collector.CurrentStats.weight;
                 else
                     foreach (ModuleStats module in GetComponentsInChildren<ModuleStats>())
@@ -129,7 +131,7 @@ namespace WeaponWorkshop
             int routeModules = 0;
             if (path != null)
                 foreach (PlacedBlock block in path)
-                    if (block != null && block.GetComponent<ModuleStats>()?.Data != null) routeModules++;
+                    if (block != null && block.TryGetComponent<ModuleStats>(out var module) && module.Data != null) routeModules++;
 
             float recoil = Tuning.verticalRecoilDegreesPerShot
                 + routeModules * Tuning.verticalRecoilDegreesPerRouteModule
@@ -162,8 +164,7 @@ namespace WeaponWorkshop
             foreach (PlacedBlock block in path)
             {
                 if (block == null) continue;
-                ModuleStats module = block.GetComponent<ModuleStats>();
-                if (module == null || module.Data == null) continue;
+                if (!block.TryGetComponent<ModuleStats>(out ModuleStats module) || module.Data == null) continue;
                 WeaponStats bonus = module.Data.GetStats();
                 // 연사 모듈의 연사는 곱연산용으로 따로 모음. 다른 모듈의 연사(발열 +4 등)는 그대로 더함.
                 if (module.Data.ModuleType == StatType.FireRate)
@@ -175,7 +176,7 @@ namespace WeaponWorkshop
             }
             // 연사 = 코어 기본 × 배율^(연사 모듈 연사 합) + 다른 모듈의 연사. 배율 1.5면 1·1.5·2.25·3.375배.
             stats.fireRate += baseFireRate * (Mathf.Pow(Tuning.fireRateMultiplierPerModule, fireRateModules) - 1f);
-            CubeAssembly assembly = GetComponent<CubeAssembly>();
+            CubeAssembly assembly = cubeAssembly;
             if (stats.shotgun > 0f || ModuleCounter.TotalCount(assembly, ModuleKind.Shotgun) > 0)
             {
                 stats.explosion *= 0.5f;
@@ -188,6 +189,8 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
+            TryGetComponent(out statCollector);
+            cubeAssembly = GetComponent<CubeAssembly>();
             ResolvePowerCore();
         }
 
@@ -362,8 +365,7 @@ namespace WeaponWorkshop
             if (path != null)
                 foreach (PlacedBlock block in path)
                 {
-                    ColorModule module = block != null ? block.GetComponent<ColorModule>() : null;
-                    if (module != null) pathColors.Add(module.Color);
+                    if (block != null && block.TryGetComponent<ColorModule>(out ColorModule module)) pathColors.Add(module.Color);
                 }
             if (pathColors.Count == 0) return false;
             color = LightMixer.Mix(pathColors);
