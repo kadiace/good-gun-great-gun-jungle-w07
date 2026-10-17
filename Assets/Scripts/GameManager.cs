@@ -87,7 +87,11 @@ namespace WeaponWorkshop
             var recipe = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponRecipeUI>() : null;
             if (recipe != null && recipe.IsOpen) { recipe.Close(); return; }
             if (InManual) { ManualCloseRequested?.Invoke(); return; }
-            if (uiManager != null && uiManager.IsChoiceOpen) { uiManager.Feedback.Cancel(); return; }
+            if (uiManager != null && uiManager.IsChoiceOpen)
+            {
+                if (!uiManager.Feedback.IsChoiceInputSuspended) uiManager.Feedback.Cancel();
+                return;
+            }
             var presets = uiManager != null ? uiManager.GetComponent<PresetPanelUI>() : null;
             if (presets != null && presets.IsOpen) { presets.Close(); return; }
             var weaponCode = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponCodeUI>() : null;

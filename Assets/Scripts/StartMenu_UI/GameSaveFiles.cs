@@ -141,6 +141,9 @@ namespace WeaponWorkshop
         public string[] passedTestIds = Array.Empty<string>();
         public int version = 7, day, balance, paidCost;
         public int moduleCredits;
+        public int outstandingLoans, todayLoanRepayment, todayLoanInterest;
+        public int todayLoanIncome;
+        public int lastLoanDay = -1;
         public int[] unlockedModules = Array.Empty<int>();
         public CustomerOrderSave[] dailyOrders;
         public CustomerOrderSave[] deferredCustomers;

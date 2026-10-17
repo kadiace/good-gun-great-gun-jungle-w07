@@ -106,6 +106,11 @@ namespace WeaponWorkshop
                 }
             }
             if (dollarTotal > int.MaxValue || materialTotal > int.MaxValue) return false;
+            if (wallet.Balance < dollarTotal)
+            {
+                wallet.CheckPurchaseFunds((int)dollarTotal, false);
+                return false;
+            }
             EquipableWeapon purchasedCore = null;
             bool purchased = wallet.TryPurchaseModule((int)dollarTotal, (int)materialTotal, () =>
             {

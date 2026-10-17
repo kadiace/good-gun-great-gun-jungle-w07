@@ -107,6 +107,7 @@ namespace WeaponWorkshop
         }
         private bool ownsDialogue;
         private bool tankSpawnGuidanceOpen;
+        private bool loanGuideShown;
 
         private void OnEnable() => RaidEnemyCore.Spawned += HandleRaidEnemySpawned;
 
@@ -194,7 +195,7 @@ namespace WeaponWorkshop
         private void BeginNext()
         {
             if (current != null || waiting.Count == 0) return;
-            current = waiting.Dequeue(); StepIndex = 0; ShowStep();
+            current = waiting.Dequeue(); StepIndex = 0; withheldBalance = 0; loanGuideShown = false; ShowStep();
         }
         private void ShowStep()
         {
@@ -227,6 +228,28 @@ namespace WeaponWorkshop
                 if (HasActiveRaidTank()) ShowRaidTankGuidance();
             }
             else ReleaseDialogue();
+        }
+        public bool ShowLoanGuide(FeedbackUI feedback)
+        {
+            var step = CurrentStep;
+            if (loanGuideShown || step == null || step.requiredSignal != "loan-taken" ||
+                string.IsNullOrEmpty(step.choiceGuidance) || feedback == null || !feedback.IsChoiceOpen) return false;
+            ResolvePresentation();
+            if (dialogue == null || dialogue.IsOpen) return false;
+            feedback.SuspendChoiceInput();
+            ownsDialogue = true;
+            if (dialogue.Show(step.choiceGuidance, "확인", () =>
+                {
+                    ReleaseDialogue();
+                    feedback.ResumeChoiceInput();
+                }, "튜토리얼"))
+            {
+                loanGuideShown = true;
+                return true;
+            }
+            ownsDialogue = false;
+            feedback.ResumeChoiceInput();
+            return false;
         }
         private static bool HasActiveRaidTank()
         {
@@ -360,6 +383,14 @@ namespace WeaponWorkshop
             FeedbackUI.For(this)?.ShowNotification(blockedInteractionMessage);
             return false;
         }
+        public static bool TryAuthorizeAction(string action)
+        {
+            var tutorial = Instance;
+            if (tutorial == null || tutorial.AllowsAction(action)) return true;
+            if (tutorial.CurrentStep?.requiredSignal == "loan-taken")
+                FeedbackUI.For(tutorial)?.ShowNotification(tutorial.blockedInteractionMessage);
+            return false;
+        }
         // Gameplay components query the same authored action permissions as the interaction policy.
         public bool AllowsAction(string action)
         {
@@ -371,7 +402,16 @@ namespace WeaponWorkshop
             var allowed = CurrentStep?.allowedActions;
             return allowed == null || allowed.Length == 0 || Array.IndexOf(allowed, action) >= 0;
         }
-        private void Advance() { StepIndex++; ShowStep(); }
+        private void Advance()
+        {
+            if (CurrentStep != null && CurrentStep.restoreWithheldBalanceOnComplete && withheldBalance > 0)
+            {
+                TutorialPlayer?.GetComponent<PlayerWallet>()?.Credit(withheldBalance);
+                withheldBalance = 0;
+            }
+            StepIndex++;
+            ShowStep();
+        }
         private void ReleaseDialogue()
         {
             if (ownsDialogue && dialogue != null) dialogue.Hide();

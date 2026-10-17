@@ -33,7 +33,10 @@ namespace WeaponWorkshop
                 var feedback = GetComponentInChildren<FeedbackUI>(true);
                 var recipe = GetComponentInChildren<WeaponRecipeUI>(true);
                 var presets = GetComponentInChildren<PresetPanelUI>(true);
-                if ((selection != null && selection.IsOpen) || (dialogue != null && dialogue.IsOpen) ||
+                if (feedback != null && feedback.IsChoiceOpen && !feedback.IsChoiceInputSuspended &&
+                    step != null && step.buttonGuide == TutorialButtonGuide.LoanConfirm)
+                    Add(feedback.TutorialConfirmButton);
+                else if ((selection != null && selection.IsOpen) || (dialogue != null && dialogue.IsOpen) ||
                     (feedback != null && feedback.IsChoiceOpen))
                 {
                     // Ordinary choices and confirmation dialogue are not guided action buttons.

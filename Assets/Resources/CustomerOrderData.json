@@ -116,7 +116,7 @@
   "days": [
     {
       "day": 0,
-      "rent": 0,
+      "rent": 100,
       "useRequestPool": false,
       "extraGenerated": 0,
       "minRequests": 1,

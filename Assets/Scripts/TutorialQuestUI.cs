@@ -46,10 +46,11 @@ namespace WeaponWorkshop
             {
                 var step = tutorial.CurrentStep;
                 var game = GameManager.Instance;
+                bool choiceOpen = game != null && game.UI != null && game.UI.IsChoiceOpen;
                 if (step != null && step.completion != TutorialCompletion.Confirmation &&
                     (game == null || (!game.InDialogue && !game.IsPaused && !game.InManual &&
-                        !game.InTargetSelection && (game.UI == null || !game.UI.IsChoiceOpen))))
-                    objective = step.objective;
+                        !game.InTargetSelection && (!choiceOpen || !string.IsNullOrEmpty(step.objectiveWhileChoiceOpen)))))
+                    objective = choiceOpen ? step.objectiveWhileChoiceOpen : step.objective;
             }
             else if (NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid) objective = raidObjective;
             else if (dayManager != null)

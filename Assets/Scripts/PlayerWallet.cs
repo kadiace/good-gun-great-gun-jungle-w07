@@ -10,6 +10,9 @@ namespace WeaponWorkshop
         [SerializeField, Min(0)] private int startingBalance = 99999999;
         public int StartingBalance => startingBalance;
         public int Balance { get; private set; }
+        public const int LoanAmount = 3000;
+        public int OutstandingLoans { get; private set; }
+        public int LastLoanDay { get; private set; } = -1;
         public int TodayConstructionCost { get; private set; }
         [SerializeField, Min(0)] private int startingModuleCredits;
         public int ModuleCredits { get; private set; }
@@ -17,6 +20,8 @@ namespace WeaponWorkshop
         private void Awake()
         {
             Balance = Mathf.Max(0, startingBalance);
+            OutstandingLoans = 0;
+            LastLoanDay = -1;
             TodayConstructionCost = 0;
             ModuleCredits = Mathf.Max(0, startingModuleCredits);
         }
@@ -39,15 +44,14 @@ namespace WeaponWorkshop
 
         public bool CheckModuleFunds(int dollars, int materials)
         {
-            // 모듈의 달러 비용은 외상 허용. 모듈 재화는 보유량 안에서만 결제합니다.
-            bool money = isActiveAndEnabled && dollars >= 0;
+            bool money = CheckPurchaseFunds(dollars, false);
             bool resources = CheckPurchaseFunds(materials, true);
             return money && resources;
         }
         public bool TryPurchaseModule(int dollars, int materials, Func<bool> purchase)
         {
             if (!CheckModuleFunds(dollars, materials) || purchase == null || !purchase()) return false;
-            Balance = (int)Math.Max(int.MinValue, (long)Balance - dollars);
+            Balance -= dollars;
             TodayConstructionCost = (int)Math.Min(int.MaxValue, (long)TodayConstructionCost + dollars);
             ModuleCredits -= materials;
             Changed?.Invoke();
@@ -78,12 +82,11 @@ namespace WeaponWorkshop
 
         public bool CanAfford(int price) => isActiveAndEnabled && price >= 0 && (price == 0 || Balance >= price);
 
-        // 실제 지급 성공 후에만 차감. 외상이 허용된 구매는 부족분도 잔액에 반영합니다.
         public bool TryPurchase(int price, Func<bool> purchase, Action<int> recordPurchase = null, bool allowDebt = false)
         {
-            bool canPurchase = allowDebt ? isActiveAndEnabled && price >= 0 : CheckPurchaseFunds(price, false);
+            bool canPurchase = CheckPurchaseFunds(price, false);
             if (!canPurchase || purchase == null || !purchase()) return false;
-            Balance = (int)Math.Max(int.MinValue, (long)Balance - price);
+            Balance -= price;
             recordPurchase?.Invoke(price);
             Changed?.Invoke();
             return true;
@@ -109,17 +112,34 @@ namespace WeaponWorkshop
             Changed?.Invoke();
         }
 
-        // 월세 등 강제 지출은 부족분도 음수 잔액으로 남깁니다.
+        public bool TryTakeLoan(int day)
+        {
+            if (!isActiveAndEnabled || day < 0 || LastLoanDay == day ||
+                Balance > int.MaxValue - LoanAmount || OutstandingLoans == int.MaxValue) return false;
+            OutstandingLoans++;
+            LastLoanDay = day;
+            Credit(LoanAmount);
+            return true;
+        }
+
+        public void RestoreLastLoanDay(int day) => LastLoanDay = day;
+
+        public void RestoreLoans(int count)
+        {
+            OutstandingLoans = Mathf.Max(0, count);
+            Changed?.Invoke();
+        }
+
         public void Debit(int amount)
         {
             if (amount <= 0) return;
-            Balance = (int)Math.Max(int.MinValue, (long)Balance - amount);
+            Balance = (int)Math.Max(0, (long)Balance - amount);
             Changed?.Invoke();
         }
 
         public void RestoreBalance(int balance)
         {
-            Balance = balance;
+            Balance = Mathf.Max(0, balance);
             Changed?.Invoke();
         }
 
