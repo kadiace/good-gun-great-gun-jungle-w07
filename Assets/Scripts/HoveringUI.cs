@@ -240,8 +240,27 @@ namespace WeaponWorkshop
             if (tagGrid != null) tagGrid.gameObject.SetActive(false);
             bool available = interaction.CanInteractTarget;
             bool tutorialBlocked = TutorialManager.Instance != null && !TutorialManager.Instance.AllowsInteraction(interaction.AimedTarget);
-            if (description != null) description.gameObject.SetActive(!available && !tutorialBlocked);
-            Show(label.Title, available || tutorialBlocked ? string.Empty : label.UnavailableCondition);
+            bool slotMachine = target is SlotMachineReels;
+            bool retire = target is RetireButton;
+            bool manual = target is WorkshopManual && label.Title == "매뉴얼";
+            if (description != null)
+            {
+                description.gameObject.SetActive(!tutorialBlocked && (slotMachine || retire || manual || !available));
+                description.color = slotMachine ? Color.white : bodyColor;
+            }
+            string condition = label.UnavailableCondition;
+            if (retire || slotMachine)
+            {
+                PlayerWallet wallet = PlayerWallet.ForPlayer(interaction.Player);
+                int cost = retire ? RetireUI.Cost : SlotMachineReels.SpinPrice;
+                if (wallet == null || wallet.Balance < cost)
+                {
+                    string amount = retire ? "$1,000,000" : "$1,000";
+                    condition = condition.Replace(amount, $"<color=#FF0000>{amount}</color>");
+                }
+            }
+            Show(label.Title, tutorialBlocked || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
+                retire || slotMachine);
             ShowInteract();
             if (title != null) title.color = Color.white;
             return true;
@@ -322,12 +341,13 @@ namespace WeaponWorkshop
             if (title != null) title.color = Color.white;
             if (description != null) description.color = Color.white;
         }
-        private void Show(string heading, string body)
+        private void Show(string heading, string body, bool richText = false)
         {
             if (title != null) title.maxVisibleCharacters = int.MaxValue;
             if (description != null) description.maxVisibleCharacters = int.MaxValue;
             if (interact != null) interact.SetActive(false);
             if (panel == null || title == null || description == null) return;
+            description.richText = richText;
             bool changed = title.text != heading || description.text != body;
             if (title.text != heading) title.text = heading;
             if (description.text != body) description.text = body;

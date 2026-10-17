@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using LogKit;
-using TMPro;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -17,10 +16,8 @@ namespace WeaponWorkshop
         [SerializeField] private Interaction interaction;
         [SerializeField] private _DayManager dayManager;
         [SerializeField] private GameObject costPanel;
-        [SerializeField] private TMP_Text costText;
-        [SerializeField] private TMP_Text statusText;
 
-        private const int SpinPrice = 1000;
+        public const int SpinPrice = 1000;
         private static readonly int[] Prizes = { 1500, 1500, 3000, 3000, 5000, 5000 };
         private static readonly string[] Symbols = { "기본", "연장", "연사", "관통", "방사", "폭발" };
         private Material originalMarquee;
@@ -61,19 +58,6 @@ namespace WeaponWorkshop
         private void OnDestroy()
         {
             if (glowingMarquee != null) Destroy(glowingMarquee);
-        }
-
-        private void LateUpdate()
-        {
-            if (costPanel == null) return;
-            bool hovered = interaction != null && interaction.isActiveAndEnabled &&
-                ReferenceEquals(interaction.AimedTarget, this) && !GameManager.GameplayBlocked;
-            if (costPanel.activeSelf != hovered) costPanel.SetActive(hovered);
-            if (!hovered) return;
-            PlayerWallet wallet = PlayerWallet.ForPlayer(interaction.Player);
-            bool affordable = wallet != null && wallet.CanAfford(SpinPrice);
-            if (costText != null) costText.color = affordable ? Color.white : Color.red;
-            if (statusText != null) statusText.text = spinning ? "회전 중" : affordable ? "F · 돌리기" : "잔액 부족";
         }
 
         public bool CanInteract(Interaction interactor)
