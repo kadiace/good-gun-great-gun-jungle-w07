@@ -12,6 +12,13 @@ namespace WeaponWorkshop
     }
 
     [Serializable] public sealed class ShopMoneyLogEvent : ShopLogEvent { public int balance; }
+    [Serializable] public sealed class ShopLoanLogEvent : ShopLogEvent
+    {
+        public float time;
+        public string period, profileId = "";
+        public bool isNight;
+        public int amount, outstandingLoans, balanceAfter, completedGuests;
+    }
     [Serializable] public sealed class ShopOrderLinkLogEvent : ShopLogEvent
     { public string profileId; public string[] requestIds; }
     [Serializable] public class ShopWeaponLogEvent : ShopLogEvent

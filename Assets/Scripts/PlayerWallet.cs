@@ -33,6 +33,7 @@ namespace WeaponWorkshop
             if (previousAmount > ModuleCredits) ModuleCreditsLost?.Invoke(previousAmount);
         }
         public event Action<bool> PurchaseFundsInsufficient;
+        public event Action<int> LoanTaken;
         // Shop telemetry: (useModuleCredits, need, have, partKind).
         public event Action<bool, int, int, string> PurchaseFailed;
         // Shop telemetry after a real part payment/refund: (partKind, money, moduleCredits).
@@ -128,6 +129,7 @@ namespace WeaponWorkshop
             OutstandingLoans++;
             LastLoanDay = day;
             Credit(LoanAmount);
+            LoanTaken?.Invoke(day);
             return true;
         }
 
