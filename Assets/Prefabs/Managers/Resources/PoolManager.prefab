@@ -72,7 +72,6 @@ MonoBehaviour:
   defaultMaximumRetained: 256
   debrisPrewarm: 16
   maximumRetainedDebris: 64
-  debrisFragmentCapacity: 4096
   maximumCachedDebrisGroups: 8
   debrisRollingFriction: 3
   debrisBounceMultiplier: 0.4

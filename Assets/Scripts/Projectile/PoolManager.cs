@@ -29,8 +29,6 @@ namespace WeaponWorkshop
         private int maximumExplosionEffectsPerFrame = 32;
         [SerializeField, Min(0)] private int debrisPrewarm = 16;
         [SerializeField, Min(0)] private int maximumRetainedDebris = 64;
-        [SerializeField, Min(0), Tooltip("파편 컴포넌트 하나당 미리 확보할 데이터 슬롯 수. 부족하면 확장하며 파편을 생략하지 않습니다.")]
-        private int debrisFragmentCapacity = 4096;
         [SerializeField, Min(0), Tooltip("파편 컴포넌트 하나당 재사용할 낙하 덩어리와 메시의 최대 대기 개수.")]
         private int maximumCachedDebrisGroups = 8;
         [SerializeField, Min(0f)] private float debrisRollingFriction = 3f;
@@ -149,7 +147,7 @@ namespace WeaponWorkshop
             if (member == null) member = go.AddComponent<PooledCombatObject>();
             member.Initialize(this, pool);
             var debris = member.DebrisCloud;
-            if (debris != null) debris.ReserveBuffers(debrisFragmentCapacity, maximumCachedDebrisGroups);
+            if (debris != null) debris.ReserveBuffers(64, maximumCachedDebrisGroups);
             return member;
         }
         private PooledCombatObject Rent(Pool pool, Vector3 position, Quaternion rotation, Transform parent)

@@ -81,9 +81,13 @@ namespace WeaponWorkshop
             }
 
             operation.allowSceneActivation = false;
-            using (LoadWaitMarker.Auto())
+            // Markers must begin and end in the same frame, so only the per-frame check is sampled.
+            while (true)
             {
-                while (operation.progress < .9f) yield return null;
+                bool loaded;
+                using (LoadWaitMarker.Auto()) loaded = operation.progress >= .9f;
+                if (loaded) break;
+                yield return null;
             }
 
             // Keep the existing save/restore and transfer-consumption order; collect before activation.
@@ -125,14 +129,14 @@ namespace WeaponWorkshop
             GetComponentInChildren<GraphicRaycaster>(true).enabled = true;
             overlayGroup.alpha = from;
             float elapsed = 0f;
-            using (FadeMarker.Auto())
+            while (elapsed < FadeDuration)
             {
-                while (elapsed < FadeDuration)
+                using (FadeMarker.Auto())
                 {
                     elapsed += Time.unscaledDeltaTime;
                     overlayGroup.alpha = Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, elapsed / FadeDuration));
-                    yield return null;
                 }
+                yield return null;
             }
             overlayGroup.alpha = to;
         }

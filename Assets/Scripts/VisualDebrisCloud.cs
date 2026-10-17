@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Profiling;
 
 namespace WeaponWorkshop
 {
     [DefaultExecutionOrder(10000)]
     public sealed class VisualDebrisCloud : MonoBehaviour
     {
+        private static readonly ProfilerMarker ReserveBuffersMarker = new ProfilerMarker("VisualDebrisCloud.ReserveBuffers");
         private struct Fragment
         {
             public Vector3 position, velocity, scale, spin;
@@ -36,24 +38,23 @@ namespace WeaponWorkshop
         private int maximumCachedGroups = 8;
         private DestructibleTarget owner;
         public void BindOwner(DestructibleTarget value) => owner = value;
-        public void ReserveBuffers(int fragmentCapacity, int maximumGroups)
+        public void ReserveBuffers(int initialFragmentCapacity, int maximumGroups)
         {
-            if (fragments.Capacity < fragmentCapacity) fragments.Capacity = fragmentCapacity;
-            if(wallSelected.Length<fragmentCapacity)System.Array.Resize(ref wallSelected,fragmentCapacity);
-            maximumCachedGroups = Mathf.Max(0, maximumGroups);
-            while(groupCache.Count < maximumCachedGroups)
+            using (ReserveBuffersMarker.Auto())
             {
-                var group = new FallingGroup();
-                group.parts.Capacity = Mathf.Min(512,Mathf.Max(0,fragmentCapacity));
-                group.combinedMesh = new Mesh { indexFormat = IndexFormat.UInt32, name = "ConnectedTargetChunk" };
-                groupCache.Push(group);
+                int initialCapacity = Mathf.Clamp(initialFragmentCapacity, 0, 64);
+                if (fragments.Capacity < initialCapacity) fragments.Capacity = initialCapacity;
+                if (wallSelected.Length < initialCapacity) System.Array.Resize(ref wallSelected, initialCapacity);
+                maximumCachedGroups = Mathf.Max(0, maximumGroups);
+                for (int i = 0; i < buckets.Length; i++)
+                    if (buckets[i] == null) buckets[i] = new List<Matrix4x4>(initialCapacity);
             }
-            for (int i = 0; i < buckets.Length; i++)
-                if (buckets[i] == null) buckets[i] = new List<Matrix4x4>(Mathf.Max(16, fragmentCapacity / buckets.Length));
         }
         private FallingGroup RentGroup()
         {
             var group = groupCache.Count > 0 ? groupCache.Pop() : new FallingGroup();
+            if (group.combinedMesh == null)
+                group.combinedMesh = new Mesh { indexFormat = IndexFormat.UInt32, name = "ConnectedTargetChunk" };
             group.position = group.velocity = group.spin = Vector3.zero;
             group.rotation = Quaternion.identity; group.meshDirty = true; group.parts.Clear();
             return group;
@@ -202,7 +203,7 @@ namespace WeaponWorkshop
             material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
             material.SetOverrideTag("RenderType", "Transparent");
             material.renderQueue = (int)RenderQueue.Transparent;
-            ReserveBuffers(0, maximumCachedGroups);
+            ReserveBuffers(64, maximumCachedGroups);
         }
         private static bool HasDestructibleParent(Collider collider)
         {

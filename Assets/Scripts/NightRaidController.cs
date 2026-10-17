@@ -1,10 +1,23 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Unity.Profiling;
 using LogKit;
+using Stopwatch = System.Diagnostics.Stopwatch;
 namespace WeaponWorkshop
 {
     public sealed class NightRaidController : MonoBehaviour
     {
+        private struct CellDestroyedLog
+        {
+            public string stageId;
+            public float time;
+            public string blockId;
+        }
+
+        private static readonly ProfilerMarker cellLogFlushMarker = new ProfilerMarker("NightRaidController.CellLogFlush");
+        private const double CellLogFrameBudgetMilliseconds = 1.0;
+        private readonly System.Collections.Generic.Queue<CellDestroyedLog> pendingCellLogs =
+            new System.Collections.Generic.Queue<CellDestroyedLog>();
         [SerializeField] private _DayManager dayManager;
         [SerializeField] private GameManager gameManager;
         [SerializeField] private UIManager uiManager;
@@ -75,6 +88,7 @@ namespace WeaponWorkshop
             died |= playerHealth != null && playerHealth.IsDead;
             if (returningAfterDeath || (resultOpen && !died)) return;
             resultOpen = true;
+            FlushCellLogs();
             if (died)
             {
                 CancelExtraction();
@@ -121,6 +135,7 @@ namespace WeaponWorkshop
         }
         private void Update()
         {
+            FlushCellLogsWithinBudget();
             // Raid death must not depend on the legacy death UI being active.
             if (inRaid && !transitioning && !returningAfterDeath && !entryRestoreFailed && playerHealth != null && playerHealth.IsDead)
             { ShowDeathResult(); return; }
@@ -151,15 +166,20 @@ namespace WeaponWorkshop
             RaidEnemyCore.Killed += OnEnemyKilled;
             ModuleCreditPickup.CreditCollected += OnMaterialCollected;
             ModuleUnlockPickup.RewardCollected += OnModuleCollected;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+            Application.quitting += OnApplicationQuitting;
             if (inRaid) SubscribeWeaponEvents();
         }
         private void OnDisable()
         {
+            FlushCellLogs();
             DestructibleTarget.CellDestroyed -= OnCellDestroyed;
             RaidEnemyCore.Spawned -= OnEnemySpawned;
             RaidEnemyCore.Killed -= OnEnemyKilled;
             ModuleCreditPickup.CreditCollected -= OnMaterialCollected;
             ModuleUnlockPickup.RewardCollected -= OnModuleCollected;
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
+            Application.quitting -= OnApplicationQuitting;
             UnsubscribeWeaponEvents();
         }
         private void OnCellDestroyed(DestructibleTarget target, string blockId)
@@ -171,9 +191,47 @@ namespace WeaponWorkshop
                 firstWallDestroyed = true;
                 SoundManager.OnRaidFirstWallDestroyed(gameObject.scene.name);
             }
-            GameLogger.Data("Info", "NightRaid", "블록 파괴", new RaidBlockDestroyedLog
+            pendingCellLogs.Enqueue(new CellDestroyedLog
             { stageId = gameObject.scene.name, time = Time.timeSinceLevelLoad, blockId = blockId });
         }
+        private void FlushCellLogsWithinBudget()
+        {
+            if (pendingCellLogs.Count == 0) return;
+            using (cellLogFlushMarker.Auto())
+            {
+                UnityEngine.Profiling.Profiler.BeginSample("NightRaidController.CellLogQueueCount=" + pendingCellLogs.Count);
+                long started = Stopwatch.GetTimestamp();
+                long budgetTicks = (long)(Stopwatch.Frequency * CellLogFrameBudgetMilliseconds / 1000.0);
+                try
+                {
+                    while (pendingCellLogs.Count > 0 && Stopwatch.GetTimestamp() - started < budgetTicks)
+                        RecordNextCellLog();
+                }
+                finally { UnityEngine.Profiling.Profiler.EndSample(); }
+            }
+        }
+        private void FlushCellLogs()
+        {
+            if (pendingCellLogs.Count == 0) return;
+            using (cellLogFlushMarker.Auto())
+            {
+                UnityEngine.Profiling.Profiler.BeginSample("NightRaidController.CellLogQueueCount=" + pendingCellLogs.Count);
+                try { while (pendingCellLogs.Count > 0) RecordNextCellLog(); }
+                finally { UnityEngine.Profiling.Profiler.EndSample(); }
+            }
+        }
+        private void RecordNextCellLog()
+        {
+            CellDestroyedLog entry = pendingCellLogs.Peek();
+            GameLogger.Data("Info", "NightRaid", "블록 파괴", new RaidBlockDestroyedLog
+            { stageId = entry.stageId, time = entry.time, blockId = entry.blockId });
+            pendingCellLogs.Dequeue();
+        }
+        private void OnSceneUnloaded(Scene scene)
+        {
+            if (scene == gameObject.scene) FlushCellLogs();
+        }
+        private void OnApplicationQuitting() => FlushCellLogs();
         private void OnEnemySpawned(RaidEnemyCore core)
         {
             if (!inRaid || core.gameObject.scene != gameObject.scene || string.IsNullOrEmpty(core.EnemyId)) return;
@@ -342,6 +400,7 @@ namespace WeaponWorkshop
         }
         private void OnDestroy()
         {
+            FlushCellLogs();
             if (playerHealth != null) playerHealth.Died -= ShowDeathResult;
             travelPaints?.Dispose();
             if (Instance == this) Instance = null;
@@ -471,6 +530,7 @@ namespace WeaponWorkshop
         public void ReturnHome()
         {
             if (!inRaid || transitioning || !returnOpen) return;
+            FlushCellLogs();
             if (!returningAfterDeath && playerHealth != null && playerHealth.IsDead)
             { ShowDeathResult(); return; }
             var checkpoint = NightRaidTransfer.Workshop;

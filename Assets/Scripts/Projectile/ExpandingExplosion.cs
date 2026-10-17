@@ -49,8 +49,6 @@ namespace WeaponWorkshop
         private static readonly Dictionary<TargetHealth, float> collectNearest = new Dictionary<TargetHealth, float>(512);
         private static readonly Stack<Layer> sharedLayerCache = new Stack<Layer>(8192);
         private static int collectionBudgetFrame = -1;
-        private static int collectionSubdivisionLimit;
-        private static bool hasCollectionSubdivisionLimit;
         private static readonly List<ProjectileMotor> activeProjectileBuffer = new List<ProjectileMotor>(2048);
         private static int activeProjectileFrame = -1;
         private static readonly HashSet<DestructibleTarget> dirtyTargets = new HashSet<DestructibleTarget>(256);
@@ -119,27 +117,20 @@ namespace WeaponWorkshop
             sharedLayerCache.Clear(); activeProjectileBuffer.Clear(); dirtyTargets.Clear();
             pendingChainDetonations.Clear(); pendingChainSet.Clear();
             collectionBudgetFrame = -1;
-            collectionSubdivisionLimit = 0;
-            hasCollectionSubdivisionLimit = false;
             activeProjectileFrame = -1;
             pendingFrame = -1;
         }
 
-        private static void BeginCollectionBudget(int requestedSubdivisions)
+        private static void BeginCollectionBudget(float timeBudgetMilliseconds)
         {
+            float requested = Mathf.Max(0f, timeBudgetMilliseconds);
             if (collectionBudgetFrame != Time.frameCount)
             {
                 collectionBudgetFrame = Time.frameCount;
-                collectionSubdivisionLimit = Mathf.Max(0, requestedSubdivisions);
-                hasCollectionSubdivisionLimit = requestedSubdivisions > 0;
+                DestructibleTarget.SubdivisionBudgetMilliseconds = requested;
             }
-            else if (requestedSubdivisions > 0 &&
-                (!hasCollectionSubdivisionLimit || requestedSubdivisions < collectionSubdivisionLimit))
-            {
-                collectionSubdivisionLimit = requestedSubdivisions;
-                hasCollectionSubdivisionLimit = true;
-            }
-            DestructibleTarget.MaxSubdivisionsPerFrame = hasCollectionSubdivisionLimit ? collectionSubdivisionLimit : 0;
+            else DestructibleTarget.SubdivisionBudgetMilliseconds =
+                Mathf.Min(DestructibleTarget.SubdivisionBudgetMilliseconds, requested);
         }
 
         // Fixed angular bins, independent of target dimensions and voxel size.
@@ -325,7 +316,7 @@ namespace WeaponWorkshop
             if (!collectionPending) return true;
             using (collectionWaitMarker.Auto())
             {
-                BeginCollectionBudget(tuning != null ? tuning.explosionSubdivisionsPerFrame : 0);
+                BeginCollectionBudget(tuning != null ? tuning.subdivisionBudgetMilliseconds : 4f);
                 using (collectMarker.Auto())
                 {
                     while (nextTargetCandidate < targetCandidates.Count)

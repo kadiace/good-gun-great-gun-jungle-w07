@@ -11,10 +11,21 @@ namespace WeaponWorkshop
         private static readonly ProfilerMarker CollisionQueryMarker = new ProfilerMarker("ProjectileMotor.CollisionQuery");
         private static readonly ProfilerMarker ImpactEffectMarker = new ProfilerMarker("ProjectileMotor.ImpactEffect");
         private static readonly HashSet<ProjectileMotor> activeProjectiles = new HashSet<ProjectileMotor>();
-        private static readonly int EndChestLayer = LayerMask.NameToLayer("EndChest");
-        private static readonly int EndChestShieldLayer = LayerMask.NameToLayer("EndChestShield");
-        private static readonly int ProjectileExtraCollisionLayers =
-            LayerMask.GetMask("Weapon", "EndChest", "EndChestShield") & ~LayerMask.GetMask("Energy");
+        // LayerMask APIs throw inside a type initializer when Unity first touches this type from a
+        // serialization/constructor context (e.g. prefab import), which poisons the type. Resolve lazily.
+        private static bool layersResolved;
+        private static int endChestLayer, endChestShieldLayer, projectileExtraCollisionLayers;
+        private static int EndChestLayer { get { ResolveLayers(); return endChestLayer; } }
+        private static int EndChestShieldLayer { get { ResolveLayers(); return endChestShieldLayer; } }
+        private static int ProjectileExtraCollisionLayers { get { ResolveLayers(); return projectileExtraCollisionLayers; } }
+        private static void ResolveLayers()
+        {
+            if (layersResolved) return;
+            endChestLayer = LayerMask.NameToLayer("EndChest");
+            endChestShieldLayer = LayerMask.NameToLayer("EndChestShield");
+            projectileExtraCollisionLayers = LayerMask.GetMask("Weapon", "EndChest", "EndChestShield") & ~LayerMask.GetMask("Energy");
+            layersResolved = true;
+        }
         [SerializeField] private Renderer drawRenderer;
         [SerializeField] private ParticleSystem impactEffect;
 

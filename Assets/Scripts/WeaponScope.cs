@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,6 +12,8 @@ namespace WeaponWorkshop
     [DefaultExecutionOrder(20)]
     public sealed class WeaponScope : MonoBehaviour
     {
+        private static readonly ProfilerMarker RebuildScopeViewsMarker = new ProfilerMarker("WeaponScope.RebuildScopeViews");
+        private static readonly ProfilerMarker UpdateScopeViewsMarker = new ProfilerMarker("WeaponScope.UpdateScopeViews");
         private const float FullLengthReticleMinMagnification = 3f;
         // 조준경 오버레이(원형 렌즈·십자선)는 UIManager 프리팹에 있고 이 태그로 찾는다.
         // 태그 검색은 비활성 오브젝트를 찾지 못하므로 오버레이는 켜 둔 채 투명도로 숨긴다.
@@ -50,6 +53,9 @@ namespace WeaponWorkshop
         private bool zoomApplied;
 
         private readonly List<EquipableWeapon.ScopeView> views = new List<EquipableWeapon.ScopeView>();
+        private readonly List<ScopeViewPose> scopeViewPoses = new List<ScopeViewPose>();
+        private EquipableWeapon scopeViewsWeapon;
+        private bool scopeViewsDirty = true;
         private readonly Dictionary<Renderer, bool> weaponRendererStates = new Dictionary<Renderer, bool>();
         private readonly Dictionary<Transform, ScopeVisualPose> scopeVisualPoses = new Dictionary<Transform, ScopeVisualPose>();
         private EquipableWeapon scopeOcclusionWeapon;
@@ -60,6 +66,15 @@ namespace WeaponWorkshop
         {
             public Vector3 LocalPosition;
             public Quaternion LocalRotation;
+        }
+
+        private struct ScopeViewPose
+        {
+            public Vector3Int Cell;
+            public Vector3 LocalPosition;
+            public Vector3 LocalEyePosition;
+            public Quaternion LocalRotation;
+            public int Count;
         }
 
         public bool IsAiming => progress > 0f;
@@ -81,11 +96,19 @@ namespace WeaponWorkshop
             cycleScope = controls.FindAction("CycleScope", true);
         }
 
-        private void OnEnable() => controls?.Enable();
+        private void OnEnable()
+        {
+            controls?.Enable();
+            if (holder == null) return;
+            holder.EquippedWeaponChanged += OnEquippedWeaponChanged;
+            BindScopeViewsWeapon(holder.EquippedWeapon);
+        }
 
         private void OnDisable()
         {
             controls?.Disable();
+            if (holder != null) holder.EquippedWeaponChanged -= OnEquippedWeaponChanged;
+            BindScopeViewsWeapon(null);
             ResetZoom();
         }
 
@@ -124,7 +147,8 @@ namespace WeaponWorkshop
             bool canAim = aim != null && aim.IsPressed() && tuning != null && weapon.IsEquipped &&
                           !weapon.IsMoving && !GameManager.GameplayBlocked && player != null && player.isActiveAndEnabled;
             // Each independent scope position is a selectable sight; aligned scopes form one magnification group.
-            if (weapon != null && weapon.IsEquipped) weapon.GetScopeViews(views);
+            if (scopeViewsWeapon != weapon) BindScopeViewsWeapon(weapon);
+            if (weapon != null && weapon.IsEquipped) UpdateScopeViews(weapon);
             else views.Clear();
             int selectedIndex = weapon != null ? weapon.ResolveSelectedScopeIndex(views) : -1;
             bool canCycleScope = weapon != null && weapon.IsEquipped && !weapon.IsMoving &&
@@ -134,12 +158,11 @@ namespace WeaponWorkshop
                 float scroll = cycleScope.ReadValue<Vector2>().y;
                 if (Mathf.Abs(scroll) > 0.01f)
                 {
-                    // Hidden scope renderers are omitted from GetScopeEyePosition. Restore them before
-                    // measuring the newly selected sight, or its temporary fallback can move the camera.
+                    // Restore hidden renderers before using the newly selected cached sight.
                     if (scopeOcclusionActive)
                     {
                         RestoreWeaponRenderers();
-                        weapon.GetScopeViews(views);
+                        UpdateScopeViews(weapon);
                         selectedIndex = weapon.ResolveSelectedScopeIndex(views);
                     }
                     weapon.SetSelectedScopeIndex(views, selectedIndex + (scroll > 0f ? 1 : -1));
@@ -217,6 +240,78 @@ namespace WeaponWorkshop
             lastScopeCameraFieldOfView = cameraFieldOfView;
             SetOverlay(Mathf.InverseLerp(0.6f, 1f, progress),
                 targetMagnification >= FullLengthReticleMinMagnification);
+        }
+
+        private void OnEquippedWeaponChanged(EquipableWeapon previous, EquipableWeapon next)
+        {
+            BindScopeViewsWeapon(next);
+            RestoreWeaponRenderers();
+            RestoreScopeVisuals(true);
+        }
+
+        private void BindScopeViewsWeapon(EquipableWeapon weapon)
+        {
+            if (scopeViewsWeapon == weapon) return;
+            if (scopeViewsWeapon != null) scopeViewsWeapon.AssemblyChanged -= OnScopeWeaponAssemblyChanged;
+            scopeViewsWeapon = weapon;
+            if (scopeViewsWeapon != null) scopeViewsWeapon.AssemblyChanged += OnScopeWeaponAssemblyChanged;
+            scopeViewsDirty = true;
+            views.Clear();
+            scopeViewPoses.Clear();
+        }
+
+        private void OnScopeWeaponAssemblyChanged()
+        {
+            scopeViewsDirty = true;
+            RestoreWeaponRenderers();
+            RestoreScopeVisuals(true);
+        }
+
+        private void UpdateScopeViews(EquipableWeapon weapon)
+        {
+            if (scopeViewsDirty)
+            {
+                using (RebuildScopeViewsMarker.Auto())
+                {
+                    weapon.GetScopeViews(views);
+                    CacheScopeViewPoses(weapon.transform);
+                    scopeViewsDirty = false;
+                }
+            }
+
+            using (UpdateScopeViewsMarker.Auto())
+            {
+                Transform weaponTransform = weapon.transform;
+                for (int i = 0; i < scopeViewPoses.Count; i++)
+                {
+                    ScopeViewPose pose = scopeViewPoses[i];
+                    views[i] = new EquipableWeapon.ScopeView
+                    {
+                        Cell = pose.Cell,
+                        Position = weaponTransform.TransformPoint(pose.LocalPosition),
+                        EyePosition = weaponTransform.TransformPoint(pose.LocalEyePosition),
+                        Rotation = weaponTransform.rotation * pose.LocalRotation,
+                        Count = pose.Count
+                    };
+                }
+            }
+        }
+
+        private void CacheScopeViewPoses(Transform weaponTransform)
+        {
+            scopeViewPoses.Clear();
+            for (int i = 0; i < views.Count; i++)
+            {
+                EquipableWeapon.ScopeView view = views[i];
+                scopeViewPoses.Add(new ScopeViewPose
+                {
+                    Cell = view.Cell,
+                    LocalPosition = weaponTransform.InverseTransformPoint(view.Position),
+                    LocalEyePosition = weaponTransform.InverseTransformPoint(view.EyePosition),
+                    LocalRotation = Quaternion.Inverse(weaponTransform.rotation) * view.Rotation,
+                    Count = view.Count
+                });
+            }
         }
 
         private void BeginScopeCameraTransition(float duration)

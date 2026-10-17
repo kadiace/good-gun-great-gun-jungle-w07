@@ -355,7 +355,9 @@ namespace WeaponWorkshop
         }
 
         internal bool NeedsLateUpdate => isActiveAndEnabled &&
-            (structureDirty || debrisIndexDirty || (subdivided && cells.Count > 0) || (transformMayMove && !subdivided));
+            (collisionDirty || renderDirty || structureDirty || debrisIndexDirty ||
+                (transformMayMove && (!subdivided || cells.Count > 0)));
+        internal bool NeedsRenderUpdate => isActiveAndEnabled && subdivided && cells.Count > 0;
         internal bool TracksDebrisTransform => isActiveAndEnabled && transformMayMove && (!subdivided || cells.Count > 0);
 
         private void CacheTransformMovement()
@@ -407,8 +409,9 @@ namespace WeaponWorkshop
             if (!subdivided) return;
             BreakSmallRemnant();
             UpdateCollisionRuns();
-            DrawRemainingChunks();
+            RefreshUpdaterRegistration();
         }
+        internal void DrawLateUpdate() { if (subdivided) DrawRemainingChunks(); }
 
         public float PenetrationStepDistance => Mathf.Max(0.01f, partSize);
 
@@ -674,7 +677,7 @@ namespace WeaponWorkshop
             if (!isActiveAndEnabled || targetMesh == null) return true;
             if (!subdivided && originalRenderer != null &&
                 originalRenderer.bounds.SqrDistance(center) > radius * radius) return true;
-            if (!subdivided && !TryReserveSubdivisionBudget()) return false;
+            if (!subdivided && !IsSubdivisionBudgetAvailable()) return false;
             CollectExplosionPiecesCore(center, radius, step, output);
             return true;
         }
@@ -1063,7 +1066,9 @@ namespace WeaponWorkshop
         private void Subdivide(bool createCollisions = true)
         {
             if (subdivided) return;
-            using (subdivideMarker.Auto()) SubdivideCore(createCollisions);
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { using (subdivideMarker.Auto()) SubdivideCore(createCollisions); }
+            finally { RecordSubdivisionTime(System.Diagnostics.Stopwatch.GetTimestamp() - start); }
         }
         private void SubdivideCore(bool createCollisions)
         {

@@ -17,6 +17,8 @@ namespace WeaponWorkshop
         private readonly HashSet<DestructibleTarget> registeredTargets = new HashSet<DestructibleTarget>();
         private readonly List<DestructibleTarget> movingTargets = new List<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> registeredMovingTargets = new HashSet<DestructibleTarget>();
+        private readonly List<DestructibleTarget> renderTargets = new List<DestructibleTarget>();
+        private readonly HashSet<DestructibleTarget> registeredRenderTargets = new HashSet<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> pendingRefresh = new HashSet<DestructibleTarget>();
         private bool updating;
 
@@ -107,6 +109,7 @@ namespace WeaponWorkshop
 
             bool moving = active && target.TracksDebrisTransform;
             UpdateMembership(target, moving, movingTargets, registeredMovingTargets);
+            UpdateMembership(target, active && target.NeedsRenderUpdate, renderTargets, registeredRenderTargets);
         }
 
         private static void UpdateMembership(DestructibleTarget target, bool shouldContain,
@@ -131,6 +134,7 @@ namespace WeaponWorkshop
             registeredTargets.Clear();
             movingTargets.Clear();
             registeredMovingTargets.Clear();
+            renderTargets.Clear(); registeredRenderTargets.Clear();
             pendingRefresh.Clear();
         }
 
@@ -155,7 +159,12 @@ namespace WeaponWorkshop
                             using (targetUpdateMarker.Auto()) target.ProcessLateUpdate();
                         }
                         catch (System.Exception exception) { Debug.LogException(exception, target); }
-                        pendingRefresh.Add(target);
+                    }
+                    for (int i = 0; i < renderTargets.Count; i++)
+                    {
+                        DestructibleTarget target = renderTargets[i];
+                        if (target == null || !target.isActiveAndEnabled) { pendingRefresh.Add(target); continue; }
+                        using (drawTargetMarker.Auto()) target.DrawLateUpdate();
                     }
                 }
                 finally
@@ -165,5 +174,6 @@ namespace WeaponWorkshop
                 }
             }
         }
+        private static readonly ProfilerMarker drawTargetMarker = new ProfilerMarker("DestructibleTargetUpdater.DrawRemainingChunks");
     }
 }

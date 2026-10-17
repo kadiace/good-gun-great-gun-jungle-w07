@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Profiling;
+using System.Diagnostics;
 
 namespace WeaponWorkshop
 {
@@ -21,42 +22,38 @@ namespace WeaponWorkshop
         private static readonly ProfilerMarker subdivideMarker = new ProfilerMarker("DestructibleTarget.Subdivide");
         private static readonly ProfilerMarker explosionFinishMarker = new ProfilerMarker("DestructibleTarget.FinishExplosionStep");
         private static readonly ProfilerMarker subdivisionBudgetMarker = new ProfilerMarker("DestructibleTarget.SubdivisionBudget");
-        // 0 keeps existing callers unlimited until they adopt the resumable collection contract.
-        public static int MaxSubdivisionsPerFrame { get; set; }
+        public static float SubdivisionBudgetMilliseconds { get; set; } = 4f;
         private static int subdivisionBudgetFrame = -1;
         private static int subdivisionsThisFrame;
-
+        private static long subdivisionElapsedTicks;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetSubdivisionBudget()
         {
             subdivisionBudgetFrame = -1;
-            subdivisionsThisFrame = 0;
-            MaxSubdivisionsPerFrame = 0;
+            subdivisionsThisFrame = 0; subdivisionElapsedTicks = 0;
+            SubdivisionBudgetMilliseconds = 4f;
         }
 
         private static bool IsSubdivisionBudgetAvailable()
         {
             using (subdivisionBudgetMarker.Auto())
             {
-                int limit = MaxSubdivisionsPerFrame;
-                return limit <= 0 || subdivisionBudgetFrame != Time.frameCount || subdivisionsThisFrame < limit;
+                ResetSubdivisionFrameIfNeeded();
+                return subdivisionsThisFrame == 0 || subdivisionElapsedTicks < SubdivisionBudgetTicks;
             }
         }
 
-        private static bool TryReserveSubdivisionBudget()
+        private static long SubdivisionBudgetTicks => (long)(Mathf.Max(0f, SubdivisionBudgetMilliseconds) * Stopwatch.Frequency / 1000f);
+        private static void ResetSubdivisionFrameIfNeeded()
+        {
+            if (subdivisionBudgetFrame == Time.frameCount) return;
+            subdivisionBudgetFrame = Time.frameCount; subdivisionsThisFrame = 0; subdivisionElapsedTicks = 0;
+        }
+        private static void RecordSubdivisionTime(long elapsedTicks)
         {
             using (subdivisionBudgetMarker.Auto())
             {
-                int limit = MaxSubdivisionsPerFrame;
-                if (limit <= 0) return true;
-                if (subdivisionBudgetFrame != Time.frameCount)
-                {
-                    subdivisionBudgetFrame = Time.frameCount;
-                    subdivisionsThisFrame = 0;
-                }
-                if (subdivisionsThisFrame >= limit) return false;
-                subdivisionsThisFrame++;
-                return true;
+                ResetSubdivisionFrameIfNeeded(); subdivisionsThisFrame++; subdivisionElapsedTicks += elapsedTicks;
             }
         }
         private static Vector3Int RenderKey(Vector3Int cell) => new Vector3Int(
