@@ -49,6 +49,7 @@ namespace WeaponWorkshop
         private void OnDisable()
         {
             spinning = false;
+            SlotMachineSound.StopRotation();
             if (costPanel != null) costPanel.SetActive(false);
             if (payoutBills != null) payoutBills.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             if (marquee != null) marquee.sharedMaterial = originalMarquee;
@@ -142,6 +143,8 @@ namespace WeaponWorkshop
         private IEnumerator Spin(int[] result, PlayerWallet wallet)
         {
             if (marquee != null && glowingMarquee != null) marquee.sharedMaterial = glowingMarquee;
+            if (lever != null) SlotMachineSound.PlayLever(transform.position);
+            SlotMachineSound.StartRotation(transform);
             float[] start = new float[3];
             float[] finish = new float[3];
             for (int i = 0; i < 3; i++)
@@ -151,6 +154,7 @@ namespace WeaponWorkshop
             }
 
             float elapsed = 0f;
+            bool[] reelStopSoundsPlayed = new bool[3];
             while (elapsed < 5.8f)
             {
                 elapsed += Time.deltaTime;
@@ -158,7 +162,17 @@ namespace WeaponWorkshop
                 {
                     float t = Mathf.Clamp01(elapsed / (5f + i * 0.4f));
                     float eased = 1f - (1f - t) * (1f - t) * (1f - t);
-                    reels[i].localRotation = Quaternion.Euler(Mathf.Lerp(start[i], finish[i], eased), 0f, 0f);
+                    if (t >= 1f)
+                    {
+                        if (!reelStopSoundsPlayed[i])
+                        {
+                            reels[i].localRotation = Quaternion.Euler(finish[i], 0f, 0f);
+                            reelStopSoundsPlayed[i] = true;
+                            SlotMachineSound.PlayReelStop(transform.position);
+                            if (i == reels.Length - 1) SlotMachineSound.StopRotation();
+                        }
+                    }
+                    else reels[i].localRotation = Quaternion.Euler(Mathf.Lerp(start[i], finish[i], eased), 0f, 0f);
                 }
                 if (lever != null)
                 {
@@ -174,6 +188,7 @@ namespace WeaponWorkshop
             if (result[0] == result[1] && result[1] == result[2])
             {
                 wallet.Credit(Prizes[result[0]]);
+                SlotMachineSound.PlayPayout(transform.position);
                 if (payoutBills != null) payoutBills.Emit(48);
                 FeedbackUI.For(this)?.ShowNotification($"{Symbols[result[0]]} 당첨! ${Prizes[result[0]]:N0}");
             }

@@ -12,6 +12,7 @@ namespace WeaponWorkshop
         private const string ResourcePath = "Sound/SFX/";
         private static SoundManager instance;
         internal bool IsActiveInstance => instance == this && isActiveAndEnabled;
+        internal static SoundManager ActiveInstance => instance;
 
         [Header("Sound Playback Limits")]
         [SerializeField, Min(0f), Tooltip("Minimum time between basic shot sound plays. 0.05 seconds allows at most 20 plays per second.")]
@@ -401,9 +402,19 @@ namespace WeaponWorkshop
             float minDistance = 0f, float maxDistance = 0f)
         {
             AudioClip clip = LoadClip(clipName);
+            return CreateLoop(clip, followTarget, volume, minDistance, maxDistance);
+        }
+
+        /// <summary>
+        /// 지정한 클립을 대상 오브젝트에 붙인 반복 재생 AudioSource로 만든다.
+        /// clip, followTarget, volume과 거리값을 사용하며 SFX 채널에 등록된 AudioSource를 반환한다.
+        /// </summary>
+        internal AudioSource CreateLoop(AudioClip clip, Transform followTarget, float volume,
+            float minDistance = 0f, float maxDistance = 0f)
+        {
             if (clip == null || followTarget == null) return null;
 
-            GameObject loopObject = new GameObject("SFX_" + clipName);
+            GameObject loopObject = new GameObject("SFX_" + clip.name);
             loopObject.transform.SetParent(followTarget, false);
             AudioSource source = loopObject.AddComponent<AudioSource>();
             source.clip = clip;
@@ -609,7 +620,7 @@ namespace WeaponWorkshop
         /// 지정한 반복 사운드를 멈추고 AudioSource가 붙은 오브젝트를 제거한다.
         /// source가 null이면 아무 작업도 하지 않는다.
         /// </summary>
-        private void StopLoop(AudioSource source)
+        internal void StopLoop(AudioSource source)
         {
             if (source == null) return;
             sfxBaseVolumes.Remove(source);
