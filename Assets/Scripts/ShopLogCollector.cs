@@ -42,6 +42,7 @@ namespace WeaponWorkshop
                 wallet.PartPurchased += OnPartPurchased;
                 wallet.PartRefunded += OnPartRefunded;
                 wallet.PurchaseFailed += OnPurchaseFailed;
+                wallet.LoanTaken += OnLoanTaken;
             }
             dayManager.OrderRegistered += OnOrderRegistered;
             customerBell.CustomerInteracted += OnCustomerInteracted;
@@ -70,6 +71,7 @@ namespace WeaponWorkshop
                 wallet.PartPurchased -= OnPartPurchased;
                 wallet.PartRefunded -= OnPartRefunded;
                 wallet.PurchaseFailed -= OnPurchaseFailed;
+                wallet.LoanTaken -= OnLoanTaken;
             }
             dayManager.OrderRegistered -= OnOrderRegistered;
             customerBell.CustomerInteracted -= OnCustomerInteracted;
@@ -156,6 +158,20 @@ namespace WeaponWorkshop
         {
             if (CanRecordAction) Write(new ShopPurchaseFailedLogEvent
             { currency = moduleCredits ? "moduleCredits" : "money", need = need, have = have, partKind = partKind }, "purchase_failed", ActiveOrder);
+        }
+
+        private void OnLoanTaken(int day)
+        {
+            if (!CanRecord) return;
+            CustomerProfile order = ActiveOrder;
+            Write(new ShopLoanLogEvent
+            {
+                time = Time.realtimeSinceStartup,
+                period = dayManager.CurrentPeriod.ToString(), isNight = dayManager.IsNight,
+                profileId = order != null ? order.ProfileId ?? "" : "",
+                amount = PlayerWallet.LoanAmount, outstandingLoans = wallet.OutstandingLoans,
+                balanceAfter = wallet.Balance, completedGuests = dayManager.CompletedGuests
+            }, "loan_taken", order, day);
         }
 
         private void OnCustomerInteracted(CustomerProfile order)
