@@ -146,6 +146,7 @@ namespace WeaponWorkshop
         public int moduleCredits;
         // 필드가 없는 이전 JSON은 0으로 읽힌다. 슬롯별 최고 클리어 습격 번호다.
         public int raidClearProgress;
+        public string[] clearedRaidScenes = Array.Empty<string>();
         public int outstandingLoans, todayLoanRepayment, todayLoanInterest;
         public int todayLoanIncome;
         public int lastLoanDay = -1;

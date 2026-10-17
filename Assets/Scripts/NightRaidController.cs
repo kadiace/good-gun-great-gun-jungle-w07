@@ -99,7 +99,7 @@ namespace WeaponWorkshop
             returningAfterDeath = died;
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
-                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, IsRaidClear(died));
+                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, IsRaidClear(died));
             GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog
             {
                 scene = gameObject.scene.name, survived = !died,
@@ -550,9 +550,10 @@ namespace WeaponWorkshop
             {
                 // 에디터에서 습격 씬을 직접 연 경우에도 확정 결과를 넘긴다.
                 int raidNumber = NightRaidTransfer.ResultRaidNumber;
+                string raidScene = NightRaidTransfer.ResultRaidScene;
                 bool cleared = NightRaidTransfer.ResultCleared;
                 NightRaidTransfer.Abandon();
-                NightRaidTransfer.RecordResult(raidNumber, cleared);
+                NightRaidTransfer.RecordResult(raidNumber, raidScene, cleared);
                 NightRaidTransfer.MarkStandaloneReturn();
             }
             transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false);
@@ -567,7 +568,7 @@ namespace WeaponWorkshop
             returningAfterDeath = true;
             // 기존 사망 UI가 직접 호출하는 경로에서도 성공 결과가 남지 않게 한다.
             if (!SoundManager.IsTutorialMusicContext)
-                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, false);
+                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, false);
             returnOpen = true;
             ReturnHome();
         }

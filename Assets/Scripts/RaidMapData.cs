@@ -25,6 +25,7 @@ namespace WeaponWorkshop
             public int materialCrates;
             public int materialPerCrate;
             public string[] moduleCodes;
+            public float firstClearSaleBonus;
         }
 
         public Region[] regions;

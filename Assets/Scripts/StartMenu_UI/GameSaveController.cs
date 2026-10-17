@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 namespace WeaponWorkshop
@@ -15,6 +16,21 @@ namespace WeaponWorkshop
         // 진행도는 현재 세이브에 속한다. 다른 슬롯을 로드할 때는 해당 슬롯 값으로 복원한다.
         private int raidClearProgress;
         private int pendingClearedRaid;
+        private string pendingClearedRaidScene;
+        private readonly HashSet<string> clearedRaidScenes = new HashSet<string>();
+        public bool HasClearedRaid(string scene) => !string.IsNullOrEmpty(scene) && clearedRaidScenes.Contains(scene);
+        public float SaleBonusRatio
+        {
+            get
+            {
+                float bonus = TableManager.Instance.CustomerOrder.sale.tagBonusRatio;
+                var map = TableManager.Instance.RaidMap;
+                if (map?.regions == null) return bonus;
+                foreach (var region in map.regions)
+                    if (region != null && HasClearedRaid(region.scene)) bonus += region.FirstClearSaleBonus();
+                return bonus;
+            }
+        }
         private bool unsuccessfulRaidReturn;
         private const int AutoSaveRetryCount = 10;
         private const float AutoSaveRetryDelay = 0.5f;
@@ -116,6 +132,7 @@ namespace WeaponWorkshop
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
                 slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
+                clearedRaidScenes = clearedRaidScenes.ToArray(),
                 outstandingLoans = wallet.OutstandingLoans,
                 lastLoanDay = wallet.LastLoanDay,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
@@ -164,6 +181,7 @@ namespace WeaponWorkshop
         {
             // TryConsumeReturn이 정적 데이터를 비우기 전에 결과를 지역 변수로 받는다.
             int resultRaid = NightRaidTransfer.ResultRaidNumber;
+            string resultScene = NightRaidTransfer.ResultRaidScene;
             bool cleared = NightRaidTransfer.ResultCleared;
             bool showReturnFade = NightRaidTransfer.ReturnDayFadePending;
             NightRaidTransfer.ReturnDayFadePending = false;
@@ -181,6 +199,7 @@ namespace WeaponWorkshop
                     if (TutorialManager.TrainingReturnPending && TutorialManager.Instance != null &&
                         TutorialManager.Instance.ResumeTrainingHome(dayManager)) return;
                     pendingClearedRaid = cleared ? resultRaid : 0;
+                    pendingClearedRaidScene = cleared ? resultScene : null;
                     unsuccessfulRaidReturn = !cleared;
                     if (showReturnFade) StartCoroutine(AdvanceAfterRaidNextFrame());
                     player.GetComponent<PlayerWallet>()?.ShowModuleCreditLoss(creditsBeforeLoss);
@@ -191,6 +210,7 @@ namespace WeaponWorkshop
             if (NightRaidTransfer.TryConsumeStandaloneReturn())
             {
                 pendingClearedRaid = cleared ? resultRaid : 0;
+                pendingClearedRaidScene = cleared ? resultScene : null;
                 unsuccessfulRaidReturn = !cleared;
                 if (cleared) AdvanceAfterRaid(true);
                 if (dayManager != null)
@@ -212,10 +232,13 @@ namespace WeaponWorkshop
         private void AdvanceAfterRaid(bool showFade)
         {
             // 날짜 증가/습격 건너뛰기가 아닌 확정된 귀환 결과로만 진행도를 전진시킨다.
-            if (pendingClearedRaid > 0 && !SoundManager.IsTutorialMusicContext)
+            if (pendingClearedRaidScene != null && !SoundManager.IsTutorialMusicContext)
             {
+                if (TableManager.Instance.RaidMap.Find(pendingClearedRaidScene) != null)
+                    clearedRaidScenes.Add(pendingClearedRaidScene);
                 raidClearProgress = Math.Max(raidClearProgress, SoundInfo.ClampProgress(pendingClearedRaid));
                 pendingClearedRaid = 0;
+                pendingClearedRaidScene = null;
                 SoundManager.CompleteRaidReturn(raidClearProgress);
                 QueueAutoSave(dayManager.DayNumber, false);
             }
@@ -285,6 +308,13 @@ namespace WeaponWorkshop
             RestoreRaidProgress(data);
         }
         // 구버전 세이브의 누락 필드는 기본값 0이다. 음수는 0으로 보정하고 진행도를 보존한다.
-        private void RestoreRaidProgress(GameSaveData data) => raidClearProgress = SoundInfo.ClampProgress(data.raidClearProgress);
+        private void RestoreRaidProgress(GameSaveData data)
+        {
+            raidClearProgress = SoundInfo.ClampProgress(data.raidClearProgress);
+            clearedRaidScenes.Clear();
+            if (data.clearedRaidScenes == null) return;
+            foreach (string scene in data.clearedRaidScenes)
+                if (TableManager.Instance.RaidMap.Find(scene) != null) clearedRaidScenes.Add(scene);
+        }
     }
 }

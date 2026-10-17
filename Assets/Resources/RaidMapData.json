@@ -5,6 +5,7 @@
       "name": "목조주택",
       "scene": "NightRaid_WoodenHouse",
       "reward": {
+        "firstClearSaleBonus": 0.05,
         "materialCrates": 4,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -19,6 +20,7 @@
       "name": "은행",
       "scene": "NightRaid_BankGrand",
       "reward": {
+        "firstClearSaleBonus": 0.05,
         "materialCrates": 10,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -34,6 +36,7 @@
       "name": "군사기지",
       "scene": "NightRaid_Millitary_base",
       "reward": {
+        "firstClearSaleBonus": 0.1,
         "materialCrates": 18,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -49,6 +52,7 @@
       "name": "정글 캠퍼스",
       "scene": "NightRaid_JungleCampus",
       "reward": {
+        "firstClearSaleBonus": 0.1,
         "materialCrates": 12,
         "materialPerCrate": 250,
         "moduleCodes": [

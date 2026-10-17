@@ -109,7 +109,9 @@ namespace WeaponWorkshop
             int cost = weapon != null ? weapon.PaidConstructionCost : 0;
             int tagCount = profile.SaleBonusCount();
             var sale = TableManager.Instance.CustomerOrder.sale;
-            int price = satisfied ? Mathf.RoundToInt(cost * (1f + sale.tagBonusRatio * tagCount)) + Mathf.Max(0, profile.Price)
+            var save = FindFirstObjectByType<GameSaveController>();
+            float bonusRatio = save != null ? save.SaleBonusRatio : sale.tagBonusRatio;
+            int price = satisfied ? Mathf.RoundToInt(cost * (1f + bonusRatio * tagCount)) + Mathf.Max(0, profile.Price)
                 : Mathf.RoundToInt(cost * sale.dissatisfiedRatio);
             Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
             WeaponSold?.Invoke(profile, weapon, price, satisfied, tagCount);

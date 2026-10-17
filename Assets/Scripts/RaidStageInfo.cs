@@ -32,11 +32,18 @@ namespace WeaponWorkshop
         public static string[] ModuleCodes(this RaidMapData.Region region) =>
             region?.reward?.moduleCodes ?? Array.Empty<string>();
 
+        public static float FirstClearSaleBonus(this RaidMapData.Region region) =>
+            region?.reward != null ? Mathf.Max(0f, region.reward.firstClearSaleBonus) : 0f;
+
         /// <summary>지도 정보 패널용 설명. 모듈 획득 여부와 상자 수, 출몰 적을 행에서 계산한다.</summary>
-        public static string Describe(this RaidMapData.Region region, ModuleCatalog catalog, PlayerModuleUnlocks unlocks)
+        public static string Describe(this RaidMapData.Region region, ModuleCatalog catalog, PlayerModuleUnlocks unlocks, bool cleared)
         {
             if (region == null) return "이 구역의 정보가 아직 등록되지 않았습니다.";
-            var text = new StringBuilder(region.name).AppendLine().AppendLine("획득 가능한 모듈");
+            var text = new StringBuilder(region.name).AppendLine();
+            if (!cleared && region.FirstClearSaleBonus() > 0f)
+                text.AppendLine().Append("<color=#F04D4D>●</color> 최초 클리어 보상: 상점 판매 시 고객 요구 조건 하나당 제작비 보너스 +")
+                    .Append((region.FirstClearSaleBonus() * 100f).ToString("0.#")).AppendLine("%p");
+            text.AppendLine().AppendLine("획득 가능한 모듈");
             int remaining = 0, acquiredCount = 0;
             foreach (string code in region.ModuleCodes())
                 for (int id = 1; catalog != null && id <= catalog.Count; id++)
@@ -95,6 +102,7 @@ namespace WeaponWorkshop
                 if (region.reward == null) { Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 보상(reward)이 없습니다."); region.reward = new RaidMapData.Reward(); }
                 if (region.reward.moduleCodes == null) region.reward.moduleCodes = Array.Empty<string>();
                 if (region.reward.materialCrates < 0) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 재료 상자 수가 음수입니다.");
+                if (region.reward.firstClearSaleBonus < 0f) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 최초 클리어 판매 보너스가 음수입니다.");
                 if (region.reward.materialPerCrate <= 0 && (region.reward.materialCrates > 0 || region.reward.moduleCodes.Length > 0))
                     Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 상자당 재료(materialPerCrate)가 0 이하입니다.");
             }
