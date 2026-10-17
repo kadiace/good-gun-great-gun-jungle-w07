@@ -1,6 +1,9 @@
+using System;
 using System.Collections;
+using LogKit;
 using TMPro;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace WeaponWorkshop
 {
@@ -12,6 +15,7 @@ namespace WeaponWorkshop
         [SerializeField] private Renderer marquee;
         [SerializeField] private ParticleSystem payoutBills;
         [SerializeField] private Interaction interaction;
+        [SerializeField] private _DayManager dayManager;
         [SerializeField] private GameObject costPanel;
         [SerializeField] private TMP_Text costText;
         [SerializeField] private TMP_Text statusText;
@@ -84,12 +88,40 @@ namespace WeaponWorkshop
             if (!CanInteract(interactor) || reels == null || reels.Length != 3) return false;
             PlayerWallet wallet = PlayerWallet.ForPlayer(interactor.Player);
             bool lastSpin = wallet.Balance < SpinPrice * 2;
-            int[] result = ChooseResult(lastSpin, completedSpins < 3);
+            bool introductorySpin = completedSpins < 3;
+            int balanceBefore = wallet.Balance;
+            int[] result = ChooseResult(lastSpin, introductorySpin);
             if (!wallet.TryPurchase(SpinPrice, () => true)) return false;
             completedSpins = Mathf.Min(3, completedSpins + 1);
             spinning = true;
             StartCoroutine(Spin(result, wallet));
+            LogSpin(result, balanceBefore, wallet.Balance, lastSpin ? "last_funds" : introductorySpin ? "first_three" : "ordinary");
             return true;
+        }
+
+        private void LogSpin(int[] result, int balanceBefore, int balanceAfter, string oddsPool)
+        {
+            int symbol = result[0] == result[1] && result[1] == result[2] ? result[0] : -1;
+            var entry = new ShopSlotMachineLogEvent
+            {
+                eventType = "slot_machine_spin_started",
+                eventId = Guid.NewGuid().ToString("N"),
+                day = dayManager != null ? dayManager.DayNumber : 0,
+                playSeconds = Time.time,
+                secondsSinceDayNightTransition = dayManager != null ? dayManager.SecondsSinceDayNightTransition : -1f,
+                period = dayManager != null ? dayManager.CurrentPeriod.ToString() : "unknown",
+                isNight = dayManager != null && dayManager.IsNight,
+                oddsPool = oddsPool,
+                introductorySpinsUsed = completedSpins,
+                balanceBefore = balanceBefore,
+                balanceAfter = balanceAfter,
+                price = SpinPrice,
+                plannedPrize = symbol >= 0 ? Prizes[symbol] : 0,
+                plannedSymbol = symbol >= 0 ? Symbols[symbol] : "none",
+                reelSymbols = result
+            };
+            try { GameLogger.Data("Info", "Shop", entry.eventType, entry); }
+            catch (Exception exception) { Debug.LogWarning("슬롯머신 로그 기록 실패: " + exception.Message, this); }
         }
 
         private static int[] ChooseResult(bool lastSpin, bool introductorySpin)
