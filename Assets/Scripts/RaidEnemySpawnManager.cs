@@ -8,6 +8,7 @@ namespace WeaponWorkshop
         [SerializeField] private RaidHelicopter helicopterPrefab;
         [SerializeField] private bool helicopterEnabled = true;
         [SerializeField] private RaidTankTransport tankTransportPrefab;
+        [SerializeField] private RaidTank reinforcedTankPrefab;
         [SerializeField] private NightRaidArea raidArea;
         private int nextDropPoint;
         private int previousTankPoint = -1, previousHelicopterPoint = -1;
@@ -47,13 +48,18 @@ namespace WeaponWorkshop
         private void SpawnEnemies()
         {
             int helicopters = Mathf.Min(helicoptersPerWave, Mathf.Max(0, maximumHelicopters - CountLiving<RaidHelicopter>()));
-            int tanks = Mathf.Min(tanksPerWave, Mathf.Max(0, maximumTanks - CountLiving<RaidTank>()));
+            int tanks = Mathf.Min(tanksPerWave, Mathf.Max(0, maximumTanks - CountLivingTanks(false)));
+            var region = TableManager.Instance.RaidMap.Find(gameObject.scene.name);
+            int reinforcedTanks = reinforcedTankPrefab != null ?
+                Mathf.Max(0, (region?.maximumReinforcedTanks ?? 0) - CountLivingTanks(true)) : 0;
             int spawned = 0;
             int nextWave = waveIndex + 1;
             for (int i = 0; i < helicopters; i++)
                 if (SpawnHelicopter($"{gameObject.scene.name}_W{nextWave}_{spawned + 1}")) spawned++;
             for (int i = 0; i < tanks; i++)
                 if (SpawnTank($"{gameObject.scene.name}_W{nextWave}_{spawned + 1}")) spawned++;
+            for (int i = 0; i < reinforcedTanks; i++)
+                if (SpawnTank($"{gameObject.scene.name}_W{nextWave}_{spawned + 1}", reinforcedTankPrefab)) spawned++;
             if (spawned > 0) waveIndex = nextWave;
         }
         private int CountLiving<T>() where T : Component
@@ -67,14 +73,26 @@ namespace WeaponWorkshop
             }
             return count;
         }
-        private bool SpawnTank(string enemyId)
+        private int CountLivingTanks(bool reinforced)
+        {
+            int count = 0;
+            for (int i = 0; i < RaidEnemyCore.ActiveCount; i++)
+            {
+                var core = RaidEnemyCore.ActiveAt(i);
+                if (core == null || core.IsDestroyed || core.gameObject.scene != gameObject.scene) continue;
+                var tank = core.GetComponentInParent<RaidTank>();
+                if (tank != null && tank.IsReinforced == reinforced) count++;
+            }
+            return count;
+        }
+        private bool SpawnTank(string enemyId, RaidTank cargoPrefabOverride = null)
         {
             if (tankTransportPrefab == null || player == null || raidArea == null) return false;
             if (!raidArea.TryGetEnemySpawnPoint(player.transform.position, false, ref previousTankPoint,
                 out Vector3 point, out Vector3 outward))
                 point = raidArea.GetTankDropPoint(nextDropPoint++, out outward);
             var transport = Instantiate(tankTransportPrefab);
-            return transport.Initialize(player, point, outward, enemyId);
+            return transport.Initialize(player, point, outward, enemyId, cargoPrefabOverride);
         }
         private void Update()
         {

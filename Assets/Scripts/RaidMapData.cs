@@ -16,6 +16,7 @@ namespace WeaponWorkshop
             public Reward reward;
             public bool helicopters;
             public bool tanks;
+            public int maximumReinforcedTanks;
         }
 
         // 스테이지 보상. 상자 위치는 씬(RaidCrateSpawner·RaidModuleCrateSpot)이, 내용은 이 행이 정한다.

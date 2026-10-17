@@ -5,6 +5,9 @@ namespace WeaponWorkshop
     [RequireComponent(typeof(Rigidbody))]
     public sealed class RaidTank : MonoBehaviour
     {
+        [SerializeField, Tooltip("일반 탱크와 별도의 강화 탱크 출격 정원을 사용합니다.")]
+        private bool reinforced;
+        public bool IsReinforced => reinforced;
         [SerializeField] private RaidEnemyCore core;
         [SerializeField] private Transform turret;
         [SerializeField, Tooltip("포신 발사구. 포신 부위가 파괴되면 포격하지 않음.")]

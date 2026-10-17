@@ -42,7 +42,8 @@
         ]
       },
       "helicopters": true,
-      "tanks": true
+      "tanks": true,
+      "maximumReinforcedTanks": 2
     },
     {
       "entryCost": 2500,
@@ -57,7 +58,8 @@
         ]
       },
       "helicopters": true,
-      "tanks": true
+      "tanks": true,
+      "maximumReinforcedTanks": 1
     }
   ]
 }

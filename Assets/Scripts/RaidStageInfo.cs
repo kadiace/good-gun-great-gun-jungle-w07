@@ -53,8 +53,9 @@ namespace WeaponWorkshop
             text.AppendLine().Append("모듈 상자  ").Append(remaining).AppendLine("개")
                 .Append("재료 상자  ").Append(materialCrates).AppendLine("개").AppendLine().AppendLine("출몰 적");
             if (region.tanks) text.AppendLine("• 탱크");
+            if (region.maximumReinforcedTanks > 0) text.AppendLine("• 강화 탱크 (Sturmtiger)");
             if (region.helicopters) text.AppendLine("• 헬기");
-            if (!region.tanks && !region.helicopters) text.AppendLine("• 없음");
+            if (!region.tanks && !region.helicopters && region.maximumReinforcedTanks <= 0) text.AppendLine("• 없음");
             int cost = region.EntryCost();
             text.AppendLine().Append("입장 비용  ").AppendLine(cost > 0 ? $"$ {cost:N0}" : "무료");
             return text.AppendLine().Append("지도에서 영역을 눌러 이동하세요.").ToString();

@@ -504616,6 +504616,7 @@ MonoBehaviour:
   helicopterPrefab: {fileID: 3022680967748025362, guid: 76659ed4cf49f994d820a90b99f16a22, type: 3}
   helicopterEnabled: 1
   tankTransportPrefab: {fileID: 5110786120402845845, guid: 63543a8cd265cd54aba5dfb7694cdf15, type: 3}
+  reinforcedTankPrefab: {fileID: 5111809438534041429, guid: 5880e3a65136410b820f73596d6c2a9a, type: 3}
   raidArea: {fileID: 1008227271}
   spawnPoint: {fileID: 1859025877}
   spawnInterval: 30

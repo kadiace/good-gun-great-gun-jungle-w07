@@ -32,6 +32,7 @@ namespace WeaponWorkshop
             public float maximumRadius, strongestPower, totalPower;
             public WeaponStats stats;
             public ProjectileStatsSource source;
+            public ParticleSystem effectOverride;
             public Transform owner, weapon;
             public ProjectileMotor projectile;
             public int projectileLaunchId;
@@ -65,6 +66,7 @@ namespace WeaponWorkshop
         private float radius, maximumRadius, speed, baseDamage;
         private WeaponStats stats;
         private ProjectileTuning tuning;
+        private ParticleSystem explosionEffect;
         private int nextLayer, nextHealth, nextTargetCandidate;
         private bool collectionPending;
         private float checkDistance;
@@ -148,17 +150,17 @@ namespace WeaponWorkshop
         }
 
         public static void Create(Vector3 center, float maximumRadius, WeaponStats stats,
-            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile)
+            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile, ParticleSystem effectOverride = null)
         {
             using (createMarker.Auto())
             {
                 if (source == null || stats.explosion <= 0f || maximumRadius <= 0f) return;
-                using (mergeMarker.Auto()) QueueRequest(center, maximumRadius, stats, source, owner, weapon, projectile);
+                using (mergeMarker.Auto()) QueueRequest(center, maximumRadius, stats, source, owner, weapon, projectile, effectOverride);
             }
         }
 
         private static void QueueRequest(Vector3 center, float maximumRadius, WeaponStats stats,
-            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile)
+            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile, ParticleSystem effectOverride = null)
         {
             if (pendingFrame != Time.frameCount)
             {
@@ -169,7 +171,7 @@ namespace WeaponWorkshop
             var request = new ExplosionRequest
             {
                 center = center, maximumRadius = maximumRadius, strongestPower = stats.explosion,
-                totalPower = stats.explosion, stats = stats, source = source,
+                totalPower = stats.explosion, stats = stats, source = source, effectOverride = effectOverride,
                 owner = owner, weapon = weapon, projectile = projectile,
                 projectileLaunchId = projectile != null ? projectile.LaunchId : 0
             };
@@ -178,7 +180,7 @@ namespace WeaponWorkshop
                 for (int i = pending.Count - 1; i >= 0; i--)
                 {
                     var existing = pending[i];
-                    if (existing.weapon != weapon) continue;
+                    if (existing.weapon != weapon || existing.effectOverride != effectOverride) continue;
                     float mergeDistance = Mathf.Min(existing.maximumRadius, maximumRadius) *
                         Mathf.Max(0f, source.Tuning.explosionMergeRadiusMultiplier);
                     if ((existing.center - center).sqrMagnitude > mergeDistance * mergeDistance) continue;
@@ -216,7 +218,7 @@ namespace WeaponWorkshop
                 if (request.source == null) continue;
                 using (buildMarker.Auto())
                     CreateWave(request.center, request.maximumRadius, request.stats, request.source,
-                        request.owner, request.weapon, request.projectile, request.projectileLaunchId);
+                        request.owner, request.weapon, request.projectile, request.projectileLaunchId, request.effectOverride);
             }
             pending.Clear();
             pendingFrame = -1;
@@ -257,7 +259,7 @@ namespace WeaponWorkshop
         }
 
         private static void CreateWave(Vector3 center, float maximumRadius, WeaponStats stats,
-            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile, int projectileLaunchId)
+            ProjectileStatsSource source, Transform owner, Transform weapon, ProjectileMotor projectile, int projectileLaunchId, ParticleSystem effectOverride)
         {
             var wave = PoolManager.RentComponent<ExpandingExplosion>(center);
             var root = wave.gameObject;
@@ -267,6 +269,7 @@ namespace WeaponWorkshop
             wave.originatingLaunchId = projectileLaunchId;
             wave.maximumRadius = maximumRadius;
             wave.stats = stats; wave.impactStats = ProjectileStats.FromWeapon(stats); wave.tuning = source.Tuning; wave.baseDamage = source.BaseDamage;
+            wave.explosionEffect = effectOverride != null ? effectOverride : wave.tuning.explosionEffect;
             wave.speed = Mathf.Max(0.01f, wave.tuning.explosionExpansionSpeed);
             if (wave.energy == null) wave.energy = new float[384];
             for (int i = 0; i < wave.energy.Length; i++) wave.energy[i] = stats.explosion;
@@ -368,10 +371,10 @@ namespace WeaponWorkshop
             targetCandidates.Clear();
             nextTargetCandidate = 0;
             collectionPending = false;
-            if (tuning.explosionEffect != null && PoolManager.TryUseExplosionEffectSlot())
+            if (explosionEffect != null && PoolManager.TryUseExplosionEffectSlot())
             {
-                PoolManager.EnsureExplosionEffectPrewarm(tuning.explosionEffect.gameObject);
-                var effect = PoolManager.RentPrefab(tuning.explosionEffect.gameObject, transform.position, Quaternion.identity);
+                PoolManager.EnsureExplosionEffectPrewarm(explosionEffect.gameObject);
+                var effect = PoolManager.RentPrefab(explosionEffect.gameObject, transform.position, Quaternion.identity);
                 effect.transform.localScale = Vector3.one * Mathf.Max(0.001f, maximumRadius * tuning.explosionVisualScaleMultiplier);
                 effect.GetComponent<PooledCombatObject>().PlayParticles(returnWhenFinished: true);
             }
@@ -387,7 +390,7 @@ namespace WeaponWorkshop
             layers.Clear(); pieces.Clear(); targetCandidates.Clear(); healthHits.Clear(); radius = 0f;
             nextLayer = nextHealth = nextTargetCandidate = 0;
             collectionPending = false;
-            tuning = null; stats = default; impactStats = default;
+            tuning = null; explosionEffect = null; stats = default; impactStats = default;
             WeaponSource = null;
             originatingProjectile = null; originatingLaunchId = 0;
         }
