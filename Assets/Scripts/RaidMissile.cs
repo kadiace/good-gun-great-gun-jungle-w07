@@ -12,7 +12,7 @@ namespace WeaponWorkshop
         [SerializeField, Min(0f)] private float explosionPower = 3f;
         [SerializeField, Min(0.01f), Tooltip("폭발력은 유지하고 실제 폭발 반경만 배율 적용.")]
         private float explosionRadiusMultiplier = 1f;
-        [SerializeField, Tooltip("??? ?? ?? ??? ??. ?? ??? ??? ?? ??.")]
+        [SerializeField, Tooltip("비우면 공용 폭발 이펙트 사용. 피해 판정과 무관한 전용 연출.")]
         private ParticleSystem explosionEffectOverride;
         [SerializeField, Min(0f)] private float damage = 20f;
         [SerializeField, Min(0f)] private float playerDamage = 1f;
