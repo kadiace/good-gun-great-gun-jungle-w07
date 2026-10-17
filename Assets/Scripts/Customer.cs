@@ -49,6 +49,10 @@ namespace WeaponWorkshop
         public event System.Action<int> SaleCompleted;
         public event System.Action<int, int> SaleAccepted;
         public event System.Action CustomerKilled;
+        /// <summary>보호 피격 또는 실제 사망에서 손님 비명 재생을 요청한다.</summary>
+        public static event System.Action<string, Vector3> ScreamRequested;
+        /// <summary>실제 사망이 확정된 경우에만 손님 ID와 위치를 전달한다.</summary>
+        public static event System.Action<string, Vector3> DeathConfirmed;
         public event System.Action<CustomerProfile> Interacted;
         public event System.Action<CustomerProfile, bool, bool> OrderFinished;
         public event System.Action<CustomerProfile, EquipableWeapon, int, bool, int> WeaponSold;
@@ -147,11 +151,13 @@ namespace WeaponWorkshop
             }));
         }
 
+        /// <summary>보호 피격이면 비명 요청만 전달하고, 실제 사망이면 기존 집계와 사망 처리를 시작한다.</summary>
         public void Kill()
         {
             if (deathStarted) return;
             if (TutorialManager.Instance != null && TutorialManager.Instance.HandleCustomerHit(this))
             {
+                ScreamRequested?.Invoke(profile != null ? profile.ProfileId : null, transform.position);
                 if (hitReaction != null) StopCoroutine(hitReaction);
                 hitReaction = StartCoroutine(ReactToHit(false));
                 return;
@@ -160,6 +166,8 @@ namespace WeaponWorkshop
             bool reportKill = !outcomeReported;
             deathStarted = true;
             outcomeReported = true;
+            DeathConfirmed?.Invoke(profile != null ? profile.ProfileId : null, transform.position);
+            ScreamRequested?.Invoke(profile != null ? profile.ProfileId : null, transform.position);
             if (reportKill) OrderFinished?.Invoke(profile, false, true);
             atCounter = false;
             StopAllCoroutines();
