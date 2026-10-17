@@ -195,6 +195,8 @@ namespace WeaponWorkshop
         {
             ResolvePowerCore();
             ResetCharge();
+            if (Tuning.explosionEffect != null)
+                PoolManager.EnsureExplosionEffectPrewarm(Tuning.explosionEffect.gameObject);
             if (powerCore != null) powerCore.ProjectileSpawned += ApplyStatsToProjectile;
         }
 
