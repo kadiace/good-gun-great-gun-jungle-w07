@@ -29,9 +29,10 @@ namespace WeaponWorkshop
             if (alerted || target == null || target.gameObject.scene != gameObject.scene ||
                 RaidEnemyCore.FindForPart(target.transform) != null || player == null ||
                 ((helicopterPrefab == null || !helicopterEnabled) && tankTransportPrefab == null)) return;
+            // 공격과 연쇄 붕괴 알림이 겹쳐도 최초 출격은 한 번만 시작한다.
             alerted = true;
-            SpawnEnemies();
             spawnRemaining = Mathf.Max(1f, spawnInterval);
+            SpawnEnemies();
         }
         private bool SpawnHelicopter(string enemyId)
         {
