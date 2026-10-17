@@ -28,25 +28,34 @@ namespace WeaponWorkshop
             if (previousAmount > ModuleCredits) ModuleCreditsLost?.Invoke(previousAmount);
         }
         public event Action<bool> PurchaseFundsInsufficient;
+        // Shop telemetry: (useModuleCredits, need, have, partKind).
+        public event Action<bool, int, int, string> PurchaseFailed;
+        // Shop telemetry after a real part payment/refund: (partKind, money, moduleCredits).
+        public event Action<string, int, int> PartPurchased, PartRefunded;
+        public void NotifyPartPurchased(string partKind, int money, int credits) => PartPurchased?.Invoke(partKind ?? "", money, credits);
+        public void NotifyPartRefunded(string partKind, int money, int credits) => PartRefunded?.Invoke(partKind ?? "", money, credits);
 
-        public bool CheckPurchaseFunds(int price, bool useModuleCredits)
+        public bool CheckPurchaseFunds(int price, bool useModuleCredits, string partKind = "")
         {
             bool affordable = useModuleCredits ? CanAffordModuleCredits(price) : CanAfford(price);
             if (!affordable && isActiveAndEnabled && price >= 0)
+            {
                 PurchaseFundsInsufficient?.Invoke(useModuleCredits);
+                PurchaseFailed?.Invoke(useModuleCredits, price, useModuleCredits ? ModuleCredits : Balance, partKind ?? "");
+            }
             return affordable;
         }
 
-        public bool CheckModuleFunds(int dollars, int materials)
+        public bool CheckModuleFunds(int dollars, int materials, string partKind = "")
         {
             // 모듈의 달러 비용은 외상 허용. 모듈 재화는 보유량 안에서만 결제합니다.
             bool money = isActiveAndEnabled && dollars >= 0;
-            bool resources = CheckPurchaseFunds(materials, true);
+            bool resources = CheckPurchaseFunds(materials, true, partKind);
             return money && resources;
         }
-        public bool TryPurchaseModule(int dollars, int materials, Func<bool> purchase)
+        public bool TryPurchaseModule(int dollars, int materials, Func<bool> purchase, string partKind = "")
         {
-            if (!CheckModuleFunds(dollars, materials) || purchase == null || !purchase()) return false;
+            if (!CheckModuleFunds(dollars, materials, partKind) || purchase == null || !purchase()) return false;
             Balance = (int)Math.Max(int.MinValue, (long)Balance - dollars);
             TodayConstructionCost = (int)Math.Min(int.MaxValue, (long)TodayConstructionCost + dollars);
             ModuleCredits -= materials;

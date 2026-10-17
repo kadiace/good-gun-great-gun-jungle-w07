@@ -137,12 +137,13 @@ namespace WeaponWorkshop
             PaidConstructionCost = Mathf.Max(0, amount);
         }
 
-        public void RefundModulePurchases(int amount, PlayerWallet wallet)
+        public int RefundModulePurchases(int amount, PlayerWallet wallet)
         {
-            if (wallet == null || amount <= 0) return;
+            if (wallet == null || amount <= 0) return 0;
             int refund = Mathf.Min(amount, PaidConstructionCost);
             PaidConstructionCost -= refund;
             wallet.RefundConstruction(refund);
+            return refund;
         }
 
         private void RefundConstructionCost()

@@ -107,6 +107,8 @@ namespace WeaponWorkshop
             }
             if (dollarTotal > int.MaxValue || materialTotal > int.MaxValue) return false;
             EquipableWeapon purchasedCore = null;
+            // Preset purchases include their modules, so they are logged apart from a bare core.
+            string partKind = presetPlan != null ? corePrefab.name + "+preset" : corePrefab.name;
             bool purchased = wallet.TryPurchaseModule((int)dollarTotal, (int)materialTotal, () =>
             {
                 EquipableWeapon core = Instantiate(corePrefab, transform.position, transform.rotation);
@@ -121,8 +123,9 @@ namespace WeaponWorkshop
                 if (holder.Equip(core)) return true;
                 Destroy(core.gameObject);
                 return false;
-            });
+            }, partKind);
             if (!purchased) return false;
+            wallet.NotifyPartPurchased(partKind, (int)dollarTotal, (int)materialTotal);
             // RestoreLayout already restores the preset's cost. Record this purchase once, not add it again.
             purchasedCore.RestoreConstructionPurchaseCost((int)dollarTotal);
             var assembly = purchasedCore.GetComponent<CubeAssembly>();

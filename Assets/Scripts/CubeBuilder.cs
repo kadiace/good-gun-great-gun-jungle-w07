@@ -601,16 +601,20 @@ namespace WeaponWorkshop
             int dollars = moduleCatalog != null && moduleCatalog.TryGet(slot, out entry)
                 ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
             int materials = WeaponPurchasePrices.ModuleCredits(entry.data, WeaponPurchasePrices.InstalledShotgunCount(assembly));
+            string partKind = PartLogName(assembly, slot);
             bool purchased = wallet.TryPurchaseModule(dollars, materials,
-                () => assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell));
+                () => assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell), partKind);
             if (purchased)
             {
+                wallet.NotifyPartPurchased(partKind, dollars, materials);
                 assembly.RecordPurchasedModule(cell, dollars);
                 assembly.RecordPurchasedModuleCredits(cell, materials);
                 WorkshopSoundEffects.RaiseBlockInstalled(assembly.transform.TransformPoint(cell));
             }
             return purchased;
         }
+        private static string PartLogName(CubeAssembly assembly, int slot)
+            => assembly != null ? ModuleCounter.LogName(assembly.GetPrefab(slot)?.GetComponent<PlacedBlock>()) : "";
         private void TryPlace()
         {
             if (paintingMode || IsPointerOverUI(AimPoint())) return;
@@ -622,7 +626,8 @@ namespace WeaponWorkshop
             int dollars = moduleCatalog != null && moduleCatalog.TryGet(slotToBuy, out entry)
                 ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
             int materials = GetNextModuleCreditCost(slotToBuy);
-            if (!wallet.CheckModuleFunds(dollars, materials)) return;
+            if (!wallet.CheckModuleFunds(dollars, materials, PartLogName(pendingAssembly != null ? pendingAssembly :
+                    FindWorkspaceWeapon()?.GetComponentInChildren<CubeAssembly>(true), slotToBuy))) return;
             Vector2 pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer)) return;
             if (preview != null)

@@ -9,6 +9,7 @@ namespace WeaponWorkshop
     public sealed partial class TutorialManager : MonoBehaviour
     {
         [SerializeField] private DialogueUI dialogue;
+        [SerializeField, Tooltip("Tutorial log guideMode. Policy names are not decided yet; empty by default.")] private string guideMode = "";
         [SerializeField] private TutorialSkipUI selection;
         [SerializeField] private DayTransitionUI dayTransition;
         [SerializeField] private NextDayInteractable shutter;
@@ -435,7 +436,7 @@ namespace WeaponWorkshop
         {
             stepStartedAt = Time.realtimeSinceStartup;
             LogKit.GameLogger.Data("Info", "Tutorial", "step_started", new TutorialStepLog
-            { sequence = CurrentSequence != null ? CurrentSequence.name : "", stepId = step.id ?? "", stepIndex = StepIndex, time = stepStartedAt });
+            { sequence = CurrentSequence != null ? CurrentSequence.name : "", stepId = step.id ?? "", stepIndex = StepIndex, time = stepStartedAt, guideMode = guideMode ?? "" });
         }
         private void LogStepCompleted()
         {

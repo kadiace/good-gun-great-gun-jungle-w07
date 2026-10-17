@@ -48,6 +48,11 @@ public class _DayManager : MonoBehaviour
     public event Action<int, int> BusinessOpened;
     public event Action<int, int> ManualCloseRequested;
     public event Action<CustomerProfile, int> OrderRegistered;
+    // Shop telemetry: (runtime order, day it was pushed from, reason).
+    public event Action<CustomerProfile, int, string> OrderDeferred;
+    // Shop telemetry before night starts: manual or automatic close.
+    public event Action<bool> ShopClosing;
+    public int DailyGuestCount => dailyGuestCount;
     public bool CanCollectShopLogs => shopLogsReady && shopLogSuppression == 0;
     private bool shopLogsReady;
     private int shopLogSuppression;
@@ -189,6 +194,7 @@ public class _DayManager : MonoBehaviour
     {
         if (IsNight || IsAwaitingOpening || isSettled || !HasRequiredReferences()) return;
         if (manual) ManualCloseRequested?.Invoke(DayNumber, Money);
+        ShopClosing?.Invoke(manual);
         CurrentPeriod = setTimer.night;
         hasCurrentPeriod = true;
         var night = settings.timing?.Find(t => t != null && t.period == setTimer.night);
@@ -204,9 +210,11 @@ public class _DayManager : MonoBehaviour
         WorkshopSoundEffects.RaiseBusinessEnded();
         customerBell?.EndDay();
         TodayRent = CurrentCustomerDay != null ? CurrentCustomerDay.Rent : 0;
+        int balanceBefore = Money;
         if (wallet != null && wallet.Balance < TodayRent)
         {
             IsBankrupt = true;
+            LogDaySettled(balanceBefore);
             LogKit.GameLogger.Data("Info", "Game", "bankrupt",
                 new GameBankruptLog { day = DayNumber, balance = wallet.Balance, rent = TodayRent });
             CanStartNextDay = false;
@@ -216,12 +224,21 @@ public class _DayManager : MonoBehaviour
             return;
         }
         wallet?.Debit(TodayRent);
+        LogDaySettled(balanceBefore);
         IsSettlementOpen = true;
         gameManager.SetNight(true);
         CanStartNextDay = HasNextDay && !(TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero);
         Changed?.Invoke();
         // Stay at night until the player chooses a raid or the next morning.
     }
+    private void LogDaySettled(int balanceBefore) =>
+        LogKit.GameLogger.Data("Info", "Game", "day_settled", new GameDaySettledLog
+        {
+            day = DayNumber, balanceBefore = balanceBefore, income = TodayIncome,
+            constructionCost = wallet != null ? wallet.TodayConstructionCost : 0, soldConstructionCost = TodaySoldConstructionCost,
+            rent = TodayRent, balanceAfter = Money, completedGuests = CompletedGuests, dissatisfiedGuests = DissatisfiedGuests,
+            killedGuests = KilledGuests, moduleCredits = ModuleCredits, bankrupt = IsBankrupt
+        });
     public void DeclineNextDay()
     {
         if (!IsNight || !IsSettlementOpen || !HasRequiredReferences()) return;
@@ -628,7 +645,12 @@ public class _DayManager : MonoBehaviour
         {
             var profile = day.customers[i];
             if (profile == null || canServe(profile, dayNumber)) continue;
-            if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile)) deferredCustomers.Add(CreateRuntimeOrder(profile));
+            if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile))
+            {
+                var deferred = CreateRuntimeOrder(profile);
+                deferredCustomers.Add(deferred);
+                OrderDeferred?.Invoke(deferred, dayNumber, CanServe(profile, dayNumber) ? "credits" : "module_locked");
+            }
             day.customers[i] = CreateCombination(dayNumber, day.MinRequests, day.MaxRequests);
         }
         foreach (var profile in pending)
