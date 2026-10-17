@@ -115,6 +115,8 @@ namespace WeaponWorkshop
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
                 raidClearProgress = raidClearProgress,
+                outstandingLoans = wallet.OutstandingLoans,
+                lastLoanDay = wallet.LastLoanDay,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
                 savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null, saveId = PlayerIdentity.SaveId };
             data.playerPosition = player.transform.position; data.playerEuler = player.transform.eulerAngles;
@@ -261,6 +263,8 @@ namespace WeaponWorkshop
             else if (restored != null && !player.GetComponent<WeaponHolder>().Equip(restored))
             { Destroy(restored.gameObject); Debug.LogError("저장 무기를 장착하지 못했습니다.", this); return; }
             player.GetComponent<PlayerWallet>().RestoreBalance(data.balance);
+            player.GetComponent<PlayerWallet>().RestoreLoans(data.outstandingLoans);
+            player.GetComponent<PlayerWallet>().RestoreLastLoanDay(data.lastLoanDay);
             player.GetComponent<PlayerWallet>().RestoreModuleCredits(data.moduleCredits);
             player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(data.unlockedModules);
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);

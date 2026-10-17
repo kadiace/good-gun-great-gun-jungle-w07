@@ -36,6 +36,9 @@ namespace WeaponWorkshop
         public string weaponAssemblyId = "", weaponAssemblyIdStatus = "no_weapon";
         // 총구 중 최댓값(코어 기본 + 경로 모듈, 산탄 절반 반영, 차지 배율 제외). 무기가 없으면 0.
         public float penetration, explosion;
+        // 출발 시 지갑과 획득한 해금 모듈 id(처음부터 열린 모듈 제외).
+        public int balance, moduleCredits;
+        public int[] unlockedModules;
     }
     [Serializable] public sealed class RaidWeaponConfigLog
     {
@@ -53,6 +56,12 @@ namespace WeaponWorkshop
     [Serializable] public sealed class GameStartLog { public string installId, saveId, savedScene = ""; public bool newGame; }
     [Serializable] public sealed class GameDayLog { public int day; }
     [Serializable] public sealed class GameBankruptLog { public int day, balance, rent; }
+    [Serializable] public sealed class GameDaySettledLog
+    {
+        public int day, balanceBefore, income, constructionCost, soldConstructionCost, rent, balanceAfter;
+        public int completedGuests, dissatisfiedGuests, killedGuests, moduleCredits;
+        public bool bankrupt;
+    }
     [Serializable] public sealed class TutorialStepLog
     {
         public string sequence, stepId;
@@ -61,6 +70,8 @@ namespace WeaponWorkshop
         public float time, duration;
         // 에디터 F3 치트로 넘긴 단계.
         public bool debugSkipped;
+        // 가이드 표시 정책 실험 이름. TutorialManager 인스펙터 값, 미정이면 빈 문자열.
+        public string guideMode = "";
     }
     [Serializable] public sealed class TutorialEndLog
     {

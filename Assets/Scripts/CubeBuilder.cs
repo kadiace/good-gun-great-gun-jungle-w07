@@ -17,6 +17,7 @@ namespace WeaponWorkshop
             public CubeAssembly.LayoutSnapshot snapshot;
             public PlayerWallet wallet;
             public int walletBalance;
+            public int outstandingLoans;
             public int todayConstructionCost;
             public int walletModuleCredits;
         }
@@ -601,16 +602,41 @@ namespace WeaponWorkshop
             int dollars = moduleCatalog != null && moduleCatalog.TryGet(slot, out entry)
                 ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
             int materials = WeaponPurchasePrices.ModuleCredits(entry.data, WeaponPurchasePrices.InstalledShotgunCount(assembly));
+            string partKind = PartLogName(assembly, slot);
+            if (wallet.Balance < dollars)
+            {
+                if (wallet.CanAffordModuleCredits(materials))
+                {
+                    var feedback = FeedbackUI.For(this);
+                    var dayManager = FindFirstObjectByType<_DayManager>();
+                    if (dayManager != null && wallet.LastLoanDay != dayManager.DayNumber)
+                    {
+                        int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
+                        var tutorial = TutorialManager.Instance;
+                        if (feedback != null && feedback.ShowChoice(this, $"$3,000 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
+                            () => { if (wallet.TryTakeLoan(dayManager.DayNumber))
+                                TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench); },
+                            null, "대출받기", "취소") && tutorial != null &&
+                            tutorial.CurrentStep?.requiredSignal == "loan-taken")
+                            tutorial.ShowLoanGuide(feedback);
+                    }
+                    else if (dayManager != null) feedback?.ShowNotification("대출은 하루에 한 번만 받을 수 있습니다.");
+                }
+                return false;
+            }
             bool purchased = wallet.TryPurchaseModule(dollars, materials,
-                () => assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell));
+                () => assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell), partKind);
             if (purchased)
             {
+                wallet.NotifyPartPurchased(partKind, dollars, materials);
                 assembly.RecordPurchasedModule(cell, dollars);
                 assembly.RecordPurchasedModuleCredits(cell, materials);
                 WorkshopSoundEffects.RaiseBlockInstalled(assembly.transform.TransformPoint(cell));
             }
             return purchased;
         }
+        private static string PartLogName(CubeAssembly assembly, int slot)
+            => assembly != null ? ModuleCounter.LogName(assembly.GetPrefab(slot)?.GetComponent<PlacedBlock>()) : "";
         private void TryPlace()
         {
             if (paintingMode || IsPointerOverUI(AimPoint())) return;
@@ -618,11 +644,9 @@ namespace WeaponWorkshop
             if (wallet == null) return;
             int slotToBuy = preview != null ? pendingSlot : selectedSlot;
             if (IsModuleLocked(slotToBuy)) { CancelPreview(); return; }
-            ModuleCatalog.Entry entry = default;
-            int dollars = moduleCatalog != null && moduleCatalog.TryGet(slotToBuy, out entry)
-                ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
             int materials = GetNextModuleCreditCost(slotToBuy);
-            if (!wallet.CheckModuleFunds(dollars, materials)) return;
+            if (!wallet.CheckPurchaseFunds(materials, true, PartLogName(pendingAssembly != null ? pendingAssembly :
+                    FindWorkspaceWeapon()?.GetComponentInChildren<CubeAssembly>(true), slotToBuy))) return;
             Vector2 pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer)) return;
             if (preview != null)
@@ -733,6 +757,7 @@ namespace WeaponWorkshop
                 snapshot = snapshot,
                 wallet = wallet,
                 walletBalance = walletBalance,
+                outstandingLoans = wallet != null ? wallet.OutstandingLoans : 0,
                 todayConstructionCost = wallet != null ? wallet.TodayConstructionCost : 0,
                 walletModuleCredits = walletModuleCredits
             });
@@ -761,7 +786,9 @@ namespace WeaponWorkshop
 
             CancelPreview();
             if (!entry.assembly.RestoreLayout(entry.snapshot)) return;
-            entry.wallet?.RestoreBalance(entry.walletBalance);
+            if (entry.wallet != null)
+                entry.wallet.RestoreBalance((int)System.Math.Min(int.MaxValue,
+                    (long)entry.walletBalance + (long)(entry.wallet.OutstandingLoans - entry.outstandingLoans) * PlayerWallet.LoanAmount));
             entry.wallet?.RestoreTodayConstructionCost(entry.todayConstructionCost);
             entry.wallet?.RestoreModuleCredits(entry.walletModuleCredits);
             undoHistory.RemoveAt(last);

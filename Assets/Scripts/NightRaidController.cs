@@ -232,6 +232,10 @@ namespace WeaponWorkshop
         {
             EquipableWeapon weapon = playerWeaponHolder != null ? playerWeaponHolder.EquippedWeapon : null;
             var entry = new RaidStartLog { scene = gameObject.scene.name, day = NightRaidTransfer.Workshop != null ? NightRaidTransfer.Workshop.day : -1 };
+            var raidWallet = player != null ? player.GetComponent<PlayerWallet>() : null;
+            entry.balance = raidWallet != null ? raidWallet.Balance : 0;
+            entry.moduleCredits = raidWallet != null ? raidWallet.ModuleCredits : 0;
+            entry.unlockedModules = raidStartingModules ?? System.Array.Empty<int>();
             if (weapon != null)
             {
                 CaptureMuzzleMax(weapon, out entry.penetration, out entry.explosion);
@@ -344,6 +348,8 @@ namespace WeaponWorkshop
             if (NightRaidTransfer.TryConsumeEntry(out int balance, out int moduleCredits, out var unlockedModules, out var weapon))
             {
                 player.GetComponent<PlayerWallet>().RestoreBalance(balance);
+                player.GetComponent<PlayerWallet>().RestoreLoans(NightRaidTransfer.Workshop.outstandingLoans);
+                player.GetComponent<PlayerWallet>().RestoreLastLoanDay(NightRaidTransfer.Workshop.lastLoanDay);
                 player.GetComponent<PlayerWallet>().RestoreModuleCredits(moduleCredits);
                 player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(unlockedModules);
                 travelPaints = PaintMaterialLibrary.CreateDefaults();
