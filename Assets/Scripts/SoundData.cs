@@ -25,6 +25,9 @@ namespace WeaponWorkshop
             public string id;
             // 실제 AudioClip 연결은 SoundManager 인스펙터가 담당한다.
             public string label;
+            // 이 맵을 직접 클리어하면 곡을 해금하고 공방 복귀 때 재생한다.
+            public string unlockScene;
+            // 구형 저장 이관 결정 전의 기존 해금 기준을 보존한다.
             public int unlockRaid;
             // Main의 곡 선택 목록에 노출할지 여부. 습격 전용곡은 선택 목록에 넣지 않는다.
             public bool selectableInMain;

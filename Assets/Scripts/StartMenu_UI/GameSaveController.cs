@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 namespace WeaponWorkshop
@@ -15,6 +16,9 @@ namespace WeaponWorkshop
         // 진행도는 현재 세이브에 속한다. 다른 슬롯을 로드할 때는 해당 슬롯 값으로 복원한다.
         private int raidClearProgress;
         private int pendingClearedRaid;
+        private string _pendingClearedRaidScene;
+        private readonly HashSet<string> _unlockedMainTrackIds = new HashSet<string>(StringComparer.Ordinal);
+        private bool _trackUnlocksMigrated;
         private bool unsuccessfulRaidReturn;
         private const int AutoSaveRetryCount = 10;
         private const float AutoSaveRetryDelay = 0.5f;
@@ -99,6 +103,10 @@ namespace WeaponWorkshop
             { error = "자동 저장 파일을 기록하지 못했습니다. " + e.Message; return false; }
         }
 
+        /// <summary>
+        /// 현재 공방과 곡 해금 상태를 저장 가능한 데이터로 캡처한다.
+        /// data에 저장 내용을 반환하고 실패 시 error에 사유를 담는다.
+        /// </summary>
         public bool TryCaptureWorkshop(out GameSaveData data,out string error)
         {
             data=null;error=null;
@@ -116,6 +124,7 @@ namespace WeaponWorkshop
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
                 slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
+                unlockedMainTrackIds = _unlockedMainTrackIds.ToArray(), trackUnlocksMigrated = _trackUnlocksMigrated,
                 outstandingLoans = wallet.OutstandingLoans,
                 lastLoanDay = wallet.LastLoanDay,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
@@ -160,10 +169,15 @@ namespace WeaponWorkshop
             // 저장/복귀 복원이 끝난 뒤에만 새 Main BGM을 허용한다.
             SoundManager.InitializeMainMusic(raidClearProgress, unsuccessfulRaidReturn);
         }
+        /// <summary>
+        /// 새 게임·저장 불러오기·습격 복귀의 상태를 초기화한다.
+        /// 확정된 습격 결과를 복원·진행·BGM 처리 흐름에 전달한다.
+        /// </summary>
         private void InitializeSaveState()
         {
             // TryConsumeReturn이 정적 데이터를 비우기 전에 결과를 지역 변수로 받는다.
             int resultRaid = NightRaidTransfer.ResultRaidNumber;
+            string resultRaidScene = NightRaidTransfer.ResultRaidScene;
             bool cleared = NightRaidTransfer.ResultCleared;
             bool showReturnFade = NightRaidTransfer.ReturnDayFadePending;
             NightRaidTransfer.ReturnDayFadePending = false;
@@ -181,6 +195,7 @@ namespace WeaponWorkshop
                     if (TutorialManager.TrainingReturnPending && TutorialManager.Instance != null &&
                         TutorialManager.Instance.ResumeTrainingHome(dayManager)) return;
                     pendingClearedRaid = cleared ? resultRaid : 0;
+                    _pendingClearedRaidScene = cleared ? resultRaidScene : null;
                     unsuccessfulRaidReturn = !cleared;
                     if (showReturnFade) StartCoroutine(AdvanceAfterRaidNextFrame());
                     player.GetComponent<PlayerWallet>()?.ShowModuleCreditLoss(creditsBeforeLoss);
@@ -191,6 +206,7 @@ namespace WeaponWorkshop
             if (NightRaidTransfer.TryConsumeStandaloneReturn())
             {
                 pendingClearedRaid = cleared ? resultRaid : 0;
+                _pendingClearedRaidScene = cleared ? resultRaidScene : null;
                 unsuccessfulRaidReturn = !cleared;
                 if (cleared) AdvanceAfterRaid(true);
                 if (dayManager != null)
@@ -202,6 +218,7 @@ namespace WeaponWorkshop
             var data = GameSaveFiles.PendingLoad;
             if (data == null)
             {
+                InitializeNewTrackUnlocks();
                 QueueAutoSave(dayManager != null ? dayManager.DayNumber : 0, true);
                 return;
             }
@@ -209,14 +226,21 @@ namespace WeaponWorkshop
             if (!restoreOnStart) return;
             Restore(data);
         }
+        /// <summary>
+        /// 클리어 결과를 진행도와 곡 해금에 반영한 뒤 다음 날로 이동한다.
+        /// showFade가 true이면 귀환 페이드 전환을 요청한다.
+        /// </summary>
         private void AdvanceAfterRaid(bool showFade)
         {
             // 날짜 증가/습격 건너뛰기가 아닌 확정된 귀환 결과로만 진행도를 전진시킨다.
             if (pendingClearedRaid > 0 && !SoundManager.IsTutorialMusicContext)
             {
                 raidClearProgress = Math.Max(raidClearProgress, SoundInfo.ClampProgress(pendingClearedRaid));
+                string clearedScene = _pendingClearedRaidScene;
+                string rewardTrackId = UnlockRaidRewardTrack(clearedScene);
                 pendingClearedRaid = 0;
-                SoundManager.CompleteRaidReturn(raidClearProgress);
+                _pendingClearedRaidScene = null;
+                SoundManager.CompleteRaidReturn(raidClearProgress, rewardTrackId, _unlockedMainTrackIds.ToArray());
                 QueueAutoSave(dayManager.DayNumber, false);
             }
             if (!dayManager.CanStartNextDay) { dayManager.ShowSettlement(); return; }
@@ -234,6 +258,10 @@ namespace WeaponWorkshop
         {
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) RestoreCore(data);
         }
+        /// <summary>
+        /// 구형 저장의 플레이어·공방·곡 해금 상태를 복원한다.
+        /// data의 저장 정보를 씬에 반영하고 복원 불가 항목은 오류로 중단한다.
+        /// </summary>
         private void RestoreCore(GameSaveData data)
         {
             GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
@@ -283,8 +311,58 @@ namespace WeaponWorkshop
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
             RestoreRaidProgress(data);
+            RestoreTrackUnlocks(data);
         }
         // 구버전 세이브의 누락 필드는 기본값 0이다. 음수는 0으로 보정하고 진행도를 보존한다.
         private void RestoreRaidProgress(GameSaveData data) => raidClearProgress = SoundInfo.ClampProgress(data.raidClearProgress);
+
+        /// <summary>
+        /// 신규 게임의 곡 해금을 DayFirst 하나로 초기화한다.
+        /// 런타임 해금 목록과 SoundManager 판정을 새 세션 상태로 맞춘다.
+        /// </summary>
+        private void InitializeNewTrackUnlocks()
+        {
+            _unlockedMainTrackIds.Clear();
+            _trackUnlocksMigrated = true;
+            SoundManager.SetMainTrackUnlockState(_unlockedMainTrackIds.ToArray());
+        }
+
+        /// <summary>
+        /// 저장의 곡 해금 목록을 복원하거나 구형 진행도 기준으로 한 번 이관한다.
+        /// data의 해금 ID와 이관 표식을 갱신하며 실제 맵 클리어 이력은 만들지 않는다.
+        /// </summary>
+        private void RestoreTrackUnlocks(GameSaveData data)
+        {
+            _unlockedMainTrackIds.Clear();
+            if (data.trackUnlocksMigrated)
+            {
+                foreach (string trackId in data.unlockedMainTrackIds)
+                    if (!string.IsNullOrEmpty(trackId)) _unlockedMainTrackIds.Add(trackId);
+            }
+            else
+            {
+                foreach (SoundData.Track track in TableManager.Instance.Sound.tracks ?? Array.Empty<SoundData.Track>())
+                    if (track != null && track.id != BgmId.DayFirst.ToString() && track.selectableInMain &&
+                        track.unlockRaid >= 0 && track.unlockRaid <= raidClearProgress)
+                        _unlockedMainTrackIds.Add(track.id);
+                data.unlockedMainTrackIds = _unlockedMainTrackIds.ToArray();
+                data.trackUnlocksMigrated = true;
+            }
+            _trackUnlocksMigrated = true;
+            SoundManager.SetMainTrackUnlockState(_unlockedMainTrackIds.ToArray());
+        }
+
+        /// <summary>
+        /// 클리어 씬에 연결된 곡 ID를 저장 대상 해금 목록에 추가한다.
+        /// scene으로 곡 ID를 조회해 반환하며, 연결이 없으면 null을 반환한다.
+        /// </summary>
+        private string UnlockRaidRewardTrack(string scene)
+        {
+            SoundData.Track reward = SoundInfo.RaidRewardTrack(scene);
+            if (reward == null) return null;
+            _unlockedMainTrackIds.Add(reward.id);
+            _trackUnlocksMigrated = true;
+            return reward.id;
+        }
     }
 }
