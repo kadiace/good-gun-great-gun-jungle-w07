@@ -48,10 +48,10 @@ namespace WeaponWorkshop
         private int raidStartingBalance;
         private int[] raidStartingModules;
         private float raidStartedAt;
-        private int enemyKills, materialCrateCredits;
-        private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
         // 스테이지 중 획득한 재료 상자 보상(즉시 반영 안 하고 결과 정산 때 합산).
         private readonly System.Collections.Generic.List<int> pendingMaterialPickups = new System.Collections.Generic.List<int>();
+        // 스테이지 중 획득한 모듈도 완료 정산 때 반영.
+        private readonly System.Collections.Generic.List<int> pendingModuleCollects = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.HashSet<string> discoveredEnemies = new System.Collections.Generic.HashSet<string>();
         private readonly System.Collections.Generic.HashSet<string> loggedRaidWeaponAssemblies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
@@ -122,7 +122,9 @@ namespace WeaponWorkshop
             {
                 scene = gameObject.scene.name, survived = !died,
                 time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
-                moduleCrateRewards = moduleCrateRewards.ToArray(),
+                // 스테이지 중 획득 모듈도 완료 정산 때 반영.
+            moduleCrateRewards.AddRange(pendingModuleCollects);
+            pendingModuleCollects.Clear();
                 materialCrateCredits = materialCrateCredits, enemyKills = enemyKills,
                 health = playerHealth != null ? playerHealth.CurrentHealth : 0f
             });
@@ -283,7 +285,7 @@ namespace WeaponWorkshop
         }
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
-            if (inRaid && collector == player && moduleId > 0) moduleCrateRewards.Add(moduleId);
+            if (inRaid && collector == player && moduleId > 0) pendingModuleCollects.Add(moduleId);
         }
         private static string CaptureAssemblyId(EquipableWeapon weapon, out string status)
         {
@@ -460,7 +462,7 @@ namespace WeaponWorkshop
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
             enemyKills = materialCrateCredits = 0;
-            moduleCrateRewards.Clear(); discoveredEnemies.Clear();
+            pendingModuleCollects.Clear(); discoveredEnemies.Clear();
             loggedRaidWeaponAssemblies.Clear();
             LogRaidStart();
             SubscribeWeaponEvents();
