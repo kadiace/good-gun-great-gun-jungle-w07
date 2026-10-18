@@ -66,7 +66,17 @@ namespace WeaponWorkshop
         }
         private void MarkRenderChunk(Vector3Int coordinate)
         {
-            if (renderChunks.TryGetValue(RenderKey(coordinate), out var chunk)) chunk.dirty = true;
+            Vector3Int key = RenderKey(coordinate);
+            if (renderChunks.TryGetValue(key, out var chunk)) chunk.dirty = true;
+            if (!SurfaceRendering) return;
+            // 노출 면 방식은 칸 하나가 사라지면 맞닿던 이웃 칸의 면도 새로 드러난다.
+            // 이웃이 같은 청크에 있으면 자기 청크 재구축에 포함되므로 청크 경계만 추가로 검사한다.
+            for (int i = 0; i < neighbors.Length; i++)
+            {
+                Vector3Int neighborKey = RenderKey(coordinate + neighbors[i]);
+                if (neighborKey == key) continue;
+                if (renderChunks.TryGetValue(neighborKey, out var neighborChunk)) neighborChunk.dirty = true;
+            }
         }
         private void DrawRemainingChunks()
         {
@@ -83,6 +93,7 @@ namespace WeaponWorkshop
                     {
                         var chunk = pair.Value;
                         if (!chunk.dirty) continue;
+                        if (SurfaceRendering) { RebuildSurfaceChunk(pair.Key, chunk); chunk.dirty = false; continue; }
                         var origin = pair.Key * RenderChunkWidth;
                         int count = 0;
                         for (int x = origin.x; x < Mathf.Min(origin.x + RenderChunkWidth, divisions.x); x++)
