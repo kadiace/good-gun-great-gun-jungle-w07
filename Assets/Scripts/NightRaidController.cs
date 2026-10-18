@@ -54,6 +54,8 @@ namespace WeaponWorkshop
         private readonly System.Collections.Generic.HashSet<string> loggedRaidWeaponAssemblies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
         private readonly System.Collections.Generic.SortedSet<int> trainingModules = new System.Collections.Generic.SortedSet<int>();
+        // 스테이지 클리어 시 지급하는 달러 보상(기획 미정 확정 전 상수).
+        public const int StageClearRewardDollars = 10000;
         public bool HasTrainingModule(int moduleId) => trainingModules.Contains(moduleId);
         public bool TryCollectTrainingModule(int moduleId)
         {
@@ -102,9 +104,13 @@ namespace WeaponWorkshop
             }
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             returningAfterDeath = died;
+            bool isClear = IsRaidClear(died);
+            // 스테이지 클리어 보상으로 달러 지급(생존 탈출만 클리어).
+            if (isClear && !SoundManager.IsTutorialMusicContext)
+                player.GetComponent<PlayerWallet>()?.Credit(StageClearRewardDollars);
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
-                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, IsRaidClear(died));
+                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, isClear);
             GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog
             {
                 scene = gameObject.scene.name, survived = !died,
