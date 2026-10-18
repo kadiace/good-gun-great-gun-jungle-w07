@@ -50,6 +50,8 @@ namespace WeaponWorkshop
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
+        // 스테이지 중 획득한 재료 상자 보상(즉시 반영 안 하고 결과 정산 때 합산).
+        private readonly System.Collections.Generic.List<int> pendingMaterialPickups = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.HashSet<string> discoveredEnemies = new System.Collections.Generic.HashSet<string>();
         private readonly System.Collections.Generic.HashSet<string> loggedRaidWeaponAssemblies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
@@ -103,6 +105,16 @@ namespace WeaponWorkshop
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             bool isClear = IsRaidClear(died);
             returningAfterDeath = died;
+            // 스테이지 중 획득 재화를 결과에 반영해 확정 정산.
+            if (isClear)
+            {
+                int table = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward;
+                int perPickup = table?.dollarsPerMaterialPickup ?? 1000;
+                int earned = pendingMaterialPickups.Sum() * perPickup;
+                player.GetComponent<PlayerWallet>()?.Credit(earned);
+                materialCrateCredits = earned;
+            }
+            pendingMaterialPickups.Clear();
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
                 NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, isClear);
@@ -266,13 +278,8 @@ namespace WeaponWorkshop
         private void OnMaterialCollected(FirstPersonPlayer collector, int amount)
         {
             if (inRaid && collector == player)
-            {
-                materialCrateCredits += amount;
-                int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
-                // 스테이지 내 모듈 재화 1회 획득마다 달러 지급(표 값 사용).
-                if (perPickup > 0) player.GetComponent<PlayerWallet>()?.Credit(perPickup);
-                GameLogger.Data("Shop/material_pickup", "재화 획득", new { scene = gameObject.scene.name, amount, perPickup });
-            }
+                // 즉시 지갑 반영 없이 획득분만 기록.
+                pendingMaterialPickups.Add(amount);
         }
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
