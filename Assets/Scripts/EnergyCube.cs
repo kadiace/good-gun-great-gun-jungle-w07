@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -19,6 +20,8 @@ namespace WeaponWorkshop
         private Quaternion shotRotation;
         private float penetration, explosion;
         private bool exploded;
+        private readonly HashSet<DestructibleTarget> passedTargets = new HashSet<DestructibleTarget>();
+        private readonly HashSet<DestructibleTarget> carvedTargets = new HashSet<DestructibleTarget>();
 
         public void Initialize(Vector3 travelDirection, float movementSpeed, Transform owner, Transform weapon,
             WeaponStats stats = default)
@@ -26,6 +29,8 @@ namespace WeaponWorkshop
             direction = travelDirection.normalized;
             speed = Mathf.Max(0f, movementSpeed);
             penetration = Mathf.Max(0f, stats.penetration);
+            passedTargets.Clear();
+            carvedTargets.Clear();
             explosion = Mathf.Max(0f, stats.explosion);
             exploded = false;
             traveledDistance = 0f;
@@ -70,13 +75,16 @@ namespace WeaponWorkshop
                 shotRotation, distance, layers, QueryTriggerInteraction.Ignore))
             {
                 Transform hitTransform = hit.collider.transform;
+                var hitTarget = hit.collider.GetComponentInParent<DestructibleTarget>();
                 if (hitTransform.IsChildOf(transform) ||
+                    (hitTarget != null && passedTargets.Contains(hitTarget)) ||
                     (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) ||
                     (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) || hit.distance > nearest) continue;
                 nearest = hit.distance;
                 nearestHit = hit;
                 hitObstacle = true;
             }
+            CarvePassedTargets(nearest);
             transform.position += direction * nearest;
             traveledDistance += nearest;
             distance -= nearest;
@@ -87,8 +95,16 @@ namespace WeaponWorkshop
                 if (target != null && TutorialManager.Instance != null) TutorialManager.Instance.NotifyTargetHit(target);
                 if (target != null)
                 {
-                    penetration = target.Penetrate(penetration, transform.position + direction * 0.001f,
-                        shotRotation, halfExtents, out bool passed, out _);
+                    penetration = target.PenetrateAlongLine(penetration, transform.position + direction * 0.001f,
+                        shotRotation, halfExtents, 0f, out bool passed, out float resistanceBeforeHit,
+                        out bool destroyedBlock, allowResistanceReduction: !passedTargets.Contains(target));
+                    bool hitBlock = destroyedBlock || target.PenetrationResistance < resistanceBeforeHit;
+                    if (passed && hitBlock)
+                    {
+                        passedTargets.Add(target);
+                        if (destroyedBlock) carvedTargets.Add(target);
+                        penetration = Mathf.Max(0f, penetration - 1f);
+                    }
                     if (!exploded && explosion > 0f)
                     {
                         exploded = true;
@@ -97,6 +113,7 @@ namespace WeaponWorkshop
                     if (passed)
                     {
                         float advance = Mathf.Min(0.001f, distance);
+                        CarvePassedTargets(advance);
                         transform.position += direction * advance;
                         traveledDistance += advance;
                         distance -= advance;
@@ -110,6 +127,13 @@ namespace WeaponWorkshop
             break;
             }
             if (traveledDistance >= MaximumTravelDistance) PoolManager.Release(gameObject);
+        }
+
+        private void CarvePassedTargets(float distance)
+        {
+            foreach (var target in carvedTargets)
+                if (target != null)
+                    target.DestroyPenetrationCells(transform.position, shotRotation, halfExtents, distance);
         }
 
         private void ShowImpact(Vector3 point, Vector3 normal)

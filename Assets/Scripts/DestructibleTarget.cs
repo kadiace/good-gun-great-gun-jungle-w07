@@ -48,8 +48,9 @@ namespace WeaponWorkshop
         private Transform CellRoot => targetMesh.transform;
         [SerializeField, Min(0.01f), Tooltip("월드 좌표 기준 조각 한 변의 길이(m). 가장자리 잔여 조각은 더 작을 수 있습니다.")]
         private float partSize = 0.2f;
-        [SerializeField, Min(0f), Tooltip("관통력이 이 값 이상이면 한 번 관통/파괴. 관통한 덩어리마다 이 값을 차감.")]
+        [SerializeField, Min(0f), Tooltip("기본 관통 저항. 관통력>1인 탄환은 현재 저항이 더 낮으면 경로와 교차한 셀만 파괴하고, 같거나 높으면 탄환 관통력만큼 저항을 낮춘 뒤 통과. 탄환은 블록당 관통력1 소모.")]
         private float penetrationResistance = 1f;
+        private float penetrationResistanceLoss;
         [SerializeField, Min(0f), Tooltip("폭발 파괴 기준과 한 칸(Part Size) 이동할 때 차감하는 폭발력.")]
         private float explosionResistance = 1f;
         [SerializeField, Min(0.01f), Tooltip("구형 폭발 반경의 초당 증가량(m/s). 착탄 표적 설정을 폭발 전체에 적용.")]
@@ -62,7 +63,7 @@ namespace WeaponWorkshop
         private WeaponTypeData resistanceSource;
         [SerializeField, Min(0f)] private float heatResistance;
         [SerializeField, Min(0f)] private float waterResistance;
-        public float PenetrationResistance => Mathf.Max(0f, penetrationResistance);
+        public float PenetrationResistance => Mathf.Max(0f, penetrationResistance - penetrationResistanceLoss);
         public float HeatResistance => Mathf.Max(0f, heatResistance);
         public float WaterResistance => Mathf.Max(0f, waterResistance);
 
@@ -89,6 +90,7 @@ namespace WeaponWorkshop
         {
             resistanceSource = null;
             penetrationResistance = Mathf.Max(0f, penetration);
+            penetrationResistanceLoss = 0f;
             explosionResistance = Mathf.Max(0f, explosion);
             heatResistance = Mathf.Max(0f, heat);
             waterResistance = Mathf.Max(0f, water);
@@ -357,7 +359,7 @@ namespace WeaponWorkshop
         }
 
         internal bool NeedsLateUpdate => isActiveAndEnabled &&
-            (collisionDirty || (renderDirty && subdivided && cells.Count > 0) || structureDirty || debrisIndexDirty ||
+            (penetrationFlashActive || collisionDirty || (renderDirty && subdivided && cells.Count > 0) || structureDirty || debrisIndexDirty ||
                 (transformMayMove && (!subdivided || cells.Count > 0)));
         internal bool NeedsRenderUpdate => isActiveAndEnabled && subdivided && cells.Count > 0;
         internal bool TracksDebrisTransform => isActiveAndEnabled && transformMayMove && (!subdivided || cells.Count > 0);
@@ -402,6 +404,7 @@ namespace WeaponWorkshop
 
         internal void ProcessLateUpdate()
         {
+            UpdatePenetrationFeedback();
             RefreshDebrisIndex();
             if (structureDirty)
             {
@@ -428,53 +431,73 @@ namespace WeaponWorkshop
                 out penetrated, out resistance, out _);
 
         public float PenetrateAlongLine(float penetration, Vector3 start, Quaternion rotation, Vector3 halfExtents,
-            float distance, out bool penetrated, out float resistance, out bool penetratedMaterial)
+            float distance, out bool penetrated, out float resistance, out bool penetratedMaterial,
+            bool allowResistanceReduction = true)
         {
             penetrated = false;
             penetratedMaterial = false;
-            resistance = Mathf.Max(0f, penetrationResistance);
-            bool zeroImpact = penetration == 0f && resistance == 0f;
-            if (DamageProtected || !isActiveAndEnabled || (!zeroImpact && penetration <= resistance)) return 0f;
-            if (!subdivided) Subdivide(false);
-            distance = Mathf.Clamp(distance, 0f, PenetrationStepDistance);
+            resistance = PenetrationResistance;
+            if (DamageProtected || !isActiveAndEnabled || penetration < 0f) return penetration;
             Vector3 direction = rotation * Vector3.forward;
-            Vector3 center = start + direction * (distance * 0.5f);
-            Vector3 sweptExtents = halfExtents;
-            sweptExtents.z += distance * 0.5f;
-            // Sweeping an OBB along its forward axis is exactly an elongated OBB.
-            var removed = CollectParticleCells(center, rotation, sweptExtents);
-            if (removed.Count == 0)
+            // An intact block already has an exact collider hit. Only split geometry needs a hole check.
+            if (subdivided)
             {
-                // Attribute damage or an earlier shot may already have opened this gap.
-                // Empty space does not consume penetration or trigger the stopped payload.
-                UpdateCollisionRuns();
-                penetrated = true;
+                distance = Mathf.Clamp(distance, 0f, PenetrationStepDistance);
+                Vector3 center = start + direction * (distance * 0.5f);
+                Vector3 sweptExtents = halfExtents;
+                sweptExtents.z += distance * 0.5f;
+                if (CollectParticleCells(center, rotation, sweptExtents).Count == 0)
+                {
+                    penetrated = true;
+                    return penetration;
+                }
+            }
+            // Low-power bullets stop at the wall without weakening or destroying it.
+            if (penetration <= 1f)
+            {
                 return penetration;
             }
-            if (zeroImpact)
+            if (allowResistanceReduction)
             {
-                // With no power and no resistance, chip only the nearest touched voxel.
-                int nearestIndex = removed[0];
-                Cell nearest = preparedCells[nearestIndex];
-                float nearestDistance = (nearest.position - start).sqrMagnitude;
-                for (int i = 1; i < removed.Count; i++)
+                if (resistance < penetration)
                 {
-                    float candidateDistance = (preparedCells[removed[i]].position - start).sqrMagnitude;
-                    if (candidateDistance >= nearestDistance) continue;
-                    nearestIndex = removed[i]; nearest = preparedCells[nearestIndex]; nearestDistance = candidateDistance;
+                    penetratedMaterial = DestroyPenetrationCells(start, rotation, halfExtents,
+                        Mathf.Clamp(distance, 0f, PenetrationStepDistance));
                 }
-                removed.Clear(); removed.Add(nearestIndex);
+                else
+                {
+                    // Compare BEFORE the hit: equality weakens to zero and destroys on a later hit.
+                    penetrationResistanceLoss = Mathf.Min(Mathf.Max(0f, penetrationResistance),
+                        penetrationResistanceLoss + penetration);
+                    ShowPenetrationHit();
+                }
             }
-            foreach (int index in removed)
+            UpdateCollisionRuns();
+            penetrated = true;
+            // The caller owns projectile power consumption, separately from wall resistance.
+            return penetration;
+        }
+
+        // A successful block penetration grants this bullet a passage, not destruction of the
+        // entire mesh. The motor continues carving only its actual swept volume across frames.
+        internal bool DestroyPenetrationCells(Vector3 start, Quaternion rotation, Vector3 halfExtents, float distance)
+        {
+            if (DamageProtected || !isActiveAndEnabled || targetMesh == null || (subdivided && cells.Count == 0)) return false;
+            if (!subdivided) Subdivide(false);
+            distance = Mathf.Max(0f, distance);
+            Vector3 center = start + (rotation * Vector3.forward) * (distance * 0.5f);
+            Vector3 sweptExtents = halfExtents;
+            sweptExtents.z += distance * 0.5f;
+            var touched = CollectParticleCells(center, rotation, sweptExtents);
+            bool changed = touched.Count > 0;
+            foreach (int index in touched)
             {
                 if (gravityImpact) Detach(index);
                 else RemoveCell(index);
             }
-            MarkStructureDirty();
+            if (changed) MarkStructureDirty();
             UpdateCollisionRuns();
-            penetrated = !zeroImpact;
-            penetratedMaterial = true;
-            return Mathf.Max(0f, penetration - resistance);
+            return changed;
         }
 
         private static Vector3 Absolute(Vector3 value)
@@ -849,6 +872,7 @@ namespace WeaponWorkshop
                 subdivided = subdivided,
                 meshSize = targetMesh.transform.localScale,
                 penetration = penetrationResistance,
+                penetrationResistanceLoss = penetrationResistanceLoss,
                 explosion = explosionResistance,
                 heat = heatResistance,
                 water = waterResistance,
@@ -875,6 +899,8 @@ namespace WeaponWorkshop
                 RestoreExplosionDamage(state.explosionDamage);
                 structureDirty = false; renderDirty = true;
             }
+            penetrationResistanceLoss = float.IsNaN(state.penetrationResistanceLoss) || float.IsInfinity(state.penetrationResistanceLoss)
+                ? 0f : Mathf.Clamp(state.penetrationResistanceLoss, 0f, Mathf.Max(0f, penetrationResistance));
             transform.localPosition = state.position; transform.localRotation = state.rotation; transform.localScale = state.scale;
             MarkDebrisIndexDirty();
             StructuralSupportGraph.Changed(this);
@@ -882,6 +908,8 @@ namespace WeaponWorkshop
 
         public void ResetTarget()
         {
+            ResetPenetrationFeedback();
+            penetrationResistanceLoss = 0f;
             if (!subdivided) return;
             debrisCloud?.ClearDebris();
             cells.Clear();
@@ -1258,6 +1286,7 @@ namespace WeaponWorkshop
         }
         private void OnDisable()
         {
+            ResetPenetrationFeedback();
             debrisIndexed = false;
             debrisIndexDirty = true;
             DestructibleTargetUpdater.Unregister(this);

@@ -48,6 +48,7 @@ namespace WeaponWorkshop
         public TargetSpawnSave[] spawnedTargets;
         public Vector3 meshSize, velocity, angularVelocity;
         public float penetration, explosion, heat, water;
+        public float penetrationResistanceLoss;
         public Vector3 position, scale;
         public Quaternion rotation;
         public Vector3Int[] remaining;
@@ -61,6 +62,7 @@ namespace WeaponWorkshop
         public int prefabSlot = -1;
         public Vector3 meshSize, velocity, angularVelocity;
         public float penetration, explosion, heat, water;
+        public float penetrationResistanceLoss;
         public Vector3 position, scale;
         public Quaternion rotation;
         public Vector3Int[] remaining;
@@ -77,6 +79,7 @@ namespace WeaponWorkshop
             velocity = saved.velocity,
             angularVelocity = saved.angularVelocity,
             penetration = saved.penetration,
+            penetrationResistanceLoss = saved.penetrationResistanceLoss,
             explosion = saved.explosion,
             heat = saved.heat,
             water = saved.water,
@@ -99,6 +102,7 @@ namespace WeaponWorkshop
             velocity = velocity,
             angularVelocity = angularVelocity,
             penetration = penetration,
+            penetrationResistanceLoss = penetrationResistanceLoss,
             explosion = explosion,
             heat = heat,
             water = water,

@@ -31,6 +31,8 @@ namespace WeaponWorkshop
 
         private readonly HashSet<TargetHealth> hitTargets = new HashSet<TargetHealth>();
         private readonly HashSet<DestructibleTarget> hitStructures = new HashSet<DestructibleTarget>();
+        private readonly HashSet<DestructibleTarget> passedStructures = new HashSet<DestructibleTarget>();
+        private readonly HashSet<DestructibleTarget> carvedStructures = new HashSet<DestructibleTarget>();
         private readonly HashSet<Collider> ignoredColliders = new HashSet<Collider>();
         private readonly List<Collider> staleIgnoredColliders = new List<Collider>();
         private readonly List<Collider> targetColliderBuffer = new List<Collider>();
@@ -49,7 +51,6 @@ namespace WeaponWorkshop
         public Transform WeaponSource => ignoredWeapon;
         internal Vector3 CurrentDirection => velocity.normalized;
         private Vector3 halfExtents;
-        private int penetrationsRemaining;
         private float penetrationPower;
         private bool hitCounted;
         private bool exploded;
@@ -97,8 +98,6 @@ namespace WeaponWorkshop
             ignoredWeapon = weapon;
             traveledDistance = 0f;
             lifetime = 0f;
-            penetrationsRemaining = effects != null
-                ? Mathf.Max(0, Mathf.FloorToInt(effects.Stats.penetration + 0.5f)) : 0; // charged values round half up
             ricochetsRemaining = effects != null
                 ? Mathf.Max(0, Mathf.FloorToInt(effects.Stats.ricochet + 0.5f)) : 0;
             var targeting = owner != null ? owner.GetComponent<PlayerHomingLock>() : null;
@@ -106,6 +105,8 @@ namespace WeaponWorkshop
             homingLocalAim = targeting != null ? targeting.LocalAim : Vector3.zero;
             hitTargets.Clear();
             hitStructures.Clear();
+            passedStructures.Clear();
+            carvedStructures.Clear();
             ignoredColliders.Clear();
 
             if (drawRenderer == null) drawRenderer = GetComponentInChildren<Renderer>(true);
@@ -200,6 +201,7 @@ namespace WeaponWorkshop
                 Quaternion rotation = RotationForDirection(direction);
                 if (!TryFindHit(direction, rotation, remaining, out RaycastHit hit))
                 {
+                    CarvePassedStructures(transform.position, rotation, remaining);
                     transform.position += direction * remaining;
                     traveledDistance += remaining;
                     return;
@@ -207,6 +209,7 @@ namespace WeaponWorkshop
 
                 collisionCount++;
                 float advanced = Mathf.Clamp(hit.distance, 0f, remaining);
+                CarvePassedStructures(transform.position, rotation, advanced);
                 transform.position += direction * advanced;
                 traveledDistance += advanced;
                 remaining -= advanced;
@@ -234,7 +237,7 @@ namespace WeaponWorkshop
                 if (hitTransform.IsChildOf(transform) ||
                     (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) ||
                     (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) ||
-                    ignoredColliders.Contains(hit.collider) || hit.distance >= nearestDistance ||
+                    ignoredColliders.Contains(hit.collider) || HasPassedStructure(hit.collider) || hit.distance >= nearestDistance ||
                     !PassesEndChestGate(hit.collider))
                     continue;
                 nearestHit = hit;
@@ -256,7 +259,7 @@ namespace WeaponWorkshop
                         if (t.IsChildOf(transform) ||
                             (ignoredOwner != null && t.IsChildOf(ignoredOwner)) ||
                             (ignoredWeapon != null && t.IsChildOf(ignoredWeapon)) ||
-                            ignoredColliders.Contains(other.collider) ||
+                            ignoredColliders.Contains(other.collider) || HasPassedStructure(other.collider) ||
                             GetComponentInParents<DestructibleTarget>(other.collider) == hitStructure) continue;
                         structureSweepLimit = Mathf.Min(structureSweepLimit,
                             Mathf.Max(0f, other.distance - nearestHit.distance));
@@ -295,7 +298,7 @@ namespace WeaponWorkshop
             DestructibleTarget structure = GetComponentInParents<DestructibleTarget>(hit.collider);
             if (structure != null && TutorialManager.Instance != null) TutorialManager.Instance.NotifyTargetHit(structure);
             TargetHealth target = GetComponentInParents<TargetHealth>(hit.collider);
-            bool firstHitOnTarget = target != null && hitTargets.Add(target);
+            bool firstHitOnTarget = target != null && !hitTargets.Contains(target);
             bool firstHitOnStructure = structure != null && hitStructures.Add(structure);
             // 명중률 지표: 탄 하나당 처음 맞은 순간만 센다.
             if (!hitCounted && (structure != null || target != null))
@@ -308,25 +311,50 @@ namespace WeaponWorkshop
                 ShowImpact(hit.point, hit.normal, incomingDirection);
             if (effects != null && (target == null || firstHitOnTarget) &&
                 (structure == null || firstHitOnStructure))
+            {
+                if (structure == null && target != null) hitTargets.Add(target);
                 effects.ApplyHit(hit.point, incomingDirection, structure == null ? target : null, ignoredOwner, ignoredWeapon, false);
+            }
             if (structure != null)
             {
+                // Evaluate incoming power at this wall. A bullet reduced to 1 leaves the previous
+                // block, then stops when it reaches this next wall.
+                if (penetrationPower <= 1f)
+                {
+                    StopAtImpact(hit.point, incomingDirection, target);
+                    return;
+                }
                 Quaternion rotation = RotationForDirection(incomingDirection);
                 bool passed = false;
                 bool penetratedMaterial = false;
+                bool hitBlock = false;
                 if (effects != null) structure.BreakAttributeImpact(effects.Stats, transform.position + incomingDirection * 0.001f, rotation, halfExtents);
                 float lineDistance = Mathf.Min(structure.PenetrationStepDistance, Mathf.Min(remaining, structureSweepLimit));
                 if (!water && (effects == null || structure.AllowsImpact(effects.Stats)))
+                {
                     penetrationPower = structure.PenetrateAlongLine(penetrationPower,
                         transform.position, rotation, halfExtents, lineDistance,
-                        out passed, out _, out penetratedMaterial);
+                        out passed, out float resistanceBeforeHit, out penetratedMaterial,
+                        allowResistanceReduction: !passedStructures.Contains(structure));
+                    hitBlock = penetratedMaterial || structure.PenetrationResistance < resistanceBeforeHit;
+                    if (passed && hitBlock)
+                    {
+                        passedStructures.Add(structure);
+                        if (penetratedMaterial) carvedStructures.Add(structure);
+                        penetrationPower = Mathf.Max(0f, penetrationPower - 1f);
+                    }
+                }
+                if (passed && target != null && firstHitOnTarget && penetratedMaterial && effects != null)
+                {
+                    hitTargets.Add(target);
+                    effects.ApplyHit(hit.point, incomingDirection, target, ignoredOwner, ignoredWeapon, false);
+                }
                 if (passed)
                 {
-                    if (target != null && firstHitOnTarget && penetratedMaterial && effects != null)
-                        effects.ApplyHit(hit.point, incomingDirection, target, ignoredOwner, ignoredWeapon, false);
                     if (penetratedMaterial && effects != null)
                         effects.ApplyPenetrationExplosion(hit.point, incomingDirection, ignoredOwner, ignoredWeapon);
                     float advance = Mathf.Min(0.001f, Mathf.Min(remaining, structureSweepLimit));
+                    CarvePassedStructures(transform.position, rotation, advance);
                     transform.position += incomingDirection * advance;
                     traveledDistance += advance;
                     remaining -= advance;
@@ -337,23 +365,29 @@ namespace WeaponWorkshop
             Customer customer = GetComponentInParents<Customer>(hit.collider);
             if (customer != null && (effects == null || !effects.IsWater)) customer.Kill();
 
-            bool canPenetrate = structure == null && target != null && penetrationsRemaining > 0 &&
+            bool canPenetrate = structure == null && target != null && penetrationPower > 1f &&
                                 (!water || !source.Tuning.waterStopsPenetration);
             if (canPenetrate)
             {
                 if (firstHitOnTarget)
                 {
-                    penetrationsRemaining--;
+                    penetrationPower = Mathf.Max(0f, penetrationPower - 1f);
                     if (effects != null)
                         effects.ApplyPenetrationExplosion(hit.point, incomingDirection, ignoredOwner, ignoredWeapon);
                 }
                 AddTargetCollidersToIgnore(target);
+                CarvePassedStructures(transform.position, RotationForDirection(incomingDirection), Mathf.Min(0.002f, remaining));
                 transform.position += incomingDirection * 0.002f;
                 traveledDistance += 0.002f;
                 remaining = Mathf.Max(0f, remaining - 0.002f);
                 return;
             }
 
+            if (target != null && penetrationPower <= 1f)
+            {
+                StopAtImpact(hit.point, incomingDirection, target);
+                return;
+            }
             bool canRicochet = ricochetsRemaining > 0 && hit.normal.sqrMagnitude > 0.0001f;
             if (canRicochet)
             {
@@ -367,11 +401,16 @@ namespace WeaponWorkshop
                 return;
             }
 
-            // Terminal collisions retain the full explosion/gravity payload.
+            StopAtImpact(hit.point, incomingDirection, target);
+        }
+
+        // A terminal wall impact triggers area effects once, without ricocheting at low power.
+        private void StopAtImpact(Vector3 point, Vector3 direction, TargetHealth target)
+        {
             if (!exploded && effects != null)
             {
                 exploded = true;
-                effects.ApplyStoppedArea(hit.point, incomingDirection, target, ignoredOwner, ignoredWeapon);
+                effects.ApplyStoppedArea(point, direction, target, ignoredOwner, ignoredWeapon);
             }
             Terminate();
         }
@@ -382,6 +421,19 @@ namespace WeaponWorkshop
             foreach (Collider collider in targetColliderBuffer)
                 if (collider != null) ignoredColliders.Add(collider);
             targetColliderBuffer.Clear();
+        }
+
+        private bool HasPassedStructure(Collider collider)
+        {
+            var structure = GetComponentInParents<DestructibleTarget>(collider);
+            return structure != null && passedStructures.Contains(structure);
+        }
+
+        private void CarvePassedStructures(Vector3 start, Quaternion rotation, float distance)
+        {
+            foreach (var structure in carvedStructures)
+                if (structure != null)
+                    structure.DestroyPenetrationCells(start, rotation, halfExtents, distance);
         }
 
         private void UpdateIgnoredColliders()
@@ -471,6 +523,8 @@ namespace WeaponWorkshop
             terminal = true; velocity = Vector3.zero; source = null; effects = null;
             ignoredOwner = ignoredWeapon = null; homingTarget = null;
             hitTargets.Clear(); hitStructures.Clear(); ignoredColliders.Clear();
+            passedStructures.Clear();
+            carvedStructures.Clear();
             staleIgnoredColliders.Clear(); targetColliderBuffer.Clear();
         }
 

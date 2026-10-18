@@ -7,6 +7,65 @@ namespace WeaponWorkshop
 {
     public sealed partial class DestructibleTarget
     {
+        private static readonly int PenetrationBaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int PenetrationColorId = Shader.PropertyToID("_Color");
+        private static readonly int PenetrationFlashUntilId = Shader.PropertyToID("_PenetrationFlashUntil");
+        private MaterialPropertyBlock penetrationFlashProperties, penetrationOriginalProperties;
+        private Color penetrationBaseColor, penetrationColor;
+        private float penetrationFlashUntil;
+        private bool penetrationFlashActive;
+
+        private void ShowPenetrationHit()
+        {
+            if (originalRenderer == null || originalRenderer.sharedMaterial == null) return;
+            penetrationFlashProperties ??= new MaterialPropertyBlock();
+            penetrationOriginalProperties ??= new MaterialPropertyBlock();
+            if (!penetrationFlashActive)
+            {
+                originalRenderer.GetPropertyBlock(penetrationOriginalProperties);
+                originalRenderer.GetPropertyBlock(penetrationFlashProperties);
+                var material = originalRenderer.sharedMaterial;
+                penetrationBaseColor = penetrationOriginalProperties.HasColor(PenetrationBaseColorId)
+                    ? penetrationOriginalProperties.GetColor(PenetrationBaseColorId)
+                    : material.HasProperty(PenetrationBaseColorId) ? material.GetColor(PenetrationBaseColorId) : Color.white;
+                penetrationColor = penetrationOriginalProperties.HasColor(PenetrationColorId)
+                    ? penetrationOriginalProperties.GetColor(PenetrationColorId)
+                    : material.HasProperty(PenetrationColorId) ? material.GetColor(PenetrationColorId) : penetrationBaseColor;
+            }
+            penetrationFlashActive = true;
+            penetrationFlashUntil = Time.time + 0.12f;
+            damageProperties?.SetFloat(PenetrationFlashUntilId, penetrationFlashUntil);
+            UpdatePenetrationFeedback();
+            RefreshUpdaterRegistration();
+        }
+
+        private void UpdatePenetrationFeedback()
+        {
+            if (!penetrationFlashActive) return;
+            float flash = Mathf.Clamp01((penetrationFlashUntil - Time.time) / 0.12f);
+            if (flash <= 0f)
+            {
+                ResetPenetrationFeedback();
+                RefreshUpdaterRegistration();
+                return;
+            }
+            Color tint = Color.Lerp(penetrationBaseColor, Color.white, flash);
+            tint.a = penetrationBaseColor.a;
+            penetrationFlashProperties.SetColor(PenetrationBaseColorId, tint);
+            tint = Color.Lerp(penetrationColor, Color.white, flash);
+            tint.a = penetrationColor.a;
+            penetrationFlashProperties.SetColor(PenetrationColorId, tint);
+            originalRenderer.SetPropertyBlock(penetrationFlashProperties);
+        }
+
+        private void ResetPenetrationFeedback()
+        {
+            if (penetrationFlashActive && originalRenderer != null)
+                originalRenderer.SetPropertyBlock(penetrationOriginalProperties);
+            penetrationFlashActive = false;
+            damageProperties?.SetFloat(PenetrationFlashUntilId, 0f);
+        }
+
         // Cache bounded meshes per target; a narrow hole only rebuilds nearby chunks.
         private const int RenderChunkWidth = 8;
         private sealed class RenderChunk
@@ -125,7 +184,7 @@ namespace WeaponWorkshop
                 {
                     if (chunk.damageDirty) UpdateChunkDamage(chunk);
                     Graphics.DrawMesh(chunk.mesh,CellRoot.localToWorldMatrix,instancedMaterial,targetMesh.gameObject.layer,
-                        null,0,null,UnityEngine.Rendering.ShadowCastingMode.On,true);
+                        null,0,penetrationFlashActive ? penetrationFlashProperties : null,UnityEngine.Rendering.ShadowCastingMode.On,true);
                     if (chunk.hasDamage)
                     {
                         EnsureDamageMaterial();
@@ -155,6 +214,7 @@ namespace WeaponWorkshop
         private void ConfigureDamageAppearance(ProjectileTuning tuning)
         {
             damageProperties ??= new MaterialPropertyBlock();
+            damageProperties.SetFloat(PenetrationFlashUntilId, penetrationFlashActive ? penetrationFlashUntil : 0f);
             damageProperties.SetColor(DamageTintId, tuning != null ? tuning.explosionDamageTint : Color.black);
             damageProperties.SetColor(FlashColorId, tuning != null ? tuning.explosionHitFlashColor : Color.white);
             damageProperties.SetFloat(FlashDurationId, tuning != null ? Mathf.Max(0.01f, tuning.explosionHitFlashDuration) : 0.12f);
