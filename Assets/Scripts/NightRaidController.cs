@@ -271,6 +271,7 @@ namespace WeaponWorkshop
                 int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
                 // 스테이지 내 모듈 재화 1회 획득마다 달러 지급(표 값 사용).
                 if (perPickup > 0) player.GetComponent<PlayerWallet>()?.Credit(perPickup);
+                GameLogger.Data("Shop/material_pickup", "재화 획득", new { scene = gameObject.scene.name, amount, perPickup });
             }
         }
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
