@@ -15,25 +15,27 @@ namespace WeaponWorkshop
 
         // Optional pre-query hook: callers that are about to issue a physics query can flush the
         // deferred collider changes first so the query sees the rebuilt boxes.
-        public static void Flush()
+        public static bool Flush()
         {
-            if (!pending) return;
+            if (!pending) return false;
             pending = false;
             Physics.SyncTransforms();
+            return true;
         }
 
         // A DestructibleTarget rebuilt its collision boxes. Opt-in scenes defer the sync; all others
-        // sync immediately exactly as before.
-        public static void RequestSync(Scene scene)
+        // sync immediately exactly as before. Returns whether the sync already happened.
+        public static bool RequestSync(Scene scene)
         {
             if (!DestructionOptimizationSettings.EnabledFor(scene))
             {
                 Physics.SyncTransforms();
-                return;
+                return true;
             }
-            if (pending) return;
+            if (pending) return false;
             pending = true;
             EnsureHost();
+            return false;
         }
 
         private static void EnsureHost()

@@ -6,6 +6,7 @@
       "selectionOrder": 1,
       "scene": "NightRaid_WoodenHouse",
       "reward": {
+        "firstClearSaleBonus": 0.05,
         "materialCrates": 4,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -21,6 +22,7 @@
       "selectionOrder": 2,
       "scene": "NightRaid_BankGrand",
       "reward": {
+        "firstClearSaleBonus": 0.05,
         "materialCrates": 10,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -32,11 +34,12 @@
       "tanks": true
     },
     {
-      "entryCost": 2500,
+      "entryCost": 1500,
       "name": "군사기지",
       "selectionOrder": 4,
       "scene": "NightRaid_Millitary_base",
       "reward": {
+        "firstClearSaleBonus": 0.1,
         "materialCrates": 18,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -45,15 +48,15 @@
         ]
       },
       "helicopters": true,
-      "tanks": true,
-      "maximumReinforcedTanks": 2
+      "tanks": true
     },
     {
-      "entryCost": 1500,
+      "entryCost": 2500,
       "name": "정글 캠퍼스",
       "selectionOrder": 3,
       "scene": "NightRaid_JungleCampus",
       "reward": {
+        "firstClearSaleBonus": 0.1,
         "materialCrates": 12,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -63,7 +66,7 @@
       },
       "helicopters": true,
       "tanks": true,
-      "maximumReinforcedTanks": 1
+      "maximumReinforcedTanks": 2
     },
     {
       "name": "정글 캠퍼스 (개선)",

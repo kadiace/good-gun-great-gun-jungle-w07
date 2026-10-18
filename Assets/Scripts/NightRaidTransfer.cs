@@ -18,12 +18,11 @@ namespace WeaponWorkshop
         public static bool ResultCleared { get; private set; }
         /// <summary>
         /// 확정 습격 결과에 번호와 안정적인 씬 키를 기록한다.
-        /// raidNumber, scene, cleared를 받아 Main 복귀 처리에 넘길 결과를 갱신한다.
         /// </summary>
-        public static void RecordResult(int raidNumber, string scene, bool cleared)
+        public static void RecordResult(int raidNumber, string raidScene, bool cleared)
         {
             ResultRaidNumber = raidNumber;
-            ResultRaidScene = scene;
+            ResultRaidScene = raidScene;
             ResultCleared = cleared;
         }
         public static bool HasPendingReturn => Returning || standaloneReturn;

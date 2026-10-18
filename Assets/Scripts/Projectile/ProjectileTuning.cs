@@ -6,6 +6,11 @@ namespace WeaponWorkshop
     [CreateAssetMenu(fileName = "ProjectileTuning", menuName = "Weapon Workshop/Projectile Tuning")]
     public sealed class ProjectileTuning : ScriptableObject
     {
+        [Header("Explosion cell damage feedback")]
+        [Min(0.01f)] public float explosionHitFlashDuration = 0.12f;
+        public Color explosionHitFlashColor = Color.white;
+        public Color explosionDamageTint = Color.black;
+        [Range(0f, 1f)] public float explosionDamageTintStrength = 0.45f;
         // 공통
         [Header("Common")]
         [Min(0f)] public float maximumTravelDistance = 1000f;
