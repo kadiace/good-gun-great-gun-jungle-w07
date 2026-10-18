@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace WeaponWorkshop
 {
@@ -10,8 +11,8 @@ namespace WeaponWorkshop
     {
         [InspectorName("01 목조 주택")] WoodenHouse = 1,
         [InspectorName("02 은행")] Bank = 2,
-        [InspectorName("03 군사기지")] MilitaryBase = 3,
-        [InspectorName("04 정글 캠퍼스")] JungleCampus = 4
+        [InspectorName("03 정글 캠퍼스")] JungleCampus = 3,
+        [InspectorName("04 군사기지")] MilitaryBase = 4
     }
 
     public enum RaidBgmPhase { Travel = 0, FirstWall = 1, Clear = 2 }
@@ -22,7 +23,8 @@ namespace WeaponWorkshop
         public RaidBgmStage stage;
         [InspectorName("입장 BGM (필수)")] public AudioClip travel;
         [InspectorName("첫 벽 파괴 BGM (필수)")] public AudioClip firstWall;
-        [InspectorName("클리어 후 Main BGM (필수)")] public AudioClip clear;
+        // 이전 프리팹의 연결은 보존하지만 현재 클리어 보상 BGM 설정에는 사용하지 않는다.
+        [SerializeField, HideInInspector, FormerlySerializedAs("clear")] private AudioClip _legacyClear;
     }
 
     public sealed partial class SoundManager
@@ -38,10 +40,11 @@ namespace WeaponWorkshop
         private static BgmId RaidMusicId(int number, RaidBgmPhase phase) => number >= 1 && number <= 4
             ? (BgmId)((int)BgmId.Raid01Travel + (number - 1) * 3 + (int)phase) : BgmId.DayFirst;
 
-        private static BgmId MainMusicId(int progress) => SoundInfo.Raid(progress) != null
-            ? RaidMusicId(progress, RaidBgmPhase.Clear) : BgmId.DayFirst;
-
-        // 클리어 슬롯은 Main 음량, 입장/첫 파괴 슬롯은 습격 음량을 사용한다.
+        // 습격 조건 BGM은 전투 중 음량을 사용한다.
+        /// <summary>
+        /// 습격 입장·전투 곡과 Main 곡에 적용할 음량 채널을 구분한다.
+        /// id가 입장·첫 벽 곡이면 true를 반환한다.
+        /// </summary>
         private static bool UsesRaidVolume(BgmId id)
         {
             int cue = (int)id - (int)BgmId.Raid01Travel;
@@ -59,6 +62,10 @@ namespace WeaponWorkshop
 
         // 인스펙터/플레이 시작/빌드/런타임에서 공통으로 사용하는 필수 연결 검사다.
         // 빈 슬롯을 폴백으로 감춰 정상 설정처럼 실행하지 않는다.
+        /// <summary>
+        /// 기본·선택·전투 BGM 연결이 비었거나 Main 금지 음원인지 검사한다.
+        /// 오류 메시지를 error에 담고 전체 연결이 유효하면 true를 반환한다.
+        /// </summary>
         public bool ValidateBgmConfiguration(out string error)
         {
             var errors = new StringBuilder();
@@ -81,7 +88,6 @@ namespace WeaponWorkshop
                 string title = $"습격 {(int)set.stage:00}";
                 RequireClip(set.travel, title + " 입장", errors);
                 RequireClip(set.firstWall, title + " 첫 벽 파괴", errors);
-                RequireClip(set.clear, title + " 클리어 후 Main", errors, true);
             }
             foreach (RaidBgmStage stage in Enum.GetValues(typeof(RaidBgmStage)))
                 if (!found.Contains(stage)) errors.AppendLine($"습격 {(int)stage:00} BGM 설정이 없습니다.");

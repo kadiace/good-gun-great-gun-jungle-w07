@@ -12,6 +12,7 @@ namespace WeaponWorkshop
         private const string ResourcePath = "Sound/SFX/";
         private static SoundManager instance;
         internal bool IsActiveInstance => instance == this && isActiveAndEnabled;
+        internal static SoundManager ActiveInstance => instance;
 
         [Header("Sound Playback Limits")]
         [SerializeField, Min(0f), Tooltip("Minimum time between basic shot sound plays. 0.05 seconds allows at most 20 plays per second.")]
@@ -162,8 +163,7 @@ namespace WeaponWorkshop
                 if (workbenchSounds == null) workbenchSounds = GetComponent<WorkbenchSoundSettings>();
                 LoadSoundSettings();
                 // 필수 음원 누락은 명확히 알리고 새 자동 재생을 차단한다.
-                musicConfigurationValid = ValidateBgmConfiguration(out string error);
-                if (!musicConfigurationValid) Debug.LogError(error, this);
+                if (!ValidateBgmConfiguration(out string error)) Debug.LogError(error, this);
             }
             DontDestroyOnLoad(gameObject);
             Subscribe();
@@ -402,9 +402,19 @@ namespace WeaponWorkshop
             float minDistance = 0f, float maxDistance = 0f)
         {
             AudioClip clip = LoadClip(clipName);
+            return CreateLoop(clip, followTarget, volume, minDistance, maxDistance);
+        }
+
+        /// <summary>
+        /// 지정한 클립을 대상 오브젝트에 붙인 반복 재생 AudioSource로 만든다.
+        /// clip, followTarget, volume과 거리값을 사용하며 SFX 채널에 등록된 AudioSource를 반환한다.
+        /// </summary>
+        internal AudioSource CreateLoop(AudioClip clip, Transform followTarget, float volume,
+            float minDistance = 0f, float maxDistance = 0f)
+        {
             if (clip == null || followTarget == null) return null;
 
-            GameObject loopObject = new GameObject("SFX_" + clipName);
+            GameObject loopObject = new GameObject("SFX_" + clip.name);
             loopObject.transform.SetParent(followTarget, false);
             AudioSource source = loopObject.AddComponent<AudioSource>();
             source.clip = clip;
@@ -425,22 +435,31 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 배경음악 클립을 반복 재생하거나 현재 재생 중인 클립의 음량을 갱신한다.
-        /// 튜토리얼의 기존 곡과 volume을 사용하며 페이드 없이 원래 재생 동작을 보존한다.
+        /// 튜토리얼 곡과 음량을 사용하며 실제 재생 곡 변경을 구독자에게 알린다.
         /// </summary>
         private void PlayLegacyMusic(BgmId id, float volume)
         {
             // 기존 튜토리얼 재생 경로에서도 Main의 공격곡 금지 조건을 우회하지 못하게 한다.
             if (SceneManager.GetActiveScene().name == "Main" && IsAttackMusic(id)) return;
             AudioClip clip = GetMusicClip(id);
-            if (clip == null) return;
+            if (clip == null)
+            {
+                id = BgmId.DayFirst;
+                clip = defaultMusicClip;
+            }
+            if (clip == null)
+            {
+                StopBackgroundMusic();
+                return;
+            }
             CancelMusicFade();
             EnsureMusicSource();
             currentBgm = id;
-            playingBgm = id;
             musicBaseVolume = volume;
             musicFade = 1f;
             if (backgroundMusicSource.clip == clip && backgroundMusicSource.isPlaying)
             {
+                SetPlayingBgm(id);
                 ApplyChannelVolumes();
                 return;
             }
@@ -450,20 +469,25 @@ namespace WeaponWorkshop
             backgroundMusicSource.loop = true;
             ApplyChannelVolumes();
             backgroundMusicSource.Play();
+            SetPlayingBgm(id);
         }
 
         /// <summary>
         /// 배경음악 재생을 멈추고 AudioSource에서 현재 클립 참조를 지운다.
-        /// backgroundMusicSource가 없으면 아무 상태도 변경하지 않는다.
+        /// 재생 식별자를 None으로 갱신해 변경 이벤트를 알린다.
         /// </summary>
         private void StopBackgroundMusic()
         {
             CancelMusicFade();
             currentBgm = BgmId.None;
-            playingBgm = BgmId.None;
-            if (backgroundMusicSource == null) return;
+            if (backgroundMusicSource == null)
+            {
+                SetPlayingBgm(BgmId.None);
+                return;
+            }
             backgroundMusicSource.Stop();
             backgroundMusicSource.clip = null;
+            SetPlayingBgm(BgmId.None);
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -596,7 +620,7 @@ namespace WeaponWorkshop
         /// 지정한 반복 사운드를 멈추고 AudioSource가 붙은 오브젝트를 제거한다.
         /// source가 null이면 아무 작업도 하지 않는다.
         /// </summary>
-        private void StopLoop(AudioSource source)
+        internal void StopLoop(AudioSource source)
         {
             if (source == null) return;
             sfxBaseVolumes.Remove(source);

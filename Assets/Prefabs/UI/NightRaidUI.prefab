@@ -534,7 +534,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<color=#EFC061>03</color> \uAD70\uC0AC\uAE30\uC9C0"
+  m_text: "<color=#EFC061>03</color> \uC815\uAE00 \uCEA0\uD37C\uC2A4"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 780d2b3bdc09da44b867c61fd51dccb9, type: 2}
   m_sharedMaterial: {fileID: -7516200765120232523, guid: 780d2b3bdc09da44b867c61fd51dccb9, type: 2}
@@ -1815,7 +1815,7 @@ MonoBehaviour:
   m_Color: {r: 0.79, g: 0.81, b: 0.68, a: 0.93}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  region: 3
+  region: 2
 --- !u!1 &3445348301278998668
 GameObject:
   m_ObjectHideFlags: 0
@@ -3267,7 +3267,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<color=#EFC061>04</color> \uC815\uAE00 \uCEA0\uD37C\uC2A4"
+  m_text: "<color=#EFC061>04</color> \uAD70\uC0AC\uAE30\uC9C0"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 780d2b3bdc09da44b867c61fd51dccb9, type: 2}
   m_sharedMaterial: {fileID: -7516200765120232523, guid: 780d2b3bdc09da44b867c61fd51dccb9, type: 2}
@@ -5561,4 +5561,4 @@ MonoBehaviour:
   m_Color: {r: 0.79, g: 0.81, b: 0.68, a: 0.93}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  region: 2
+  region: 3

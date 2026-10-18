@@ -14,16 +14,21 @@ namespace WeaponWorkshop
         private static bool standaloneReturn;
         // 결과 확정 시에만 채운다. 훈련 습격과 결과 없는 복귀는 번호 0·클리어 false다.
         public static int ResultRaidNumber { get; private set; }
+        public static string ResultRaidScene { get; private set; }
         public static bool ResultCleared { get; private set; }
-        public static void RecordResult(int raidNumber, bool cleared)
+        /// <summary>
+        /// 확정 습격 결과에 번호와 안정적인 씬 키를 기록한다.
+        /// </summary>
+        public static void RecordResult(int raidNumber, string raidScene, bool cleared)
         {
             ResultRaidNumber = raidNumber;
+            ResultRaidScene = raidScene;
             ResultCleared = cleared;
         }
         public static bool HasPendingReturn => Returning || standaloneReturn;
         private static int moduleCreditsBeforeLoss;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = 0; RecordResult(0, false); }
+        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = 0; RecordResult(0, null, false); }
         // 씬을 직접 연 경우에는 공방 스냅샷 없이 결과만 전달한다.
         public static void MarkStandaloneReturn() => standaloneReturn = true;
         public static bool TryConsumeStandaloneReturn()
@@ -32,10 +37,14 @@ namespace WeaponWorkshop
             if (pending) Reset();
             return pending;
         }
+        /// <summary>
+        /// 공방 체크포인트를 보관하고 습격 진입 상태를 시작한다.
+        /// checkpoint를 저장하고 이전 습격 결과를 초기화한다.
+        /// </summary>
         public static void Begin(GameSaveData checkpoint)
         {
             Workshop = checkpoint; Returning = false; enteringRaid = true; moduleCreditsBeforeLoss = 0;
-            RecordResult(0, false);
+            RecordResult(0, null, false);
         }
         public static bool TryConsumeEntry(out int balance, out int moduleCredits, out int[] unlockedModules, out WeaponWorldSave weapon)
         {

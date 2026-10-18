@@ -9,6 +9,7 @@ namespace WeaponWorkshop
 
         public bool CanInteract(Interaction interactor) => isActiveAndEnabled &&
             !GameManager.GameplayBlocked && retireUI != null && !retireUI.IsOpen &&
+            FindFirstObjectByType<GameSaveController>()?.IsRetired != true &&
             interactor != null && interactor.Player != null &&
             PlayerWallet.ForPlayer(interactor.Player)?.CanAfford(RetireUI.Cost) == true;
 
@@ -25,6 +26,7 @@ namespace WeaponWorkshop
                 return false;
             }
             if (!wallet.TryPurchase(RetireUI.Cost, () => true)) return false;
+            save.CompleteRetirement();
             retireUI.Open();
             return true;
         }

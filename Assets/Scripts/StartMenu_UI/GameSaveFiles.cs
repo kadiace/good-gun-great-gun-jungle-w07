@@ -150,11 +150,15 @@ namespace WeaponWorkshop
         [NonSerialized] public CustomerDay travelCustomerDay;
         public string testAssemblyKey;
         public string[] passedTestIds = Array.Empty<string>();
-        public int version = 7, day, balance, paidCost;
+        public int version = 8, day, balance, paidCost;
         public int slotMachineSpins;
         public int moduleCredits;
         // 필드가 없는 이전 JSON은 0으로 읽힌다. 슬롯별 최고 클리어 습격 번호다.
         public int raidClearProgress;
+        // 빈 배열은 신규 상태이며 DayFirst는 암묵적으로 해금된다. null은 구형 필드 부재다.
+        public string[] unlockedMainTrackIds;
+        public bool trackUnlocksMigrated;
+        public string[] clearedRaidScenes = Array.Empty<string>();
         public int outstandingLoans, todayLoanRepayment, todayLoanInterest;
         public int todayLoanIncome;
         public int lastLoanDay = -1;
@@ -170,7 +174,7 @@ namespace WeaponWorkshop
         public int completed, dissatisfied, killed, income, period, nextCustomer, currentCustomer = -1;
         public int constructionCost;
         public int soldConstructionCost;
-        public bool night, settlement, confirmation, inWorkshop;
+        public bool night, settlement, confirmation, inWorkshop, retired;
         public bool startedDayInDebt;
         public int workbench = -1;
         public Vector3 playerPosition, playerEuler, viewEuler, benchEuler;
@@ -213,6 +217,10 @@ namespace WeaponWorkshop
         public static bool TryReadAutoSave(out GameSaveData data)
             => TryReadPath(AutoSavePath, out data);
 
+        /// <summary>
+        /// 저장 JSON을 읽고 지원하는 버전 및 필드 범위를 확인한다.
+        /// path에서 읽은 GameSaveData와 성공 여부를 반환한다.
+        /// </summary>
         private static bool TryReadPath(string path, out GameSaveData data)
         {
             data = null;
@@ -220,10 +228,11 @@ namespace WeaponWorkshop
             {
                 if (!File.Exists(path)) return false;
                 var read = JsonUtility.FromJson<GameSaveData>(File.ReadAllText(path));
-                if (read == null || (read.version < 2 || read.version > 7) || read.day < 0 ||
+                if (read == null || (read.version < 2 || read.version > 8) || read.day < 0 ||
                     read.paidCost < 0 || read.savedUtcTicks <= 0 || read.savedUtcTicks > DateTime.MaxValue.Ticks ||
                     read.completed < 0 || read.dissatisfied < 0 || read.killed < 0 || read.income < 0 ||
                     read.dissatisfied + read.killed > read.completed || read.nextCustomer < 0 ||
+                    (read.trackUnlocksMigrated && read.unlockedMainTrackIds == null) ||
                     read.timer == null || read.period < 0 || read.period > 3 ||
                     (read.currentCustomer >= 0 && (read.customer == null || read.customer.stage < 0 || read.customer.stage > 4 || read.customer.line < 0 || read.customer.price < 0)) ||
                     read.blocks == null || read.blocks.Length > 10000 ||
@@ -306,6 +315,6 @@ namespace WeaponWorkshop
         }
 
         private static string Describe(GameSaveData data)
-            => $"{data.day}일차 · $ {data.balance:N0}\n{new DateTime(data.savedUtcTicks, DateTimeKind.Utc).ToLocalTime():yyyy-MM-dd HH:mm} · 무기 {(data.hasWeapon ? "있음" : "없음")}";
+            => $"{data.day}일차 · $ {data.balance:N0}\n{new DateTime(data.savedUtcTicks, DateTimeKind.Utc).ToLocalTime():yyyy-MM-dd HH:mm} · 무기 {(data.hasWeapon ? "있음" : "없음")}{(data.retired ? " · 은퇴 성공" : "")}";
     }
 }

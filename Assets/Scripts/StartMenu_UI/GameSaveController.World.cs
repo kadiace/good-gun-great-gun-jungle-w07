@@ -207,6 +207,10 @@ namespace WeaponWorkshop
         {
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) return RestoreWorldSaveCore(data);
         }
+        /// <summary>
+        /// 저장된 월드·플레이어·곡 해금 데이터를 현재 씬에 복원한다.
+        /// data의 저장 오브젝트를 복원하고 성공 여부를 반환한다.
+        /// </summary>
         private bool RestoreWorldSaveCore(GameSaveData data)
         {
             EnsureWorldBindings();
@@ -326,6 +330,10 @@ namespace WeaponWorkshop
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
             RestoreRaidProgress(data);
+            RestoreTrackUnlocks(data);
+            retired = data.retired;
+            retirementSavedDay = retired ? data.day : -1;
+            RefreshRetireButton();
             return true;
         }
     }

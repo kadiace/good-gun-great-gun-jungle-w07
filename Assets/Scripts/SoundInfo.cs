@@ -16,6 +16,22 @@ namespace WeaponWorkshop
             return null;
         }
 
+        /// <summary>
+        /// 지정한 습격 씬을 클리어할 때 보상으로 해금할 곡을 조회한다.
+        /// scene 이름과 SoundData의 unlockScene 키를 비교해 일치하는 곡 행을 반환한다.
+        /// </summary>
+        public static SoundData.Track RaidRewardTrack(string scene)
+        {
+            SoundData.Track reward = null;
+            foreach (var row in TableManager.Instance.Sound.tracks ?? Array.Empty<SoundData.Track>())
+                if (row != null && row.selectableInMain && row.unlockScene == scene)
+                {
+                    if (reward != null) return null;
+                    reward = row;
+                }
+            return reward;
+        }
+
         public static SoundData.Raid Raid(string scene)
         {
             foreach (var row in TableManager.Instance.Sound.raids ?? Array.Empty<SoundData.Raid>())

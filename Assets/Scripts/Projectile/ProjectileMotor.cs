@@ -308,7 +308,7 @@ namespace WeaponWorkshop
                 ShowImpact(hit.point, hit.normal, incomingDirection);
             if (effects != null && (target == null || firstHitOnTarget) &&
                 (structure == null || firstHitOnStructure))
-                effects.ApplyHit(hit.point, incomingDirection, target, ignoredOwner, ignoredWeapon, false);
+                effects.ApplyHit(hit.point, incomingDirection, structure == null ? target : null, ignoredOwner, ignoredWeapon, false);
             if (structure != null)
             {
                 Quaternion rotation = RotationForDirection(incomingDirection);
@@ -322,6 +322,8 @@ namespace WeaponWorkshop
                         out passed, out _, out penetratedMaterial);
                 if (passed)
                 {
+                    if (target != null && firstHitOnTarget && penetratedMaterial && effects != null)
+                        effects.ApplyHit(hit.point, incomingDirection, target, ignoredOwner, ignoredWeapon, false);
                     if (penetratedMaterial && effects != null)
                         effects.ApplyPenetrationExplosion(hit.point, incomingDirection, ignoredOwner, ignoredWeapon);
                     float advance = Mathf.Min(0.001f, Mathf.Min(remaining, structureSweepLimit));
@@ -335,7 +337,7 @@ namespace WeaponWorkshop
             Customer customer = GetComponentInParents<Customer>(hit.collider);
             if (customer != null && (effects == null || !effects.IsWater)) customer.Kill();
 
-            bool canPenetrate = target != null && penetrationsRemaining > 0 &&
+            bool canPenetrate = structure == null && target != null && penetrationsRemaining > 0 &&
                                 (!water || !source.Tuning.waterStopsPenetration);
             if (canPenetrate)
             {

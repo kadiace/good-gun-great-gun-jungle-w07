@@ -5,6 +5,7 @@
       "name": "목조주택",
       "scene": "NightRaid_WoodenHouse",
       "reward": {
+        "firstClearSaleBonus": 0.05,
         "materialCrates": 4,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -19,6 +20,7 @@
       "name": "은행",
       "scene": "NightRaid_BankGrand",
       "reward": {
+        "firstClearSaleBonus": 0.05,
         "materialCrates": 10,
         "materialPerCrate": 250,
         "moduleCodes": [
@@ -34,11 +36,12 @@
       "name": "군사기지",
       "scene": "NightRaid_Millitary_base",
       "reward": {
+        "firstClearSaleBonus": 0.1,
         "materialCrates": 18,
         "materialPerCrate": 250,
         "moduleCodes": [
-          "36f778d16d639104b90e807dc937aaaa",
-          "cf32abdb412c6124cabcbdd85c103cb5"
+          "0277d45126374004b802798d93561da2",
+          "8d0c0ddd9cf586745abb86717c7cc6b6"
         ]
       },
       "helicopters": true,
@@ -49,15 +52,17 @@
       "name": "정글 캠퍼스",
       "scene": "NightRaid_JungleCampus",
       "reward": {
+        "firstClearSaleBonus": 0.1,
         "materialCrates": 12,
         "materialPerCrate": 250,
         "moduleCodes": [
-          "0277d45126374004b802798d93561da2",
-          "8d0c0ddd9cf586745abb86717c7cc6b6"
+          "36f778d16d639104b90e807dc937aaaa",
+          "cf32abdb412c6124cabcbdd85c103cb5"
         ]
       },
       "helicopters": true,
-      "tanks": true
+      "tanks": true,
+      "maximumReinforcedTanks": 2
     }
   ]
 }

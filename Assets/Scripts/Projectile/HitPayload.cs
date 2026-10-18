@@ -18,6 +18,9 @@ namespace WeaponWorkshop
             public Vector3 direction;
             public TargetHealth target;
             public float damage;
+            // Zero keeps the normal radius derived from explosion power.
+            public float explosionRadiusOverride;
+            public ParticleSystem explosionEffectOverride;
             public bool applyStatus;
             public bool applyArea;
             public Transform owner;
@@ -49,10 +52,11 @@ namespace WeaponWorkshop
         private static void Explode(in Context context)
         {
             ProjectileTuning tuning = context.source.Tuning;
-            float radius = tuning.explosionRadiusPerPoint * Mathf.Pow(context.stats.explosion, 1f / 3f);
+            float radius = context.explosionRadiusOverride > 0f ? context.explosionRadiusOverride :
+                tuning.explosionRadiusPerPoint * Mathf.Pow(context.stats.explosion, 1f / 3f);
             if (radius <= 0f) return;
             WorkshopSoundEffects.RaiseExplosionTriggered(context.point);
-            ExpandingExplosion.Create(context.point, radius, context.stats, context.source, context.owner, context.weapon, context.projectile);
+            ExpandingExplosion.Create(context.point, radius, context.stats, context.source, context.owner, context.weapon, context.projectile, context.explosionEffectOverride);
         }
 
         // Gravity pulls nearby targets/physics objects toward the hit; penetration makes it stronger.
