@@ -1,4 +1,5 @@
 using System.Linq;
+
 using UnityEngine;
 namespace WeaponWorkshop
 {
@@ -89,6 +90,24 @@ namespace WeaponWorkshop
             Workshop.inWorkshop = false; Workshop.confirmation = false; Workshop.settlement = !died;
             Returning = true; return true;
         }
+
+        /// <summary>Uses a detached checkpoint while preparing the durable Jungle gift return.</summary>
+        /// <param name="checkpoint">Working checkpoint to expose to the existing return flow.</param>
+        public static void BeginReturnPreparation(GameSaveData checkpoint)
+        {
+            Workshop = checkpoint;
+        }
+
+        /// <summary>
+        /// Cancels return preparation and restores the untouched checkpoint so a retry can capture the current raid again.
+        /// </summary>
+        /// <param name="checkpoint">Original checkpoint to restore after preparation or disk-write failure.</param>
+        public static void CancelReturnPreparation(GameSaveData checkpoint)
+        {
+            Returning = false;
+            Workshop = checkpoint;
+        }
+
         public static bool TryConsumeReturn(out GameSaveData checkpoint, out int creditsBeforeLoss)
         {
             checkpoint = null; creditsBeforeLoss = 0;

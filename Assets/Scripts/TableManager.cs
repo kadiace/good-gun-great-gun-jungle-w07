@@ -1,3 +1,5 @@
+using System;
+
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -12,6 +14,7 @@ namespace WeaponWorkshop
     {
         // Resources 안의 테이블 경로. 확장자는 붙이지 않는다.
         public const string RaidMapResource = "RaidMapData";
+        public const string DEVELOPER_GIFT_RESOURCE = "DeveloperGiftData";
 
         private static TableManager instance;
 
@@ -25,7 +28,12 @@ namespace WeaponWorkshop
         public CustomerOrderData CustomerOrder { get; private set; }
         public CustomerSoundData CustomerSound { get; private set; }
         public SoundData Sound { get; private set; }
+        /// <summary>Developer gift weapon code and single-source appearance table loaded from Resources/DeveloperGiftData.json.</summary>
+        public DeveloperGiftData DeveloperGift { get; private set; }
 
+        /// <summary>
+        /// Loads the JSON-backed serializable tables once for the current application session.
+        /// </summary>
         private TableManager()
         {
             RaidMap = Load<RaidMapData>(RaidMapResource);
@@ -40,6 +48,7 @@ namespace WeaponWorkshop
             CustomerSoundInfo.Validate(CustomerSound);
             // 사운드 규칙과 곡 경로도 기존 테이블 저장 방식을 따른다.
             Sound = Load<SoundData>(nameof(SoundData));
+            DeveloperGift = Load<DeveloperGiftData>(DEVELOPER_GIFT_RESOURCE);
         }
 
         /// <summary>반복 호출해도 테이블을 다시 읽지 않는다.</summary>

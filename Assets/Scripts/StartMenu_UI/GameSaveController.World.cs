@@ -1,7 +1,9 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+
 using UnityEngine;
+
 using Unity.Profiling;
 namespace WeaponWorkshop
 {
@@ -93,6 +95,18 @@ namespace WeaponWorkshop
             if (key != null) unresolvedPaints.Add(key);
             return null;
         }
+
+        /// <summary>
+        /// Resolves a stable paint material ID from the shared paint library.
+        /// materialId identifies an existing option; the returned material remains owned by this save controller.
+        /// </summary>
+        internal Material GetDeveloperGiftPaintMaterial(string materialId)
+        {
+            if (string.IsNullOrEmpty(materialId)) return null;
+            if (paintLibrary == null) paintLibrary = PaintMaterialLibrary.CreateDefaults();
+            return paintLibrary.Options.FirstOrDefault(option => option.id == materialId)?.material;
+        }
+
         public bool ConfirmOverwrite => confirmOverwrite;
         public string SaveDirectory => System.IO.Path.Combine(Application.persistentDataPath, "Saves");
         private T[] InScene<T>() where T : Component => FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None)
@@ -149,6 +163,10 @@ namespace WeaponWorkshop
             mapObjects = bindings.ToArray();
             RebuildWorldBindingLookup();
         }
+        /// <summary>
+        /// Captures the configured Main world and excludes a still-staged developer gift weapon.
+        /// data receives world state and error explains capture failures.
+        /// </summary>
         private bool CaptureWorld(GameSaveData data, out string error)
         {
             error = null;
@@ -160,7 +178,8 @@ namespace WeaponWorkshop
                     rotation = b.target.transform.localRotation, scale = b.target.transform.localScale }).ToArray();
             if (saveAllWeapons)
             {
-                var weapons = InScene<EquipableWeapon>().Where(w => w.GetComponent<PresetWeaponPreview>() == null).ToArray();
+                var weapons = InScene<EquipableWeapon>().Where(w => w.GetComponent<PresetWeaponPreview>() == null &&
+                    w.GetComponent<DeveloperGiftStagedWeapon>()?.IsStaged != true).ToArray();
                 if (weapons.Length > maximumWeapons) { error = "저장 가능한 무기 수를 초과했습니다."; return false; }
                 var states = new List<WeaponWorldSave>();
                 foreach (var weapon in weapons)
@@ -331,9 +350,11 @@ namespace WeaponWorkshop
             dayManager.RestoreSavedState(data);
             RestoreRaidProgress(data);
             RestoreTrackUnlocks(data);
+            RestoreJungleGiftState(data);
             retired = data.retired;
             retirementSavedDay = retired ? data.day : -1;
             RefreshRetireButton();
+            RefreshJungleGift();
             return true;
         }
     }

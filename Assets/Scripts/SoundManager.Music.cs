@@ -61,6 +61,7 @@ namespace WeaponWorkshop
         public static BgmId CurrentBgm => instance != null ? instance.currentBgm : BgmId.None;
         public static bool CanChooseMainTrack => instance != null && instance.mainMusicReady &&
             SceneManager.GetActiveScene().name == "Main" && !IsTutorialMusicContext &&
+            !instance._jungleEasterEggAudioBlocked &&
             !(NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid);
 
         // 기존 판정과 훈련 이동 중의 정적 상태를 함께 확인해 씬 생성 순서의 틈도 막는다.
@@ -129,7 +130,7 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 튜토리얼·Main 상태에 맞춰 BGM을 한 번 초기화한다.
-        /// 저장된 복귀 보상 곡이 있으면 우선 재생하고, 그 외에는 DayFirst를 사용한다.
+        /// 발견 음향 차단 중에는 복귀 보상 곡을 예약 상태로 보존하며 재생하지 않는다.
         /// </summary>
         private void RefreshMusicContext()
         {
@@ -144,7 +145,8 @@ namespace WeaponWorkshop
                     else StopBackgroundMusic();
                 }
             }
-            if (tutorial || !mainMusicReady || mainMusicInitialized || SceneManager.GetActiveScene().name != "Main") return;
+            if (_jungleEasterEggAudioBlocked || tutorial || !mainMusicReady || mainMusicInitialized ||
+                SceneManager.GetActiveScene().name != "Main") return;
             mainMusicInitialized = true;
             BgmId music = _hasPendingRaidRewardMusic ? _pendingRaidRewardMusic : BgmId.DayFirst;
             _hasPendingRaidRewardMusic = false;
@@ -180,7 +182,7 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 저장 측에서 확정한 해금 상태를 런타임에 적용하고 보상 곡을 공방 복귀 BGM으로 예약한다.
-        /// progress, rewardTrackId, unlockedTrackIds를 반영하며 맵 보상 곡을 다시 조회하지 않는다.
+        /// progress, rewardTrackId, unlockedTrackIds를 반영하며, 발견 음향 차단 중에는 곡 예약을 유지한다.
         /// </summary>
         public static void CompleteRaidReturn(int progress, string rewardTrackId, string[] unlockedTrackIds)
         {
@@ -190,6 +192,7 @@ namespace WeaponWorkshop
             SetMainTrackUnlockState(unlockedTrackIds);
             instance._hasPendingRaidRewardMusic = !string.IsNullOrEmpty(rewardTrackId) &&
                 Enum.TryParse(rewardTrackId, out instance._pendingRaidRewardMusic);
+            if (instance._jungleEasterEggAudioBlocked) return;
             if (instance.mainMusicReady && SceneManager.GetActiveScene().name == "Main")
             {
                 if (!instance.mainMusicInitialized) instance.RefreshMusicContext();
@@ -227,13 +230,14 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 습격 실패 복귀 때 진입 전 곡을 복구하거나 타이틀 이동 때 음악을 정지한다.
-        /// toTitle이 true이면 정지하고, 그 외에는 저장한 곡이나 DayFirst를 재생한다.
+        /// toTitle이 true이면 이스터에그 런타임 상태도 초기화하고, 그 외에는 저장한 곡이나 DayFirst를 재생한다.
         /// </summary>
         public static void RestoreBeforeRaidMusic(bool toTitle = false)
         {
             if (instance == null) return;
             if (toTitle)
             {
+                instance.ResetJungleEasterEggAudio();
                 instance.hasBeforeRaidBgm = false;
                 instance.mainMusicReady = false;
                 instance.StopBackgroundMusic();
@@ -308,10 +312,11 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 지정한 곡을 폴백 규칙과 페이드에 따라 재생 요청한다.
-        /// id의 클립을 확인하고, 곡이 없으면 day-first를 사용한다.
+        /// id의 클립을 확인하고, 곡이 없으면 day-first를 사용하며, 발견 음향 차단 중에는 요청을 보류한다.
         /// </summary>
         private void RequestMusic(BgmId id)
         {
+            if (_jungleEasterEggAudioBlocked) return;
             if (IsTutorialMusicContext || SceneManager.GetActiveScene().name == "Intro") return;
             // 곡 선택·자동 전환·복구 등 어느 호출자든 Main의 공격곡 요청은 재생 전에 거부한다.
             if (SceneManager.GetActiveScene().name == "Main" && IsAttackMusic(id)) return;

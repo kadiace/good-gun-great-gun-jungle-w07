@@ -1,8 +1,11 @@
+using Stopwatch = System.Diagnostics.Stopwatch;
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 using Unity.Profiling;
+
 using LogKit;
-using Stopwatch = System.Diagnostics.Stopwatch;
 namespace WeaponWorkshop
 {
     public sealed class NightRaidController : MonoBehaviour
@@ -569,6 +572,75 @@ namespace WeaponWorkshop
             NightRaidTransfer.ReturnDayFadePending = !returningAfterDeath && (!entryRestoreFailed || TutorialManager.TrainingRaidPending);
             NightRaidReturnOverlay.BeginReturn(homeScene);
         }
+
+        /// <summary>
+        /// Writes the Jungle discovery and successful raid return to autosave before starting the workshop transition.
+        /// error contains the reason if the checkpoint, reward, or durable write cannot be prepared.
+        /// </summary>
+        public bool TryReturnWithJungleGift(out string error)
+        {
+            error = null;
+            const string JUNGLE_SCENE = "NightRaid_JungleCampus";
+            if (!inRaid || transitioning || returnOpen || resultOpen || gameObject.scene.name != JUNGLE_SCENE ||
+                player == null || (playerHealth != null && playerHealth.IsDead))
+            { error = "정글 습격에서 발견을 확정할 수 없습니다."; return false; }
+            GameSaveData originalCheckpoint = NightRaidTransfer.Workshop;
+            if (originalCheckpoint == null || originalCheckpoint.sceneName != "Main")
+            { error = "공방 복귀 체크포인트가 없습니다."; return false; }
+            string homeScene = originalCheckpoint.sceneName;
+            if (!Application.CanStreamedLevelBeLoaded(homeScene))
+            { error = "복귀할 공방 씬이 없습니다."; return false; }
+
+            NightRaidTransfer.BeginReturnPreparation(GameSaveFiles.CloneCheckpoint(originalCheckpoint));
+            transitioning = true;
+            FlushCellLogs();
+            CancelExtraction();
+            if (!NightRaidTransfer.PrepareReturn(player, false, out error))
+            {
+                NightRaidTransfer.CancelReturnPreparation(originalCheckpoint);
+                transitioning = false;
+                return false;
+            }
+            GameSaveData checkpoint = NightRaidTransfer.Workshop;
+            if (!GameSaveController.PrepareJungleGiftCheckpoint(checkpoint, JUNGLE_SCENE, out error))
+            {
+                NightRaidTransfer.CancelReturnPreparation(originalCheckpoint);
+                transitioning = false;
+                return false;
+            }
+
+            checkpoint.savedUtcTicks = System.DateTime.UtcNow.Ticks;
+            try { GameSaveFiles.WriteAutoSave(checkpoint); }
+            catch (System.Exception exception) when (exception is System.IO.IOException ||
+                exception is System.UnauthorizedAccessException || exception is System.ArgumentException ||
+                exception is System.Security.SecurityException || exception is System.NotSupportedException)
+            {
+                NightRaidTransfer.CancelReturnPreparation(originalCheckpoint);
+                transitioning = false;
+                error = "정글 발견 결과를 저장하지 못했습니다. " + exception.Message;
+                return false;
+            }
+
+            int raidNumber = SoundInfo.Raid(JUNGLE_SCENE)?.number ?? 0;
+            NightRaidTransfer.RecordResult(raidNumber, JUNGLE_SCENE, true);
+            resultOpen = true;
+            returnOpen = false;
+            returningAfterDeath = false;
+            gameManager.SetNight(true);
+            ui?.ShowReturn(false);
+            NightRaidTransfer.ReturnDayFadePending = true;
+            GameLogger.Data("Info", "NightRaid", "습격 탈출 성공", new RaidResultLog
+            {
+                scene = JUNGLE_SCENE, survived = true,
+                time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
+                moduleCrateRewards = moduleCrateRewards.ToArray(),
+                materialCrateCredits = materialCrateCredits, enemyKills = enemyKills,
+                health = playerHealth != null ? playerHealth.CurrentHealth : 0f
+            });
+            NightRaidReturnOverlay.BeginReturn(homeScene);
+            return true;
+        }
+
         /// <summary>
         /// 사망 복귀를 클리어 실패로 기록하고 공방으로 이동한다.
         /// 현재 씬 키를 결과 데이터에 담아 보상 곡이 지급되지 않게 한다.

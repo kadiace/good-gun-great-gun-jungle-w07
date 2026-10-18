@@ -55,6 +55,11 @@ namespace WeaponWorkshop
             transition = StartCoroutine(Advance(day, false, true));
             return true;
         }
+
+        /// <summary>
+        /// Advances to the next business day and releases any discovery audio gate when its day title appears.
+        /// day supplies the actual next-day number and transition state.
+        /// </summary>
         private IEnumerator Advance(_DayManager day, bool firstDay = false, bool alreadyCovered = false)
         {
             if (!alreadyCovered) yield return Fade(0f, 1f);
@@ -63,6 +68,7 @@ namespace WeaponWorkshop
             if (GameManager.Instance != null) GameManager.Instance.SetDialogue(true);
             dayText.text = "Day " + day.DayNumber;
             dayText.gameObject.SetActive(true);
+            SoundManager.OnDayTextShown();
             yield return FadeTitle(0f, 1f);
             yield return new WaitForSecondsRealtime(titleDuration);
             yield return FadeTitle(1f, 0f);

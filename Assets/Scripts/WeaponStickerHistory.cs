@@ -43,8 +43,13 @@ namespace WeaponWorkshop
             }
         }
 
+        /// <summary>
+        /// Places one sticker on a block surface and records it in the existing undo history.
+        /// Surface orientation, sizeMultiplier, and flipHorizontally determine its readable footprint.
+        /// </summary>
         public bool Place(PlacedBlock block, Texture2D texture, Vector3 surfacePoint, Vector3 surfaceNormal,
-            Vector3 preferredUp, Vector3 fallbackUp)
+            Vector3 preferredUp, Vector3 fallbackUp, float sizeMultiplier = StickerOverlay.DefaultSizeMultiplier,
+            bool flipHorizontally = false)
         {
             if (block == null || texture == null || surfaceNormal.sqrMagnitude < 0.000001f ||
                 ActiveStickerCount >= MaximumStickerCount) return false;
@@ -59,7 +64,7 @@ namespace WeaponWorkshop
             stickerObject.transform.SetParent(block.transform, false);
             stickerObject.transform.SetPositionAndRotation(surfacePoint + normal * SurfaceOffset, rotation);
             StickerOverlay overlay = stickerObject.AddComponent<StickerOverlay>();
-            if (!overlay.Configure(texture))
+            if (!overlay.Configure(texture, sizeMultiplier, flipHorizontally))
             {
                 if (Application.isPlaying) Destroy(stickerObject);
                 else DestroyImmediate(stickerObject);

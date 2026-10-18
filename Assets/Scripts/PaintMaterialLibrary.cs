@@ -7,6 +7,7 @@ namespace WeaponWorkshop
     [Serializable]
     public sealed class PaintMaterialOption
     {
+        public string id;
         public string category;
         public string displayName;
         public string hexColor;
@@ -40,12 +41,14 @@ namespace WeaponWorkshop
 
             library.AddColorPreset("기본", "무광 블랙", "#25272A", 0.04f, 0.24f);
             library.AddColorPreset("기본", "차콜", "#383D42", 0.12f, 0.32f);
+            library.AddColorPreset("개발자 선물", "개발자 총 차콜", "#262D2E", 0.04f, 0.24f, "developer-gift-charcoal");
             library.AddColorPreset("기본", "건메탈", "#596168", 0.78f, 0.72f);
             library.AddColorPreset("기본", "실버", "#A7ADB0", 0.84f, 0.68f);
             library.AddColorPreset("기본", "화이트", "#E9E8E1", 0.03f, 0.3f);
 
             library.AddColorPreset("밀리터리", "샌드", "#C7B68E", 0.04f, 0.28f);
             library.AddColorPreset("밀리터리", "FDE", "#A99370", 0.04f, 0.28f);
+            library.AddColorPreset("개발자 선물", "개발자 총 샌드", "#B5A47A", 0.04f, 0.28f, "developer-gift-sand");
             library.AddColorPreset("밀리터리", "카키", "#82775B", 0.04f, 0.28f);
             library.AddColorPreset("밀리터리", "코요테 브라운", "#765C43", 0.04f, 0.28f);
             library.AddColorPreset("밀리터리", "OD 그린", "#626B47", 0.04f, 0.28f);
@@ -91,13 +94,18 @@ namespace WeaponWorkshop
             Add(name, CreateMaterial(name, texture, color, metallic, smoothness), texture, "재질");
         }
 
-        private void AddColorPreset(string category, string name, string hexColor, float metallic, float smoothness)
+        /// <summary>
+        /// Adds a solid paint preset and its optional stable lookup ID to this library.
+        /// category, name, hexColor, metallic, smoothness, and id define the displayed material.
+        /// </summary>
+        private void AddColorPreset(string category, string name, string hexColor, float metallic, float smoothness,
+            string id = "")
         {
             if (!ColorUtility.TryParseHtmlString(hexColor, out Color color)) return;
             string normalizedHex = hexColor.ToUpperInvariant();
             Texture2D texture = CreateSolidTexture(name + " Preview", color);
             Add(name, CreateMaterial(name + " " + normalizedHex, texture, color, metallic, smoothness),
-                texture, category, normalizedHex);
+                texture, category, normalizedHex, id);
         }
 
         private void AddCamo(string name, int seed, params Color[] colors)
@@ -106,13 +114,19 @@ namespace WeaponWorkshop
             Add(name, CreateMaterial(name, texture, Color.white, 0.12f, 0.32f), texture, "위장");
         }
 
-        private void Add(string name, Material material, Texture2D texture, string category, string hexColor = "")
+        /// <summary>
+        /// Stores a generated material option and its preview resources.
+        /// id and presentation metadata identify the option in the paint palette.
+        /// </summary>
+        private void Add(string name, Material material, Texture2D texture, string category, string hexColor = "",
+            string id = "")
         {
             if (material == null) return;
             generatedMaterials.Add(material);
             generatedTextures.Add(texture);
             options.Add(new PaintMaterialOption
             {
+                id = id,
                 category = category,
                 displayName = name,
                 hexColor = hexColor,

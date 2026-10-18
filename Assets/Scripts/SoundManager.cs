@@ -49,6 +49,8 @@ namespace WeaponWorkshop
 
         [Header("작업대 효과음")]
         [SerializeField, InspectorName("작업대 효과음 설정 컴포넌트")] private WorkbenchSoundSettings workbenchSounds;
+        [Header("이스터 에그 효과음")]
+        [SerializeField] private HidenSound _hidenSound;
 
         private readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
         private readonly Dictionary<string, double> lastSoundPlaybackTimes = new Dictionary<string, double>();
@@ -59,6 +61,8 @@ namespace WeaponWorkshop
         private readonly Dictionary<Transform, AudioSource> tankMoveLoops = new Dictionary<Transform, AudioSource>();
         private AudioSource backgroundMusicSource;
         private AudioSource uiSoundSource;
+        private AudioSource _jungleDiscoveryAudioSource;
+        private bool _jungleEasterEggAudioBlocked;
         private _DayManager subscribedDayManager;
         private float nextButtonScanTime;
 
@@ -115,6 +119,7 @@ namespace WeaponWorkshop
         private void OnDisable()
         {
             if (instance != this) return;
+            ResetJungleEasterEggAudio();
             Unsubscribe();
             StopAllLoops();
             StopBackgroundMusic();
@@ -124,6 +129,7 @@ namespace WeaponWorkshop
         private void OnDestroy()
         {
             if (instance != this) return;
+            ResetJungleEasterEggAudio();
             Unsubscribe();
             StopAllLoops();
             StopBackgroundMusic();
@@ -407,12 +413,12 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 지정한 클립을 대상 오브젝트에 붙인 반복 재생 AudioSource로 만든다.
-        /// clip, followTarget, volume과 거리값을 사용하며 SFX 채널에 등록된 AudioSource를 반환한다.
+        /// clip, followTarget, volume과 거리값을 사용하며, 발견 음향 차단 중에는 null을 반환한다.
         /// </summary>
         internal AudioSource CreateLoop(AudioClip clip, Transform followTarget, float volume,
             float minDistance = 0f, float maxDistance = 0f)
         {
-            if (clip == null || followTarget == null) return null;
+            if (_jungleEasterEggAudioBlocked || clip == null || followTarget == null) return null;
 
             GameObject loopObject = new GameObject("SFX_" + clip.name);
             loopObject.transform.SetParent(followTarget, false);
@@ -435,10 +441,11 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 배경음악 클립을 반복 재생하거나 현재 재생 중인 클립의 음량을 갱신한다.
-        /// 튜토리얼 곡과 음량을 사용하며 실제 재생 곡 변경을 구독자에게 알린다.
+        /// 튜토리얼 곡과 음량을 사용하며, 발견 음향 차단 중에는 새 재생을 시작하지 않는다.
         /// </summary>
         private void PlayLegacyMusic(BgmId id, float volume)
         {
+            if (_jungleEasterEggAudioBlocked) return;
             // 기존 튜토리얼 재생 경로에서도 Main의 공격곡 금지 조건을 우회하지 못하게 한다.
             if (SceneManager.GetActiveScene().name == "Main" && IsAttackMusic(id)) return;
             AudioClip clip = GetMusicClip(id);
@@ -549,6 +556,7 @@ namespace WeaponWorkshop
         /// </summary>
         private void PlayUIButtonSound(string clipName)
         {
+            if (_jungleEasterEggAudioBlocked) return;
             AudioClip clip = LoadClip(clipName);
             if (clip == null) return;
             if (uiSoundSource == null)
@@ -629,11 +637,108 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
+        /// Blocks ordinary sound requests for the Jungle discovery and starts its one allowed clip.
+        /// Repeated calls leave the existing block and playback unchanged.
+        /// </summary>
+        public static void BeginJungleEasterEggAudio()
+        {
+            if (instance == null || instance._jungleEasterEggAudioBlocked) return;
+            instance._jungleEasterEggAudioBlocked = true;
+            instance.StopBackgroundMusic();
+            instance.StopAllLoops();
+            foreach (AudioSource source in new List<AudioSource>(instance.sfxBaseVolumes.Keys))
+                if (source != null) source.Stop();
+            if (instance._hidenSound != null) instance._hidenSound.PlayDiscovery(instance);
+        }
+
+        /// <summary>
+        /// Plays the discovered gift opening clip through the normal tracked SFX path.
+        /// position is the gift's world position; master, SFX, and mute settings remain active.
+        /// </summary>
+        public static void PlayJungleGiftOpen(Vector3 position)
+        {
+            if (instance == null || instance._jungleEasterEggAudioBlocked || instance._hidenSound == null) return;
+            instance._hidenSound.PlayGiftOpen(instance, position);
+        }
+
+        /// <summary>
+        /// Creates the persistent, tracked audio source used only for the Jungle discovery clip.
+        /// clip, owner, and volume supply the existing SFX channel settings and scene-persistent parent.
+        /// </summary>
+        internal AudioSource PlayPersistentEasterEggClip(AudioClip clip, Transform owner, float volume)
+        {
+            if (!_jungleEasterEggAudioBlocked || clip == null || owner == null) return null;
+            AudioSource source = owner.GetComponent<AudioSource>();
+            if (source == null) source = owner.gameObject.AddComponent<AudioSource>();
+            source.Stop();
+            source.clip = clip;
+            source.loop = false;
+            source.playOnAwake = false;
+            source.spatialBlend = 0f;
+            source.dopplerLevel = 0f;
+            TrackSfx(source, volume);
+            source.Play();
+            _jungleDiscoveryAudioSource = source;
+            return source;
+        }
+
+        /// <summary>
+        /// Stops and unregisters the persistent discovery source without changing channel settings.
+        /// source is the audio source owned by HidenSound.
+        /// </summary>
+        internal void StopPersistentEasterEggClip(AudioSource source)
+        {
+            if (source == null) return;
+            sfxBaseVolumes.Remove(source);
+            source.Stop();
+            source.clip = null;
+            if (_jungleDiscoveryAudioSource == source) _jungleDiscoveryAudioSource = null;
+        }
+
+        /// <summary>
+        /// Releases the cinematic audio block at the visible day title and starts the already reserved return track.
+        /// A pending track comes from CompleteRaidReturn; no scene-to-track lookup is repeated here.
+        /// </summary>
+        internal static void OnDayTextShown()
+        {
+            if (instance == null || !instance._jungleEasterEggAudioBlocked) return;
+            SoundManager manager = instance;
+            manager._jungleEasterEggAudioBlocked = false;
+            if (manager._hidenSound != null) manager._hidenSound.StopDiscovery(manager);
+            if (manager._hasPendingRaidRewardMusic)
+            {
+                BgmId rewardTrack = manager._pendingRaidRewardMusic;
+                manager._hasPendingRaidRewardMusic = false;
+                manager.mainMusicInitialized = true;
+                manager.RequestMusic(rewardTrack);
+                return;
+            }
+            manager.mainMusicInitialized = false;
+            manager.RefreshMusicContext();
+        }
+
+        /// <summary>
+        /// Clears the runtime-only discovery gate and its clip when leaving the special return path.
+        /// The flag is never persisted, so loading or starting another save cannot inherit it.
+        /// </summary>
+        private void ResetJungleEasterEggAudio()
+        {
+            _jungleEasterEggAudioBlocked = false;
+            _hasPendingRaidRewardMusic = false;
+            if (_hidenSound != null)
+            {
+                _hidenSound.StopDiscovery(this);
+                _hidenSound.ResetDiscovery();
+            }
+        }
+
+        /// <summary>
         /// 지정한 효과음을 위치와 음량에 맞춰 재생하고 최소 재생 간격을 적용한다.
         /// clipName, position, volume, minimumInterval을 사용하며 재생 시각 기록을 갱신한다.
         /// </summary>
         private void Play(string clipName, Vector3 position, float volume, float minimumInterval = 0f)
         {
+            if (_jungleEasterEggAudioBlocked) return;
             AudioClip clip = LoadClip(clipName);
             if (clip == null) return;
 
@@ -647,10 +752,13 @@ namespace WeaponWorkshop
             PlayClip(clip, position, volume);
         }
 
-        // 인스펙터에 연결한 음원도 기존 효과음과 동일한 마스터/SFX 채널로 재생한다.
+        /// <summary>
+        /// Plays a one-shot clip at a world position through the tracked SFX channel.
+        /// clip, position, and volume use master/SFX multipliers and mute; the discovery gate suppresses ordinary requests.
+        /// </summary>
         internal void PlayClip(AudioClip clip, Vector3 position, float volume)
         {
-            if (clip == null) return;
+            if (_jungleEasterEggAudioBlocked || clip == null) return;
             // PlayClipAtPoint와 동일한 위치/기본 감쇠·수명을 사용하되 채널에서 추적한다.
             var sound = new GameObject("One shot audio");
             sound.transform.position = position;

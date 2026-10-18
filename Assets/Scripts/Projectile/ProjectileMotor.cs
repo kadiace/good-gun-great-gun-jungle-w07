@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+
 using UnityEngine;
+
 using Unity.Profiling;
+
 using LogKit;
 
 namespace WeaponWorkshop
@@ -32,6 +35,7 @@ namespace WeaponWorkshop
         private readonly HashSet<TargetHealth> hitTargets = new HashSet<TargetHealth>();
         private readonly HashSet<DestructibleTarget> hitStructures = new HashSet<DestructibleTarget>();
         private readonly HashSet<Collider> ignoredColliders = new HashSet<Collider>();
+        private readonly HashSet<Collider> _ignoredForLifetime = new HashSet<Collider>();
         private readonly List<Collider> staleIgnoredColliders = new List<Collider>();
         private readonly List<Collider> targetColliderBuffer = new List<Collider>();
         private MaterialPropertyBlock debrisTint;
@@ -81,6 +85,10 @@ namespace WeaponWorkshop
             destination.AddRange(activeProjectiles);
         }
 
+        /// <summary>
+        /// Initializes a pooled projectile and resets its per-shot collision and redirection state.
+        /// statsSource, direction, speed, owner, and weapon describe the newly fired shot.
+        /// </summary>
         public void Initialize(ProjectileStatsSource statsSource, Vector3 direction, float speed,
             Transform owner, Transform weapon)
         {
@@ -107,6 +115,7 @@ namespace WeaponWorkshop
             hitTargets.Clear();
             hitStructures.Clear();
             ignoredColliders.Clear();
+            _ignoredForLifetime.Clear();
 
             if (drawRenderer == null) drawRenderer = GetComponentInChildren<Renderer>(true);
             halfExtents = Vector3.one * 0.001f;
@@ -176,6 +185,10 @@ namespace WeaponWorkshop
             if (!terminal && traveledDistance >= source.MaximumTravelDistance) Terminate();
         }
 
+        /// <summary>
+        /// Applies the existing homing turn to the projectile.
+        /// deltaTime is the elapsed time used by the homing turn calculation.
+        /// </summary>
         private void ApplyHoming(float deltaTime)
         {
             if (effects == null || effects.Stats.homing <= 0f) return;
@@ -234,7 +247,7 @@ namespace WeaponWorkshop
                 if (hitTransform.IsChildOf(transform) ||
                     (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) ||
                     (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) ||
-                    ignoredColliders.Contains(hit.collider) || hit.distance >= nearestDistance ||
+                    ignoredColliders.Contains(hit.collider) || _ignoredForLifetime.Contains(hit.collider) || hit.distance >= nearestDistance ||
                     !PassesEndChestGate(hit.collider))
                     continue;
                 nearestHit = hit;
@@ -256,7 +269,7 @@ namespace WeaponWorkshop
                         if (t.IsChildOf(transform) ||
                             (ignoredOwner != null && t.IsChildOf(ignoredOwner)) ||
                             (ignoredWeapon != null && t.IsChildOf(ignoredWeapon)) ||
-                            ignoredColliders.Contains(other.collider) ||
+                            ignoredColliders.Contains(other.collider) || _ignoredForLifetime.Contains(other.collider) ||
                             GetComponentInParents<DestructibleTarget>(other.collider) == hitStructure) continue;
                         structureSweepLimit = Mathf.Min(structureSweepLimit,
                             Mathf.Max(0f, other.distance - nearestHit.distance));
@@ -266,7 +279,10 @@ namespace WeaponWorkshop
             return found;
         }
 
-        // 엔드 상자: 코어는 중력·유도 조건을 갖춘 탄만 맞고, 방어막은 조건을 못 채운 탄만 막는다. 나머지는 통과한다.
+        /// <summary>
+        /// Filters EndChest colliders using the projectile's gravity threshold.
+        /// collider is the candidate collision; false excludes it from this projectile's sweep.
+        /// </summary>
         private bool PassesEndChestGate(Collider collider)
         {
             var endChestCore = HasLayerInParents(collider, EndChestLayer)
@@ -277,10 +293,15 @@ namespace WeaponWorkshop
             return shield == null || effects == null || shield.Deflects(effects.Stats);
         }
 
+        /// <summary>
+        /// Applies the existing impact behavior or redirects a gravity-only EndChest projectile upward.
+        /// hit is the detected collision and remaining is this frame's unused travel distance.
+        /// </summary>
         private void HandleImpact(RaycastHit hit, Vector3 incomingDirection, ref float remaining)
         {
             if (HasLayerInParents(hit.collider, EndChestShieldLayer) && GetComponentInParents<EndChestShield>(hit.collider) != null)
             {
+                GetComponentInParents<EndChestShield>(hit.collider).NotifyHit();
                 ShowImpact(hit.point, hit.normal, incomingDirection);
                 velocity = Vector3.Reflect(velocity, hit.normal);
                 transform.position += hit.normal * 0.05f;
@@ -290,7 +311,19 @@ namespace WeaponWorkshop
             }
             var endChestCore = HasLayerInParents(hit.collider, EndChestLayer)
                 ? GetComponentInParents<EndChestCore>(hit.collider) : null;
-            if (endChestCore != null) endChestCore.NotifyHit();
+            if (endChestCore != null)
+            {
+                ProjectileStats stats = effects != null ? effects.Stats : default;
+                if (!endChestCore.QualifiesForDiscovery(stats))
+                {
+                    endChestCore.NotifyRedirectedHit();
+                    _ignoredForLifetime.Add(hit.collider);
+                    velocity = Vector3.up * velocity.magnitude;
+                    transform.rotation = RotationForDirection(Vector3.up);
+                    return;
+                }
+                endChestCore.NotifyHit();
+            }
             bool water = effects != null && effects.IsWater;
             DestructibleTarget structure = GetComponentInParents<DestructibleTarget>(hit.collider);
             if (structure != null && TutorialManager.Instance != null) TutorialManager.Instance.NotifyTargetHit(structure);
@@ -470,7 +503,7 @@ namespace WeaponWorkshop
             activeProjectiles.Remove(this);
             terminal = true; velocity = Vector3.zero; source = null; effects = null;
             ignoredOwner = ignoredWeapon = null; homingTarget = null;
-            hitTargets.Clear(); hitStructures.Clear(); ignoredColliders.Clear();
+            hitTargets.Clear(); hitStructures.Clear(); ignoredColliders.Clear(); _ignoredForLifetime.Clear();
             staleIgnoredColliders.Clear(); targetColliderBuffer.Clear();
         }
 

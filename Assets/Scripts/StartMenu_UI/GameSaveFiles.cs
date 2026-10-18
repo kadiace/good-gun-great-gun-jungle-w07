@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -141,7 +142,7 @@ namespace WeaponWorkshop
         [NonSerialized] public CustomerDay travelCustomerDay;
         public string testAssemblyKey;
         public string[] passedTestIds = Array.Empty<string>();
-        public int version = 8, day, balance, paidCost;
+        public int version = 10, day, balance, paidCost;
         public int slotMachineSpins;
         public int moduleCredits;
         // 필드가 없는 이전 JSON은 0으로 읽힌다. 슬롯별 최고 클리어 습격 번호다.
@@ -150,6 +151,9 @@ namespace WeaponWorkshop
         public string[] unlockedMainTrackIds;
         public bool trackUnlocksMigrated;
         public string[] clearedRaidScenes = Array.Empty<string>();
+        public bool jungleEasterEggDiscovered;
+        public bool developerGiftClaimed;
+        public string pendingGiftReturnScene;
         public int outstandingLoans, todayLoanRepayment, todayLoanInterest;
         public int todayLoanIncome;
         public int lastLoanDay = -1;
@@ -208,6 +212,16 @@ namespace WeaponWorkshop
         public static bool TryReadAutoSave(out GameSaveData data)
             => TryReadPath(AutoSavePath, out data);
 
+        /// <summary>Copies a return checkpoint while retaining its nonserialized workshop day reference.</summary>
+        /// <param name="checkpoint">Checkpoint to copy without mutating the original instance.</param>
+        /// <returns>A detached copy that can be prepared and written as one return transaction.</returns>
+        internal static GameSaveData CloneCheckpoint(GameSaveData checkpoint)
+        {
+            GameSaveData clone = JsonUtility.FromJson<GameSaveData>(JsonUtility.ToJson(checkpoint));
+            clone.travelCustomerDay = checkpoint.travelCustomerDay;
+            return clone;
+        }
+
         /// <summary>
         /// 저장 JSON을 읽고 지원하는 버전 및 필드 범위를 확인한다.
         /// path에서 읽은 GameSaveData와 성공 여부를 반환한다.
@@ -219,7 +233,7 @@ namespace WeaponWorkshop
             {
                 if (!File.Exists(path)) return false;
                 var read = JsonUtility.FromJson<GameSaveData>(File.ReadAllText(path));
-                if (read == null || (read.version < 2 || read.version > 8) || read.day < 0 ||
+                if (read == null || (read.version < 2 || read.version > 10) || read.day < 0 ||
                     read.paidCost < 0 || read.savedUtcTicks <= 0 || read.savedUtcTicks > DateTime.MaxValue.Ticks ||
                     read.completed < 0 || read.dissatisfied < 0 || read.killed < 0 || read.income < 0 ||
                     read.dissatisfied + read.killed > read.completed || read.nextCustomer < 0 ||

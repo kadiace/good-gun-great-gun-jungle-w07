@@ -1,0 +1,72 @@
+{
+  "weaponCode": "WSC:ghXNT0SDcRzH8e/v93t+e55n29NTLJo2HfqlZR5SHWKRJJtidNglOmRM2SEVWenUPyo6ZRvpMGo2JjURaXZZnSZinZruSUldShv9vpcX78vnA3pPwz0c1LYrocv6xNVDNDv6p0Ue90rhVPAu3TuXuncXO443SSWWNy5+OvtG3vPe5UJgvtKIi+bN9FkxEXB2lfeXfkOZk7eX29nMqS86WT48OEom1pTkVK5Q+8z2V0sbYtz3+jyzONh+Hs7R2kptaCd9Tatf9vpCcmzrab3pcsU/dvn3aiwyQIC3WQpw0wPADSFxIDqiIhxhCEEAoYiC2IQCzPRzYIYlcVgqMB1REY4whCAgjxj1KkBMDwNiCIkD0REV4QhDCAJyntBuBcD0awCGJXEgOqIiHGEIsSgAFRJFyLQhGqZdqABOpAVpFTag4PoHGQ4ZCBmOapa6HHCW4IyEkA",
+  "basePaintMaterialId": "developer-gift-charcoal",
+  "paintOverrides": [
+    {
+      "materialId": "developer-gift-sand",
+      "cells": [
+        { "x": 0, "y": -3, "z": -9 },
+        { "x": 0, "y": -3, "z": -8 },
+        { "x": 0, "y": -3, "z": -7 },
+        { "x": 0, "y": -3, "z": -6 },
+        { "x": 0, "y": -3, "z": -5 },
+        { "x": 0, "y": -3, "z": -4 },
+        { "x": 0, "y": -3, "z": -3 },
+        { "x": 0, "y": -3, "z": -2 },
+        { "x": 0, "y": -2, "z": -8 },
+        { "x": 0, "y": -2, "z": -7 },
+        { "x": 0, "y": -2, "z": -6 },
+        { "x": 0, "y": -2, "z": -5 },
+        { "x": 0, "y": -2, "z": -4 },
+        { "x": 0, "y": -2, "z": -3 },
+        { "x": 0, "y": -2, "z": -2 },
+        { "x": 0, "y": -2, "z": -1 },
+        { "x": 0, "y": -1, "z": -8 },
+        { "x": 0, "y": -1, "z": -7 },
+        { "x": 0, "y": -1, "z": -6 },
+        { "x": 0, "y": -1, "z": -5 },
+        { "x": 0, "y": -1, "z": -4 },
+        { "x": 0, "y": -1, "z": -3 },
+        { "x": 0, "y": -1, "z": -2 },
+        { "x": 0, "y": -1, "z": -1 },
+        { "x": 0, "y": 0, "z": -8 },
+        { "x": 0, "y": 0, "z": -7 },
+        { "x": 0, "y": 0, "z": -6 },
+        { "x": 0, "y": 0, "z": -5 },
+        { "x": 0, "y": 0, "z": -4 },
+        { "x": 0, "y": 0, "z": -3 },
+        { "x": 0, "y": 0, "z": -2 },
+        { "x": 0, "y": 0, "z": -1 }
+      ],
+      "faces": [
+        { "x": 1, "y": 0, "z": 0 },
+        { "x": -1, "y": 0, "z": 0 }
+      ]
+    }
+  ],
+  "stickerId": "krafton",
+  "stickers": [
+    {
+      "cells": [
+        { "x": 0, "y": -2, "z": -6 },
+        { "x": 0, "y": -1, "z": -6 },
+        { "x": 0, "y": -2, "z": -5 },
+        { "x": 0, "y": -1, "z": -5 }
+      ],
+      "face": { "x": 1, "y": 0, "z": 0 },
+      "sizeMultiplier": 2,
+      "flipHorizontally": false
+    },
+    {
+      "cells": [
+        { "x": 0, "y": -2, "z": -6 },
+        { "x": 0, "y": -1, "z": -6 },
+        { "x": 0, "y": -2, "z": -5 },
+        { "x": 0, "y": -1, "z": -5 }
+      ],
+      "face": { "x": -1, "y": 0, "z": 0 },
+      "sizeMultiplier": 2,
+      "flipHorizontally": false
+    }
+  ]
+}

@@ -1,182 +1,277 @@
 using System.Collections.Generic;
+
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace WeaponWorkshop
 {
-    // 게임을 끝낼 상자. 코어가 맞으면 작은 구체들이 천천히 코어로 빨려 들어간 뒤 뚜껑이 열린다.
-    // 적 탱크의 물리 충돌 무시를 위해 인스턴스 목록을 공개한다(RaidTank 참고).
     [DisallowMultipleComponent]
     public sealed class EndChest : MonoBehaviour
     {
-        // 순서가 의미를 가진다: WhiteOut부터는 게임플레이가 막힌 연출 구간.
         private enum State { Closed, Absorbing, WhiteOut, Opening, Open, Done }
 
-        private static readonly List<EndChest> instances = new List<EndChest>();
-        public static IReadOnlyList<EndChest> Instances => instances;
+        private static readonly List<EndChest> _instances = new List<EndChest>();
+
+        [Header("상자 구성")]
+        [FormerlySerializedAs("zone"), SerializeField] private Transform _zone;
+        [FormerlySerializedAs("core"), SerializeField] private Transform _core;
+        [FormerlySerializedAs("orbs"), SerializeField] private Transform[] _orbs;
+        [FormerlySerializedAs("lid"), SerializeField] private Transform _lid;
+        [FormerlySerializedAs("innerGlow"), SerializeField] private GameObject _innerGlow;
+        [FormerlySerializedAs("innerLight"), SerializeField] private Light _innerLight;
+        [SerializeField] private Renderer[] _discoveredRenderers;
+        [SerializeField] private DestructibleTarget[] _discoveredTargets;
+        [SerializeField] private Material _discoveredMaterial;
+
+        [Header("발견 연출")]
+        [FormerlySerializedAs("orbitSpeed"), SerializeField, Min(0f)] private float _orbitSpeed = 25f;
+        [FormerlySerializedAs("absorbDuration"), SerializeField, Min(0.1f)] private float _absorbDuration = 7f;
+        [FormerlySerializedAs("whiteInDuration"), SerializeField, Min(0.1f)] private float _whiteInDuration = 1f;
+        [FormerlySerializedAs("whiteOutDuration"), SerializeField, Min(0.1f)] private float _whiteOutDuration = 1.5f;
+        [FormerlySerializedAs("openDuration"), SerializeField, Min(0.1f)] private float _openDuration = 2.5f;
+        [FormerlySerializedAs("endFadeDuration"), SerializeField, Min(0.1f)] private float _endFadeDuration = 1.5f;
+        [FormerlySerializedAs("endCamera"), SerializeField] private Camera _endCamera;
+        [FormerlySerializedAs("endingUI"), SerializeField] private EndChestEndingUI _endingUI;
+        [SerializeField] private JungleEndChestNotice _notice;
+        [FormerlySerializedAs("lidOpenAngle"), SerializeField, Range(0f, 170f)] private float _lidOpenAngle = 105f;
+        [FormerlySerializedAs("openLightIntensity"), SerializeField, Min(0f)] private float _openLightIntensity = 8f;
+
+        private State _state;
+        private float _stateTime;
+        private float _orbitTime;
+        private Vector3[] _orbStart;
+        private Vector3[] _orbAxis;
+        private Vector3[] _orbScale;
+        private float[] _orbSpeed;
+        private Vector3 _coreScale;
+        private Quaternion _lidClosed;
+
+        public static IReadOnlyList<EndChest> Instances => _instances;
+        public bool IsClosed => _state == State.Closed;
+        public bool IsOpen => _state >= State.Open;
+        public EndChestCore CoreGate => _core != null ? _core.GetComponent<EndChestCore>() : null;
+
+        /// <summary>Reports whether an active discovery presentation should pause helicopter rotors.</summary>
+        public static bool IsDiscoveryPresentationActive
+        {
+            get
+            {
+                foreach (EndChest chest in _instances)
+                    if (chest != null && chest._state >= State.WhiteOut && chest._state <= State.Open) return true;
+                return false;
+            }
+        }
+
+        /// <summary>Clears the scene chest registry before a new play session starts.</summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetRegistry() => instances.Clear();
-
-        [SerializeField, Tooltip("구형 범위 중심. 코어와 작은 구체들의 부모.")] private Transform zone;
-        [SerializeField] private Transform core;
-        [SerializeField] private Transform[] orbs;
-        [SerializeField, Tooltip("뚜껑 힌지. +X 회전으로 열린다.")] private Transform lid;
-        [SerializeField] private GameObject innerGlow;
-        [SerializeField] private Light innerLight;
-        [SerializeField, Min(0f)] private float orbitSpeed = 25f;
-        [SerializeField, Min(0.1f)] private float absorbDuration = 7f;
-        [SerializeField, Min(0.1f)] private float whiteInDuration = 1f;
-        [SerializeField, Min(0.1f)] private float whiteOutDuration = 1.5f;
-        [SerializeField, Min(0.1f)] private float openDuration = 2.5f;
-        [SerializeField, Min(0.1f)] private float endFadeDuration = 1.5f;
-        [SerializeField, Tooltip("흡수 후 하얀 화면 뒤에서 켜지는 상자 위 내려다보는 카메라.")] private Camera endCamera;
-        [SerializeField] private EndChestEndingUI endingUI;
-        [SerializeField, Range(0f, 170f)] private float lidOpenAngle = 105f;
-        [SerializeField, Min(0f)] private float openLightIntensity = 8f;
-
-        private State state;
-        private float stateTime, orbitTime;
-        private Vector3[] orbStart, orbAxis, orbScale;
-        private float[] orbSpeed;
-        private Vector3 coreScale;
-        private Quaternion lidClosed;
-        private float savedListenerVolume;
-        private bool audioMuted;
-
-        public bool IsClosed => state == State.Closed;
-        public bool IsOpen => state >= State.Open;
-        public EndChestCore CoreGate => core != null ? core.GetComponent<EndChestCore>() : null;
+        private static void ResetRegistry() => _instances.Clear();
 
         private void Awake()
         {
-            int count = orbs != null ? orbs.Length : 0;
-            orbStart = new Vector3[count]; orbAxis = new Vector3[count];
-            orbScale = new Vector3[count]; orbSpeed = new float[count];
+            int count = _orbs != null ? _orbs.Length : 0;
+            _orbStart = new Vector3[count];
+            _orbAxis = new Vector3[count];
+            _orbScale = new Vector3[count];
+            _orbSpeed = new float[count];
             for (int i = 0; i < count; i++)
             {
-                orbStart[i] = orbs[i].localPosition;
-                orbScale[i] = orbs[i].localScale;
-                orbAxis[i] = new Vector3(Mathf.Sin(i * 2.4f), 1f, Mathf.Cos(i * 1.7f)).normalized;
-                orbSpeed[i] = orbitSpeed * (0.6f + 0.8f * Mathf.Repeat(i * 0.37f, 1f));
-                orbs[i].gameObject.SetActive(true);
+                _orbStart[i] = _orbs[i].localPosition;
+                _orbScale[i] = _orbs[i].localScale;
+                _orbAxis[i] = new Vector3(Mathf.Sin(i * 2.4f), 1f, Mathf.Cos(i * 1.7f)).normalized;
+                _orbSpeed[i] = _orbitSpeed * (0.6f + 0.8f * Mathf.Repeat(i * 0.37f, 1f));
+                _orbs[i].gameObject.SetActive(true);
             }
-            if (core != null) { coreScale = core.localScale; core.gameObject.SetActive(true); }
-            if (lid != null) { lidClosed = lid.localRotation; }
-            // 방어막은 탄 판정 전용: 플레이어·탱크 등과 물리 충돌하지 않는다.
+            if (_core != null) { _coreScale = _core.localScale; _core.gameObject.SetActive(true); }
+            if (_lid != null) _lidClosed = _lid.localRotation;
             int shieldLayer = LayerMask.NameToLayer("EndChestShield");
             if (shieldLayer >= 0)
                 for (int layer = 0; layer < 32; layer++) Physics.IgnoreLayerCollision(shieldLayer, layer, true);
-            // 씬에 저장된 상태와 무관하게 닫힌 상태로 시작한다.
-            state = State.Closed; stateTime = orbitTime = 0f;
-            if (innerGlow != null) innerGlow.SetActive(false);
-            if (innerLight != null) innerLight.intensity = 0f;
-            if (endCamera != null) endCamera.enabled = false;
+            _state = State.Closed;
+            _stateTime = _orbitTime = 0f;
+            if (_innerGlow != null) _innerGlow.SetActive(false);
+            if (_innerLight != null) { _innerLight.intensity = 0f; _innerLight.enabled = false; }
+            if (_endCamera != null) _endCamera.enabled = false;
+            if (_notice == null) _notice = GetComponent<JungleEndChestNotice>();
         }
 
-        private void OnEnable() => instances.Add(this);
-        private void OnDisable() { instances.Remove(this); RestoreAudio(); }
+        private void OnEnable() => _instances.Add(this);
+        private void OnDisable()
+        {
+            _instances.Remove(this);
+            if (_innerGlow != null) _innerGlow.SetActive(false);
+        }
 
+        private void Start()
+        {
+            _notice?.ResetForRaid();
+            bool discovered = NightRaidTransfer.Workshop != null && NightRaidTransfer.Workshop.jungleEasterEggDiscovered;
+            SetDamageProtection(!discovered);
+            if (discovered) RestoreDiscoveredState();
+        }
+
+        /// <summary>Starts the core absorption and dismisses any blocked-shot notice.</summary>
         public void BeginAbsorb()
         {
-            if (state != State.Closed) return;
-            state = State.Absorbing; stateTime = 0f;
+            if (_state != State.Closed) return;
+            _notice?.Dismiss();
+            _state = State.Absorbing;
+            _stateTime = 0f;
         }
 
-        // END 화면에서 '계속하기': 연출 UI·카메라를 걷고 조작과 HUD를 되돌린다. 상자는 열린 채 남는다.
-        public void Continue()
+        /// <summary>Displays the Jungle-only notice after a blocked projectile hits the shield or core.</summary>
+        public void NotifyBlockedHit()
         {
-            if (state != State.Open) return;
-            state = State.Done; stateTime = 0f;
-            if (endingUI != null) { endingUI.SetWhite(0f); endingUI.SetEnd(0f); }
-            if (endCamera != null) endCamera.enabled = false;
-            var manager = GameManager.Instance;
-            if (manager == null) return;
-            var hud = manager.UI != null ? manager.UI.GetComponent<Canvas>() : null;
-            if (hud != null) hud.enabled = true;
-            manager.SetDialogue(false);
+            if (CanShowNotice()) _notice?.ShowBlockedHit();
+        }
+
+        /// <summary>Starts the discovery animation after both projectile stats qualify.</summary>
+        public void NotifyDiscoveryHit() => BeginAbsorb();
+
+        /// <summary>Saves the confirmed Jungle discovery and prepares the successful workshop return.</summary>
+        /// <param name="error">Receives the reason when the checkpoint or return cannot be prepared.</param>
+        /// <returns>True when the durable return starts; otherwise the current scene remains active.</returns>
+        public bool TryFindGift(out string error)
+        {
+            error = null;
+            if (_state != State.Open) { error = "상자 개방 연출이 끝난 뒤 다시 시도하세요."; return false; }
+            NightRaidController controller = NightRaidController.Instance;
+            if (controller == null) { error = "정글 복귀 연결을 찾을 수 없습니다."; return false; }
+            if (!controller.TryReturnWithJungleGift(out error)) return false;
+            if (_innerGlow != null) _innerGlow.SetActive(false);
+            if (_innerLight != null) { _innerLight.intensity = 0f; _innerLight.enabled = false; }
+            _state = State.Done;
+            if (_endCamera != null) _endCamera.enabled = false;
+            return true;
+        }
+
+        /// <summary>Determines whether a blocked-shot notice is valid for the current closed chest.</summary>
+        public bool CanShowNotice()
+        {
+            if (!IsClosed || _core == null || !_core.gameObject.activeInHierarchy || _orbs == null) return false;
+            foreach (Transform orb in _orbs)
+                if (orb != null && orb.gameObject.activeInHierarchy) return true;
+            return false;
         }
 
         private void Update()
         {
-            if (GameManager.GameplayBlocked && state < State.WhiteOut) return;
+            if (GameManager.GameplayBlocked && _state < State.WhiteOut) return;
             float deltaTime = Time.deltaTime;
-            stateTime += deltaTime;
-            switch (state)
+            _stateTime += deltaTime;
+            switch (_state)
             {
                 case State.Closed:
                     Orbit(deltaTime, 1f, 1f);
                     break;
                 case State.Absorbing:
-                    float t = Mathf.Clamp01(stateTime / absorbDuration);
-                    // 처음에는 천천히, 끝으로 갈수록 빠르게 빨려 든다.
+                    float t = Mathf.Clamp01(_stateTime / _absorbDuration);
                     Orbit(deltaTime, 1f + t * 3f, 1f - t * t);
                     PulseCore(t);
                     if (t >= 1f) BeginWhiteOut();
                     break;
                 case State.WhiteOut:
-                    float white = Mathf.Clamp01(stateTime / whiteInDuration);
-                    if (endingUI != null) endingUI.SetWhite(white);
+                    float white = Mathf.Clamp01(_stateTime / _whiteInDuration);
+                    if (_endingUI != null) _endingUI.SetWhite(white);
                     if (white >= 1f) BeginOpen();
                     break;
                 case State.Opening:
-                    float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(stateTime / openDuration));
-                    if (lid != null) lid.localRotation = lidClosed * Quaternion.Euler(lidOpenAngle * k, 0f, 0f);
-                    if (innerLight != null) innerLight.intensity = openLightIntensity * k;
-                    if (endingUI != null) endingUI.SetWhite(1f - Mathf.Clamp01(stateTime / whiteOutDuration));
-                    if (stateTime >= openDuration) { state = State.Open; stateTime = 0f; RestoreAudio(); }
+                    float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(_stateTime / _openDuration));
+                    if (_lid != null) _lid.localRotation = _lidClosed * Quaternion.Euler(_lidOpenAngle * k, 0f, 0f);
+                    if (_innerLight != null) _innerLight.intensity = _openLightIntensity * k;
+                    if (_endingUI != null) _endingUI.SetWhite(1f - Mathf.Clamp01(_stateTime / _whiteOutDuration));
+                    if (_stateTime >= _openDuration)
+                    {
+                        _state = State.Open;
+                        _stateTime = 0f;
+                    }
                     break;
                 case State.Open:
-                    if (endingUI != null) endingUI.SetEnd(stateTime / endFadeDuration);
+                    float endAlpha = Mathf.Clamp01(_stateTime / _endFadeDuration);
+                    if (_endingUI != null) _endingUI.SetEnd(endAlpha);
                     break;
             }
         }
 
+        /// <summary>Updates orbiting spheres during absorption using the supplied time and scale factors.</summary>
+        /// <param name="deltaTime">Frame time to advance the orbit.</param>
+        /// <param name="speedScale">Multiplier applied to the orbit speed.</param>
+        /// <param name="radiusFactor">Multiplier applied to the orbit radius and sphere scale.</param>
         private void Orbit(float deltaTime, float speedScale, float radiusFactor)
         {
-            orbitTime += deltaTime * speedScale;
+            _orbitTime += deltaTime * speedScale;
             float shrink = radiusFactor < 0.25f ? radiusFactor / 0.25f : 1f;
-            for (int i = 0; i < orbs.Length; i++)
+            for (int i = 0; i < _orbs.Length; i++)
             {
-                if (orbs[i] == null) continue;
-                orbs[i].localPosition = Quaternion.AngleAxis(orbSpeed[i] * orbitTime, orbAxis[i]) * (orbStart[i] * radiusFactor);
-                orbs[i].localScale = orbScale[i] * shrink;
+                if (_orbs[i] == null) continue;
+                _orbs[i].localPosition = Quaternion.AngleAxis(_orbSpeed[i] * _orbitTime, _orbAxis[i]) * (_orbStart[i] * radiusFactor);
+                _orbs[i].localScale = _orbScale[i] * shrink;
             }
         }
 
+        /// <summary>Scales and shakes the core according to normalized absorption progress.</summary>
+        /// <param name="t">Absorption progress from zero to one.</param>
         private void PulseCore(float t)
         {
-            if (core == null) return;
-            float shiver = 1f + 0.05f * Mathf.Sin(stateTime * 30f) * t;
-            core.localScale = coreScale * (1f + 0.4f * t) * shiver;
+            if (_core == null) return;
+            float shiver = 1f + 0.05f * Mathf.Sin(_stateTime * 30f) * t;
+            _core.localScale = _coreScale * (1f + 0.4f * t) * shiver;
         }
 
-        // 흡수가 끝나면 조작·적 행동을 막고 HUD를 숨긴 채 화면을 하얗게 덮는다.
+        /// <summary>Blocks ordinary audio, plays the one-shot discovery clip, hides the workshop HUD, and starts the white-screen transition.</summary>
         private void BeginWhiteOut()
         {
-            state = State.WhiteOut; stateTime = 0f;
-            var manager = GameManager.Instance;
+            _state = State.WhiteOut;
+            _stateTime = 0f;
+            SoundManager.BeginJungleEasterEggAudio();
+            GameManager manager = GameManager.Instance;
             if (manager == null) return;
             manager.SetDialogue(true);
-            var hud = manager.UI != null ? manager.UI.GetComponent<Canvas>() : null;
+            Canvas hud = manager.UI != null ? manager.UI.GetComponent<Canvas>() : null;
             if (hud != null) hud.enabled = false;
         }
 
-        // 화면이 완전히 하얀 동안 구체·코어·방어막을 치우고 카메라를 상자 위로 옮긴다.
+        /// <summary>Removes the shield and starts the existing camera and lid animation.</summary>
         private void BeginOpen()
         {
-            state = State.Opening; stateTime = 0f;
-            if (zone != null) zone.gameObject.SetActive(false);
-            if (innerGlow != null) innerGlow.SetActive(true);
-            if (endCamera != null) endCamera.enabled = true;
-            // 뚜껑이 열리는 동안 주변 소리를 차단한다.
-            savedListenerVolume = AudioListener.volume; audioMuted = true;
-            AudioListener.volume = 0f;
+            _state = State.Opening;
+            _stateTime = 0f;
+            if (_zone != null) _zone.gameObject.SetActive(false);
+            if (_core != null) _core.gameObject.SetActive(false);
+            if (_orbs != null)
+                foreach (Transform orb in _orbs)
+                    if (orb != null) orb.gameObject.SetActive(false);
+            if (_innerGlow != null) _innerGlow.SetActive(true);
+            if (_innerLight != null) _innerLight.enabled = true;
+            if (_endCamera != null) _endCamera.enabled = true;
         }
 
-        private void RestoreAudio()
+        /// <summary>Restores the opened chest state and black appearance from a persisted discovery.</summary>
+        private void RestoreDiscoveredState()
         {
-            if (!audioMuted) return;
-            audioMuted = false;
-            AudioListener.volume = savedListenerVolume;
+            _state = State.Done;
+            if (_zone != null) _zone.gameObject.SetActive(false);
+            if (_core != null) _core.gameObject.SetActive(false);
+            if (_orbs != null)
+                foreach (Transform orb in _orbs)
+                    if (orb != null) orb.gameObject.SetActive(false);
+            if (_innerGlow != null) _innerGlow.SetActive(false);
+            if (_innerLight != null) { _innerLight.intensity = 0f; _innerLight.enabled = false; }
+            if (_endCamera != null) _endCamera.enabled = false;
+            if (_lid != null) _lid.localRotation = _lidClosed * Quaternion.Euler(_lidOpenAngle, 0f, 0f);
+            if (_discoveredMaterial != null && _discoveredRenderers != null)
+                foreach (Renderer targetRenderer in _discoveredRenderers)
+                    if (targetRenderer != null) targetRenderer.sharedMaterial = _discoveredMaterial;
+            if (_endingUI != null) { _endingUI.SetWhite(0f); _endingUI.SetEnd(0f); }
         }
+
+        /// <summary>Protects chest targets before discovery and allows their normal destruction afterward.</summary>
+        /// <param name="value">True while the discovery is not confirmed.</param>
+        private void SetDamageProtection(bool value)
+        {
+            if (_discoveredTargets == null) return;
+            foreach (DestructibleTarget target in _discoveredTargets)
+                if (target != null) target.DamageProtected = value;
+        }
+
     }
 }

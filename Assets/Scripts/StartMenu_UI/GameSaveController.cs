@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+
 using UnityEngine;
 namespace WeaponWorkshop
 {
@@ -12,6 +13,9 @@ namespace WeaponWorkshop
         [SerializeField, HideInInspector] private FirstPersonPlayer player;
         [SerializeField, HideInInspector] private EquipableWeapon corePrefab;
         [SerializeField, HideInInspector] private Workbench[] workbenches;
+        private bool _jungleEasterEggDiscovered;
+        private bool _developerGiftClaimed;
+        private string _pendingGiftReturnScene;
         private Coroutine autoSaveRoutine;
         // 진행도는 현재 세이브에 속한다. 다른 슬롯을 로드할 때는 해당 슬롯 값으로 복원한다.
         private int raidClearProgress;
@@ -23,6 +27,82 @@ namespace WeaponWorkshop
         private bool retired;
         private int retirementSavedDay = -1;
         public bool IsRetired => retired;
+        public bool JungleEasterEggDiscovered => _jungleEasterEggDiscovered;
+        public bool DeveloperGiftClaimed => _developerGiftClaimed;
+        public bool HasPendingDeveloperGift => _jungleEasterEggDiscovered && !_developerGiftClaimed;
+        public EquipableWeapon CorePrefab => corePrefab;
+
+        /// <summary>
+        /// Adds the Jungle discovery, reward-song unlock, and successful clear to the checkpoint written before return.
+        /// checkpoint is the Main save snapshot; scene is its stable raid scene key and error explains rejected data.
+        /// </summary>
+        public static bool PrepareJungleGiftCheckpoint(GameSaveData checkpoint, string scene, out string error)
+        {
+            error = null;
+            if (checkpoint == null || scene != "NightRaid_JungleCampus" || checkpoint.sceneName != "Main")
+            { error = "정글 보상 저장 상태를 확인할 수 없습니다."; return false; }
+            RaidMapData.Region region = TableManager.Instance.RaidMap.Find(scene);
+            SoundData.Raid raid = SoundInfo.Raid(scene);
+            SoundData.Track rewardTrack = SoundInfo.RaidRewardTrack(scene);
+            if (region == null || raid == null || rewardTrack == null)
+            { error = "정글 클리어 또는 보상 곡 표 연결을 찾을 수 없습니다."; return false; }
+
+            var clearedScenes = new HashSet<string>(checkpoint.clearedRaidScenes ?? Array.Empty<string>(), StringComparer.Ordinal);
+            clearedScenes.Add(scene);
+            var unlockedTracks = new HashSet<string>(checkpoint.unlockedMainTrackIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+            unlockedTracks.Add(rewardTrack.id);
+            checkpoint.version = 10;
+            checkpoint.jungleEasterEggDiscovered = true;
+            checkpoint.developerGiftClaimed = false;
+            checkpoint.pendingGiftReturnScene = scene;
+            checkpoint.clearedRaidScenes = new List<string>(clearedScenes).ToArray();
+            checkpoint.raidClearProgress = Math.Max(SoundInfo.ClampProgress(checkpoint.raidClearProgress),
+                SoundInfo.ClampProgress(raid.number));
+            checkpoint.unlockedMainTrackIds = new List<string>(unlockedTracks).ToArray();
+            checkpoint.trackUnlocksMigrated = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Marks the pending developer gift as claimed in runtime save state without saving it immediately.
+        /// Returns false if the gift has already been claimed or is not pending.
+        /// </summary>
+        public bool TryMarkDeveloperGiftClaimed()
+        {
+            if (!HasPendingDeveloperGift) return false;
+            _developerGiftClaimed = true;
+            RefreshJungleGift();
+            return true;
+        }
+
+        /// <summary>
+        /// Updates the Main scene gift using the restored discovered and claimed state.
+        /// </summary>
+        public void RefreshJungleGift()
+        {
+            FindUniqueSceneComponent<JungleGiftReward>(gameObject.scene)?.SyncFromSaveState(this);
+        }
+
+        /// <summary>
+        /// Clears the discovery, claim, and pending-return state for a new game.
+        /// </summary>
+        private void ResetJungleGiftState()
+        {
+            _jungleEasterEggDiscovered = false;
+            _developerGiftClaimed = false;
+            _pendingGiftReturnScene = null;
+        }
+
+        /// <summary>
+        /// Restores the gift transaction fields from the selected save data.
+        /// data is the save file or return checkpoint being loaded.
+        /// </summary>
+        private void RestoreJungleGiftState(GameSaveData data)
+        {
+            _jungleEasterEggDiscovered = data.jungleEasterEggDiscovered;
+            _developerGiftClaimed = data.developerGiftClaimed;
+            _pendingGiftReturnScene = data.pendingGiftReturnScene;
+        }
         public void CompleteRetirement()
         {
             retired = true;
@@ -162,6 +242,9 @@ namespace WeaponWorkshop
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
                 retired = retired,
+                jungleEasterEggDiscovered = _jungleEasterEggDiscovered,
+                developerGiftClaimed = _developerGiftClaimed,
+                pendingGiftReturnScene = _pendingGiftReturnScene,
                 slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
                 unlockedMainTrackIds = _unlockedMainTrackIds.ToArray(), trackUnlocksMigrated = _trackUnlocksMigrated,
@@ -207,6 +290,7 @@ namespace WeaponWorkshop
         private void Start()
         {
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) InitializeSaveState();
+            RefreshJungleGift();
             // 저장/복귀 복원이 끝난 뒤에만 새 Main BGM을 허용한다.
             SoundManager.InitializeMainMusic(raidClearProgress, unsuccessfulRaidReturn);
             RefreshRetireButton();
@@ -260,6 +344,7 @@ namespace WeaponWorkshop
             var data = GameSaveFiles.PendingLoad;
             if (data == null)
             {
+                ResetJungleGiftState();
                 InitializeNewTrackUnlocks();
                 QueueAutoSave(dayManager != null ? dayManager.DayNumber : 0, true);
                 return;
@@ -267,6 +352,23 @@ namespace WeaponWorkshop
             GameSaveFiles.PendingLoad = null;
             if (!restoreOnStart) return;
             Restore(data);
+            if (!string.IsNullOrEmpty(_pendingGiftReturnScene)) StartCoroutine(ResumePendingGiftReturnNextFrame());
+        }
+
+        /// <summary>
+        /// Replays the already saved successful raid return after a durable gift transaction is loaded.
+        /// </summary>
+        private IEnumerator ResumePendingGiftReturnNextFrame()
+        {
+            yield return null;
+            string scene = _pendingGiftReturnScene;
+            SoundData.Raid raid = SoundInfo.Raid(scene);
+            if (scene != "NightRaid_JungleCampus" || raid == null)
+            { Debug.LogError("저장된 정글 선물 귀환을 복원할 수 없습니다.", this); yield break; }
+            pendingClearedRaid = raid.number;
+            _pendingClearedRaidScene = scene;
+            unsuccessfulRaidReturn = false;
+            AdvanceAfterRaid(true);
         }
         /// <summary>
         /// 클리어 결과를 진행도와 곡 해금에 반영한 뒤 다음 날로 이동한다.
@@ -284,6 +386,8 @@ namespace WeaponWorkshop
                 string rewardTrackId = UnlockRaidRewardTrack(clearedScene);
                 pendingClearedRaid = 0;
                 _pendingClearedRaidScene = null;
+                if (string.Equals(_pendingGiftReturnScene, clearedScene, StringComparison.Ordinal))
+                    _pendingGiftReturnScene = null;
                 SoundManager.CompleteRaidReturn(raidClearProgress, rewardTrackId, _unlockedMainTrackIds.ToArray());
                 QueueAutoSave(dayManager.DayNumber, false);
             }
@@ -356,9 +460,11 @@ namespace WeaponWorkshop
             dayManager.RestoreSavedState(data);
             RestoreRaidProgress(data);
             RestoreTrackUnlocks(data);
+            RestoreJungleGiftState(data);
             retired = data.retired;
             retirementSavedDay = retired ? data.day : -1;
             RefreshRetireButton();
+            RefreshJungleGift();
         }
         // 구버전 세이브의 누락 필드는 기본값 0이다. 음수는 0으로 보정하고 진행도를 보존한다.
         private void RestoreRaidProgress(GameSaveData data)

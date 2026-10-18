@@ -65,6 +65,7 @@ namespace WeaponWorkshop
         private void Update()
         {
             if (destroyed || player == null || (core != null && core.IsDestroyed)) return;
+            if (EndChest.IsDiscoveryPresentationActive) return;
             if (rotor != null) rotor.Rotate(Vector3.up, rotorSpeed * Time.deltaTime, Space.Self);
             if (GameManager.GameplayBlocked) return;
             Vector3 offset = transform.position - player.transform.position;

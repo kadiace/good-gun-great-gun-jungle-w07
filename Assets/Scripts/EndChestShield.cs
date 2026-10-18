@@ -1,14 +1,19 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace WeaponWorkshop
 {
-    // 엔드 상자 구형 범위의 방어막. 중력·유도 조건을 못 채운 플레이어 탄은 표면에서 튕겨 나가고,
-    // 조건을 채운 탄은 통과해 코어로 향한다. 조준선은 방어막을 통과해 코어에 락온된다.
     [DisallowMultipleComponent]
     public sealed class EndChestShield : MonoBehaviour
     {
-        [SerializeField] private EndChestCore core;
+        [FormerlySerializedAs("core"), SerializeField] private EndChestCore _core;
 
-        public bool Deflects(in ProjectileStats stats) => core == null || core.Deflects(stats);
+        /// <summary>Checks whether the shield reflects the supplied projectile.</summary>
+        /// <param name="stats">Projectile stat values captured when it was fired.</param>
+        /// <returns>True when the core is missing or the projectile is below its gravity threshold.</returns>
+        public bool Deflects(in ProjectileStats stats) => _core == null || _core.Deflects(stats);
+
+        /// <summary>Reports a projectile collision that the shield reflected.</summary>
+        public void NotifyHit() => _core?.NotifyShieldHit();
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -41,7 +42,19 @@ namespace WeaponWorkshop
             return true;
         }
 
+        /// <summary>Applies paint to every exposed face using the existing paint exclusions.</summary>
+        /// <param name="assembly">Weapon assembly whose exposed faces receive the material.</param>
+        /// <param name="material">Material assigned to each changed face.</param>
+        /// <returns>True when at least one face changed.</returns>
         public bool ApplyToAllExposedFaces(CubeAssembly assembly, Material material)
+            => ApplyToAllExposedFaces(assembly, material, null);
+
+        /// <summary>Applies paint to exposed faces while optionally excluding one module type.</summary>
+        /// <param name="assembly">Weapon assembly whose exposed faces receive the material.</param>
+        /// <param name="material">Material assigned to each changed face.</param>
+        /// <param name="excludedModuleType">Module type left unchanged, or null to include all normal paint targets.</param>
+        /// <returns>True when at least one face changed.</returns>
+        public bool ApplyToAllExposedFaces(CubeAssembly assembly, Material material, StatType? excludedModuleType)
         {
             if (assembly == null || material == null) return false;
 
@@ -55,6 +68,11 @@ namespace WeaponWorkshop
             {
                 if (block == null || block.GetComponent<ColorModule>() != null ||
                     block.GetComponent<PowerCore>() != null) continue;
+                if (excludedModuleType.HasValue)
+                {
+                    ModuleStats stats = block.GetComponent<ModuleStats>();
+                    if (stats != null && stats.Data != null && stats.Data.ModuleType == excludedModuleType.Value) continue;
+                }
                 ModuleFacePaint paint = block.GetComponent<ModuleFacePaint>();
                 foreach (Vector3Int surfaceNormal in NeighborOffsets)
                 {

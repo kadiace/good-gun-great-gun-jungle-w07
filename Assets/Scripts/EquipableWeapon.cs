@@ -1,7 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+
 using Unity.Profiling;
+
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -167,9 +169,15 @@ namespace WeaponWorkshop
         private Quaternion targetRotation;
         private Vector3 targetScale;
         public Transform OutlineRoot => transform;
+
+        /// <summary>
+        /// Determines whether this visible world weapon can be picked up by the shared interaction path.
+        /// interactor is the player's active Interaction component.
+        /// </summary>
         public bool CanInteract(Interaction interactor)
         {
-            if (!isActiveAndEnabled || IsEquipped || IsMoving || interactor == null || interactor.Player == null) return false;
+            if (!isActiveAndEnabled || GetComponent<DeveloperGiftStagedWeapon>()?.IsStaged == true ||
+                IsEquipped || IsMoving || interactor == null || interactor.Player == null) return false;
             WeaponHolder holder = interactor.Player.GetComponent<WeaponHolder>();
             if (holder == null || !holder.CanEquip) return false;
             // A rack-stored weapon can only be taken when the player's hand is empty.
@@ -251,7 +259,11 @@ namespace WeaponWorkshop
             if (powerCore == null) powerCore = GetComponentInChildren<PowerCore>(true);
             statsSource = powerCore != null ? powerCore.GetComponent<ProjectileStatsSource>() : null;
         }
-        public bool TryFire() => IsEquipped && !IsMoving && powerCore != null && powerCore.TryFire();
+        /// <summary>
+        /// Fires through the existing core only when this is an equipped, non-staged weapon.
+        /// </summary>
+        public bool TryFire() => GetComponent<DeveloperGiftStagedWeapon>()?.IsStaged != true &&
+                                 IsEquipped && !IsMoving && powerCore != null && powerCore.TryFire();
 
         // Charge weapons fire on release instead of while held.
         public bool UsesCharge => statsSource != null && statsSource.UsesCharge;
@@ -421,9 +433,14 @@ namespace WeaponWorkshop
             return holder != null && holder.Equip(this);
         }
 
+        /// <summary>
+        /// Equips this weapon at the player's hand point unless it is a hidden staged reward.
+        /// handPoint is the destination transform owned by WeaponHolder.
+        /// </summary>
         public bool Equip(Transform handPoint)
         {
-            if (IsEquipped || IsMoving || handPoint == null || handPoint.IsChildOf(transform)) return false;
+            if (GetComponent<DeveloperGiftStagedWeapon>()?.IsStaged == true ||
+                IsEquipped || IsMoving || handPoint == null || handPoint.IsChildOf(transform)) return false;
             originalParent = transform.parent;
             originalPosition = transform.localPosition;
             originalRotation = transform.localRotation;

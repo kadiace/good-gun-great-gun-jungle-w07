@@ -1,31 +1,49 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace WeaponWorkshop
 {
-    // 엔드 상자 구형 범위 중앙의 코어. 중력·유도를 모두 갖춘 플레이어 탄만 맞고, 나머지는 그대로 통과한다.
-    // 유도 락온은 TargetHealth + RaidEnemyCore 조합으로 걸리므로 같은 오브젝트에 둔다(체력은 사실상 무한).
     [DisallowMultipleComponent, RequireComponent(typeof(TargetHealth), typeof(RaidEnemyCore))]
     public sealed class EndChestCore : MonoBehaviour
     {
-        [SerializeField] private EndChest chest;
-        [SerializeField, Min(0f)] private float requiredGravity = 1f;
-        [SerializeField, Min(0f)] private float requiredHoming = 1f;
+        [FormerlySerializedAs("chest"), SerializeField] private EndChest _chest;
+        [FormerlySerializedAs("requiredGravity"), SerializeField, Min(0f)] private float _requiredGravity = 1f;
+        [FormerlySerializedAs("requiredHoming"), SerializeField, Min(0f)] private float _requiredHoming = 1f;
 
-        public float RequiredGravity => requiredGravity;
-        public float RequiredHoming => requiredHoming;
+        public float RequiredGravity => _requiredGravity;
+        public float RequiredHoming => _requiredHoming;
 
-        private bool Qualifies(in ProjectileStats stats) =>
-            stats.gravity >= requiredGravity && stats.homing >= requiredHoming;
+        /// <summary>Checks whether the projectile has enough gravity to pass the shield and reach the core.</summary>
+        /// <param name="stats">Projectile stat values captured when it was fired.</param>
+        /// <returns>True when gravity meets the configured threshold.</returns>
+        public bool CanReachCore(in ProjectileStats stats) => stats.gravity >= _requiredGravity;
 
-        public bool AcceptsHit(in ProjectileStats stats) => chest != null && chest.IsClosed && Qualifies(stats);
+        /// <summary>Checks whether the projectile meets both stat thresholds for the discovery animation.</summary>
+        /// <param name="stats">Projectile stat values captured when it was fired.</param>
+        /// <returns>True when gravity and homing both meet their configured thresholds.</returns>
+        public bool QualifiesForDiscovery(in ProjectileStats stats) =>
+            CanReachCore(stats) && stats.homing >= _requiredHoming;
 
-        // 닫혀 있는 동안 조건을 못 채운 탄은 구형 범위(방어막)에서 튕긴다.
-        public bool Deflects(in ProjectileStats stats) => chest != null && chest.IsClosed && !Qualifies(stats);
+        /// <summary>Allows gravity-qualified projectiles to collide with a closed chest core.</summary>
+        /// <param name="stats">Projectile stat values captured when it was fired.</param>
+        /// <returns>True when the chest is closed and gravity meets its threshold.</returns>
+        public bool AcceptsHit(in ProjectileStats stats) => _chest != null && _chest.IsClosed && CanReachCore(stats);
 
-        // ProjectileMotor가 AcceptsHit을 통과한 탄이 실제로 닿았을 때 호출한다.
+        /// <summary>Checks whether a closed chest shield reflects a projectile below the gravity threshold.</summary>
+        /// <param name="stats">Projectile stat values captured when it was fired.</param>
+        /// <returns>True when the chest is closed and gravity is below its threshold.</returns>
+        public bool Deflects(in ProjectileStats stats) => _chest != null && _chest.IsClosed && !CanReachCore(stats);
+
+        /// <summary>Shows the Jungle-only notice after a projectile strikes the shield.</summary>
+        public void NotifyShieldHit() => _chest?.NotifyBlockedHit();
+
+        /// <summary>Shows the Jungle-only notice after a projectile is redirected at the core.</summary>
+        public void NotifyRedirectedHit() => _chest?.NotifyBlockedHit();
+
+        /// <summary>Starts discovery after a qualifying projectile hits the core.</summary>
         public void NotifyHit()
         {
-            if (chest != null) chest.BeginAbsorb();
+            if (_chest != null) _chest.NotifyDiscoveryHit();
         }
     }
 }
