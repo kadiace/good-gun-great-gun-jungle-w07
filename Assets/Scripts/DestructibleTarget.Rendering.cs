@@ -55,15 +55,17 @@ namespace WeaponWorkshop
             tint = Color.Lerp(penetrationColor, Color.white, flash);
             tint.a = penetrationColor.a;
             penetrationFlashProperties.SetColor(PenetrationColorId, tint);
-            originalRenderer.SetPropertyBlock(penetrationFlashProperties);
+            if (damageProperties != null)
+            { damageProperties.SetFloat(PenetrationFlashUntilId, penetrationFlashUntil); originalRenderer.SetPropertyBlock(damageProperties); }
+            else originalRenderer.SetPropertyBlock(penetrationFlashProperties);
         }
 
         private void ResetPenetrationFeedback()
         {
-            if (penetrationFlashActive && originalRenderer != null)
-                originalRenderer.SetPropertyBlock(penetrationOriginalProperties);
-            penetrationFlashActive = false;
             damageProperties?.SetFloat(PenetrationFlashUntilId, 0f);
+            if (penetrationFlashActive && originalRenderer != null)
+                originalRenderer.SetPropertyBlock(damageProperties ?? penetrationOriginalProperties);
+            penetrationFlashActive = false;
         }
 
         // Cache bounded meshes per target; a narrow hole only rebuilds nearby chunks.
@@ -72,9 +74,6 @@ namespace WeaponWorkshop
         {
             public Mesh mesh;
             public bool dirty = true;
-            public bool damageDirty = true, hasDamage;
-            public readonly List<int> cellIndices = new List<int>();
-            public readonly List<Vector2> damageUV = new List<Vector2>();
             public CombineInstance[] combines = System.Array.Empty<CombineInstance>();
         }
         private readonly Dictionary<Vector3Int, RenderChunk> renderChunks = new Dictionary<Vector3Int, RenderChunk>();
@@ -153,13 +152,11 @@ namespace WeaponWorkshop
                                     if (HasCell(new Vector3Int(x,y,z))) count++;
                         if (chunk.combines.Length != count) chunk.combines = new CombineInstance[count];
                         int used = 0;
-                        chunk.cellIndices.Clear();
                         for (int x = origin.x; x < Mathf.Min(origin.x + RenderChunkWidth, divisions.x); x++)
                             for (int y = origin.y; y < Mathf.Min(origin.y + RenderChunkWidth, divisions.y); y++)
                                 for (int z = origin.z; z < Mathf.Min(origin.z + RenderChunkWidth, divisions.z); z++)
                                     if (TryGetCell(new Vector3Int(x,y,z), out var cell))
                                     {
-                                        chunk.cellIndices.Add(CellIndex(cell.coordinate));
                                         chunk.combines[used++] = new CombineInstance { mesh = cellMesh,
                                             transform = Matrix4x4.TRS(cell.localPosition,Quaternion.identity,cell.localScale) };
                                     }
@@ -174,7 +171,6 @@ namespace WeaponWorkshop
                             if (used > 0) chunk.mesh.CombineMeshes(chunk.combines, true, true, false);
                         }
                         chunk.dirty = false;
-                        chunk.damageDirty = true;
                     }
                     renderDirty = false;
                 }
@@ -182,60 +178,100 @@ namespace WeaponWorkshop
             foreach (var chunk in renderChunks.Values)
                 if (chunk.mesh != null && chunk.mesh.vertexCount > 0)
                 {
-                    if (chunk.damageDirty) UpdateChunkDamage(chunk);
-                    Graphics.DrawMesh(chunk.mesh,CellRoot.localToWorldMatrix,instancedMaterial,targetMesh.gameObject.layer,
-                        null,0,penetrationFlashActive ? penetrationFlashProperties : null,UnityEngine.Rendering.ShadowCastingMode.On,true);
-                    if (chunk.hasDamage)
-                    {
-                        EnsureDamageMaterial();
-                        if (damageOverlayMaterial != null)
-                            Graphics.DrawMesh(chunk.mesh, CellRoot.localToWorldMatrix, damageOverlayMaterial,
-                                targetMesh.gameObject.layer, null, 0, damageProperties,
-                                UnityEngine.Rendering.ShadowCastingMode.Off, false);
-                    }
+                    Graphics.DrawMesh(chunk.mesh, CellRoot.localToWorldMatrix, instancedMaterial, targetMesh.gameObject.layer,
+                        null, 0, CurrentDamageProperties, UnityEngine.Rendering.ShadowCastingMode.On, true);
                 }
         }
 
-        // Shared overlay preserves the original material/lighting; only damaged chunks get another draw.
-        private static Material damageOverlayMaterial;
+        private Material damageMaterial, undamagedMaterial;
+        private static Material damageTemplate;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void PrepareDamageShader()
+        {
+            damageTemplate = Resources.Load<Material>("DestructibleDamageLit");
+            Resources.Load<ShaderVariantCollection>("DestructibleDamageVariants")?.WarmUp();
+        }
         private MaterialPropertyBlock damageProperties;
+        private Texture3D damageTexture;
+        private Vector2[] damagePixels;
+        private bool damageTextureDirty;
+        private Color damageTint = Color.black, hitFlashColor = Color.white;
+        private float hitFlashDuration = .12f, damageTintStrength = .45f;
+        private static readonly int DamageTextureId = Shader.PropertyToID("_CellDamage");
+        private static readonly int DamageOriginId = Shader.PropertyToID("_DamageOrigin");
+        private static readonly int DamageStepId = Shader.PropertyToID("_DamageStep");
+        private static readonly int DamageDimensionsId = Shader.PropertyToID("_DamageDimensions");
         private static readonly int DamageTintId = Shader.PropertyToID("_DamageTint");
         private static readonly int FlashColorId = Shader.PropertyToID("_FlashColor");
         private static readonly int FlashDurationId = Shader.PropertyToID("_FlashDuration");
         private static readonly int DamageStrengthId = Shader.PropertyToID("_DamageStrength");
-
-        private void EnsureDamageMaterial()
-        {
-            if (damageOverlayMaterial == null)
-                damageOverlayMaterial = Resources.Load<Material>("DestructibleDamage");
-            if (damageProperties == null) ConfigureDamageAppearance(null);
-        }
+        private MaterialPropertyBlock CurrentDamageProperties => damageProperties ?? (penetrationFlashActive ? penetrationFlashProperties : null);
 
         private void ConfigureDamageAppearance(ProjectileTuning tuning)
         {
-            damageProperties ??= new MaterialPropertyBlock();
-            damageProperties.SetFloat(PenetrationFlashUntilId, penetrationFlashActive ? penetrationFlashUntil : 0f);
-            damageProperties.SetColor(DamageTintId, tuning != null ? tuning.explosionDamageTint : Color.black);
-            damageProperties.SetColor(FlashColorId, tuning != null ? tuning.explosionHitFlashColor : Color.white);
-            damageProperties.SetFloat(FlashDurationId, tuning != null ? Mathf.Max(0.01f, tuning.explosionHitFlashDuration) : 0.12f);
-            damageProperties.SetFloat(DamageStrengthId, tuning != null ? Mathf.Clamp01(tuning.explosionDamageTintStrength) : 0.45f);
+            if (tuning == null) return;
+            damageTint = tuning.explosionDamageTint; hitFlashColor = tuning.explosionHitFlashColor;
+            hitFlashDuration = Mathf.Max(.01f, tuning.explosionHitFlashDuration);
+            damageTintStrength = Mathf.Clamp01(tuning.explosionDamageTintStrength);
         }
 
-        private void UpdateChunkDamage(RenderChunk chunk)
+        private void SetCellDamageAppearance(Cell cell)
         {
-            chunk.damageUV.Clear();
-            chunk.hasDamage = false;
-            int verticesPerCell = cellMesh.vertexCount;
-            foreach (int index in chunk.cellIndices)
+            if (damageTexture == null)
             {
-                var cell = preparedCells[index];
-                float damage = Mathf.Clamp01((float)(1d - cell.explosionHealth));
-                chunk.hasDamage |= damage > 0f;
-                var value = new Vector2(damage, cell.explosionHitTime);
-                for (int vertex = 0; vertex < verticesPerCell; vertex++) chunk.damageUV.Add(value);
+                // A data texture preserves cell-specific colour without splitting the intact mesh.
+                // Resources reference keeps the shader available in player builds.
+                var template = damageTemplate != null ? damageTemplate : Resources.Load<Material>("DestructibleDamageLit");
+                if (template == null) throw new System.InvalidOperationException("DestructibleDamageLit material is missing.");
+                undamagedMaterial = originalRenderer.sharedMaterial;
+                damageMaterial = new Material(template);
+                damageMaterial.CopyPropertiesFromMaterial(undamagedMaterial);
+                damageTexture = new Texture3D(divisions.x, divisions.y, divisions.z, TextureFormat.RGFloat, false)
+                    { name = "Target cell damage", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+                damagePixels = new Vector2[divisions.x * divisions.y * divisions.z];
+                damageProperties = new MaterialPropertyBlock();
+                if (penetrationFlashActive) originalRenderer.SetPropertyBlock(penetrationOriginalProperties);
+                originalRenderer.GetPropertyBlock(damageProperties);
+                damageProperties.SetTexture(DamageTextureId, damageTexture);
+                damageProperties.SetVector(DamageOriginId, gridOrigin);
+                damageProperties.SetVector(DamageStepId, gridStep);
+                damageProperties.SetVector(DamageDimensionsId, (Vector3)divisions);
+                originalRenderer.sharedMaterial = damageMaterial;
+                if (instancedMaterial != null) { Destroy(instancedMaterial); instancedMaterial = new Material(damageMaterial); }
             }
-            chunk.mesh.SetUVs(3, chunk.damageUV);
-            chunk.damageDirty = false;
+            var coordinate = cell.coordinate;
+            damagePixels[coordinate.x + divisions.x * (coordinate.y + divisions.y * coordinate.z)] =
+                new Vector2(Mathf.Clamp01((float)(1d - cell.explosionHealth)), cell.explosionHitTime);
+            if (!damageTextureDirty) { damageTextureDirty = true; RefreshUpdaterRegistration(); }
+        }
+
+        private void UploadDamageAppearance()
+        {
+            if (!damageTextureDirty || damageTexture == null) return;
+            damageProperties.SetColor(DamageTintId, damageTint);
+            damageProperties.SetColor(FlashColorId, hitFlashColor);
+            damageProperties.SetFloat(FlashDurationId, hitFlashDuration);
+            damageProperties.SetFloat(DamageStrengthId, damageTintStrength);
+            damageProperties.SetFloat(PenetrationFlashUntilId, penetrationFlashActive ? penetrationFlashUntil : 0f);
+            damageTexture.SetPixelData(damagePixels, 0);
+            damageTexture.Apply(false, false);
+            originalRenderer.SetPropertyBlock(damageProperties);
+            damageTextureDirty = false;
+        }
+
+        private void ResetDamageAppearance()
+        {
+            if (damageTexture == null) return;
+            System.Array.Clear(damagePixels, 0, damagePixels.Length);
+            damageTextureDirty = true;
+            RefreshUpdaterRegistration();
+        }
+
+        private void DisposeDamageAppearance()
+        {
+            if (originalRenderer != null && undamagedMaterial != null) originalRenderer.sharedMaterial = undamagedMaterial;
+            if (damageMaterial != null) Destroy(damageMaterial);
+            if (damageTexture != null) Destroy(damageTexture);
         }
 
         private readonly HashSet<Vector3Int> changedBoundary = new HashSet<Vector3Int>();

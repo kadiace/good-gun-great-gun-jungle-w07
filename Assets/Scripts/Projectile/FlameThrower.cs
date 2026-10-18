@@ -168,6 +168,7 @@ namespace WeaponWorkshop
             wall = default;
             float nearest = float.PositiveInfinity;
             int layers = Tuning.collisionLayers & ~LayerMask.GetMask("Energy");
+            PoolManager.FlushExplosionFinish();
             foreach (RaycastHit hit in Physics.RaycastAll(origin, direction, distance, layers, QueryTriggerInteraction.Ignore))
             {
                 if (IsIgnored(hit.collider) || hit.collider.GetComponentInParent<TargetHealth>() != null) continue;
@@ -192,6 +193,7 @@ namespace WeaponWorkshop
             foreach (Segment segment in segments)
             {
                 var candidates = new List<(TargetHealth target, Vector3 point, float distance)>();
+                PoolManager.FlushExplosionFinish();
                 foreach (Collider collider in Physics.OverlapSphere(segment.origin, segment.range, Tuning.collisionLayers,
                              QueryTriggerInteraction.Ignore))
                 {

@@ -46,6 +46,7 @@ namespace WeaponWorkshop
         [SerializeField, Tooltip("빌드에도 포함할 투명 GPU 인스턴싱 파편 머테리얼.")]
         private Material debrisMaterial;
         private Transform CellRoot => targetMesh.transform;
+        internal Matrix4x4 PenetrationGeometryMatrix => CellRoot.localToWorldMatrix;
         [SerializeField, Min(0.01f), Tooltip("월드 좌표 기준 조각 한 변의 길이(m). 가장자리 잔여 조각은 더 작을 수 있습니다.")]
         private float partSize = 0.2f;
         [SerializeField, Min(0f), Tooltip("기본 관통 저항. 관통력>1인 탄환은 현재 저항이 더 낮으면 경로와 교차한 셀만 파괴하고, 같거나 높으면 탄환 관통력만큼 저항을 낮춘 뒤 통과. 탄환은 블록당 관통력1 소모.")]
@@ -95,6 +96,7 @@ namespace WeaponWorkshop
             heatResistance = Mathf.Max(0f, heat);
             waterResistance = Mathf.Max(0f, water);
             if (targetMesh == null) targetMesh = GetComponentInChildren<MeshFilter>(true);
+            intactGridReady = false;
             targetMesh.transform.localScale = size;
             targetMesh.transform.localPosition = new Vector3(0f, size.y * 0.5f, 0f);
             MarkDebrisIndexDirty();
@@ -359,7 +361,7 @@ namespace WeaponWorkshop
         }
 
         internal bool NeedsLateUpdate => isActiveAndEnabled &&
-            (penetrationFlashActive || collisionDirty || (renderDirty && subdivided && cells.Count > 0) || structureDirty || debrisIndexDirty ||
+            (damageTextureDirty || penetrationFlashActive || collisionDirty || (renderDirty && subdivided && cells.Count > 0) || structureDirty || debrisIndexDirty ||
                 (transformMayMove && (!subdivided || cells.Count > 0)));
         internal bool NeedsRenderUpdate => isActiveAndEnabled && subdivided && cells.Count > 0;
         internal bool TracksDebrisTransform => isActiveAndEnabled && transformMayMove && (!subdivided || cells.Count > 0);
@@ -404,6 +406,7 @@ namespace WeaponWorkshop
 
         internal void ProcessLateUpdate()
         {
+            UploadDamageAppearance();
             UpdatePenetrationFeedback();
             RefreshDebrisIndex();
             if (structureDirty)
@@ -413,7 +416,7 @@ namespace WeaponWorkshop
             }
             if (!subdivided) return;
             BreakSmallRemnant();
-            UpdateCollisionRuns();
+            if (collisionDirty) PoolManager.QueueCollisionFinish(this);
             RefreshUpdaterRegistration();
         }
         internal void DrawLateUpdate() { if (subdivided) DrawRemainingChunks(); }
@@ -438,15 +441,13 @@ namespace WeaponWorkshop
             penetratedMaterial = false;
             resistance = PenetrationResistance;
             if (DamageProtected || !isActiveAndEnabled || penetration < 0f) return penetration;
-            Vector3 direction = rotation * Vector3.forward;
+            List<int> touched = null;
             // An intact block already has an exact collider hit. Only split geometry needs a hole check.
             if (subdivided)
             {
                 distance = Mathf.Clamp(distance, 0f, PenetrationStepDistance);
-                Vector3 center = start + direction * (distance * 0.5f);
-                Vector3 sweptExtents = halfExtents;
-                sweptExtents.z += distance * 0.5f;
-                if (CollectParticleCells(center, rotation, sweptExtents).Count == 0)
+                touched = CollectPenetrationCells(start, rotation, halfExtents, distance);
+                if (touched.Count == 0)
                 {
                     penetrated = true;
                     return penetration;
@@ -461,8 +462,13 @@ namespace WeaponWorkshop
             {
                 if (resistance < penetration)
                 {
-                    penetratedMaterial = DestroyPenetrationCells(start, rotation, halfExtents,
-                        Mathf.Clamp(distance, 0f, PenetrationStepDistance));
+                    if (touched == null)
+                    {
+                        Subdivide(false);
+                        distance = Mathf.Clamp(distance, 0f, PenetrationStepDistance);
+                        touched = CollectPenetrationCells(start, rotation, halfExtents, distance);
+                    }
+                    penetratedMaterial = RemovePenetrationCells(touched);
                 }
                 else
                 {
@@ -472,7 +478,6 @@ namespace WeaponWorkshop
                     ShowPenetrationHit();
                 }
             }
-            UpdateCollisionRuns();
             penetrated = true;
             // The caller owns projectile power consumption, separately from wall resistance.
             return penetration;
@@ -485,10 +490,11 @@ namespace WeaponWorkshop
             if (DamageProtected || !isActiveAndEnabled || targetMesh == null || (subdivided && cells.Count == 0)) return false;
             if (!subdivided) Subdivide(false);
             distance = Mathf.Max(0f, distance);
-            Vector3 center = start + (rotation * Vector3.forward) * (distance * 0.5f);
-            Vector3 sweptExtents = halfExtents;
-            sweptExtents.z += distance * 0.5f;
-            var touched = CollectParticleCells(center, rotation, sweptExtents);
+            return RemovePenetrationCells(CollectPenetrationCells(start, rotation, halfExtents, distance));
+        }
+
+        private bool RemovePenetrationCells(List<int> touched)
+        {
             bool changed = touched.Count > 0;
             foreach (int index in touched)
             {
@@ -496,43 +502,164 @@ namespace WeaponWorkshop
                 else RemoveCell(index);
             }
             if (changed) MarkStructureDirty();
-            UpdateCollisionRuns();
+            // Swept segments update cells immediately; colliders wait for the shared batch boundary.
+            if (collisionDirty) PoolManager.QueueCollisionFinish(this);
             return changed;
         }
 
         private static Vector3 Absolute(Vector3 value)
             => new Vector3(Mathf.Abs(value.x), Mathf.Abs(value.y), Mathf.Abs(value.z));
 
+        private struct CellIntersectionQuery
+        {
+            public Matrix4x4 matrix;
+            public Vector3 center, a, b, c, cellX, cellY, cellZ;
+        }
+        private int[] penetrationVisitMarks = System.Array.Empty<int>();
+        private int penetrationVisitVersion;
+
+        private bool PrepareCellQuery(Vector3 center, Quaternion rotation, Vector3 halfExtents,
+            out CellIntersectionQuery query, out Matrix4x4 inverse, out Vector3Int first, out Vector3Int last)
+        {
+            var matrix = CellRoot.localToWorldMatrix;
+            inverse = CellRoot.worldToLocalMatrix;
+            query = new CellIntersectionQuery
+            {
+                matrix = matrix, center = center,
+                a = rotation * Vector3.right * halfExtents.x,
+                b = rotation * Vector3.up * halfExtents.y,
+                c = rotation * Vector3.forward * halfExtents.z,
+                cellX = matrix.MultiplyVector(Vector3.right * 0.5f),
+                cellY = matrix.MultiplyVector(Vector3.up * 0.5f),
+                cellZ = matrix.MultiplyVector(Vector3.forward * 0.5f)
+            };
+            Vector3 localCenter = inverse.MultiplyPoint3x4(center);
+            Vector3 extent = Absolute(inverse.MultiplyVector(query.a))
+                + Absolute(inverse.MultiplyVector(query.b)) + Absolute(inverse.MultiplyVector(query.c));
+            Vector3 tolerance = CellQueryTolerance(inverse);
+            Vector3 min = localCenter - extent - tolerance - gridOrigin;
+            Vector3 max = localCenter + extent + tolerance - gridOrigin;
+            first = new Vector3Int(Mathf.Max(0, Mathf.FloorToInt(min.x / gridStep.x)),
+                Mathf.Max(0, Mathf.FloorToInt(min.y / gridStep.y)), Mathf.Max(0, Mathf.FloorToInt(min.z / gridStep.z)));
+            last = new Vector3Int(Mathf.Min(divisions.x - 1, Mathf.FloorToInt(max.x / gridStep.x)),
+                Mathf.Min(divisions.y - 1, Mathf.FloorToInt(max.y / gridStep.y)),
+                Mathf.Min(divisions.z - 1, Mathf.FloorToInt(max.z / gridStep.z)));
+            return first.x <= last.x && first.y <= last.y && first.z <= last.z;
+        }
+
+        private static Vector3 CellQueryTolerance(Matrix4x4 inverse) =>
+            Absolute(inverse.MultiplyVector(Vector3.right * 0.00001f))
+            + Absolute(inverse.MultiplyVector(Vector3.up * 0.00001f))
+            + Absolute(inverse.MultiplyVector(Vector3.forward * 0.00001f));
+
         private List<int> CollectParticleCells(Vector3 center, Quaternion rotation, Vector3 halfExtents)
         {
             impactCells.Clear();
-            // Transform the bullet OBB into the grid's local space, then use a conservative AABB.
-            // Keep the existing exact intersection test for the few grid cells inside that bound.
-            Transform root = CellRoot;
-            Vector3 localCenter = root.InverseTransformPoint(center);
-            Vector3 extent = Absolute(root.InverseTransformVector(rotation * Vector3.right * halfExtents.x))
-                + Absolute(root.InverseTransformVector(rotation * Vector3.up * halfExtents.y))
-                + Absolute(root.InverseTransformVector(rotation * Vector3.forward * halfExtents.z));
-            Vector3 tolerance = Absolute(root.InverseTransformVector(Vector3.right * 0.00001f))
-                + Absolute(root.InverseTransformVector(Vector3.up * 0.00001f))
-                + Absolute(root.InverseTransformVector(Vector3.forward * 0.00001f));
-            Vector3 min = localCenter - extent - tolerance - gridOrigin;
-            Vector3 max = localCenter + extent + tolerance - gridOrigin;
-            int x0 = Mathf.Max(0, Mathf.FloorToInt(min.x / gridStep.x));
-            int y0 = Mathf.Max(0, Mathf.FloorToInt(min.y / gridStep.y));
-            int z0 = Mathf.Max(0, Mathf.FloorToInt(min.z / gridStep.z));
-            int x1 = Mathf.Min(divisions.x - 1, Mathf.FloorToInt(max.x / gridStep.x));
-            int y1 = Mathf.Min(divisions.y - 1, Mathf.FloorToInt(max.y / gridStep.y));
-            int z1 = Mathf.Min(divisions.z - 1, Mathf.FloorToInt(max.z / gridStep.z));
-            for (int x = x0; x <= x1; x++)
-                for (int y = y0; y <= y1; y++)
-                    for (int z = z0; z <= z1; z++)
-                    {
-                        var coordinate = new Vector3Int(x, y, z);
-                        if (TryGetCell(coordinate, out Cell cell) && IntersectsParticle(cell, center, rotation, halfExtents))
-                            impactCells.Add(CellIndex(coordinate));
-                    }
+            if (PrepareCellQuery(center, rotation, halfExtents, out var query, out _, out var first, out var last))
+                CollectCellBox(first, last, query, 0);
             return impactCells;
+        }
+
+        private void CollectCellBox(Vector3Int first, Vector3Int last, in CellIntersectionQuery query, int stamp)
+        {
+            for (int x = first.x; x <= last.x; x++)
+                for (int y = first.y; y <= last.y; y++)
+                    for (int z = first.z; z <= last.z; z++)
+                    {
+                        int index = x * divisions.y * divisions.z + y * divisions.z + z;
+                        if (stamp != 0)
+                        {
+                            if (penetrationVisitMarks[index] == stamp) continue;
+                            penetrationVisitMarks[index] = stamp;
+                        }
+                        if (grid[index] && IntersectsParticle(preparedCells[index], query)) impactCells.Add(index);
+                    }
+        }
+
+        private List<int> CollectPenetrationCells(Vector3 start, Quaternion rotation, Vector3 halfExtents, float distance)
+        {
+            impactCells.Clear();
+            Vector3 direction = rotation * Vector3.forward;
+            Vector3 sweptExtents = halfExtents;
+            sweptExtents.z += distance * 0.5f;
+            if (!PrepareCellQuery(start + direction * (distance * 0.5f), rotation, sweptExtents,
+                out var query, out var inverse, out var first, out var last)) return impactCells;
+            // Traverse the center line with a conservative footprint, then retain the exact OBB test.
+            Vector3 padding = Absolute(inverse.MultiplyVector(query.a)) + Absolute(inverse.MultiplyVector(query.b))
+                + Absolute(inverse.MultiplyVector(direction * halfExtents.z)) + CellQueryTolerance(inverse);
+            var radius = new Vector3Int(Mathf.CeilToInt(padding.x / gridStep.x),
+                Mathf.CeilToInt(padding.y / gridStep.y), Mathf.CeilToInt(padding.z / gridStep.z));
+            Vector3 from = ToGrid(inverse.MultiplyPoint3x4(start));
+            Vector3 to = ToGrid(inverse.MultiplyPoint3x4(start + direction * distance));
+            if (!ClipGridSegment(ref from, ref to, radius)) return impactCells;
+            var cell = Vector3Int.FloorToInt(from);
+            var end = Vector3Int.FloorToInt(to);
+            int steps = Mathf.Abs(end.x - cell.x) + Mathf.Abs(end.y - cell.y) + Mathf.Abs(end.z - cell.z) + 1;
+            long boxCount = (long)(last.x - first.x + 1) * (last.y - first.y + 1) * (last.z - first.z + 1);
+            double walkCount = (double)steps * (2d * radius.x + 1d) * (2d * radius.y + 1d) * (2d * radius.z + 1d);
+            if (boxCount <= walkCount)
+            {
+                // Short, thick, and axis-aligned sweeps are cheaper as a small box scan.
+                CollectCellBox(first, last, query, 0);
+                return impactCells;
+            }
+            if (penetrationVisitMarks.Length != preparedCells.Length)
+                penetrationVisitMarks = new int[preparedCells.Length];
+            if (penetrationVisitVersion == int.MaxValue)
+            {
+                System.Array.Clear(penetrationVisitMarks, 0, penetrationVisitMarks.Length);
+                penetrationVisitVersion = 0;
+            }
+            int stamp = ++penetrationVisitVersion;
+            Vector3 delta = to - from;
+            var step = new Vector3Int(delta.x > 0f ? 1 : delta.x < 0f ? -1 : 0,
+                delta.y > 0f ? 1 : delta.y < 0f ? -1 : 0, delta.z > 0f ? 1 : delta.z < 0f ? -1 : 0);
+            Vector3 next = new Vector3(NextGridBoundary(from.x, delta.x, cell.x, step.x),
+                NextGridBoundary(from.y, delta.y, cell.y, step.y), NextGridBoundary(from.z, delta.z, cell.z, step.z));
+            Vector3 interval = new Vector3(step.x == 0 ? float.PositiveInfinity : Mathf.Abs(1f / delta.x),
+                step.y == 0 ? float.PositiveInfinity : Mathf.Abs(1f / delta.y),
+                step.z == 0 ? float.PositiveInfinity : Mathf.Abs(1f / delta.z));
+            for (int iteration = 0; iteration < steps; iteration++)
+            {
+                var low = Vector3Int.Max(first, cell - radius);
+                var high = Vector3Int.Min(last, cell + radius);
+                CollectCellBox(low, high, query, stamp);
+                if (cell == end) break;
+                float arrival = Mathf.Min(next.x, Mathf.Min(next.y, next.z));
+                // Advance one axis on ties; this includes the edge-adjacent grid cells too.
+                if (next.x <= arrival) { cell.x += step.x; next.x += interval.x; }
+                else if (next.y <= arrival) { cell.y += step.y; next.y += interval.y; }
+                else { cell.z += step.z; next.z += interval.z; }
+            }
+            return impactCells;
+        }
+
+        private Vector3 ToGrid(Vector3 local) => new Vector3((local.x - gridOrigin.x) / gridStep.x,
+            (local.y - gridOrigin.y) / gridStep.y, (local.z - gridOrigin.z) / gridStep.z);
+
+        private static float NextGridBoundary(float origin, float delta, int cell, int step) =>
+            step == 0 ? float.PositiveInfinity : (cell + (step > 0 ? 1f : 0f) - origin) / delta;
+
+        private bool ClipGridSegment(ref Vector3 from, ref Vector3 to, Vector3Int radius)
+        {
+            Vector3 delta = to - from;
+            float enter = 0f, exit = 1f;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                float low = -radius[axis], high = divisions[axis] + radius[axis];
+                if (Mathf.Abs(delta[axis]) < 1e-12f)
+                {
+                    if (from[axis] < low || from[axis] > high) return false;
+                    continue;
+                }
+                float a = (low - from[axis]) / delta[axis], b = (high - from[axis]) / delta[axis];
+                if (a > b) { float swap = a; a = b; b = swap; }
+                enter = Mathf.Max(enter, a); exit = Mathf.Min(exit, b);
+                if (enter > exit) return false;
+            }
+            to = from + delta * exit;
+            from += delta * enter;
+            return true;
         }
 
         private static bool Separated(Vector3 axis, Vector3 offset, Vector3 a, Vector3 b, Vector3 c,
@@ -544,15 +671,13 @@ namespace WeaponWorkshop
             return Mathf.Abs(Vector3.Dot(axis, offset)) > extent + axis.magnitude * 0.00001f;
         }
 
-        private static bool IntersectsParticle(Cell cell, Vector3 center, Quaternion rotation, Vector3 halfExtents)
+        private static bool IntersectsParticle(Cell cell, in CellIntersectionQuery query)
         {
-            Vector3 a = rotation * Vector3.right * halfExtents.x;
-            Vector3 b = rotation * Vector3.up * halfExtents.y;
-            Vector3 c = rotation * Vector3.forward * halfExtents.z;
-            Vector3 x = cell.TransformVector(Vector3.right * 0.5f);
-            Vector3 y = cell.TransformVector(Vector3.up * 0.5f);
-            Vector3 z = cell.TransformVector(Vector3.forward * 0.5f);
-            Vector3 offset = cell.position - center;
+            Vector3 a = query.a, b = query.b, c = query.c;
+            Vector3 x = query.cellX * cell.localScale.x;
+            Vector3 y = query.cellY * cell.localScale.y;
+            Vector3 z = query.cellZ * cell.localScale.z;
+            Vector3 offset = query.matrix.MultiplyPoint3x4(cell.localPosition) - query.center;
             return !Separated(Vector3.Cross(a, b), offset, a, b, c, x, y, z)
                 && !Separated(Vector3.Cross(b, c), offset, a, b, c, x, y, z)
                 && !Separated(Vector3.Cross(c, a), offset, a, b, c, x, y, z)
@@ -580,42 +705,28 @@ namespace WeaponWorkshop
             if (DamageProtected) return;
             float resistance = Mathf.Max(0f, explosionResistance);
             if (!isActiveAndEnabled || power <= 0f || radius <= 0f) return;
-            if (!subdivided) Subdivide();
-            // One shell is one voxel width. Charge resistance once per destroyed shell,
-            // rather than per voxel or per angular direction; empty shells cost nothing.
-            var shells = new SortedDictionary<int, List<int>>();
-            Vector3 localCenter = CellRoot.InverseTransformPoint(center);
-            float radiusSquared = radius * radius;
-            float step = Mathf.Max(0.01f, partSize);
-            foreach (int cellIndex in cells)
+            var candidates = new List<ExpandingExplosion.Piece>();
+            CollectExplosionPiecesCore(center, radius, Mathf.Max(.01f, partSize), candidates);
+            // Retain legacy shell ordering, but collect virtual cells without splitting an intact target.
+            var shells = new SortedDictionary<int, List<Vector3Int>>();
+            float step = Mathf.Max(.01f, partSize);
+            foreach (var piece in candidates)
             {
-                Cell cell = preparedCells[cellIndex];
-                Vector3 min = cell.localPosition - cell.localScale * 0.5f;
-                Vector3 max = cell.localPosition + cell.localScale * 0.5f;
-                Vector3 nearest = new Vector3(Mathf.Clamp(localCenter.x, min.x, max.x),
-                    Mathf.Clamp(localCenter.y, min.y, max.y), Mathf.Clamp(localCenter.z, min.z, max.z));
-                float distanceSquared = (CellRoot.TransformPoint(nearest) - center).sqrMagnitude;
-                if (distanceSquared > radiusSquared) continue;
-                int shell = Mathf.Max(0, Mathf.CeilToInt(Mathf.Sqrt(distanceSquared) / step - 0.00001f) - 1);
-                if (!shells.TryGetValue(shell, out var layer)) shells[shell] = layer = new List<int>();
-                layer.Add(cellIndex);
+                int shell = Mathf.Max(0, Mathf.CeilToInt(piece.distance / step - .00001f) - 1);
+                if (!shells.TryGetValue(shell, out var layer)) shells[shell] = layer = new List<Vector3Int>();
+                layer.Add(piece.coordinate);
             }
             bool changed = false;
             float remainingPower = power;
             foreach (var shell in shells)
             {
                 if (remainingPower <= 0f) break;
-                foreach (int cellIndex in shell.Value)
-                {
-                    Cell cell = preparedCells[cellIndex];
-                    changed |= ApplyExplosionDamage(cell.coordinate, remainingPower, center, remainingPower)
-                        == ExplosionDamageResult.Destroyed;
-                }
+                foreach (var coordinate in shell.Value)
+                    changed |= ApplyExplosionDamage(coordinate, remainingPower, center, remainingPower) == ExplosionDamageResult.Destroyed;
                 if (remainingPower < resistance) break;
                 remainingPower = Mathf.Max(0f, remainingPower - resistance);
             }
-            if (changed) MarkStructureDirty();
-            UpdateCollisionRuns();
+            if (changed) { MarkStructureDirty(); PoolManager.QueueCollisionFinish(this); }
         }
 
         // 회전된 박스 안에 중심이 든 칸을 저항과 무관하게 모두 파괴(탱크 압착용). 파괴한 칸 수를 반환.
@@ -702,18 +813,13 @@ namespace WeaponWorkshop
             if (!isActiveAndEnabled || targetMesh == null) return true;
             if (!subdivided && originalRenderer != null &&
                 originalRenderer.bounds.SqrDistance(center) > radius * radius) return true;
-            if (!subdivided && !IsSubdivisionBudgetAvailable()) return false;
+
             CollectExplosionPiecesCore(center, radius, step, output);
             return true;
         }
 
-        internal bool CanCollectExplosionPiecesNow(Vector3 center, float radius)
-        {
-            if (DamageProtected || !isActiveAndEnabled || targetMesh == null) return true;
-            if (!subdivided && originalRenderer != null &&
-                originalRenderer.bounds.SqrDistance(center) > radius * radius) return true;
-            return subdivided || IsSubdivisionBudgetAvailable();
-        }
+        // Collection reads geometry metadata only; topology is created at the first actual removal.
+        internal bool CanCollectExplosionPiecesNow(Vector3 center, float radius) => true;
 
         private void CollectExplosionPiecesCore(Vector3 center, float radius, float step, List<ExpandingExplosion.Piece> output)
         {
@@ -721,7 +827,7 @@ namespace WeaponWorkshop
             if (!isActiveAndEnabled || targetMesh == null) return;
             if (!subdivided && originalRenderer != null &&
                 originalRenderer.bounds.SqrDistance(center) > radius * radius) return;
-            if (!subdivided) Subdivide();
+            PrepareIntactGrid();
             Transform root = CellRoot;
             Vector3 localCenter = root.InverseTransformPoint(center);
             Vector3 localRadius = Absolute(root.InverseTransformVector(Vector3.right * radius))
@@ -741,14 +847,14 @@ namespace WeaponWorkshop
                     for (int z = z0; z <= z1; z++)
                     {
                         var coordinate = new Vector3Int(x, y, z);
-                        if (TryGetCell(coordinate, out _)) impactCells.Add(CellIndex(coordinate));
+                        if (TryGetExplosionCell(coordinate, out _)) impactCells.Add(CellIndex(coordinate));
                     }
             // Preserve the pre-existing cell order for equally timed debris emission.
-            impactCells.Sort((a, b) => preparedCells[a].slot.CompareTo(preparedCells[b].slot));
+            if (subdivided) impactCells.Sort((a, b) => preparedCells[a].slot.CompareTo(preparedCells[b].slot));
             foreach (int cellIndex in impactCells)
             {
-                Cell cell = preparedCells[cellIndex];
-                Vector3Int coordinate = cell.coordinate;
+                var coordinate = new Vector3Int(cellIndex / (divisions.y * divisions.z), (cellIndex / divisions.z) % divisions.y, cellIndex % divisions.z);
+                TryGetExplosionCell(coordinate, out var cell);
                 Vector3 min = cell.localPosition - cell.localScale * 0.5f;
                 Vector3 max = cell.localPosition + cell.localScale * 0.5f;
                 Vector3 nearest = new Vector3(Mathf.Clamp(localCenter.x, min.x, max.x),
@@ -766,7 +872,9 @@ namespace WeaponWorkshop
         public bool DestroyExplosionPiece(Vector3Int coordinate, Vector3 center, float force)
         {
             if (DamageProtected) return false;
-            if (!isActiveAndEnabled || !TryGetCell(coordinate, out var cell)) return false;
+            if (!isActiveAndEnabled) return false;
+            if (!subdivided) Subdivide(false);
+            if (!TryGetCell(coordinate, out var cell)) return false;
             Vector3 direction = (cell.position - center).normalized;
             Detach(CellIndex(coordinate), direction * force + Vector3.up * (force * 0.05f));
             MarkStructureDirty();
@@ -785,6 +893,7 @@ namespace WeaponWorkshop
             Physics.SyncTransforms();
             foreach (var target in targets)
                 if (target != null) StructuralSupportGraph.Changed(target);
+            StructuralSupportGraph.NotifyPhysicsSynchronized();
         }
 
         // 월드 좌표를 메시 범위로 당겨 해당 칸이 아직 붙어 있는지 확인. 분할 전에는 온전한 상태로 본다.
@@ -896,12 +1005,13 @@ namespace WeaponWorkshop
                 foreach (int cellIndex in impactCells)
                     if (!keep.Contains(preparedCells[cellIndex].coordinate)) RemoveCell(cellIndex);
                 restoringSave = false;
-                RestoreExplosionDamage(state.explosionDamage);
                 structureDirty = false; renderDirty = true;
             }
             penetrationResistanceLoss = float.IsNaN(state.penetrationResistanceLoss) || float.IsInfinity(state.penetrationResistanceLoss)
                 ? 0f : Mathf.Clamp(state.penetrationResistanceLoss, 0f, Mathf.Max(0f, penetrationResistance));
             transform.localPosition = state.position; transform.localRotation = state.rotation; transform.localScale = state.scale;
+            if (!state.subdivided) { intactDamage.Clear(); ResetDamageAppearance(); }
+            RestoreExplosionDamage(state.explosionDamage);
             MarkDebrisIndexDirty();
             StructuralSupportGraph.Changed(this);
         }
@@ -909,6 +1019,8 @@ namespace WeaponWorkshop
         public void ResetTarget()
         {
             ResetPenetrationFeedback();
+            intactDamage.Clear();
+            ResetDamageAppearance();
             penetrationResistanceLoss = 0f;
             if (!subdivided) return;
             debrisCloud?.ClearDebris();
@@ -1109,7 +1221,7 @@ namespace WeaponWorkshop
             subdivided = true;
             Material material = originalRenderer.sharedMaterial;
             instancedMaterial = new Material(material) { enableInstancing = true };
-            foreach (Collider collider in originalColliders.Keys) collider.enabled = false;
+            // Retain the original broad-phase shape until the deferred collision rebuild.
             originalRenderer.enabled = false;
             Bounds bounds = targetMesh.sharedMesh.bounds;
             Vector3 axisScale = new Vector3(CellRoot.TransformVector(Vector3.right).magnitude,
@@ -1155,11 +1267,13 @@ namespace WeaponWorkshop
                             explosionHealth = 1d, explosionHitTime = -1000f,
                             localPosition = localPosition, localScale = cellSize
                         };
+                        if (intactDamage.TryGetValue(index, out var damage))
+                        { cell.explosionHealth = damage.explosionHealth; cell.explosionHitTime = damage.explosionHitTime; }
                         preparedCells[index] = cell;
                         cells.Add(index);
                         grid[index] = true;
                     }
-            EnsureDebrisCloud();
+            intactDamage.Clear();
             renderDirty = true;
             InvalidateAllCollisionColumns();
             if (createCollisions) UpdateCollisionRuns();
@@ -1204,6 +1318,7 @@ namespace WeaponWorkshop
             if (!UpdateCollisionRunsCore()) return;
             Physics.SyncTransforms();
             StructuralSupportGraph.Changed(this);
+            StructuralSupportGraph.NotifyPhysicsSynchronized();
         }
         private bool UpdateCollisionRunsCore()
         {
@@ -1214,6 +1329,7 @@ namespace WeaponWorkshop
             if (!subdivided || !collisionDirty) return false;
             if (collisionColumns == null)
             {
+                foreach (Collider collider in originalColliders.Keys) collider.enabled = false;
                 collisionColumns = new List<BoxCollider>[divisions.x * divisions.y];
                 dirtyColumnFlags = new bool[collisionColumns.Length];
                 allColumnsDirty = true;
@@ -1300,6 +1416,7 @@ namespace WeaponWorkshop
         {
             DestructibleTargetUpdater.Unregister(this);
             DebrisTargetIndex.Remove(this);
+            DisposeDamageAppearance();
             if (instancedMaterial != null) Destroy(instancedMaterial);
             foreach (var chunk in renderChunks.Values) if (chunk.mesh != null) Destroy(chunk.mesh);
             if (collisionColumns != null)

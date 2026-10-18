@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -20,8 +19,7 @@ namespace WeaponWorkshop
         private Quaternion shotRotation;
         private float penetration, explosion;
         private bool exploded;
-        private readonly HashSet<DestructibleTarget> passedTargets = new HashSet<DestructibleTarget>();
-        private readonly HashSet<DestructibleTarget> carvedTargets = new HashSet<DestructibleTarget>();
+        private readonly PenetrationPassages passages = new PenetrationPassages();
 
         public void Initialize(Vector3 travelDirection, float movementSpeed, Transform owner, Transform weapon,
             WeaponStats stats = default)
@@ -29,8 +27,7 @@ namespace WeaponWorkshop
             direction = travelDirection.normalized;
             speed = Mathf.Max(0f, movementSpeed);
             penetration = Mathf.Max(0f, stats.penetration);
-            passedTargets.Clear();
-            carvedTargets.Clear();
+            passages.Clear();
             explosion = Mathf.Max(0f, stats.explosion);
             exploded = false;
             traveledDistance = 0f;
@@ -69,15 +66,17 @@ namespace WeaponWorkshop
             {
             float nearest = distance;
             bool hitObstacle = false;
-            RaycastHit nearestHit = default;
+            CombatPhysicsQueries.Hit nearestHit = default;
             int layers = (collisionLayers | LayerMask.GetMask("Weapon")) & ~LayerMask.GetMask("Energy");
-            foreach (RaycastHit hit in Physics.BoxCastAll(transform.position, halfExtents, direction,
-                shotRotation, distance, layers, QueryTriggerInteraction.Ignore))
+            int hitCount = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction,
+                shotRotation, distance, layers, out var hits);
+            for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
             {
+                var hit = hits[hitIndex];
                 Transform hitTransform = hit.collider.transform;
                 var hitTarget = hit.collider.GetComponentInParent<DestructibleTarget>();
                 if (hitTransform.IsChildOf(transform) ||
-                    (hitTarget != null && passedTargets.Contains(hitTarget)) ||
+                    passages.Ignore(hitTarget) ||
                     (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) ||
                     (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) || hit.distance > nearest) continue;
                 nearest = hit.distance;
@@ -97,12 +96,11 @@ namespace WeaponWorkshop
                 {
                     penetration = target.PenetrateAlongLine(penetration, transform.position + direction * 0.001f,
                         shotRotation, halfExtents, 0f, out bool passed, out float resistanceBeforeHit,
-                        out bool destroyedBlock, allowResistanceReduction: !passedTargets.Contains(target));
+                        out bool destroyedBlock, allowResistanceReduction: !passages.Contains(target));
                     bool hitBlock = destroyedBlock || target.PenetrationResistance < resistanceBeforeHit;
                     if (passed && hitBlock)
                     {
-                        passedTargets.Add(target);
-                        if (destroyedBlock) carvedTargets.Add(target);
+                        passages.Record(target, destroyedBlock, transform.position + direction * 0.001f, shotRotation, 0f);
                         penetration = Mathf.Max(0f, penetration - 1f);
                     }
                     if (!exploded && explosion > 0f)
@@ -131,9 +129,7 @@ namespace WeaponWorkshop
 
         private void CarvePassedTargets(float distance)
         {
-            foreach (var target in carvedTargets)
-                if (target != null)
-                    target.DestroyPenetrationCells(transform.position, shotRotation, halfExtents, distance);
+            passages.Carve(transform.position, shotRotation, halfExtents, distance);
         }
 
         private void ShowImpact(Vector3 point, Vector3 normal)
