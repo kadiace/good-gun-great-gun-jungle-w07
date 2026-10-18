@@ -109,9 +109,7 @@ namespace WeaponWorkshop
             if (isClear)
             {
                 int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
-                int earned = 0;
-                foreach (int v in pendingMaterialPickups) earned += v;
-                earned *= perPickup;
+                int earned = pendingMaterialPickups.Count * perPickup;
                 player.GetComponent<PlayerWallet>()?.Credit(earned);
                 materialCrateCredits = earned;
             }
