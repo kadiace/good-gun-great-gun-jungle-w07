@@ -18,6 +18,25 @@ namespace WeaponWorkshop
         private int pendingClearedRaid;
         private string pendingClearedRaidScene;
         private readonly HashSet<string> clearedRaidScenes = new HashSet<string>();
+        private bool retired;
+        private int retirementSavedDay = -1;
+        public bool IsRetired => retired;
+        public void CompleteRetirement()
+        {
+            retired = true;
+            retirementSavedDay = dayManager.DayNumber;
+            if (autoSaveRoutine != null)
+            {
+                StopCoroutine(autoSaveRoutine);
+                autoSaveRoutine = null;
+            }
+            RefreshRetireButton();
+        }
+        private void RefreshRetireButton()
+        {
+            var button = FindUniqueSceneComponent<RetireButton>(gameObject.scene);
+            if (button != null) button.gameObject.SetActive(!retired);
+        }
         public bool HasClearedRaid(string scene) => !string.IsNullOrEmpty(scene) && clearedRaidScenes.Contains(scene);
         public float SaleBonusRatio
         {
@@ -107,10 +126,16 @@ namespace WeaponWorkshop
         public bool SaveAuto(out string error)
         {
             error = null;
+            if (retired && dayManager != null && dayManager.DayNumber == retirementSavedDay)
+                return true;
             if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero)
             { error = "튜토리얼을 마친 뒤 저장할 수 있습니다."; return false; }
             if (!TryCaptureWorkshop(out var data, out error)) return false;
-            try { GameSaveFiles.WriteAutoSave(data, prettyPrint); return true; }
+            try
+            {
+                GameSaveFiles.WriteAutoSave(data, prettyPrint);
+                return true;
+            }
             catch (Exception e) when (e is System.IO.IOException || e is UnauthorizedAccessException)
             { error = "자동 저장 파일을 기록하지 못했습니다. " + e.Message; return false; }
         }
@@ -130,6 +155,7 @@ namespace WeaponWorkshop
             var wallet = player.GetComponent<PlayerWallet>();
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
+                retired = retired,
                 slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
                 clearedRaidScenes = clearedRaidScenes.ToArray(),
@@ -176,6 +202,7 @@ namespace WeaponWorkshop
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) InitializeSaveState();
             // 저장/복귀 복원이 끝난 뒤에만 새 Main BGM을 허용한다.
             SoundManager.InitializeMainMusic(raidClearProgress, unsuccessfulRaidReturn);
+            RefreshRetireButton();
         }
         private void InitializeSaveState()
         {
@@ -306,6 +333,9 @@ namespace WeaponWorkshop
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
             RestoreRaidProgress(data);
+            retired = data.retired;
+            retirementSavedDay = retired ? data.day : -1;
+            RefreshRetireButton();
         }
         // 구버전 세이브의 누락 필드는 기본값 0이다. 음수는 0으로 보정하고 진행도를 보존한다.
         private void RestoreRaidProgress(GameSaveData data)

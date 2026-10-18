@@ -162,7 +162,7 @@ namespace WeaponWorkshop
         public int completed, dissatisfied, killed, income, period, nextCustomer, currentCustomer = -1;
         public int constructionCost;
         public int soldConstructionCost;
-        public bool night, settlement, confirmation, inWorkshop;
+        public bool night, settlement, confirmation, inWorkshop, retired;
         public bool startedDayInDebt;
         public int workbench = -1;
         public Vector3 playerPosition, playerEuler, viewEuler, benchEuler;
@@ -298,6 +298,6 @@ namespace WeaponWorkshop
         }
 
         private static string Describe(GameSaveData data)
-            => $"{data.day}일차 · $ {data.balance:N0}\n{new DateTime(data.savedUtcTicks, DateTimeKind.Utc).ToLocalTime():yyyy-MM-dd HH:mm} · 무기 {(data.hasWeapon ? "있음" : "없음")}";
+            => $"{data.day}일차 · $ {data.balance:N0}\n{new DateTime(data.savedUtcTicks, DateTimeKind.Utc).ToLocalTime():yyyy-MM-dd HH:mm} · 무기 {(data.hasWeapon ? "있음" : "없음")}{(data.retired ? " · 은퇴 성공" : "")}";
     }
 }

@@ -326,6 +326,9 @@ namespace WeaponWorkshop
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
             RestoreRaidProgress(data);
+            retired = data.retired;
+            retirementSavedDay = retired ? data.day : -1;
+            RefreshRetireButton();
             return true;
         }
     }
