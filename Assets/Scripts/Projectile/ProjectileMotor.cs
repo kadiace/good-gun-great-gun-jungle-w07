@@ -340,10 +340,18 @@ namespace WeaponWorkshop
                         out passed, out float resistanceBeforeHit, out penetratedMaterial,
                         allowResistanceReduction: !passages.Contains(structure));
                     hitBlock = penetratedMaterial || structure.PenetrationResistance < resistanceBeforeHit;
+                    bool blockedByResistance = !passed && resistanceBeforeHit > penetrationPower;
+                    if (hitBlock) penetrationPower = Mathf.Max(0f, penetrationPower - 1f);
+                    if (blockedByResistance)
+                    {
+                        // Stronger armor consumes the bullet at this impact, before
+                        // ricochet or any passage/health-target handling can run.
+                        StopAtImpact(hit.point, incomingDirection, target);
+                        return;
+                    }
                     if (passed && hitBlock)
                     {
                         passages.Record(structure, penetratedMaterial, transform.position, rotation, lineDistance);
-                        penetrationPower = Mathf.Max(0f, penetrationPower - 1f);
                     }
                 }
                 if (passed && target != null && firstHitOnTarget && penetratedMaterial && effects != null)

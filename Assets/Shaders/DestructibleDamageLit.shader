@@ -2,7 +2,8 @@ Shader "WeaponWorkshop/DestructibleDamageLit"
 {
     Properties
     {
-        [HideInInspector] _CellDamage("Cell damage", 3D) = "" {}
+        [HideInInspector] _DamageChunkSize("Damage chunk size", Vector) = (8,8,8,0)
+        [HideInInspector] _DamageIndexMask("Damage index mask", Float) = 0
         [HideInInspector] _DamageOrigin("Grid origin", Vector) = (0,0,0,0)
         [HideInInspector] _DamageStep("Grid step", Vector) = (1,1,1,0)
         [HideInInspector] _DamageDimensions("Grid dimensions", Vector) = (1,1,1,0)
@@ -105,7 +106,7 @@ Shader "WeaponWorkshop/DestructibleDamageLit"
             AlphaToMask[_AlphaToMask]
 
             HLSLPROGRAM
-            #pragma target 3.5
+            #pragma target 4.5
 
             // -------------------------------------
             // Shader Stages

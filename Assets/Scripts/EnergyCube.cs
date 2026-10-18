@@ -98,10 +98,10 @@ namespace WeaponWorkshop
                         shotRotation, halfExtents, 0f, out bool passed, out float resistanceBeforeHit,
                         out bool destroyedBlock, allowResistanceReduction: !passages.Contains(target));
                     bool hitBlock = destroyedBlock || target.PenetrationResistance < resistanceBeforeHit;
+                    if (hitBlock) penetration = Mathf.Max(0f, penetration - 1f);
                     if (passed && hitBlock)
                     {
                         passages.Record(target, destroyedBlock, transform.position + direction * 0.001f, shotRotation, 0f);
-                        penetration = Mathf.Max(0f, penetration - 1f);
                     }
                     if (!exploded && explosion > 0f)
                     {
@@ -117,6 +117,10 @@ namespace WeaponWorkshop
                         distance -= advance;
                         continue;
                     }
+                    // A blocked bullet disappears at the armor; it must not reach
+                    // the customer/health handling below that armor.
+                    PoolManager.Release(gameObject);
+                    return;
                 }
                 Customer customer = nearestHit.collider.GetComponentInParent<Customer>();
                 if (customer != null) customer.Kill();

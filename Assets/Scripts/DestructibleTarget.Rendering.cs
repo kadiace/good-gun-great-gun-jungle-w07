@@ -192,12 +192,34 @@ namespace WeaponWorkshop
             Resources.Load<ShaderVariantCollection>("DestructibleDamageVariants")?.WarmUp();
         }
         private MaterialPropertyBlock damageProperties;
-        private Texture3D damageTexture;
-        private Vector2[] damagePixels;
-        private bool damageTextureDirty;
+        private sealed class DamagePage
+        {
+            public Vector3Int coordinate;
+            public int slot;
+            public Vector2[] cells;
+            public bool dirty;
+        }
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct DamagePageEntry
+        {
+            public int x, y, z, page;
+        }
+        // Only pages with damage exist. The GPU index is a sparse hash table, not a
+        // volume-sized lookup, so a large untouched building allocates no damage storage.
+        private readonly Dictionary<Vector3Int, DamagePage> damagePages = new();
+        private readonly List<DamagePage> damagePageOrder = new();
+        private readonly List<DamagePage> dirtyDamagePages = new();
+        private GraphicsBuffer damageCellBuffer, damageIndexBuffer;
+        private DamagePageEntry[] damagePageIndex = System.Array.Empty<DamagePageEntry>();
+        private Vector3Int damageChunkSize;
+        private bool damageIndexDirty, damageDataDirty;
+        private int DamagePageCellCount => damageChunkSize.x * damageChunkSize.y * damageChunkSize.z;
         private Color damageTint = Color.black, hitFlashColor = Color.white;
         private float hitFlashDuration = .12f, damageTintStrength = .45f;
-        private static readonly int DamageTextureId = Shader.PropertyToID("_CellDamage");
+        private static readonly int DamageCellsId = Shader.PropertyToID("_DamageCells");
+        private static readonly int DamageIndexId = Shader.PropertyToID("_DamagePageIndex");
+        private static readonly int DamageIndexMaskId = Shader.PropertyToID("_DamageIndexMask");
+        private static readonly int DamageChunkSizeId = Shader.PropertyToID("_DamageChunkSize");
         private static readonly int DamageOriginId = Shader.PropertyToID("_DamageOrigin");
         private static readonly int DamageStepId = Shader.PropertyToID("_DamageStep");
         private static readonly int DamageDimensionsId = Shader.PropertyToID("_DamageDimensions");
@@ -217,22 +239,20 @@ namespace WeaponWorkshop
 
         private void SetCellDamageAppearance(Cell cell)
         {
-            if (damageTexture == null)
+            if (damageProperties == null)
             {
-                // A data texture preserves cell-specific colour without splitting the intact mesh.
-                // Resources reference keeps the shader available in player builds.
+                // The same forward pass reads only allocated damage pages, including
+                // while the target still uses its intact, unsplit mesh.
                 var template = damageTemplate != null ? damageTemplate : Resources.Load<Material>("DestructibleDamageLit");
                 if (template == null) throw new System.InvalidOperationException("DestructibleDamageLit material is missing.");
                 undamagedMaterial = originalRenderer.sharedMaterial;
                 damageMaterial = new Material(template);
                 damageMaterial.CopyPropertiesFromMaterial(undamagedMaterial);
-                damageTexture = new Texture3D(divisions.x, divisions.y, divisions.z, TextureFormat.RGFloat, false)
-                    { name = "Target cell damage", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
-                damagePixels = new Vector2[divisions.x * divisions.y * divisions.z];
+                damageChunkSize = Vector3Int.Min(divisions, Vector3Int.one * RenderChunkWidth);
                 damageProperties = new MaterialPropertyBlock();
                 if (penetrationFlashActive) originalRenderer.SetPropertyBlock(penetrationOriginalProperties);
                 originalRenderer.GetPropertyBlock(damageProperties);
-                damageProperties.SetTexture(DamageTextureId, damageTexture);
+                damageProperties.SetVector(DamageChunkSizeId, (Vector3)damageChunkSize);
                 damageProperties.SetVector(DamageOriginId, gridOrigin);
                 damageProperties.SetVector(DamageStepId, gridStep);
                 damageProperties.SetVector(DamageDimensionsId, (Vector3)divisions);
@@ -240,38 +260,103 @@ namespace WeaponWorkshop
                 if (instancedMaterial != null) { Destroy(instancedMaterial); instancedMaterial = new Material(damageMaterial); }
             }
             var coordinate = cell.coordinate;
-            damagePixels[coordinate.x + divisions.x * (coordinate.y + divisions.y * coordinate.z)] =
+            var key = new Vector3Int(coordinate.x / damageChunkSize.x,
+                coordinate.y / damageChunkSize.y, coordinate.z / damageChunkSize.z);
+            if (!damagePages.TryGetValue(key, out var page))
+            {
+                page = new DamagePage { coordinate = key, slot = damagePageOrder.Count,
+                    cells = new Vector2[DamagePageCellCount] };
+                damagePages.Add(key, page);
+                damagePageOrder.Add(page);
+                damageIndexDirty = true;
+            }
+            var local = coordinate - Vector3Int.Scale(key, damageChunkSize);
+            page.cells[local.x + damageChunkSize.x * (local.y + damageChunkSize.y * local.z)] =
                 new Vector2(Mathf.Clamp01((float)(1d - cell.explosionHealth)), cell.explosionHitTime);
-            if (!damageTextureDirty) { damageTextureDirty = true; RefreshUpdaterRegistration(); }
+            MarkDamagePageDirty(page);
+        }
+
+        private void MarkDamagePageDirty(DamagePage page)
+        {
+            if (!page.dirty) { page.dirty = true; dirtyDamagePages.Add(page); }
+            if (!damageDataDirty) { damageDataDirty = true; RefreshUpdaterRegistration(); }
+        }
+
+        private static uint DamagePageHash(Vector3Int key)
+        {
+            unchecked { return (uint)key.x * 73856093u ^ (uint)key.y * 19349663u ^ (uint)key.z * 83492791u; }
         }
 
         private void UploadDamageAppearance()
         {
-            if (!damageTextureDirty || damageTexture == null) return;
+            if (!damageDataDirty || damageProperties == null) return;
+            int pageCells = DamagePageCellCount;
+            int requiredCells = Mathf.NextPowerOfTwo(damagePageOrder.Count) * pageCells;
+            bool grew = damageCellBuffer == null || damageCellBuffer.count < requiredCells;
+            if (grew)
+            {
+                damageCellBuffer?.Release();
+                damageCellBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, requiredCells, sizeof(float) * 2);
+                damageProperties.SetBuffer(DamageCellsId, damageCellBuffer);
+                // Capacity doubles only as new hit regions appear. Re-upload existing
+                // allocated pages on growth; never allocate/upload untouched target cells.
+                foreach (var page in damagePageOrder)
+                    damageCellBuffer.SetData(page.cells, 0, page.slot * pageCells, pageCells);
+            }
+            else
+                foreach (var page in dirtyDamagePages)
+                    damageCellBuffer.SetData(page.cells, 0, page.slot * pageCells, pageCells);
+
+            if (damageIndexDirty)
+            {
+                int indexSize = Mathf.NextPowerOfTwo(Mathf.Max(4, damagePageOrder.Count * 2));
+                if (damagePageIndex.Length != indexSize)
+                {
+                    damagePageIndex = new DamagePageEntry[indexSize];
+                    damageIndexBuffer?.Release();
+                    damageIndexBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, indexSize, sizeof(int) * 4);
+                    damageProperties.SetBuffer(DamageIndexId, damageIndexBuffer);
+                    damageProperties.SetFloat(DamageIndexMaskId, indexSize - 1);
+                }
+                for (int i = 0; i < indexSize; i++) damagePageIndex[i].page = -1;
+                int mask = indexSize - 1;
+                foreach (var page in damagePageOrder)
+                {
+                    var key = page.coordinate;
+                    int bucket = (int)(DamagePageHash(key) & (uint)mask);
+                    while (damagePageIndex[bucket].page >= 0) bucket = (bucket + 1) & mask;
+                    damagePageIndex[bucket] = new DamagePageEntry { x = key.x, y = key.y, z = key.z, page = page.slot };
+                }
+                damageIndexBuffer.SetData(damagePageIndex);
+                damageIndexDirty = false;
+            }
             damageProperties.SetColor(DamageTintId, damageTint);
             damageProperties.SetColor(FlashColorId, hitFlashColor);
             damageProperties.SetFloat(FlashDurationId, hitFlashDuration);
             damageProperties.SetFloat(DamageStrengthId, damageTintStrength);
             damageProperties.SetFloat(PenetrationFlashUntilId, penetrationFlashActive ? penetrationFlashUntil : 0f);
-            damageTexture.SetPixelData(damagePixels, 0);
-            damageTexture.Apply(false, false);
             originalRenderer.SetPropertyBlock(damageProperties);
-            damageTextureDirty = false;
+            foreach (var page in dirtyDamagePages) page.dirty = false;
+            dirtyDamagePages.Clear();
+            damageDataDirty = false;
         }
 
         private void ResetDamageAppearance()
         {
-            if (damageTexture == null) return;
-            System.Array.Clear(damagePixels, 0, damagePixels.Length);
-            damageTextureDirty = true;
-            RefreshUpdaterRegistration();
+            foreach (var page in damagePageOrder)
+            {
+                System.Array.Clear(page.cells, 0, page.cells.Length);
+                MarkDamagePageDirty(page);
+            }
         }
 
         private void DisposeDamageAppearance()
         {
             if (originalRenderer != null && undamagedMaterial != null) originalRenderer.sharedMaterial = undamagedMaterial;
             if (damageMaterial != null) Destroy(damageMaterial);
-            if (damageTexture != null) Destroy(damageTexture);
+            damageCellBuffer?.Release(); damageCellBuffer = null;
+            damageIndexBuffer?.Release(); damageIndexBuffer = null;
+            damagePages.Clear(); damagePageOrder.Clear(); dirtyDamagePages.Clear();
         }
 
         private readonly HashSet<Vector3Int> changedBoundary = new HashSet<Vector3Int>();

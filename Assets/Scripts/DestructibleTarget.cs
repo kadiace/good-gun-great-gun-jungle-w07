@@ -49,7 +49,7 @@ namespace WeaponWorkshop
         internal Matrix4x4 PenetrationGeometryMatrix => CellRoot.localToWorldMatrix;
         [SerializeField, Min(0.01f), Tooltip("월드 좌표 기준 조각 한 변의 길이(m). 가장자리 잔여 조각은 더 작을 수 있습니다.")]
         private float partSize = 0.2f;
-        [SerializeField, Min(0f), Tooltip("기본 관통 저항. 관통력>1인 탄환은 현재 저항이 더 낮으면 경로와 교차한 셀만 파괴하고, 같거나 높으면 탄환 관통력만큼 저항을 낮춘 뒤 통과. 탄환은 블록당 관통력1 소모.")]
+        [SerializeField, Min(0f), Tooltip("기본 관통 저항. 관통력>1인 탄환은 저항이 더 낮으면 경로 셀을 파괴하고 통과. 같으면 저항 감소 후 통과, 더 높으면 저항 감소 후 탄환 소멸. 탄환은 블록당 관통력1 소모.")]
         private float penetrationResistance = 1f;
         private float penetrationResistanceLoss;
         [SerializeField, Min(0f), Tooltip("폭발 파괴 기준과 한 칸(Part Size) 이동할 때 차감하는 폭발력.")]
@@ -361,7 +361,7 @@ namespace WeaponWorkshop
         }
 
         internal bool NeedsLateUpdate => isActiveAndEnabled &&
-            (damageTextureDirty || penetrationFlashActive || collisionDirty || (renderDirty && subdivided && cells.Count > 0) || structureDirty || debrisIndexDirty ||
+            (damageDataDirty || penetrationFlashActive || collisionDirty || (renderDirty && subdivided && cells.Count > 0) || structureDirty || debrisIndexDirty ||
                 (transformMayMove && (!subdivided || cells.Count > 0)));
         internal bool NeedsRenderUpdate => isActiveAndEnabled && subdivided && cells.Count > 0;
         internal bool TracksDebrisTransform => isActiveAndEnabled && transformMayMove && (!subdivided || cells.Count > 0);
@@ -478,7 +478,9 @@ namespace WeaponWorkshop
                     ShowPenetrationHit();
                 }
             }
-            penetrated = true;
+            // Use resistance BEFORE this hit: weakening a stronger wall does not
+            // grant passage to the bullet that just hit it.
+            penetrated = resistance <= penetration;
             // The caller owns projectile power consumption, separately from wall resistance.
             return penetration;
         }
