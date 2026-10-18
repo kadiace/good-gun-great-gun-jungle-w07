@@ -15,6 +15,7 @@ namespace WeaponWorkshop
         private const float ProbeLift = 0.05f, ProbeHeight = 0.15f;
         private readonly RaycastHit[] hits = new RaycastHit[16];
         private readonly RaycastHit[] topHits = new RaycastHit[16];
+        internal float LastClimbHeightLimit { get; private set; }
 
         // 앞쪽 낮은 높이에서 처음 닿는 정적 콜라이더(자신·움직이는 물체 제외)
         private bool Probe(Vector3 forward, out RaycastHit hit)
@@ -51,7 +52,9 @@ namespace WeaponWorkshop
             for (int j = 0; j < down; j++)
                 if (!topHits[j].collider.transform.IsChildOf(transform) && topHits[j].point.y > top) top = topHits[j].point.y;
             float rise = top - (transform.position.y + bottomOffset);
-            return rise > 0.02f && rise <= limit ? climbSpeed : 0f;
+            if (!(rise > 0.02f && rise <= limit)) return 0f;
+            LastClimbHeightLimit = limit;
+            return climbSpeed;
         }
     }
 }
