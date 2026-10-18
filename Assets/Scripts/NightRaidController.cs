@@ -105,16 +105,18 @@ namespace WeaponWorkshop
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             bool isClear = IsRaidClear(died);
             returningAfterDeath = died;
-            // 스테이지 중 획득 재화를 결과에 반영해 확정 정산.
+            // 스테이지 중 획득 재화를 완료 정산 때 확정 반영.
             if (isClear)
             {
                 int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
                 int earned = pendingMaterialPickups.Count * perPickup;
                 player.GetComponent<PlayerWallet>()?.Credit(earned);
-                materialCrateCredits = 0;
-                foreach (int v in pendingMaterialPickups) materialCrateCredits += v;
             }
+            materialCrateCredits = 0;
+            foreach (int v in pendingMaterialPickups) materialCrateCredits += v;
+            moduleCrateRewards.AddRange(pendingModuleCollects);
             pendingMaterialPickups.Clear();
+            pendingModuleCollects.Clear();
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
                 NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, isClear);
@@ -122,9 +124,7 @@ namespace WeaponWorkshop
             {
                 scene = gameObject.scene.name, survived = !died,
                 time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
-                // 스테이지 중 획득 모듈도 완료 정산 때 반영.
-            moduleCrateRewards.AddRange(pendingModuleCollects);
-            pendingModuleCollects.Clear();
+                moduleCrateRewards = moduleCrateRewards.ToArray(),
                 materialCrateCredits = materialCrateCredits, enemyKills = enemyKills,
                 health = playerHealth != null ? playerHealth.CurrentHealth : 0f
             });
