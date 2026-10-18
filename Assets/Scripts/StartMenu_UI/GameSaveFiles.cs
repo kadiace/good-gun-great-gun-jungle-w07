@@ -149,6 +149,7 @@ namespace WeaponWorkshop
         // 빈 배열은 신규 상태이며 DayFirst는 암묵적으로 해금된다. null은 구형 필드 부재다.
         public string[] unlockedMainTrackIds;
         public bool trackUnlocksMigrated;
+        public string[] clearedRaidScenes = Array.Empty<string>();
         public int outstandingLoans, todayLoanRepayment, todayLoanInterest;
         public int todayLoanIncome;
         public int lastLoanDay = -1;
@@ -164,7 +165,7 @@ namespace WeaponWorkshop
         public int completed, dissatisfied, killed, income, period, nextCustomer, currentCustomer = -1;
         public int constructionCost;
         public int soldConstructionCost;
-        public bool night, settlement, confirmation, inWorkshop;
+        public bool night, settlement, confirmation, inWorkshop, retired;
         public bool startedDayInDebt;
         public int workbench = -1;
         public Vector3 playerPosition, playerEuler, viewEuler, benchEuler;
@@ -305,6 +306,6 @@ namespace WeaponWorkshop
         }
 
         private static string Describe(GameSaveData data)
-            => $"{data.day}일차 · $ {data.balance:N0}\n{new DateTime(data.savedUtcTicks, DateTimeKind.Utc).ToLocalTime():yyyy-MM-dd HH:mm} · 무기 {(data.hasWeapon ? "있음" : "없음")}";
+            => $"{data.day}일차 · $ {data.balance:N0}\n{new DateTime(data.savedUtcTicks, DateTimeKind.Utc).ToLocalTime():yyyy-MM-dd HH:mm} · 무기 {(data.hasWeapon ? "있음" : "없음")}{(data.retired ? " · 은퇴 성공" : "")}";
     }
 }

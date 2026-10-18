@@ -331,6 +331,9 @@ namespace WeaponWorkshop
             dayManager.RestoreSavedState(data);
             RestoreRaidProgress(data);
             RestoreTrackUnlocks(data);
+            retired = data.retired;
+            retirementSavedDay = retired ? data.day : -1;
+            RefreshRetireButton();
             return true;
         }
     }

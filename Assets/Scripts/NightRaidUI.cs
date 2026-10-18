@@ -14,6 +14,8 @@ namespace WeaponWorkshop
         [SerializeField] private TMPro.TextMeshProUGUI statusText;
         private NightRaidController controller;
         [SerializeField] private TMPro.TextMeshProUGUI regionInfo;
+        private TMPro.TMP_Text[] regionLabels;
+        private string[] originalRegionLabels;
         [SerializeField] private ModuleCatalog moduleCatalog;
         [SerializeField] private GameObject extractionPanel;
         [SerializeField] private UnityEngine.UI.Image extractionFill;
@@ -39,7 +41,9 @@ namespace WeaponWorkshop
             hoveredRegion = index;
             var player = GameManager.Instance != null && GameManager.Instance.UI != null ? GameManager.Instance.UI.Player : null;
             var region = TableManager.Instance.RaidMap.Find(controller.RegionScene(index));
-            regionInfo.text = region.Describe(moduleCatalog, player != null ? player.GetComponent<PlayerModuleUnlocks>() : null);
+            var save = FindFirstObjectByType<GameSaveController>();
+            regionInfo.text = region.Describe(moduleCatalog, player != null ? player.GetComponent<PlayerModuleUnlocks>() : null,
+                save != null && save.HasClearedRaid(region?.scene));
         }
         public void ClearRegionInfo(int index)
         {
@@ -76,8 +80,12 @@ namespace WeaponWorkshop
         public void Bind(NightRaidController owner)
         {
             controller=owner;
+            regionLabels = new TMPro.TMP_Text[regionButtons.Length];
+            originalRegionLabels = new string[regionButtons.Length];
             for(int i=0;i<regionButtons.Length;i++)
             {
+                regionLabels[i] = regionButtons[i].GetComponentInChildren<TMPro.TMP_Text>(true);
+                if (regionLabels[i] != null) originalRegionLabels[i] = regionLabels[i].text;
                 int region=i;regionButtons[i].onClick.AddListener(()=>controller.EnterRegion(region));
                 var hover = regionButtons[i].GetComponent<RaidRegionHoverUI>();
                 if (hover == null) hover = regionButtons[i].gameObject.AddComponent<RaidRegionHoverUI>();
@@ -109,12 +117,20 @@ namespace WeaponWorkshop
         {
             bool show = mapPanel != null && mapPanel.activeSelf;
             int listedCount = controller != null ? controller.RegionCount : regionButtons.Length;
+            var save = show ? FindFirstObjectByType<GameSaveController>() : null;
             for (int i = 0; i < regionButtons.Length; i++)
             {
                 if (regionButtons[i] == null) continue;
                 // 테이블에 없는 칸은 계속 꺼 둠으로써 표의 행 수가 지도의 칸 수를 결정하게 한다.
                 bool listed = i < listedCount;
                 if (!listed) regionButtons[i].gameObject.SetActive(false);
+                if (regionLabels != null && regionLabels[i] != null)
+                {
+                    var region = listed && controller != null ? TableManager.Instance.RaidMap.Find(controller.RegionScene(i)) : null;
+                    bool firstClearAvailable = region != null && region.FirstClearSaleBonus() > 0f &&
+                        (save == null || !save.HasClearedRaid(region.scene));
+                    regionLabels[i].text = originalRegionLabels[i] + (firstClearAvailable ? " <size=65%><color=#F04D4D>●</color></size>" : string.Empty);
+                }
                 regionButtons[i].interactable = show && listed && CanAffordEntry(i) &&
                     (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(i));
             }

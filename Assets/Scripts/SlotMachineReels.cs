@@ -17,8 +17,8 @@ namespace WeaponWorkshop
         [SerializeField] private _DayManager dayManager;
         [SerializeField] private GameObject costPanel;
 
-        public const int SpinPrice = 1000;
-        private static readonly int[] Prizes = { 1500, 1500, 3000, 3000, 5000, 5000 };
+        public const int SpinPrice = 500;
+        private static readonly int[] Prizes = { 1000, 1000, 2000, 2000, 50000, 5000 };
         private static readonly string[] Symbols = { "기본", "연장", "연사", "관통", "방사", "폭발" };
         private Material originalMarquee;
         private Material glowingMarquee;
@@ -28,6 +28,7 @@ namespace WeaponWorkshop
 
         public Transform OutlineRoot => transform;
         public int CompletedSpins => completedSpins;
+        public bool IsSpinning => spinning;
 
         public void RestoreSpins(int count) => completedSpins = Mathf.Clamp(count, 0, 3);
 
@@ -111,32 +112,27 @@ namespace WeaponWorkshop
 
         private static int[] ChooseResult(bool lastSpin, bool introductorySpin)
         {
-            if (lastSpin)
-            {
-                if (Random.value < 0.7f)
-                {
-                    int jackpot = Random.Range(4, 6);
-                    return new[] { jackpot, jackpot, jackpot };
-                }
-                return ChooseMiss();
-            }
-
-            int roll = introductorySpin ? Random.Range(0, 20) : Random.Range(0, 34);
-            int miss = introductorySpin ? 8 : 27;
-            int low = introductorySpin ? 9 : 4;
-            int middle = 2;
-            if (roll < miss) return ChooseMiss();
-            int symbol = roll < miss + low ? Random.Range(0, 2) :
-                roll < miss + low + middle ? Random.Range(2, 4) : Random.Range(4, 6);
+            // Ordinary weights / 1000: 709 misses, 200 low, 70 middle, 20 explosion, 1 radiation.
+            // Expected payout = (200*1000 + 70*2000 + 20*5000 + 1*50000) / 1000 = $490.
+            int multiplier = introductorySpin || lastSpin ? 5 : 1;
+            int low = 200 * multiplier;
+            int middle = 70 * multiplier;
+            int explosion = 20 * (lastSpin ? 5 : 1);
+            int roll = Random.Range(0, 709 + low + middle + explosion + 1);
+            if (roll < 709) return ChooseMiss();
+            roll -= 709;
+            int symbol = roll < low ? Random.Range(0, 2) :
+                roll < low + middle ? Random.Range(2, 4) :
+                roll < low + middle + explosion ? 5 : 4;
             return new[] { symbol, symbol, symbol };
         }
 
         private static int[] ChooseMiss()
         {
             int first = Random.Range(0, 6);
-            int second = Random.Range(0, 6);
-            int third = Random.Range(0, 6);
-            if (first == second && second == third) third = (third + Random.Range(1, 6)) % 6;
+            bool nearMiss = Random.value < 0.8f;
+            int second = nearMiss ? first : (first + Random.Range(1, 6)) % 6;
+            int third = nearMiss ? (first + Random.Range(1, 6)) % 6 : Random.Range(0, 6);
             return new[] { first, second, third };
         }
 
@@ -147,32 +143,41 @@ namespace WeaponWorkshop
             SlotMachineSound.StartRotation(transform);
             float[] start = new float[3];
             float[] finish = new float[3];
+            float[] stopTimes = { 4.4f, 5.2f, 7.2f };
+            const float fastDuration = 2.8f;
+            const float fastSpeed = 1080f;
             for (int i = 0; i < 3; i++)
             {
                 start[i] = Mathf.Repeat(reels[i].localEulerAngles.x, 360f);
-                finish[i] = start[i] + 360f * (10 + i) + Mathf.Repeat(result[i] * 60f - start[i], 360f);
+                finish[i] = start[i] + 360f * (12 + i * 3) + Mathf.Repeat(result[i] * 60f - start[i], 360f);
             }
 
             float elapsed = 0f;
             bool[] reelStopSoundsPlayed = new bool[3];
-            while (elapsed < 5.8f)
+            while (elapsed < stopTimes[2])
             {
                 elapsed += Time.deltaTime;
                 for (int i = 0; i < 3; i++)
                 {
-                    float t = Mathf.Clamp01(elapsed / (5f + i * 0.4f));
-                    float eased = 1f - (1f - t) * (1f - t) * (1f - t);
-                    if (t >= 1f)
+                    float angle;
+                    if (elapsed < fastDuration) angle = start[i] + fastSpeed * elapsed;
+                    else
                     {
-                        if (!reelStopSoundsPlayed[i])
-                        {
-                            reels[i].localRotation = Quaternion.Euler(finish[i], 0f, 0f);
-                            reelStopSoundsPlayed[i] = true;
-                            SlotMachineSound.PlayReelStop(transform.position);
-                            if (i == reels.Length - 1) SlotMachineSound.StopRotation();
-                        }
+                        float duration = stopTimes[i] - fastDuration;
+                        float t = Mathf.Clamp01((elapsed - fastDuration) / duration);
+                        float from = start[i] + fastSpeed * fastDuration;
+                        // Match the fast-phase velocity, then ease continuously to a full stop.
+                        angle = (2f * t * t * t - 3f * t * t + 1f) * from +
+                            (t * t * t - 2f * t * t + t) * duration * fastSpeed +
+                            (-2f * t * t * t + 3f * t * t) * finish[i];
                     }
-                    else reels[i].localRotation = Quaternion.Euler(Mathf.Lerp(start[i], finish[i], eased), 0f, 0f);
+                    reels[i].localRotation = Quaternion.Euler(angle, 0f, 0f);
+                    if (elapsed >= stopTimes[i] && !reelStopSoundsPlayed[i])
+                    {
+                        reelStopSoundsPlayed[i] = true;
+                        SlotMachineSound.PlayReelStop(transform.position);
+                        if (i == reels.Length - 1) SlotMachineSound.StopRotation();
+                    }
                 }
                 if (lever != null)
                 {
