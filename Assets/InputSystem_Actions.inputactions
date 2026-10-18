@@ -1628,6 +1628,54 @@
                     "isPartOfComposite": false
                 }
             ]
+        },
+        {
+            "name": "Benchmark",
+            "id": "2889eef5-3c6a-4ca9-967d-826df4e8cd24",
+            "actions": [
+                {
+                    "name": "ToggleRecord",
+                    "type": "Button",
+                    "id": "cd0fe4ac-f849-4c07-b070-7604029818f5",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "StartReplay",
+                    "type": "Button",
+                    "id": "690aba75-b719-4994-86b6-098252d72139",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "c330ba4d-a4fa-4b18-8a3e-f86c8e3a844a",
+                    "path": "<Keyboard>/f9",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "ToggleRecord",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c89d8b6e-1fff-4da7-b716-bf60a02cf062",
+                    "path": "<Keyboard>/f10",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "StartReplay",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": [

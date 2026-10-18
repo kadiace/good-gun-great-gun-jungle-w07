@@ -11,7 +11,10 @@ namespace WeaponWorkshop
         public sealed class Region
         {
             public string scene;
+            public string[] sceneAliases;
             public string name;
+            public int selectionOrder;
+            public string inheritsFrom;
             public int entryCost;
             public Reward reward;
             public bool helicopters;
@@ -27,6 +30,8 @@ namespace WeaponWorkshop
             public int materialPerCrate;
             public string[] moduleCodes;
             public float firstClearSaleBonus;
+            // 스테이지 내 모듈 재화 1회 획득당 지급할 달러(표 단일 출처).
+            public int dollarsPerMaterialPickup;
         }
 
         public Region[] regions;

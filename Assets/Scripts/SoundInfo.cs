@@ -22,6 +22,7 @@ namespace WeaponWorkshop
         /// </summary>
         public static SoundData.Track RaidRewardTrack(string scene)
         {
+            scene = TableManager.Instance.RaidMap.Find(scene)?.CanonicalScene() ?? scene;
             SoundData.Track reward = null;
             foreach (var row in TableManager.Instance.Sound.tracks ?? Array.Empty<SoundData.Track>())
                 if (row != null && row.selectableInMain && row.unlockScene == scene)
@@ -34,6 +35,7 @@ namespace WeaponWorkshop
 
         public static SoundData.Raid Raid(string scene)
         {
+            scene = TableManager.Instance.RaidMap.Find(scene)?.CanonicalScene() ?? scene;
             foreach (var row in TableManager.Instance.Sound.raids ?? Array.Empty<SoundData.Raid>())
                 if (row != null && row.scene == scene) return row;
             return null;

@@ -56,7 +56,6 @@ namespace WeaponWorkshop
         private int chainDetonationsThisFrame, explosionEffectsThisFrame;
         private readonly List<DestructibleTarget> explosionDirty = new List<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> explosionDirtySet = new HashSet<DestructibleTarget>();
-        private int explosionFlushFrame = -1;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void PrepareAtSceneStart() => Ensure();
         private int wallCheckFrame = -1, wallChecks;
@@ -246,19 +245,21 @@ namespace WeaponWorkshop
         {
             if (targets.Count == 0) return;
             var manager = Ensure();
-            if (manager.explosionFlushFrame == Time.frameCount)
-            {
-                DestructibleTarget.FinishExplosionStep(targets);
-                return;
-            }
             foreach (var target in targets)
                 if (target != null && manager.explosionDirtySet.Add(target)) manager.explosionDirty.Add(target);
+        }
+
+        internal static void QueueCollisionFinish(DestructibleTarget target)
+        {
+            if (target == null) return;
+            var manager = Ensure();
+            // Projectile casts use current cell data; rebuild colliders at a batch boundary.
+            if (manager.explosionDirtySet.Add(target)) manager.explosionDirty.Add(target);
         }
 
         internal static void FlushExplosionFinish()
         {
             if (instance == null || instance.explosionDirty.Count == 0) return;
-            instance.explosionFlushFrame = Time.frameCount;
             DestructibleTarget.FinishExplosionStep(instance.explosionDirty);
             instance.explosionDirty.Clear();
             instance.explosionDirtySet.Clear();
@@ -267,11 +268,17 @@ namespace WeaponWorkshop
         private void Update()
         {
             FlushExplosionFinish();
-            explosionFlushFrame = Time.frameCount;
             ExpandingExplosion.ProcessPendingChainDetonations();
         }
 
-        private void LateUpdate() => ExpandingExplosion.FlushPending();
+        private void FixedUpdate() => FlushExplosionFinish();
+
+        private void LateUpdate()
+        {
+            ExpandingExplosion.FlushPending();
+            // Last-shot changes must reach physics even if no later shot queries this frame.
+            FlushExplosionFinish();
+        }
 
         private void Return(PooledCombatObject member)
         {

@@ -165,6 +165,7 @@ namespace WeaponWorkshop
             if (reference != null)
             {
                 float nearest = float.PositiveInfinity;
+                DestructionCollisionBatch.Flush();
                 foreach (var hit in Physics.RaycastAll(reference.position + Vector3.up * 0.1f,
                     Vector3.down, 1000f, ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore))
                 {

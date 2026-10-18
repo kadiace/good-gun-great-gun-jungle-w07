@@ -32,6 +32,11 @@ namespace WeaponWorkshop
         public Vector3Int selectedScopeCell;
         public SaveBlock[] blocks;
     }
+    [Serializable] public sealed class CellExplosionSave
+    {
+        public Vector3Int coordinate;
+        public double health;
+    }
     [Serializable] public sealed class TargetWorldSave
     {
         public string id;
@@ -43,9 +48,11 @@ namespace WeaponWorkshop
         public TargetSpawnSave[] spawnedTargets;
         public Vector3 meshSize, velocity, angularVelocity;
         public float penetration, explosion, heat, water;
+        public float penetrationResistanceLoss;
         public Vector3 position, scale;
         public Quaternion rotation;
         public Vector3Int[] remaining;
+        public CellExplosionSave[] explosionDamage;
     }
     /// <summary>표적 종이 새로 만들어 낸 표적 한 층. 재귀 필드가 없어 직렬화 깊이를 고정한다.</summary>
     [Serializable] public sealed class TargetSpawnSave
@@ -55,9 +62,11 @@ namespace WeaponWorkshop
         public int prefabSlot = -1;
         public Vector3 meshSize, velocity, angularVelocity;
         public float penetration, explosion, heat, water;
+        public float penetrationResistanceLoss;
         public Vector3 position, scale;
         public Quaternion rotation;
         public Vector3Int[] remaining;
+        public CellExplosionSave[] explosionDamage;
 
         public static TargetSpawnSave From(TargetWorldSave saved) => saved == null ? null : new TargetSpawnSave
         {
@@ -70,6 +79,7 @@ namespace WeaponWorkshop
             velocity = saved.velocity,
             angularVelocity = saved.angularVelocity,
             penetration = saved.penetration,
+            penetrationResistanceLoss = saved.penetrationResistanceLoss,
             explosion = saved.explosion,
             heat = saved.heat,
             water = saved.water,
@@ -77,6 +87,7 @@ namespace WeaponWorkshop
             scale = saved.scale,
             rotation = saved.rotation,
             remaining = saved.remaining,
+            explosionDamage = saved.explosionDamage,
         };
 
         // 표적 복원 쪽은 TargetWorldSave를 받는다. 하위 계층은 애초에 없으므로 빈 참조로 되돌린다.
@@ -91,6 +102,7 @@ namespace WeaponWorkshop
             velocity = velocity,
             angularVelocity = angularVelocity,
             penetration = penetration,
+            penetrationResistanceLoss = penetrationResistanceLoss,
             explosion = explosion,
             heat = heat,
             water = water,
@@ -98,6 +110,7 @@ namespace WeaponWorkshop
             scale = scale,
             rotation = rotation,
             remaining = remaining,
+            explosionDamage = explosionDamage,
         };
     }
 

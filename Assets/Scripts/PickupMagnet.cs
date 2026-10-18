@@ -78,6 +78,7 @@ namespace WeaponWorkshop
             {
                 // Ray from the pickup centre; the hit point plus rest height is where it lands.
                 float reach = -step.y + restHeight;
+                DestructionCollisionBatch.Flush();
                 if (Physics.Raycast(position, Vector3.down, out RaycastHit hit, reach, groundMask,
                         QueryTriggerInteraction.Ignore))
                 {
@@ -96,6 +97,7 @@ namespace WeaponWorkshop
             nextScan = Time.time + scanInterval;
             Vector3 position = body.position;
             // The floor may have been destroyed under a resting pickup.
+            if (grounded) DestructionCollisionBatch.Flush();
             if (grounded && !Physics.Raycast(position, Vector3.down, restHeight + 0.1f, groundMask,
                     QueryTriggerInteraction.Ignore))
                 grounded = false;

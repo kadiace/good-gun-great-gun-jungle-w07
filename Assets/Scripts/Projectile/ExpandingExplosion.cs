@@ -61,6 +61,7 @@ namespace WeaponWorkshop
 
         private readonly List<Layer> layers = new List<Layer>();
         private readonly List<Piece> pieces = new List<Piece>();
+        private readonly HashSet<(DestructibleTarget target, Vector3Int coordinate)> damagedPieces = new();
         private readonly List<TargetCandidate> targetCandidates = new List<TargetCandidate>();
         private ProjectileStats impactStats;
         private readonly List<HealthHit> healthHits = new List<HealthHit>();
@@ -402,6 +403,7 @@ namespace WeaponWorkshop
                 if (sharedLayerCache.Count < 8192) sharedLayerCache.Push(layer);
             }
             layers.Clear(); pieces.Clear(); targetCandidates.Clear(); healthHits.Clear(); blastOccluders.Clear(); radius = 0f;
+            damagedPieces.Clear();
             nextLayer = nextHealth = nextTargetCandidate = 0;
             collectionPending = false;
             tuning = null; explosionEffect = null; stats = default; impactStats = default;
@@ -468,13 +470,19 @@ namespace WeaponWorkshop
                     var layer = layers[i];
                     if (layer.target == null || !layer.target.isActiveAndEnabled) continue;
                     float resistance = layer.target.ExplosionResistance;
-                    if (incoming <= 0f || incoming < resistance ||
+                    if (incoming <= 0f ||
                         !layer.target.AllowsImpact(impactStats)) { blocked = true; continue; }
+                    if (incoming < resistance) blocked = true;
                     bool changed = false;
                     int pieceEnd = layer.pieceStart + layer.pieceCount;
                     for (int pieceIndex = layer.pieceStart; pieceIndex < pieceEnd; pieceIndex++)
-                        changed |= layer.target.DestroyExplosionPiece(pieces[pieceIndex].coordinate, transform.position,
-                            incoming * tuning.explosionDebrisPushPerPower);
+                    {
+                        var coordinate = pieces[pieceIndex].coordinate;
+                        if (!damagedPieces.Add((layer.target, coordinate))) continue;
+                        changed |= layer.target.ApplyExplosionDamage(coordinate, incoming, transform.position,
+                            incoming * tuning.explosionDebrisPushPerPower, tuning)
+                            == DestructibleTarget.ExplosionDamageResult.Destroyed;
+                    }
                     if (changed) { cost += resistance; dirtyTargets.Add(layer.target); }
                 }
                 energy[first.direction] = blocked ? 0f : Mathf.Max(0f, incoming - cost);

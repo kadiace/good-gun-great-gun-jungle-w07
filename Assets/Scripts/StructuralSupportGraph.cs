@@ -57,6 +57,13 @@ namespace WeaponWorkshop
             instance.needsSync = true;
         }
 
+        // A collision batch has already synchronized every transform before notifying us.
+        // Keep the contact rebuild queued, without repeating that global sync in LateUpdate.
+        internal static void NotifyPhysicsSynchronized()
+        {
+            if (instance != null) instance.needsSync = false;
+        }
+
         internal static void Unregister(DestructibleTarget target)
         {
             if (instance == null) return;
@@ -79,6 +86,9 @@ namespace WeaponWorkshop
 
         private void LateUpdate()
         {
+            PoolManager.FlushExplosionFinish();
+            // The deferred opt-in sync covers the same transforms as needsSync.
+            if (DestructionCollisionBatch.Flush()) needsSync = false;
             if (needsSync) { Physics.SyncTransforms(); needsSync = false; }
             int budget = QueryBudget;
             while (budget > 0)

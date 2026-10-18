@@ -5053,7 +5053,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95e50a1f602a2d249bf0c4e7809ce693, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tankPrefab: {fileID: 5111809438534041429, guid: 03af79f2150d5a04facca428f0f7f67f, type: 3}
+  tankPrefab: {fileID: 5111809438534041429, guid: a316c1e40f61470b984211663564ccfa, type: 3}
   cargoAnchor: {fileID: 2747294120486455456}
   suspensionDraw: {fileID: 2406028225406757794}
   flightSpeed: 15
