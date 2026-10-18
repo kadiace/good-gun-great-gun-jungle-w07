@@ -251,6 +251,8 @@ namespace WeaponWorkshop
         private bool structureDirty;
         private struct Cell
         {
+            public double explosionHealth;
+            public float explosionHitTime;
             public Transform root;
             public int slot;
             public Vector3Int coordinate;
@@ -554,7 +556,7 @@ namespace WeaponWorkshop
         {
             if (DamageProtected) return;
             float resistance = Mathf.Max(0f, explosionResistance);
-            if (!isActiveAndEnabled || power <= 0f || power < resistance || radius <= 0f) return;
+            if (!isActiveAndEnabled || power <= 0f || radius <= 0f) return;
             if (!subdivided) Subdivide();
             // One shell is one voxel width. Charge resistance once per destroyed shell,
             // rather than per voxel or per angular direction; empty shells cost nothing.
@@ -579,14 +581,14 @@ namespace WeaponWorkshop
             float remainingPower = power;
             foreach (var shell in shells)
             {
-                if (remainingPower <= 0f || remainingPower < resistance) break;
+                if (remainingPower <= 0f) break;
                 foreach (int cellIndex in shell.Value)
                 {
                     Cell cell = preparedCells[cellIndex];
-                    Vector3 offset = cell.position - center;
-                    Detach(cellIndex, offset.normalized * remainingPower + Vector3.up * (remainingPower * 0.05f));
+                    changed |= ApplyExplosionDamage(cell.coordinate, remainingPower, center, remainingPower)
+                        == ExplosionDamageResult.Destroyed;
                 }
-                changed = true;
+                if (remainingPower < resistance) break;
                 remainingPower = Mathf.Max(0f, remainingPower - resistance);
             }
             if (changed) MarkStructureDirty();
@@ -853,7 +855,8 @@ namespace WeaponWorkshop
                 position = transform.localPosition,
                 rotation = transform.localRotation,
                 scale = transform.localScale,
-                remaining = GetRemainingCoordinates()
+                remaining = GetRemainingCoordinates(),
+                explosionDamage = CaptureExplosionDamage()
             };
         }
         public void RestoreSave(TargetWorldSave state)
@@ -869,6 +872,7 @@ namespace WeaponWorkshop
                 foreach (int cellIndex in impactCells)
                     if (!keep.Contains(preparedCells[cellIndex].coordinate)) RemoveCell(cellIndex);
                 restoringSave = false;
+                RestoreExplosionDamage(state.explosionDamage);
                 structureDirty = false; renderDirty = true;
             }
             transform.localPosition = state.position; transform.localRotation = state.rotation; transform.localScale = state.scale;
@@ -894,6 +898,8 @@ namespace WeaponWorkshop
                 cell.localScale = Vector3.Min(gridStep, bounds.size - offset);
                 cell.localPosition = gridOrigin + offset + cell.localScale * 0.5f;
                 cell.slot = cells.Count;
+                cell.explosionHealth = 1d;
+                cell.explosionHitTime = -1000f;
                 preparedCells[index] = cell;
                 cells.Add(index);
                 grid[index] = true;
@@ -1118,6 +1124,7 @@ namespace WeaponWorkshop
                         Cell cell = new Cell
                         {
                             root = CellRoot, slot = cells.Count, coordinate = coordinate,
+                            explosionHealth = 1d, explosionHitTime = -1000f,
                             localPosition = localPosition, localScale = cellSize
                         };
                         preparedCells[index] = cell;
