@@ -108,8 +108,7 @@ namespace WeaponWorkshop
             // 스테이지 중 획득 재화를 결과에 반영해 확정 정산.
             if (isClear)
             {
-                int table = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward;
-                int perPickup = table?.dollarsPerMaterialPickup ?? 1000;
+                int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
                 int earned = 0;
                 foreach (int v in pendingMaterialPickups) earned += v;
                 earned *= perPickup;
