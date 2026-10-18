@@ -49,7 +49,7 @@ namespace WeaponWorkshop
         private int[] raidStartingModules;
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
-        // 스테이지 중 획득한 재료 상자 보상(즉시 반영 안 하고 결과 정산 때 합산).
+        private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.List<int> pendingMaterialPickups = new System.Collections.Generic.List<int>();
         // 스테이지 중 획득한 모듈도 완료 정산 때 반영.
         private readonly System.Collections.Generic.List<int> pendingModuleCollects = new System.Collections.Generic.List<int>();
