@@ -388,6 +388,7 @@ namespace WeaponWorkshop
                 Vector3 viewport = raidCamera.WorldToViewportPoint(aimPoint);
                 if (viewport.z <= 0f || viewport.x < 0f || viewport.x > 1f || viewport.y < 0f || viewport.y > 1f) continue;
                 Vector3 direction = aimPoint - raidCamera.transform.position;
+                DestructionCollisionBatch.Flush();
                 if (Physics.Raycast(raidCamera.transform.position, direction, out var hit, direction.magnitude,
                         Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) &&
                     RaidEnemyCore.FindForPart(hit.collider.transform) == core && discoveredEnemies.Add(core.EnemyId))

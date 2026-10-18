@@ -58,6 +58,7 @@ namespace WeaponWorkshop
         private void Update()
         {
             if (speed <= 0f) { PoolManager.Release(gameObject); return; }
+            DestructionCollisionBatch.Flush();
             float distance = Mathf.Min(speed * Time.deltaTime, MaximumTravelDistance - traveledDistance);
             if (distance <= 0f) return;
             for (int step = 0; step < 128 && distance > 0f; step++)

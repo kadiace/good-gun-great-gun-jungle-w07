@@ -83,6 +83,7 @@ namespace WeaponWorkshop
             Vector2 screenPoint = Cursor.lockState == CursorLockMode.Locked
                 ? view.pixelRect.center : point.ReadValue<Vector2>();
             if (!view.pixelRect.Contains(screenPoint)) return false;
+            DestructionCollisionBatch.Flush();
             int count = Physics.RaycastNonAlloc(view.ScreenPointToRay(screenPoint), hits,
                 maxDistance, includeAllLayers ? Physics.DefaultRaycastLayers : interactionLayers.value, QueryTriggerInteraction.Ignore);
             int nearest = -1;

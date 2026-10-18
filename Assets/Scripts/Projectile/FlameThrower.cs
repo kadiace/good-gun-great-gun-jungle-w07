@@ -165,6 +165,7 @@ namespace WeaponWorkshop
 
         private bool TryHitWall(Vector3 origin, Vector3 direction, float distance, out RaycastHit wall)
         {
+            DestructionCollisionBatch.Flush();
             wall = default;
             float nearest = float.PositiveInfinity;
             int layers = Tuning.collisionLayers & ~LayerMask.GetMask("Energy");
@@ -192,6 +193,7 @@ namespace WeaponWorkshop
             foreach (Segment segment in segments)
             {
                 var candidates = new List<(TargetHealth target, Vector3 point, float distance)>();
+                DestructionCollisionBatch.Flush();
                 foreach (Collider collider in Physics.OverlapSphere(segment.origin, segment.range, Tuning.collisionLayers,
                              QueryTriggerInteraction.Ignore))
                 {

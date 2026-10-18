@@ -73,6 +73,7 @@ namespace WeaponWorkshop
             Vector3 origin = new Vector3(bounds.center.x,bounds.min.y+0.03f,bounds.center.z);
             Vector3 halfExtents = new Vector3(Mathf.Max(0.01f,bounds.extents.x*0.95f),0.01f,
                 Mathf.Max(0.01f,bounds.extents.z*0.95f));
+            DestructionCollisionBatch.Flush();
             int count = Physics.BoxCastNonAlloc(origin,halfExtents,Vector3.down,supportHits,
                 Quaternion.identity,0.08f,~LayerMask.GetMask("Energy"),QueryTriggerInteraction.Ignore);
             for (int i=0;i<count;i++)

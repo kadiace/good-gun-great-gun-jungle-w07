@@ -11,7 +11,10 @@ namespace WeaponWorkshop
         public sealed class Region
         {
             public string scene;
+            public string[] sceneAliases;
             public string name;
+            public int selectionOrder;
+            public string inheritsFrom;
             public int entryCost;
             public Reward reward;
             public bool helicopters;

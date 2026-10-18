@@ -42,6 +42,7 @@ namespace WeaponWorkshop
 
         private void FixedUpdate()
         {
+            DestructionCollisionBatch.Flush();
             processed.Clear();
             budget = maxPartsPerStep;
             if (tank.IsFalling) CrushFalling();
@@ -58,6 +59,7 @@ namespace WeaponWorkshop
             for (int side = -1; side <= 1; side += 2)
             {
                 Vector3 center = transform.TransformPoint(new Vector3(bodyCenter.x, (lowerY + upperY) * 0.5f, bodyCenter.z + side * offsetZ));
+                DestructionCollisionBatch.Flush();
                 int count = Physics.OverlapBoxNonAlloc(center, half, hits, transform.rotation,
                     ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore);
                 for (int i = 0; i < count && budget > 0; i++) Crush(hits[i], center, transform.rotation, half);
@@ -71,6 +73,7 @@ namespace WeaponWorkshop
             Vector3 half = bodySize * 0.5f + Vector3.one * margin;
             half.y += travel * 0.5f;
             Vector3 center = transform.TransformPoint(bodyCenter) + Vector3.down * (travel * 0.5f);
+            DestructionCollisionBatch.Flush();
             int count = Physics.OverlapBoxNonAlloc(center, half, hits, transform.rotation,
                 ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count && budget > 0; i++) Crush(hits[i], center, transform.rotation, half);
@@ -92,9 +95,11 @@ namespace WeaponWorkshop
         // 걸림 해소용: 접촉 콜백과 무관하게 몸체 영역(+위쪽 extraTop)에 겹친 부술 수 있는 파츠를 부순다. 몸체 위에 얹힌 파츠 포함.
         public void CrushBodyVolume(float extraTop)
         {
+            DestructionCollisionBatch.Flush();
             processed.Clear();
             budget = maxPartsPerStep;
             GetBodyBox(extraTop, out Vector3 center, out Vector3 half);
+            DestructionCollisionBatch.Flush();
             int count = Physics.OverlapBoxNonAlloc(center, half, hits, transform.rotation,
                 ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count && budget > 0; i++) Crush(hits[i], center, transform.rotation, half);

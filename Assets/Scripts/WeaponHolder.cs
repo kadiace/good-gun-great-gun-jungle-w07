@@ -118,6 +118,7 @@ namespace WeaponWorkshop
             if (aimCamera == null) return false;
             Ray ray = new Ray(AimView.position, AimView.forward);
             float nearest = aimDistance;
+            DestructionCollisionBatch.Flush();
             int count = Physics.RaycastNonAlloc(ray, aimHits, aimDistance, aimLayers | LayerMask.GetMask("EndChest"), QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count; i++)
             {

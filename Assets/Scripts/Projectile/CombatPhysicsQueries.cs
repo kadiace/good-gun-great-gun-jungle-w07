@@ -9,6 +9,7 @@ namespace WeaponWorkshop
         public static int OverlapSphere(Vector3 center, float radius, int mask, out Collider[] results)
         {
             PoolManager.FlushExplosionFinish();
+            DestructionCollisionBatch.Flush();
             int count;
             while ((count = Physics.OverlapSphereNonAlloc(center, radius, overlaps, mask, QueryTriggerInteraction.Ignore)) == overlaps.Length)
                 System.Array.Resize(ref overlaps, overlaps.Length * 2);
@@ -19,6 +20,7 @@ namespace WeaponWorkshop
         public static int OverlapBox(Vector3 center, Vector3 halfExtents, int mask, out Collider[] results)
         {
             PoolManager.FlushExplosionFinish();
+            DestructionCollisionBatch.Flush();
             int count;
             while ((count = Physics.OverlapBoxNonAlloc(center, halfExtents, boxOverlaps, Quaternion.identity,
                 mask, QueryTriggerInteraction.Ignore)) == boxOverlaps.Length)
@@ -30,6 +32,7 @@ namespace WeaponWorkshop
             float distance, int mask, out RaycastHit[] results)
         {
             PoolManager.FlushExplosionFinish();
+            DestructionCollisionBatch.Flush();
             int count;
             while ((count = Physics.BoxCastNonAlloc(center, halfExtents, direction, casts, rotation, distance,
                 mask, QueryTriggerInteraction.Ignore)) == casts.Length)
