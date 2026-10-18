@@ -111,7 +111,8 @@ namespace WeaponWorkshop
                 int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
                 int earned = pendingMaterialPickups.Count * perPickup;
                 player.GetComponent<PlayerWallet>()?.Credit(earned);
-                materialCrateCredits = earned;
+                materialCrateCredits = 0;
+                foreach (int v in pendingMaterialPickups) materialCrateCredits += v;
             }
             pendingMaterialPickups.Clear();
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
