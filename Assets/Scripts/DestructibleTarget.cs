@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace WeaponWorkshop
 {
@@ -268,6 +269,10 @@ namespace WeaponWorkshop
         private readonly List<int> dirtyColumns = new List<int>();
         private bool allColumnsDirty = true;
         private readonly List<int> impactCells = new List<int>();
+        // Reused snapshots for the per-hit removal loops so repeated hits do not allocate a list each call.
+        private readonly List<int> absorbedCells = new List<int>();
+        private readonly List<int> breakAllCells = new List<int>();
+        private System.Comparison<int> cellSlotComparison;
         private readonly HashSet<Vector3Int> supportedCells = new HashSet<Vector3Int>();
         private readonly HashSet<Vector3Int> fallingCoordinates = new HashSet<Vector3Int>();
         private readonly Queue<Vector3Int> supportQueue = new Queue<Vector3Int>();
@@ -719,7 +724,8 @@ namespace WeaponWorkshop
                         if (TryGetCell(coordinate, out _)) impactCells.Add(CellIndex(coordinate));
                     }
             // Preserve the pre-existing cell order for equally timed debris emission.
-            impactCells.Sort((a, b) => preparedCells[a].slot.CompareTo(preparedCells[b].slot));
+            if (cellSlotComparison == null) cellSlotComparison = CompareCellSlots;
+            impactCells.Sort(cellSlotComparison);
             foreach (int cellIndex in impactCells)
             {
                 Cell cell = preparedCells[cellIndex];
@@ -738,6 +744,8 @@ namespace WeaponWorkshop
                 });
             }
         }
+        private int CompareCellSlots(int a, int b) => preparedCells[a].slot.CompareTo(preparedCells[b].slot);
+
         public bool DestroyExplosionPiece(Vector3Int coordinate, Vector3 center, float force)
         {
             if (DamageProtected) return false;
@@ -754,10 +762,18 @@ namespace WeaponWorkshop
         private static void FinishExplosionStepCore(IEnumerable<DestructibleTarget> targets)
         {
             bool changed = false;
+            Scene scene = default;
+            bool hasScene = false;
             foreach (var target in targets)
-                if (target != null) changed |= target.UpdateCollisionRunsCore();
+                if (target != null)
+                {
+                    changed |= target.UpdateCollisionRunsCore();
+                    if (!hasScene) { scene = target.gameObject.scene; hasScene = true; }
+                }
             if (!changed) return;
-            Physics.SyncTransforms();
+            // Coalesce with the per-event syncs of the same frame in opt-in scenes; otherwise sync now.
+            if (hasScene) DestructionCollisionBatch.RequestSync(scene);
+            else Physics.SyncTransforms();
             foreach (var target in targets)
                 if (target != null) StructuralSupportGraph.Changed(target);
         }
@@ -788,7 +804,8 @@ namespace WeaponWorkshop
             if (!isActiveAndEnabled || targetMesh == null || radius <= 0f) return;
             if (!subdivided) Subdivide(false);
             BeginGravityImpact(center);
-            var removed = new List<int>(cells.Count);
+            var removed = absorbedCells;
+            removed.Clear();
             Vector3 localCenter = CellRoot.InverseTransformPoint(center);
             float radiusSquared = radius * radius;
             foreach (int cellIndex in cells)
@@ -815,7 +832,9 @@ namespace WeaponWorkshop
             if (!subdivided) Subdivide(false);
             if (cells.Count == 0) return;
             WorkshopSoundEffects.RaiseBlockFragmented(transform.position);
-            foreach (int cellIndex in new List<int>(cells))
+            breakAllCells.Clear();
+            breakAllCells.AddRange(cells);
+            foreach (int cellIndex in breakAllCells)
             {
                 Vector3 outward = (preparedCells[cellIndex].position - point).normalized;
                 Detach(cellIndex, outward * 1.5f + direction.normalized * 0.5f + Vector3.up * 0.5f);
@@ -1167,7 +1186,8 @@ namespace WeaponWorkshop
         private void UpdateCollisionRuns()
         {
             if (!UpdateCollisionRunsCore()) return;
-            Physics.SyncTransforms();
+            // Opt-in scenes coalesce the per-event sync into one flush per frame.
+            DestructionCollisionBatch.RequestSync(gameObject.scene);
             StructuralSupportGraph.Changed(this);
         }
         private bool UpdateCollisionRunsCore()
