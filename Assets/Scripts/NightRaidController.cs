@@ -30,6 +30,7 @@ namespace WeaponWorkshop
         public int RegionCount => TableManager.Instance.RaidMap.Count();
         public string RegionScene(int index) => TableManager.Instance.RaidMap.SceneAt(index);
         [SerializeField] private EquipableWeapon carriedWeaponPrefab;
+        public EquipableWeapon CarriedWeaponPrefab => carriedWeaponPrefab;
         [SerializeField] private string standaloneWorkshopScene = "Main";
         public static NightRaidController Instance { get; private set; }
         public bool IsBusy => mapOpen || transitioning || inRaid;
@@ -52,6 +53,9 @@ namespace WeaponWorkshop
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
+        private readonly System.Collections.Generic.List<int> pendingMaterialPickups = new System.Collections.Generic.List<int>();
+        // 스테이지 중 획득한 모듈도 완료 정산 때 반영.
+        private readonly System.Collections.Generic.List<int> pendingModuleCollects = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.HashSet<string> discoveredEnemies = new System.Collections.Generic.HashSet<string>();
         private readonly System.Collections.Generic.HashSet<string> loggedRaidWeaponAssemblies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
@@ -103,10 +107,23 @@ namespace WeaponWorkshop
                 ui.ShowReturn(false);
             }
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
+            bool isClear = IsRaidClear(died);
             returningAfterDeath = died;
+            // 스테이지 중 획득 재화를 완료 정산 때 확정 반영.
+            if (isClear)
+            {
+                int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
+                int earned = pendingMaterialPickups.Count * perPickup;
+                player.GetComponent<PlayerWallet>()?.Credit(earned);
+            }
+            materialCrateCredits = 0;
+            foreach (int v in pendingMaterialPickups) materialCrateCredits += v;
+            moduleCrateRewards.AddRange(pendingModuleCollects);
+            pendingMaterialPickups.Clear();
+            pendingModuleCollects.Clear();
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
-                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, IsRaidClear(died));
+                NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, isClear);
             GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog
             {
                 scene = gameObject.scene.name, survived = !died,
@@ -266,11 +283,13 @@ namespace WeaponWorkshop
         }
         private void OnMaterialCollected(FirstPersonPlayer collector, int amount)
         {
-            if (inRaid && collector == player) materialCrateCredits += amount;
+            if (inRaid && collector == player)
+                // 즉시 지갑 반영 없이 획득분만 기록.
+                pendingMaterialPickups.Add(amount);
         }
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
-            if (inRaid && collector == player && moduleId > 0) moduleCrateRewards.Add(moduleId);
+            if (inRaid && collector == player && moduleId > 0) pendingModuleCollects.Add(moduleId);
         }
         private static string CaptureAssemblyId(EquipableWeapon weapon, out string status)
         {
@@ -391,6 +410,7 @@ namespace WeaponWorkshop
                 Vector3 viewport = raidCamera.WorldToViewportPoint(aimPoint);
                 if (viewport.z <= 0f || viewport.x < 0f || viewport.x > 1f || viewport.y < 0f || viewport.y > 1f) continue;
                 Vector3 direction = aimPoint - raidCamera.transform.position;
+                DestructionCollisionBatch.Flush();
                 if (Physics.Raycast(raidCamera.transform.position, direction, out var hit, direction.magnitude,
                         Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) &&
                     RaidEnemyCore.FindForPart(hit.collider.transform) == core && discoveredEnemies.Add(core.EnemyId))
@@ -446,7 +466,7 @@ namespace WeaponWorkshop
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
             enemyKills = materialCrateCredits = 0;
-            moduleCrateRewards.Clear(); discoveredEnemies.Clear();
+            pendingModuleCollects.Clear(); discoveredEnemies.Clear();
             loggedRaidWeaponAssemblies.Clear();
             LogRaidStart();
             SubscribeWeaponEvents();

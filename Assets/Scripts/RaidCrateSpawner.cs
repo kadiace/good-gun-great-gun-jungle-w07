@@ -54,13 +54,14 @@ namespace WeaponWorkshop
             if (IsReady) return;
             IsReady = true;
             var region = TableManager.Instance.RaidMap.Find(RewardScene);
-            if (region == null || region.reward == null)
+            var settings = region.Settings();
+            if (settings == null || settings.reward == null)
             {
                 Debug.LogError($"스테이지 테이블에 {RewardScene} 보상 행이 없어 보상 상자를 만들지 않습니다.", this);
                 return;
             }
-            SpawnModuleCrates(region.reward, unlocks);
-            SpawnMaterialCrates(region.reward);
+            SpawnModuleCrates(settings.reward, unlocks);
+            SpawnMaterialCrates(settings.reward);
         }
 
         // 표의 모듈마다 지정된 지점에 모듈 상자를 놓는다. 이미 해금한 모듈이면 같은 자리에 재료 상자를 놓는다.

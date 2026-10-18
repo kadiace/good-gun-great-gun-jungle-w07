@@ -50,8 +50,9 @@ namespace WeaponWorkshop
             int helicopters = Mathf.Min(helicoptersPerWave, Mathf.Max(0, maximumHelicopters - CountLiving<RaidHelicopter>()));
             int tanks = Mathf.Min(tanksPerWave, Mathf.Max(0, maximumTanks - CountLivingTanks(false)));
             var region = TableManager.Instance.RaidMap.Find(gameObject.scene.name);
+            var settings = region.Settings();
             int reinforcedTanks = reinforcedTankPrefab != null ?
-                Mathf.Max(0, (region?.maximumReinforcedTanks ?? 0) - CountLivingTanks(true)) : 0;
+                Mathf.Max(0, (settings?.maximumReinforcedTanks ?? 0) - CountLivingTanks(true)) : 0;
             int spawned = 0;
             int nextWave = waveIndex + 1;
             for (int i = 0; i < helicopters; i++)

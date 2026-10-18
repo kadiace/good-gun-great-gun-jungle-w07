@@ -31,6 +31,8 @@ namespace WeaponWorkshop
         public Transform ViewPoint => viewPoint;
         // Scope zoom lowers look speed; 1 = normal.
         public float LookSensitivityScale { get; set; } = 1f;
+        // Benchmark replay sets the pose itself; input look/move is skipped while true.
+        public bool ExternallyDriven { get; set; }
         public void SetViewRotation(Quaternion rotation)
         {
             if(viewPoint==null)return;
@@ -102,6 +104,7 @@ namespace WeaponWorkshop
                 WorkshopSoundEffects.RaisePlayerMovementStopped(this);
                 return;
             }
+            if (ExternallyDriven) return;
             Vector2 delta = look.ReadValue<Vector2>() * LookSensitivityScale * MouseSensitivityUI.Multiplier;
             transform.Rotate(Vector3.up, delta.x * lookSensitivity, Space.World);
             float pitchInput = -delta.y * lookSensitivity;

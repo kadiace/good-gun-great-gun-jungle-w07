@@ -11,6 +11,10 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee68b037caa31374e970b6ea584fdd33, type: 3}
   m_Name: ProjectileTuning
+  explosionHitFlashDuration: 0.12
+  explosionHitFlashColor: {r: 1, g: 1, b: 1, a: 1}
+  explosionDamageTint: {r: 0, g: 0, b: 0, a: 1}
+  explosionDamageTintStrength: 0.45
   m_EditorClassIdentifier: 
   maximumTravelDistance: 1000
   collisionLayers:
