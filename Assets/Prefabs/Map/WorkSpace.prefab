@@ -5842,10 +5842,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4c2cd8bdccc9d3449b951fd5ac236855, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.InteractionLabel
-  title: 매뉴얼
-  unavailableCondition: 조작 방식에 대한 설명입니다.
+  title: "\uB9E4\uB274\uC5BC"
+  unavailableCondition: "\uC870\uC791 \uBC29\uC2DD\uC5D0 \uB300\uD55C \uC124\uBA85\uC785\uB2C8\uB2E4."
 --- !u!1 &427429162479741734
 GameObject:
   m_ObjectHideFlags: 0
@@ -8692,8 +8692,6 @@ MonoBehaviour:
   interaction: {fileID: 0}
   dayManager: {fileID: 0}
   costPanel: {fileID: 0}
-  costText: {fileID: 0}
-  statusText: {fileID: 0}
 --- !u!65 &7073820019196704132
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -8728,7 +8726,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.InteractionLabel
   title: "\uC2AC\uB86F\uBA38\uC2E0"
-  unavailableCondition: "$1,000 \uC774\uC0C1\uC774\uC5B4\uC57C \uB2F9\uAE38 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+  unavailableCondition: "$500 \uC774\uC0C1\uC774\uC5B4\uC57C \uB2F9\uAE38 \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uB2F9\uCCA8\uAE08:\n\uAE30\uBCF8/\uC5F0\uC7A5 $1,000\n\uC5F0\uC0AC/\uAD00\uD1B5 $2,000\n\uD3ED\uBC1C $5,000\n\uBC29\uC0AC $50,000"
 --- !u!1 &2816135231550113795
 GameObject:
   m_ObjectHideFlags: 0
@@ -18494,7 +18492,12 @@ PrefabInstance:
       value: "\uC9C0\uAE0B\uC9C0\uAE0B\uD55C \uC0B6\uC744 \uCCAD\uC0B0\uD558\uACE0
         \uB5A0\uB0A9\uB2C8\uB2E4. $100,000 \uC774 \uD544\uC694\uD569\uB2C8\uB2E4."
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 5873228159665431831, guid: 36c3b965ebec5224eb607069e270d074, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 850269dbd28f20d43a7d7b7ac34e16f7, type: 2}
+    m_RemovedComponents:
+    - {fileID: 2148976087434035484, guid: 36c3b965ebec5224eb607069e270d074, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 1076219944645109363, guid: 36c3b965ebec5224eb607069e270d074, type: 3}
@@ -18507,6 +18510,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1577180118729307359, guid: 36c3b965ebec5224eb607069e270d074, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6712558592129796258}
+    - targetCorrespondingSourceObject: {fileID: 1577180118729307359, guid: 36c3b965ebec5224eb607069e270d074, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3373554112135935051}
   m_SourcePrefab: {fileID: 100100000, guid: 36c3b965ebec5224eb607069e270d074, type: 3}
 --- !u!1 &415317774253178590 stripped
 GameObject:
@@ -18527,6 +18533,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trackingCenter: {fileID: 2043062548366770209}
   markerTop: {fileID: 42242836694959321}
+--- !u!114 &3373554112135935051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 415317774253178590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b418b9736b6aafb409664850cf1b8f8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.RetireButton
+  retireUI: {fileID: 0}
 --- !u!4 &2220070042373729394 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1076219944645109363, guid: 36c3b965ebec5224eb607069e270d074, type: 3}
