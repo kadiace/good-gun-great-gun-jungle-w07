@@ -54,8 +54,6 @@ namespace WeaponWorkshop
         private readonly System.Collections.Generic.HashSet<string> loggedRaidWeaponAssemblies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
         private readonly System.Collections.Generic.SortedSet<int> trainingModules = new System.Collections.Generic.SortedSet<int>();
-        // 스테이지 클리어 시 지급하는 달러 보상(기획 미정 확정 전 상수).
-        public const int StageClearRewardDollars = 10000;
         public bool HasTrainingModule(int moduleId) => trainingModules.Contains(moduleId);
         public bool TryCollectTrainingModule(int moduleId)
         {
@@ -103,11 +101,8 @@ namespace WeaponWorkshop
                 ui.ShowReturn(false);
             }
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
-            returningAfterDeath = died;
             bool isClear = IsRaidClear(died);
-            // 스테이지 클리어 보상으로 달러 지급(생존 탈출만 클리어).
-            if (isClear && !SoundManager.IsTutorialMusicContext)
-                player.GetComponent<PlayerWallet>()?.Credit(StageClearRewardDollars);
+            returningAfterDeath = died;
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
                 NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, isClear);
@@ -270,7 +265,12 @@ namespace WeaponWorkshop
         }
         private void OnMaterialCollected(FirstPersonPlayer collector, int amount)
         {
-            if (inRaid && collector == player) materialCrateCredits += amount;
+            if (inRaid && collector == player)
+            {
+                materialCrateCredits += amount;
+                // 스테이지 내 모듈 재화 1회 획득마다 1000 달러.
+                player.GetComponent<PlayerWallet>()?.Credit(1000);
+            }
         }
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
