@@ -130,11 +130,14 @@ namespace WeaponWorkshop
             return result.collider != null;
         }
 
+        // Benchmark replay drives fire through the Input System even when the window is not focused.
+        private static bool HasFocus => Application.isFocused || BenchmarkSession.ReplayActive;
+
         private void TryAttack()
         {
             if (!TutorialManager.ActionAllowed("fire")) return;
             if (GameManager.GameplayBlocked) return;
-            if (!Application.isFocused || player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
+            if (!HasFocus || player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
             UpdateAim();
             EquipableWeapon weapon = EquippedWeapon;
             if (weapon.TryFire())
@@ -147,7 +150,7 @@ namespace WeaponWorkshop
 
         private void OnAttackPerformed(InputAction.CallbackContext context)
         {
-            if (GameManager.GameplayBlocked || !Application.isFocused ||
+            if (GameManager.GameplayBlocked || !HasFocus ||
                 player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
             if (!TutorialManager.TryAction("fire")) return;
             AttackInput?.Invoke(EquippedWeapon);
@@ -169,7 +172,7 @@ namespace WeaponWorkshop
         private void ReleaseCharge()
         {
             if (EquippedWeapon == null || !EquippedWeapon.UsesCharge) return;
-            if (GameManager.GameplayBlocked || !Application.isFocused || player == null || !player.isActiveAndEnabled)
+            if (GameManager.GameplayBlocked || !HasFocus || player == null || !player.isActiveAndEnabled)
             {
                 EquippedWeapon.CancelCharge();
                 return;

@@ -27,6 +27,7 @@ namespace WeaponWorkshop
         public int RegionCount => TableManager.Instance.RaidMap.Count();
         public string RegionScene(int index) => TableManager.Instance.RaidMap.SceneAt(index);
         [SerializeField] private EquipableWeapon carriedWeaponPrefab;
+        public EquipableWeapon CarriedWeaponPrefab => carriedWeaponPrefab;
         [SerializeField] private string standaloneWorkshopScene = "Main";
         public static NightRaidController Instance { get; private set; }
         public bool IsBusy => mapOpen || transitioning || inRaid;

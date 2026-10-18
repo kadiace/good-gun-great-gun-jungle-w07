@@ -1762,6 +1762,56 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Benchmark"",
+            ""id"": ""2889eef5-3c6a-4ca9-967d-826df4e8cd24"",
+            ""actions"": [
+                {
+                    ""name"": ""ToggleRecord"",
+                    ""type"": ""Button"",
+                    ""id"": ""cd0fe4ac-f849-4c07-b070-7604029818f5"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
+                },
+                {
+                    ""name"": ""StartReplay"",
+                    ""type"": ""Button"",
+                    ""id"": ""690aba75-b719-4994-86b6-098252d72139"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""c330ba4d-a4fa-4b18-8a3e-f86c8e3a844a"",
+                    ""path"": ""<Keyboard>/f9"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""ToggleRecord"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c89d8b6e-1fff-4da7-b716-bf60a02cf062"",
+                    ""path"": ""<Keyboard>/f10"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""StartReplay"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": [
@@ -1885,6 +1935,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         // Game
         m_Game = asset.FindActionMap("Game", throwIfNotFound: true);
         m_Game_Pause = m_Game.FindAction("Pause", throwIfNotFound: true);
+        // Benchmark
+        m_Benchmark = asset.FindActionMap("Benchmark", throwIfNotFound: true);
+        m_Benchmark_ToggleRecord = m_Benchmark.FindAction("ToggleRecord", throwIfNotFound: true);
+        m_Benchmark_StartReplay = m_Benchmark.FindAction("StartReplay", throwIfNotFound: true);
     }
 
     ~@InputSystem_Actions()
@@ -1894,6 +1948,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         UnityEngine.Debug.Assert(!m_Build.enabled, "This will cause a leak and performance issues, InputSystem_Actions.Build.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_Workshop.enabled, "This will cause a leak and performance issues, InputSystem_Actions.Workshop.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_Game.enabled, "This will cause a leak and performance issues, InputSystem_Actions.Game.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Benchmark.enabled, "This will cause a leak and performance issues, InputSystem_Actions.Benchmark.Disable() has not been called.");
     }
 
     /// <summary>
@@ -2918,6 +2973,113 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="GameActions" /> instance referencing this action map.
     /// </summary>
     public GameActions @Game => new GameActions(this);
+
+    // Benchmark
+    private readonly InputActionMap m_Benchmark;
+    private List<IBenchmarkActions> m_BenchmarkActionsCallbackInterfaces = new List<IBenchmarkActions>();
+    private readonly InputAction m_Benchmark_ToggleRecord;
+    private readonly InputAction m_Benchmark_StartReplay;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Benchmark".
+    /// </summary>
+    public struct BenchmarkActions
+    {
+        private @InputSystem_Actions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public BenchmarkActions(@InputSystem_Actions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Benchmark/ToggleRecord".
+        /// </summary>
+        public InputAction @ToggleRecord => m_Wrapper.m_Benchmark_ToggleRecord;
+        /// <summary>
+        /// Provides access to the underlying input action "Benchmark/StartReplay".
+        /// </summary>
+        public InputAction @StartReplay => m_Wrapper.m_Benchmark_StartReplay;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Benchmark; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="BenchmarkActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(BenchmarkActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="BenchmarkActions" />
+        public void AddCallbacks(IBenchmarkActions instance)
+        {
+            if (instance == null || m_Wrapper.m_BenchmarkActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_BenchmarkActionsCallbackInterfaces.Add(instance);
+            @ToggleRecord.started += instance.OnToggleRecord;
+            @ToggleRecord.performed += instance.OnToggleRecord;
+            @ToggleRecord.canceled += instance.OnToggleRecord;
+            @StartReplay.started += instance.OnStartReplay;
+            @StartReplay.performed += instance.OnStartReplay;
+            @StartReplay.canceled += instance.OnStartReplay;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="BenchmarkActions" />
+        private void UnregisterCallbacks(IBenchmarkActions instance)
+        {
+            @ToggleRecord.started -= instance.OnToggleRecord;
+            @ToggleRecord.performed -= instance.OnToggleRecord;
+            @ToggleRecord.canceled -= instance.OnToggleRecord;
+            @StartReplay.started -= instance.OnStartReplay;
+            @StartReplay.performed -= instance.OnStartReplay;
+            @StartReplay.canceled -= instance.OnStartReplay;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="BenchmarkActions.UnregisterCallbacks(IBenchmarkActions)" />.
+        /// </summary>
+        /// <seealso cref="BenchmarkActions.UnregisterCallbacks(IBenchmarkActions)" />
+        public void RemoveCallbacks(IBenchmarkActions instance)
+        {
+            if (m_Wrapper.m_BenchmarkActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="BenchmarkActions.AddCallbacks(IBenchmarkActions)" />
+        /// <seealso cref="BenchmarkActions.RemoveCallbacks(IBenchmarkActions)" />
+        /// <seealso cref="BenchmarkActions.UnregisterCallbacks(IBenchmarkActions)" />
+        public void SetCallbacks(IBenchmarkActions instance)
+        {
+            foreach (var item in m_Wrapper.m_BenchmarkActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_BenchmarkActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="BenchmarkActions" /> instance referencing this action map.
+    /// </summary>
+    public BenchmarkActions @Benchmark => new BenchmarkActions(this);
     private int m_KeyboardMouseSchemeIndex = -1;
     /// <summary>
     /// Provides access to the input control scheme.
@@ -3358,5 +3520,27 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPause(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Benchmark" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="BenchmarkActions.AddCallbacks(IBenchmarkActions)" />
+    /// <seealso cref="BenchmarkActions.RemoveCallbacks(IBenchmarkActions)" />
+    public interface IBenchmarkActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "ToggleRecord" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnToggleRecord(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "StartReplay" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnStartReplay(InputAction.CallbackContext context);
     }
 }
