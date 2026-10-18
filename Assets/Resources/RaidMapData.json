@@ -9,6 +9,7 @@
         "firstClearSaleBonus": 0.05,
         "materialCrates": 4,
         "materialPerCrate": 250,
+        "dollarsPerMaterialPickup": 1000,
         "moduleCodes": [
           "bf4a63288b8e9694787904964ba8acd4"
         ]
@@ -25,6 +26,7 @@
         "firstClearSaleBonus": 0.05,
         "materialCrates": 10,
         "materialPerCrate": 250,
+        "dollarsPerMaterialPickup": 1000,
         "moduleCodes": [
           "8185707d079aa3d4eba1d33833009eb2",
           "9841ca931bf7a8c4b866da354b808ad7"
@@ -42,6 +44,7 @@
         "firstClearSaleBonus": 0.1,
         "materialCrates": 18,
         "materialPerCrate": 250,
+        "dollarsPerMaterialPickup": 1000,
         "moduleCodes": [
           "0277d45126374004b802798d93561da2",
           "8d0c0ddd9cf586745abb86717c7cc6b6"
@@ -59,6 +62,7 @@
         "firstClearSaleBonus": 0.1,
         "materialCrates": 12,
         "materialPerCrate": 250,
+        "dollarsPerMaterialPickup": 1000,
         "moduleCodes": [
           "36f778d16d639104b90e807dc937aaaa",
           "cf32abdb412c6124cabcbdd85c103cb5"
