@@ -268,8 +268,9 @@ namespace WeaponWorkshop
             if (inRaid && collector == player)
             {
                 materialCrateCredits += amount;
-                // 스테이지 내 모듈 재화 1회 획득마다 1000 달러.
-                player.GetComponent<PlayerWallet>()?.Credit(1000);
+                int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
+                // 스테이지 내 모듈 재화 1회 획득마다 달러 지급(표 값 사용).
+                if (perPickup > 0) player.GetComponent<PlayerWallet>()?.Credit(perPickup);
             }
         }
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
