@@ -160,6 +160,7 @@ namespace WeaponWorkshop
             if (groupPieces.Count == 0) return;
             EnsureDebrisCloud();
             debrisCloud.EmitGroup(groupPieces, debrisLifetime, debrisFadeDuration);
+            DebrisEmissionBudget.NoteGroup(groupPieces.Count, debrisLifetime);
             while (cells.Count > 0) RemoveCell(cells[cells.Count - 1]);
             structureDirty = false;
             UpdateCollisionRuns();

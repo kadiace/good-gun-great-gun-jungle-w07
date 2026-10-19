@@ -1101,10 +1101,12 @@ namespace WeaponWorkshop
         private void Detach(int cellIndex, Vector3 velocity = default)
         {
             Cell cell = preparedCells[cellIndex];
-            EnsureDebrisCloud();
+            // 칸 제거(실제 파괴)는 예산과 무관하게 항상 하고, 시각 파편만 전역 예산으로 걸러 낸다.
+            bool emitDebris = DebrisEmissionBudget.TryEmitPiece(cell.position,
+                gravityImpact ? gravityAbsorptionDuration : debrisLifetime);
+            if (emitDebris) EnsureDebrisCloud();
             RemoveCell(cellIndex);
-            debrisCloud.Emit(cell.Snapshot, velocity, debrisLifetime, debrisFadeDuration);
-
+            if (emitDebris) debrisCloud.Emit(cell.Snapshot, velocity, debrisLifetime, debrisFadeDuration);
         }
 
         private void RemoveCell(int cellIndex)
@@ -1179,9 +1181,11 @@ namespace WeaponWorkshop
                         if (falling.Remove(coordinate + direction)) pending.Enqueue(coordinate + direction);
                 }
                 groupPieces.Clear();
+                // 덩어리는 예산으로 줄이지 않는다. 낙하 중인 덩어리 칸은 RemainingCellCount·IsDestroyed(상자·코어 판정)에 들어간다.
                 foreach (int cellIndex in group) groupPieces.Add(preparedCells[cellIndex].Snapshot);
                 EnsureDebrisCloud();
                 debrisCloud.EmitGroup(groupPieces, debrisLifetime, debrisFadeDuration);
+                DebrisEmissionBudget.NoteGroup(groupPieces.Count, debrisLifetime);
                 foreach (int cellIndex in group) RemoveCell(cellIndex);
             }
         }
@@ -1219,9 +1223,11 @@ namespace WeaponWorkshop
                 }
                 if (supported || group.Count == 0) continue;
                 groupPieces.Clear();
+                // 덩어리는 예산으로 줄이지 않는다. 낙하 중인 덩어리 칸은 RemainingCellCount·IsDestroyed(상자·코어 판정)에 들어간다.
                 foreach (int cellIndex in group) groupPieces.Add(preparedCells[cellIndex].Snapshot);
                 EnsureDebrisCloud();
                 debrisCloud.EmitGroup(groupPieces, debrisLifetime, debrisFadeDuration);
+                DebrisEmissionBudget.NoteGroup(groupPieces.Count, debrisLifetime);
                 resolvingSupportDrop = true;
                 try
                 {

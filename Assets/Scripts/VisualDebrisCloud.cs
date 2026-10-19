@@ -1,39 +1,35 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
+using Random = UnityEngine.Random;
 using Unity.Profiling;
 
 namespace WeaponWorkshop
 {
     // 파편 이동·벽·그리기 갱신은 VisualDebrisCloudManager 의 단일 LateUpdate 가 부른다.
+    // 파편 적분(위치·속도·회전·바닥·굴림·정지 판정·행렬)은 Burst Job(DebrisIntegrationJob)으로
+    // 워커 스레드에서 돈다. 매니저 1단계 PrepareTick 이 캐시 경로를 처리하고 Job 을 스케줄하며,
+    // 2단계 FinishTick 이 완료를 기다린 뒤 벽 검사·만료 정리·버킷 제출·그리기만 메인에서 한다.
     public sealed class VisualDebrisCloud : MonoBehaviour
     {
         private static readonly ProfilerMarker ReserveBuffersMarker = new ProfilerMarker("VisualDebrisCloud.ReserveBuffers");
+        private static readonly ProfilerMarker ScheduleMarker = new ProfilerMarker("VisualDebrisCloud.Schedule");
+        private static readonly ProfilerMarker CompleteMarker = new ProfilerMarker("VisualDebrisCloud.Complete");
+        private static readonly ProfilerMarker DrawMarker = new ProfilerMarker("VisualDebrisCloud.Draw");
+        private static readonly ProfilerMarker GroupsMarker = new ProfilerMarker("VisualDebrisCloud.Groups");
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-        private struct Fragment
-        {
-            public Vector3 position, velocity, scale, spin;
-            public Vector3 wallPosition;
-            public float wallElapsed;
-            public Quaternion rotation;
-            public float age, lifetime, fade;
-            public bool grounded;
-            public bool absorbing;
-            public bool resting;            // 착지·무속도·무회전. 수명 종료까지 자세가 그대로다.
-            public bool restedDistant;      // 멀리서 정지한 파편. 가까워지면 근거리 물리로 복귀해 납작 정렬을 이어간다.
-            public Matrix4x4 cachedMatrix;  // resting 동안 재계산 없이 다시 쓰는 최종 행렬.
-            public bool hasCachedMatrix;    // cachedMatrix가 유효한지. 먼 파편의 생략 프레임이 같은 행렬을 다시 쓴다.
-            public Vector3 absorptionStart, absorptionCenter, spreadPosition;
-            public float spreadFraction;
-            public float distantElapsed;
-            public uint visualId;
-        }
-        private readonly List<Fragment> fragments = new List<Fragment>();
+        private const int JobBatchSize = 64;  // 파편 간 의존이 없어 배치 크기는 순수 오버헤드 절충일 뿐이다.
+        private NativeList<VisualDebrisFragment> fragments;  // 파편 상태 원본. Job 은 AsDeferredJobArray 로 같은 버퍼를 본다.
+        private NativeArray<byte> wallFlags;                 // SelectWallChecks 결과. Job 입력으로 그대로 넘긴다.
+        private JobHandle pendingJob;                        // PrepareTick 이 스케줄하고 FinishTick 이 완료한다.
         private sealed class FallingGroup
         {
             public Vector3 position, velocity, spin;
             public Quaternion rotation = Quaternion.identity;
-            public readonly List<Fragment> parts = new List<Fragment>();
+            public readonly List<VisualDebrisFragment> parts = new List<VisualDebrisFragment>();
             public Mesh combinedMesh;
             public bool meshDirty = true;
             public CombineInstance[] combines = System.Array.Empty<CombineInstance>();
@@ -51,13 +47,35 @@ namespace WeaponWorkshop
         {
             using (ReserveBuffersMarker.Auto())
             {
+                EnsureNativeBuffers();
                 int initialCapacity = Mathf.Clamp(initialFragmentCapacity, 0, 64);
                 if (fragments.Capacity < initialCapacity) fragments.Capacity = initialCapacity;
-                if (wallSelected.Length < initialCapacity) System.Array.Resize(ref wallSelected, initialCapacity);
+                EnsureWallFlags(initialCapacity);
                 maximumCachedGroups = Mathf.Max(0, maximumGroups);
                 for (int i = 0; i < bucketMatrices.Length; i++)
                     if (bucketMatrices[i] == null) bucketMatrices[i] = new Matrix4x4[Mathf.Max(16, initialCapacity)];
             }
+        }
+        // 도메인 리로드 꺼짐·풀 재사용 대비. 네이티브 버퍼는 Persistent 로 만들고 OnDisable 에서 거둔다.
+        private void EnsureNativeBuffers()
+        {
+            if (!fragments.IsCreated) fragments = new NativeList<VisualDebrisFragment>(64, Allocator.Persistent);
+            if (!wallFlags.IsCreated) wallFlags = new NativeArray<byte>(64, Allocator.Persistent);
+        }
+        private void EnsureWallFlags(int count)
+        {
+            int capacity = Mathf.NextPowerOfTwo(Mathf.Max(16, count));
+            if (!wallFlags.IsCreated) { wallFlags = new NativeArray<byte>(capacity, Allocator.Persistent); return; }
+            if (wallFlags.Length < count)
+            {
+                wallFlags.Dispose();
+                wallFlags = new NativeArray<byte>(capacity, Allocator.Persistent);
+            }
+        }
+        private void ReleaseNativeBuffers()
+        {
+            if (fragments.IsCreated) fragments.Dispose();
+            if (wallFlags.IsCreated) wallFlags.Dispose();
         }
         private FallingGroup RentGroup()
         {
@@ -111,6 +129,7 @@ namespace WeaponWorkshop
 
         public void ClearDebris()
         {
+            EnsureNativeBuffers();
             fragments.Clear();
             foreach (FallingGroup group in groups) ReturnGroup(group);
             groups.Clear();
@@ -145,52 +164,51 @@ namespace WeaponWorkshop
         private const float SettledViewMoveSq = 9f;
         private readonly DebrisWallCache wallCache = new DebrisWallCache();
         private int wallCursor;
-        private bool[] wallSelected = System.Array.Empty<bool>();
         private int nearCursor;
         private uint nextVisualId;
         private bool hasView;
         private Vector3 viewPosition;
         private bool Distant(Vector3 position) => hasView && (position - viewPosition).sqrMagnitude > fullDetailDistance * fullDetailDistance;
-        private bool MovingDebris(Fragment part) => !part.absorbing && !Distant(part.position) &&
+        private bool MovingDebris(VisualDebrisFragment part) => !part.absorbing && !Distant(part.position) &&
             part.velocity.sqrMagnitude > .0225f && part.age < part.lifetime;
         private void SelectWallChecks(int quota, float dt)
         {
-            if(wallSelected.Length<fragments.Count)System.Array.Resize(ref wallSelected,Mathf.NextPowerOfTwo(fragments.Count));
-            System.Array.Clear(wallSelected,0,fragments.Count);
-            if(fragments.Count==0||quota<=0)return;
+            EnsureWallFlags(fragments.Length);
+            for (int i = 0; i < fragments.Length; i++) wallFlags[i] = 0;
+            if (fragments.Length == 0 || quota <= 0) return;
             DebrisTargetIndex.Sync();
-            int selected=0,visited=0;
-            int fairQuota=Mathf.Max(1,quota/2);
-            while(visited<fragments.Count && selected<fairQuota)
+            int selected = 0, visited = 0;
+            int fairQuota = Mathf.Max(1, quota / 2);
+            while (visited < fragments.Length && selected < fairQuota)
             {
-                int index=wallCursor%fragments.Count;wallCursor=(index+1)%fragments.Count;visited++;
-                if(!MovingDebris(fragments[index]))continue;
-                wallSelected[index]=true;selected++;
+                int index = wallCursor % fragments.Length; wallCursor = (index + 1) % fragments.Length; visited++;
+                if (!MovingDebris(fragments[index])) continue;
+                wallFlags[index] = 1; selected++;
             }
-            visited=0;
-            int priorityVisits=Mathf.Min(fragments.Count,Mathf.Max(64,quota*8));
-            while(wallCache.HasNearbyObstacles && visited<priorityVisits && selected<quota)
+            visited = 0;
+            int priorityVisits = Mathf.Min(fragments.Length, Mathf.Max(64, quota * 8));
+            while (wallCache.HasNearbyObstacles && visited < priorityVisits && selected < quota)
             {
-                int index=nearCursor%fragments.Count;nearCursor=(index+1)%fragments.Count;visited++;
-                var part=fragments[index];
-                if(wallSelected[index]||!MovingDebris(part))continue;
-                float radius=.5f*part.scale.magnitude+.3f+part.velocity.magnitude*Mathf.Max(dt,.016f);
-                if(!wallCache.Near(part.position,radius))continue;
-                wallSelected[index]=true;selected++;
+                int index = nearCursor % fragments.Length; nearCursor = (index + 1) % fragments.Length; visited++;
+                var part = fragments[index];
+                if (wallFlags[index] != 0 || !MovingDebris(part)) continue;
+                float radius = .5f * part.scale.magnitude + .3f + part.velocity.magnitude * Mathf.Max(dt, .016f);
+                if (!wallCache.Near(part.position, radius)) continue;
+                wallFlags[index] = 1; selected++;
             }
             // Use unused priority slots for fair traversal, rather than wasting the budget.
-            visited=0;
-            while(visited<fragments.Count && selected<quota)
+            visited = 0;
+            while (visited < fragments.Length && selected < quota)
             {
-                int index=wallCursor%fragments.Count;wallCursor=(index+1)%fragments.Count;visited++;
-                if(wallSelected[index]||!MovingDebris(fragments[index]))continue;
-                wallSelected[index]=true;selected++;
+                int index = wallCursor % fragments.Length; wallCursor = (index + 1) % fragments.Length; visited++;
+                if (wallFlags[index] != 0 || !MovingDebris(fragments[index])) continue;
+                wallFlags[index] = 1; selected++;
             }
         }
-        public void ConfigureMotion(float friction,float bounce,float motion,float wallRadius)
+        public void ConfigureMotion(float friction, float bounce, float motion, float wallRadius)
         {
-            rollingFriction=Mathf.Max(0f,friction);bounceMultiplier=Mathf.Clamp01(bounce);
-            motionMultiplier=Mathf.Clamp01(motion);wallSearchRadius=Mathf.Max(0f,wallRadius);
+            rollingFriction = Mathf.Max(0f, friction); bounceMultiplier = Mathf.Clamp01(bounce);
+            motionMultiplier = Mathf.Clamp01(motion); wallSearchRadius = Mathf.Max(0f, wallRadius);
         }
         public void Initialize(Mesh cubeMesh, Material source, float bounce, float friction, Transform reference,
             Material fragmentTemplate)
@@ -210,7 +228,7 @@ namespace WeaponWorkshop
                     if (hit.distance < nearest) { nearest = hit.distance; floorHeight = hit.point.y; }
                 }
             }
-            wallCache.Capture(reference,floorHeight,wallSearchRadius);
+            wallCache.Capture(reference, floorHeight, wallSearchRadius);
             floorBounce = Mathf.Clamp01(bounce) * bounceMultiplier;
             floorFriction = Mathf.Max(rollingFriction, friction);
             if (appearance == null) appearance = new MaterialPropertyBlock();
@@ -255,33 +273,34 @@ namespace WeaponWorkshop
             public Quaternion rotation;
         }
 
-        private void VaryDebris(ref Fragment part)
+        private void VaryDebris(ref VisualDebrisFragment part)
         {
             // Visual-only variation; original voxel geometry and resistance are untouched.
             part.scale *= Random.Range(0.85f, 1.1f);
-            part.rotation = Quaternion.Euler(Random.Range(-12f,12f),Random.Range(-12f,12f),
-                Random.Range(-12f,12f)) * part.rotation;
+            part.rotation = Quaternion.Euler(Random.Range(-12f, 12f), Random.Range(-12f, 12f),
+                Random.Range(-12f, 12f)) * part.rotation;
             if (!part.absorbing)
             {
                 float speed = part.velocity.magnitude;
-                part.velocity = part.velocity * Random.Range(0.75f,1.25f)
-                    + Random.insideUnitSphere * Mathf.Min(0.7f, speed*0.2f+0.08f);
+                part.velocity = part.velocity * Random.Range(0.75f, 1.25f)
+                    + Random.insideUnitSphere * Mathf.Min(0.7f, speed * 0.2f + 0.08f);
             }
-            if(!part.absorbing)
+            if (!part.absorbing)
             {
                 part.velocity *= motionMultiplier;
                 part.spin *= 0.5f;
                 part.wallPosition = part.position; part.wallElapsed = 0f;
             }
-            part.lifetime *= Random.Range(0.9f,1.1f);
-            part.fade = Mathf.Min(part.fade,part.lifetime);
+            part.lifetime *= Random.Range(0.9f, 1.1f);
+            part.fade = Mathf.Min(part.fade, part.lifetime);
         }
 
         public void Emit(Piece cell, Vector3 velocity, float lifetime, float fade)
         {
+            EnsureNativeBuffers();
             // 새 파편은 그리기 캐시에 없으므로 다음 프레임은 반드시 다시 계산한다.
             drawCached = false;
-            var part = new Fragment { position = cell.position, rotation = cell.rotation,
+            var part = new VisualDebrisFragment { position = cell.position, rotation = cell.rotation,
                 scale = cell.scale, velocity = velocity,
                 spin = Random.onUnitSphere * Random.Range(90f, 360f),
                 absorbing = absorbEmission, absorptionStart = cell.position, absorptionCenter = emissionCenter,
@@ -308,7 +327,7 @@ namespace WeaponWorkshop
             group.position /= cells.Count;
             foreach (Piece cell in cells)
             {
-                group.parts.Add(new Fragment { position = cell.position - group.position,
+                group.parts.Add(new VisualDebrisFragment { position = cell.position - group.position,
                     rotation = cell.rotation, scale = cell.scale,
                     spin = Random.onUnitSphere * Random.Range(90f, 360f), lifetime = lifetime,
                     fade = Mathf.Clamp(fade, 0.01f, lifetime) });
@@ -342,7 +361,7 @@ namespace WeaponWorkshop
                 group.velocity += Physics.gravity * dt;
                 group.rotation = (Quaternion.Euler(group.spin * dt) * group.rotation).normalized;
                 float bottom = float.MaxValue;
-                foreach (Fragment source in group.parts)
+                foreach (VisualDebrisFragment source in group.parts)
                 {
                     Quaternion rotation = (group.rotation * source.rotation).normalized;
                     Vector3 position = group.position + group.rotation * source.position;
@@ -360,8 +379,8 @@ namespace WeaponWorkshop
                 }
                 for (int index = group.parts.Count - 1; index >= 0; index--)
                 {
-                    Fragment source = group.parts[index];
-                    Fragment part = source;
+                    VisualDebrisFragment source = group.parts[index];
+                    VisualDebrisFragment part = source;
                     part.position = group.position + group.rotation * source.position;
                     part.rotation = (group.rotation * source.rotation).normalized;
                     float halfHeight = HalfHeight(part.rotation, part.scale);
@@ -399,7 +418,7 @@ namespace WeaponWorkshop
                         var combines = group.combines;
                         for (int partIndex = 0; partIndex < combines.Length; partIndex++)
                         {
-                            Fragment part = group.parts[partIndex];
+                            VisualDebrisFragment part = group.parts[partIndex];
                             combines[partIndex] = new CombineInstance { mesh = mesh,
                                 transform = Matrix4x4.TRS(part.position, part.rotation, part.scale) };
                         }
@@ -455,54 +474,17 @@ namespace WeaponWorkshop
             bucketCounts[bucket] = count + 1;
         }
 
-        private void AdvanceDistant(ref Fragment part, float dt, Vector3 gravity)
+        // 매니저 1단계. 정지·격프레임 같은 캐시 경로는 여기서 그리고 false 를 돌려준다.
+        // 그 밖에는 그룹 덩어리 진행과 벽 검사 선정을 마친 뒤 파편 적분 Job 을 스케줄하고 true 를 돌려준다.
+        // 완료·벽 해석·제출·그리기는 FinishTick 이 맡는다.
+        internal bool PrepareTick(Camera view, float dt, Vector3 gravity)
         {
-            if (part.grounded)
-            {
-                part.velocity.y = 0f;
-                Vector3 previous = part.velocity;
-                part.velocity = Vector3.MoveTowards(part.velocity, Vector3.zero, floorFriction * dt);
-                if (part.velocity.sqrMagnitude < 0.0225f) part.velocity = Vector3.zero;
-                part.position += (previous + part.velocity) * (0.5f * dt);
-            }
-            else
-            {
-                part.position += part.velocity * dt + gravity * (0.5f * dt * dt);
-                part.velocity += gravity * dt;
-                float restingY = floorHeight + HalfHeight(part.rotation, part.scale);
-                if (part.position.y <= restingY)
-                {
-                    part.position.y = restingY;
-                    if (part.velocity.y < 0f)
-                    {
-                        float rebound = -part.velocity.y * floorBounce;
-                        part.grounded = rebound < 0.45f;
-                        part.velocity.y = part.grounded ? 0f : rebound;
-                    }
-                }
-            }
-            part.wallPosition = part.position;
-            part.wallElapsed = 0f;
-        }
-
-        private bool DrawDistant(Fragment part, ref int drawn)
-        {
-            if (drawn >= maximumDistantDraws) return false;
-            float distance = Vector3.Distance(part.position, viewPosition);
-            float fraction = Mathf.Lerp(1f, 0.25f, Mathf.Clamp01((distance - fullDetailDistance) / 18f));
-            if ((part.visualId * 2654435761u) / (float)uint.MaxValue >= fraction) return false;
-            drawn++;
-            return true;
-        }
-
-        // 매니저가 프레임당 한 번씩 부른다. 시선·시간·중력은 매니저에서 이미 읽은 값이다.
-        internal void Tick(Camera view, float dt, Vector3 gravity)
-        {
-            if (material == null) return;
-            if (fragments.Count == 0 && groups.Count == 0)
+            EnsureNativeBuffers();
+            if (material == null) return false;
+            if (fragments.Length == 0 && groups.Count == 0)
             {
                 if (owner != null && owner.IsDestroyed) PoolManager.Release(gameObject);
-                return;
+                return false;
             }
             hasView = view != null;
             if (hasView) viewPosition = view.transform.position;
@@ -515,8 +497,8 @@ namespace WeaponWorkshop
                 if (settledNextBucketIn > elapsed && settledNextExpiryIn > elapsed)
                 {
                     settledElapsed = elapsed;
-                    DrawBuckets();
-                    return;
+                    using (DrawMarker.Auto()) DrawBuckets();
+                    return false;
                 }
             }
             // 먼 구름은 프레임 건너 재계산을 건너뛰고 직전 그리기 결과를 그대로 다시 제출한다. 지난 시간은 다음 계산에 더해진다.
@@ -524,194 +506,152 @@ namespace WeaponWorkshop
             {
                 pausedTime += dt;
                 RedrawCache();
-                return;
+                return false;
             }
             dt += pausedTime + settledElapsed;
             pausedTime = 0f; settledElapsed = 0f;
             drawCached = true;
-            AdvanceGroups(dt);
-            int wallQuota = Mathf.Min(fragments.Count,PoolManager.WallChecksPerCloud);
-            SelectWallChecks(wallQuota,dt);
-            System.Array.Clear(bucketCounts, 0, bucketCounts.Length);
-            int distantDrawn = 0;
-            int frameParity = Time.frameCount & 1;
-            // 구름 전체 정지 판정: 움직이는 분기에 들어간 파편이 하나라도 있으면 무효가 된다.
-            bool allResting = groups.Count == 0;
-            float nextBucketIn = float.PositiveInfinity, nextExpiryIn = float.PositiveInfinity;
-            for (int i = fragments.Count - 1; i >= 0; i--)
+            using (GroupsMarker.Auto())
             {
-                Fragment part = fragments[i];
-                part.age += dt;
-                if (part.age >= part.lifetime)
-                {
-                    fragments[i] = fragments[fragments.Count - 1];
-                    fragments.RemoveAt(fragments.Count - 1);
-                    continue;
-                }
-                float alpha = Mathf.Clamp01((part.lifetime - part.age) / part.fade);
-                int bucketIndex = Mathf.Clamp(Mathf.CeilToInt(alpha * 15f), 0, 15);
-                if (part.absorbing)
-                {
-                    float t = Mathf.Clamp01(part.age / part.lifetime);
-                    float absorbT = Mathf.Clamp01((t - part.spreadFraction) / (1f - part.spreadFraction));
-                    float eased = absorbT * absorbT * (3f - 2f * absorbT);
-                    if (t < part.spreadFraction)
-                    {
-                        float spreadT = t / part.spreadFraction;
-                        float outward = 1f - (1f - spreadT) * (1f - spreadT);
-                        part.position = Vector3.LerpUnclamped(part.absorptionStart, part.spreadPosition, outward);
-                    }
-                    else part.position = Vector3.LerpUnclamped(part.spreadPosition, part.absorptionCenter, eased);
-                    fragments[i] = part;
-                    AddMatrix(15, ScaleTranslate(RotationMatrix(part.rotation), part.scale * (1f - eased), part.position));
-                    allResting = false;
-                    continue;
-                }
-                if (part.resting)
-                {
-                    // 멀리서 정지한 파편이 근거리로 들어오면 정지를 풀어 납작 정렬·높이 보정을 이어간다.
-                    if (part.restedDistant && !Distant(part.position))
-                    {
-                        part.resting = false;
-                        part.restedDistant = false;
-                        part.hasCachedMatrix = false;  // 다시 멀어지면 첫 계산에서 새 행렬을 만들게 한다.
-                    }
-                    else
-                    {
-                        // 바닥에 앉은 파편은 수명 종료까지 자세가 고정: 물리·행렬 재계산 없이 캐시만 제출한다.
-                        // 정지 조건(마찰로 속도 0 고정, 정렬 도달)은 되돌아오지 않으므로 연속 프레임 확인 없이 세운다.
-                        fragments[i] = part;
-                        if ((!Distant(part.position) || DrawDistant(part, ref distantDrawn)) && bucketIndex > 0)
-                            AddMatrix(bucketIndex, part.cachedMatrix);
-                        float remaining = part.lifetime - part.age;
-                        if (remaining < nextExpiryIn) nextExpiryIn = remaining;
-                        if (bucketIndex > 0)
-                        {
-                            float bucketIn = remaining - part.fade * ((bucketIndex - 1) * (1f / 15f));
-                            if (bucketIn < nextBucketIn) nextBucketIn = bucketIn;
-                        }
-                        continue;
-                    }
-                }
-                allResting = false;
-                if (Distant(part.position))
-                {
-                    part.distantElapsed += dt;
-                    bool advancing = ((frameParity + (int)part.visualId) & 1) == 0;
-                    if (advancing)
-                    {
-                        AdvanceDistant(ref part, part.distantElapsed, gravity);
-                        part.distantElapsed = 0f;
-                        // 멀리 있는 파편은 회전 갱신이 없으므로 바닥 접촉 후 속도가 0이면 더는 움직이지 않는다. 여기서 정지로 본다.
-                        // 가까워지면 납작 정렬을 이어가도록 먼 정지로 표시한다.
-                        if (part.grounded && part.velocity.sqrMagnitude == 0f)
-                        {
-                            part.resting = true;
-                            part.restedDistant = true;
-                        }
-                    }
-                    fragments[i] = part;
-                    // 움직이지 않는 교대 프레임은 지난 행렬을 다시 쓴다. 정지 파편의 cachedMatrix가 곧 최종 자세다.
-                    Matrix4x4 farPose;
-                    if (advancing || !part.hasCachedMatrix)
-                    {
-                        farPose = ScaleTranslate(RotationMatrix(part.rotation), part.scale, part.position);
-                        part.cachedMatrix = farPose;
-                        part.hasCachedMatrix = true;
-                    }
-                    else farPose = part.cachedMatrix;
-                    if (DrawDistant(part, ref distantDrawn) && bucketIndex > 0)
-                        AddMatrix(bucketIndex, farPose);
-                    continue;
-                }
-                float step = dt + part.distantElapsed;
-                part.distantElapsed = 0f;
-                if (part.grounded)
-                {
-                    part.velocity.y = 0f;
-                    Vector3 previousVelocity = part.velocity;
-                    part.velocity = Vector3.MoveTowards(part.velocity, Vector3.zero, floorFriction * step);
-                    if(part.velocity.sqrMagnitude<0.0225f)part.velocity=Vector3.zero;
-                    Vector3 movement = (previousVelocity + part.velocity) * (0.5f * step);
-                    part.position += movement;
-                    float rollingRadius = Mathf.Max(0.01f, Mathf.Max(part.scale.x, part.scale.z) * 0.5f);
-                    if (movement.sqrMagnitude > 0.00000001f)
-                    {
-                        Vector3 axis = Vector3.Cross(Vector3.up, movement).normalized;
-                        part.rotation = (Quaternion.AngleAxis(movement.magnitude / rollingRadius * Mathf.Rad2Deg, axis) * part.rotation).normalized;
-                    }
-                    else
-                    {
-                        // Settle onto the nearest cube face without a collider/contact solver.
-                        Quaternion previousRotation = part.rotation;
-                        Vector3 bestAxis = part.rotation * Vector3.up;
-                        float best = Mathf.Abs(bestAxis.y);
-                        Vector3 right = part.rotation * Vector3.right;
-                        Vector3 forward = part.rotation * Vector3.forward;
-                        if (Mathf.Abs(right.y) > best) { bestAxis = right; best = Mathf.Abs(right.y); }
-                        if (Mathf.Abs(forward.y) > best) bestAxis = forward;
-                        if (bestAxis.y < 0f) bestAxis = -bestAxis;
-                        Quaternion flat = Quaternion.FromToRotation(bestAxis, Vector3.up) * part.rotation;
-                        part.rotation = Quaternion.RotateTowards(part.rotation, flat, 180f * step);
-                        // 속도가 0이고 회전 변화가 사실상 사라지면 이후 수명 종료까지 제자리에 있다.
-                        part.resting = part.velocity.sqrMagnitude == 0f &&
-                            Quaternion.Dot(previousRotation, part.rotation) > 0.999999f;
-                    }
-                    part.spin = Vector3.zero;
-                }
-                else
-                {
-                    part.position += part.velocity * step + gravity * (0.5f * step * step);
-                    part.velocity += gravity * step;
-                }
-                if (!part.grounded) part.rotation = (Quaternion.Euler(part.spin * step) * part.rotation).normalized;
-                // 회전 행렬을 한 번 만들어 높이 검사와 최종 행렬이 함께 쓴다.
-                Matrix4x4 rotation = RotationMatrix(part.rotation);
-                // Cube extent along world Y prevents rotating corners from sinking below the plane.
-                float halfHeight = 0.5f * (Mathf.Abs(rotation.m10) * part.scale.x +
-                    Mathf.Abs(rotation.m11) * part.scale.y + Mathf.Abs(rotation.m12) * part.scale.z);
-                float restingY = floorHeight + halfHeight;
-                if (part.grounded || part.position.y <= restingY)
-                {
-                    part.position.y = restingY;
-                    if (!part.grounded && part.velocity.y < 0f)
-                    {
-                        float impactSpeed = -part.velocity.y;
-                        if (part.velocity.x * part.velocity.x + part.velocity.z * part.velocity.z < 0.04f)
-                        {
-                            Vector3 scatter = new Vector3(part.spin.z, 0f, -part.spin.x).normalized;
-                            part.velocity += scatter * Mathf.Min(1.2f, impactSpeed * 0.15f);
-                        }
-                        float rebound = impactSpeed * floorBounce;
-                        part.grounded = rebound < 0.45f;
-                        part.velocity.y = part.grounded ? 0f : rebound;
-                    }
-                }
-                part.wallElapsed += step;
-                if(wallSelected[i] && part.velocity.sqrMagnitude>0.0225f && PoolManager.TryWallCheck())
-                {
-                    float wallRadius=0.5f*part.scale.magnitude;
-                    wallCache.Resolve(part.wallPosition,ref part.position,ref part.velocity,wallRadius,part.wallElapsed,0.15f);
-                    part.wallPosition=part.position;part.wallElapsed=0f;
-                }
-                else if(part.velocity.sqrMagnitude<=0.0225f)
-                { part.wallPosition=part.position;part.wallElapsed=0f; }
-                Matrix4x4 pose = ScaleTranslate(rotation, part.scale, part.position);
-                if (part.resting) { part.cachedMatrix = pose; part.hasCachedMatrix = true; }
-                fragments[i] = part;
-                if (bucketIndex > 0) AddMatrix(bucketIndex, pose);
+                AdvanceGroups(dt);
             }
-            // 모든 파편이 정지했고 남은 덩어리가 없으면 다음 프레임부터 구름 단위로 루프를 건너뛴다.
-            if (allResting && fragments.Count > 0)
+            int wallQuota = Mathf.Min(fragments.Length, PoolManager.WallChecksPerCloud);
+            SelectWallChecks(wallQuota, dt);
+            using (ScheduleMarker.Auto())
             {
-                settled = true;
-                settledNextBucketIn = nextBucketIn;
-                settledNextExpiryIn = nextExpiryIn;
-                settledHasView = hasView;
-                settledViewPosition = viewPosition;
+                var job = new DebrisIntegrationJob
+                {
+                    states = fragments.AsDeferredJobArray(),
+                    wallSelected = wallFlags,
+                    p = new DebrisJobParams
+                    {
+                        deltaTime = dt,
+                        floorHeight = floorHeight,
+                        floorBounce = floorBounce,
+                        floorFriction = floorFriction,
+                        fullDetailDistance = fullDetailDistance,
+                        viewPosition = viewPosition,
+                        gravity = gravity,
+                        frameParity = Time.frameCount & 1,
+                        hasView = hasView ? (byte)1 : (byte)0
+                    }
+                };
+                pendingJob = fragments.Length > 0 ? job.Schedule(fragments.Length, JobBatchSize) : default;
             }
-            else { settled = false; settledElapsed = 0f; }
-            DrawBuckets();
+            return true;
+        }
+
+        // 매니저 2단계. Job 을 완료하고 벽 검사·만료 정리·버킷 제출·그리기를 메인 스레드에서 한다.
+        internal void FinishTick()
+        {
+            using (CompleteMarker.Auto())
+            {
+                pendingJob.Complete();
+                // 벽 해석은 DebrisTargetIndex 질의가 관리 대상을 볼 수 있어 메인 스레드에 남는다.
+                // 허용 분(TryWallCheck)은 원래 루프와 같은 역순으로 소진한다.
+                for (int i = fragments.Length - 1; i >= 0; i--)
+                {
+                    VisualDebrisFragment part = fragments[i];
+                    if (part.pathFlag != DebrisPathFlag.Near || wallFlags[i] == 0) continue;
+                    if (math.lengthsq(part.velocity) <= 0.0225f) continue;
+                    if (!PoolManager.TryWallCheck()) continue;
+                    float wallRadius = 0.5f * part.scale.magnitude;
+                    Vector3 position = part.position;
+                    Vector3 velocity = part.velocity;
+                    wallCache.Resolve(part.wallPosition, ref position, ref velocity, wallRadius, part.wallElapsed, 0.15f);
+                    part.position = position;
+                    part.velocity = velocity;
+                    part.wallPosition = part.position;
+                    part.wallElapsed = 0f;
+                    // 벽이 자세를 바꿨으므로 행렬을 다시 만든다. 이번 프레임에 앉은 파편의 캐시도 함께 고친다.
+                    Matrix4x4 rotation = RotationMatrix(part.rotation);
+                    part.pose = ScaleTranslate(rotation, part.scale, part.position);
+                    if (part.resting) { part.cachedMatrix = part.pose; part.hasCachedMatrix = true; }
+                    fragments[i] = part;
+                }
+                SubmitAndDraw();
+            }
+        }
+
+        // Job 결과를 원래 루프와 같은 순서(역순)로 검사해 원거리 표본 상한·버킷 행렬·정지 판정을 메운다.
+        private void SubmitAndDraw()
+        {
+            using (DrawMarker.Auto())
+            {
+                System.Array.Clear(bucketCounts, 0, bucketCounts.Length);
+                int distantDrawn = 0;
+                // 구름 전체 정지 판정: 움직이는 분기에 들어간 파편이 하나라도 있으면 무효가 된다.
+                bool allResting = groups.Count == 0;
+                float nextBucketIn = float.PositiveInfinity, nextExpiryIn = float.PositiveInfinity;
+                for (int i = fragments.Length - 1; i >= 0; i--)
+                {
+                    VisualDebrisFragment part = fragments[i];
+                    switch (part.pathFlag)
+                    {
+                        case DebrisPathFlag.Absorbing:
+                            allResting = false;
+                            AddMatrix(part.bucket, part.pose);
+                            break;
+                        case DebrisPathFlag.Resting:
+                        {
+                            // 바닥에 앉은 파편은 수명 종료까지 자세가 고정: 물리·행렬 재계산 없이 캐시만 제출한다.
+                            // 정지 조건(마찰로 속도 0 고정, 정렬 도달)은 되돌아오지 않으므로 연속 프레임 확인 없이 세운다.
+                            bool draw;
+                            if (!Distant(part.position)) draw = true;
+                            else if (distantDrawn < maximumDistantDraws && part.sampled != 0) { distantDrawn++; draw = true; }
+                            else draw = false;
+                            if (draw && part.bucket > 0) AddMatrix(part.bucket, part.cachedMatrix);
+                            float remaining = part.lifetime - part.age;
+                            if (remaining < nextExpiryIn) nextExpiryIn = remaining;
+                            if (part.bucket > 0)
+                            {
+                                float bucketIn = remaining - part.fade * ((part.bucket - 1) * (1f / 15f));
+                                if (bucketIn < nextBucketIn) nextBucketIn = bucketIn;
+                            }
+                            break;
+                        }
+                        case DebrisPathFlag.Distant:
+                            allResting = false;
+                            if (distantDrawn < maximumDistantDraws && part.sampled != 0)
+                            {
+                                distantDrawn++;
+                                if (part.bucket > 0) AddMatrix(part.bucket, part.pose);
+                            }
+                            break;
+                        case DebrisPathFlag.Near:
+                            allResting = false;
+                            if (part.bucket > 0) AddMatrix(part.bucket, part.pose);
+                            break;
+                    }
+                }
+                CompactExpired();
+                // 모든 파편이 정지했고 남은 덩어리가 없으면 다음 프레임부터 구름 단위로 루프를 건너뛴다.
+                if (allResting && fragments.Length > 0)
+                {
+                    settled = true;
+                    settledNextBucketIn = nextBucketIn;
+                    settledNextExpiryIn = nextExpiryIn;
+                    settledHasView = hasView;
+                    settledViewPosition = viewPosition;
+                }
+                else { settled = false; settledElapsed = 0f; }
+                DrawBuckets();
+            }
+        }
+
+        // 만료 파편을 순서를 유지한 채 앞으로 걷어 내린다. 스왑 제거와 달리 남은 파편 순서가 안정한다.
+        private void CompactExpired()
+        {
+            int count = fragments.Length;
+            int write = 0;
+            for (int read = 0; read < count; read++)
+            {
+                VisualDebrisFragment part = fragments[read];
+                if (part.pathFlag == DebrisPathFlag.Expired) continue;
+                if (write != read) fragments[write] = part;
+                write++;
+            }
+            if (write != count) fragments.ResizeUninitialized(write);
         }
 
         // 바깥에서 보는 보크셀 크기보다 1프레임 자세 지연이 작아지는 거리부터 반 주기 갱신을 쓴다.
@@ -726,11 +666,14 @@ namespace WeaponWorkshop
         // 재계산을 건너뛴 프레임: 직전 프레임의 그룹·버킷 행렬을 다시 제출하기만 한다.
         private void RedrawCache()
         {
-            for (int i = 0; i < groups.Count; i++)
-                if (groups[i].combinedMesh != null && !groups[i].meshDirty)
-                    Graphics.DrawMesh(groups[i].combinedMesh, groups[i].drawMatrix, groupMaterial,
-                    gameObject.layer, null, 0, null, ShadowCastingMode.On, true);
-            DrawBuckets();
+            using (DrawMarker.Auto())
+            {
+                for (int i = 0; i < groups.Count; i++)
+                    if (groups[i].combinedMesh != null && !groups[i].meshDirty)
+                        Graphics.DrawMesh(groups[i].combinedMesh, groups[i].drawMatrix, groupMaterial,
+                        gameObject.layer, null, 0, null, ShadowCastingMode.On, true);
+                DrawBuckets();
+            }
         }
 
         private void DrawBuckets()
@@ -761,19 +704,26 @@ namespace WeaponWorkshop
                 }
             }
         }
-        private void OnEnable() => VisualDebrisCloudManager.Register(this);
+        private void OnEnable()
+        {
+            EnsureNativeBuffers();
+            VisualDebrisCloudManager.Register(this);
+        }
         private void OnDisable()
         {
             VisualDebrisCloudManager.Unregister(this);
             ClearDebris();
+            // Job 은 Prepare→Finish 가 같은 LateUpdate 안에서만 살아 있어 해제 시점에 실행 중일 수 없다.
+            ReleaseNativeBuffers();
             var previousOwner = owner; owner = null;
             if (previousOwner != null) previousOwner.ForgetDebrisCloud(this);
             absorbEmission = false; emissionCenter = Vector3.zero;
             emissionDuration = emissionSpreadDistance = emissionSpreadFraction = 0f;
-            mesh = null; appearance?.Clear(); wallCache.Clear(); wallCursor=nearCursor=0;
+            mesh = null; appearance?.Clear(); wallCache.Clear(); wallCursor = nearCursor = 0;
         }
         private void OnDestroy()
         {
+            ReleaseNativeBuffers();
             foreach (FallingGroup group in groups)
                 if (group.combinedMesh != null) Destroy(group.combinedMesh);
             foreach (FallingGroup group in groupCache)
@@ -783,7 +733,3 @@ namespace WeaponWorkshop
         }
     }
 }
-
-
-
-

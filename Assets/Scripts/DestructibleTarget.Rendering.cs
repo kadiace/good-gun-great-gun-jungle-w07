@@ -723,6 +723,7 @@ namespace WeaponWorkshop
                     foreach (int cellIndex in localSupportGroup) groupPieces.Add(preparedCells[cellIndex].Snapshot);
                     EnsureDebrisCloud();
                     debrisCloud.EmitGroup(groupPieces, debrisLifetime, debrisFadeDuration);
+                    DebrisEmissionBudget.NoteGroup(groupPieces.Count, debrisLifetime);
                     resolvingSupportDrop = true;
                     try
                     {

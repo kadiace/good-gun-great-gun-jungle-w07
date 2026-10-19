@@ -9,6 +9,8 @@ namespace WeaponWorkshop
     // 폭발이 겹치는 프레임에 모든 구름이 매번 전체 계산을 하면 Tick이 프레임 상위 비용이 되므로,
     // 먼 구름은 프레임을 건너 계산하고 프레임당 계산 시간 예산을 넘기면 남은 구름을 다음 프레임으로 미룬다(공정 순환).
     // 양보한 프레임의 시간은 구름에 누적해 다음 계산에 한꺼번에 더하므로 파편 움직임 속도는 변하지 않는다.
+    // 파편 적분은 Burst Job 으로 옮겨졌다. 1단계에서 구름별 PrepareTick 으로 Job 을 모두 스케줄하고,
+    // 2단계에서 FinishTick 이 완료를 기다린 뒤 벽 검사·제출·그리기만 메인 스레드에서 한다.
     [DefaultExecutionOrder(10000)]
     internal sealed class VisualDebrisCloudManager : MonoBehaviour
     {
@@ -17,12 +19,13 @@ namespace WeaponWorkshop
         private static VisualDebrisCloudManager instance;
         private static readonly List<VisualDebrisCloud> clouds = new List<VisualDebrisCloud>(16);
 
-        // 프레임당 파편 구름 계산 예산(ms). 폭발 창에서 구름이 많을 때 Tick 합이 프레임을 잠식하지 않게 한다.
+        // 프레임당 파편 구름 계산 예산(ms). 폭발 창에서 구름이 많을 때 계산 합이 프레임을 잠식하지 않게 한다.
         private const float TickBudgetMilliseconds = 4f;
         // 이 거리(m) 밖 구름은 프레임을 건너 계산한다. 구름 내부의 48m 밖 격프레임 갱신과 합쳐 4프레임 주기가 된다.
         private const float StaggeredUpdateDistanceSq = 96f * 96f;
         private int tickCursor;  // 다음 프레임에 계산 우선권을 받을 자리.
         private readonly System.Diagnostics.Stopwatch tickWatch = new System.Diagnostics.Stopwatch();
+        private readonly List<VisualDebrisCloud> scheduledClouds = new List<VisualDebrisCloud>(16);
 
         // 도메인 리로드 꺼짐·씬 전환 뒤에도 이전 세션의 클라우드를 순회하지 않도록 정적 목록을 비운다.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -92,6 +95,8 @@ namespace WeaponWorkshop
                 int firstDeferred = -1;  // 예산을 넘겨 처음 양보한 자리. 다음 프레임은 여기부터 다시 시작한다.
                 int count = clouds.Count;
                 if (tickCursor >= count) tickCursor = 0;
+                scheduledClouds.Clear();
+                // 1단계: 구름별 준비와 Job 스케줄. 캐시 경로(정지·격프레임·예산 양보)는 여기서 그려진다.
                 for (int n = 0; n < count; n++)
                 {
                     // 순회 중 등록·해제로 목록이 밀리면 자리를 현재 크기로 감싸 되돌린다.
@@ -123,7 +128,17 @@ namespace WeaponWorkshop
                     cloud.pendingDeltaTime = 0f;
                     cloud.tickFrame = frame;
                     tickWatch.Restart();
-                    cloud.Tick(view, combined, gravity);
+                    bool scheduled = cloud.PrepareTick(view, combined, gravity);
+                    tickWatch.Stop();
+                    budgetLeft -= (float)tickWatch.Elapsed.TotalMilliseconds;
+                    if (scheduled) scheduledClouds.Add(cloud);
+                }
+                // 2단계: Job 완료 + 벽 검사 + 제출·그리기. 완료 비용도 같은 예산에서 뺀다.
+                // 이 비용은 양보 판정이 모두 끝난 뒤에 잡히므로 이번 프레임이 아니라 다음 프레임 양보에 반영된다.
+                for (int s = 0; s < scheduledClouds.Count; s++)
+                {
+                    tickWatch.Restart();
+                    scheduledClouds[s].FinishTick();
                     tickWatch.Stop();
                     budgetLeft -= (float)tickWatch.Elapsed.TotalMilliseconds;
                 }
