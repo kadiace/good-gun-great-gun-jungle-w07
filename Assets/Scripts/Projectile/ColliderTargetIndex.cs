@@ -40,26 +40,41 @@ namespace WeaponWorkshop
         private static readonly Dictionary<Collider, Entry> entries =
             new Dictionary<Collider, Entry>(1024, ColliderIdentityComparer.Instance);
         private static readonly List<Collider> staleColliders = new List<Collider>();
-        // 같은 콜라이더를 다시 묻는 호출(필터→표적 해결)은 해시 조회조차 건너뛴다.
-        private static Collider memoCollider;
-        private static Entry memoEntry;
+        // 같은 콜라이더를 다시 묻는 호출(필터→표적 해결→임팩트)은 해시 조회조차 건너뛴다.
+        // 후보 순회는 두 개 콜라이더를 번갈아 묻는 일이 잦아 메모를 두 칸 둔다.
+        private static Collider memoColliderA, memoColliderB;
+        private static Entry memoEntryA, memoEntryB;
         private static int sweepAt = MinEntriesBeforeSweep;
+
+        // LayerMask APIs throw inside a type initializer when Unity first touches this type from a
+        // serialization/constructor context (e.g. prefab import), which poisons the type. Resolve lazily.
+        private static bool layersResolved;
+        private static int coreLayerId, shieldLayerId;
+        private static void ResolveLayers()
+        {
+            if (layersResolved) return;
+            coreLayerId = LayerMask.NameToLayer("EndChest");
+            shieldLayerId = LayerMask.NameToLayer("EndChestShield");
+            layersResolved = true;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetIndex()
         {
             entries.Clear(); staleColliders.Clear();
-            memoCollider = null; memoEntry = default;
+            memoColliderA = memoColliderB = null; memoEntryA = memoEntryB = default;
             sweepAt = MinEntriesBeforeSweep;
+            layersResolved = false;
         }
 
         internal static DestructibleTarget Structure(Collider collider)
         {
             if (collider == null) return null;
             if (!TryPeek(collider, out Entry entry)) entry = NewEntry(collider);
-            // 등록·캐시된 소속이 제일 싼 경로라서 먼저 본다. 풀 오브젝트는 규칙상 매번 부모를 다시 탄다.
-            if (entry.structure != null) return entry.structure;
+            // 풀 오브젝트는 규칙상 매번 부모를 다시 탄다.
             if (entry.pooled) return FindInParents<DestructibleTarget>(collider);
+            // 등록·캐시된 소속이 제일 싼 경로라서 먼저 본다.
+            if (entry.structure != null) return entry.structure;
             if (Time.frameCount - entry.structureFrame < NegativeValidFrames) return null;
             entry.structure = FindInParents<DestructibleTarget>(collider);
             entry.structureFrame = Time.frameCount;
@@ -83,8 +98,7 @@ namespace WeaponWorkshop
         }
 
         // 코어·방어막은 기존 판정처럼 "해당 레이어 조상이 있을 때"만 최근 성분을 쓴다.
-        internal static void ResolveEndChest(Collider collider, int coreLayer, int shieldLayer,
-            out EndChestCore core, out EndChestShield shield)
+        internal static void ResolveEndChest(Collider collider, out EndChestCore core, out EndChestShield shield)
         {
             core = null; shield = null;
             if (collider == null) return;
@@ -95,44 +109,77 @@ namespace WeaponWorkshop
                 return;
             }
             if (!entry.pooled && Time.frameCount - entry.endChestFrame < NegativeValidFrames) return;
-            EndChestCore coreComponent = null;
-            EndChestShield shieldComponent = null;
+            // 레이어 조상이 있을 때만 성분을 다시 찾는다. 일반 콜라이더의 만료 재검사는 레이어 비교만 한다.
+            bool coreLayerFound, shieldLayerFound;
+            WalkLayers(collider, out coreLayerFound, out shieldLayerFound);
+            if (coreLayerFound)
+                for (Transform current = collider.transform; current != null && core == null; current = current.parent)
+                    current.TryGetComponent(out core);
+            if (shieldLayerFound)
+                for (Transform current = collider.transform; current != null && shield == null; current = current.parent)
+                    current.TryGetComponent(out shield);
+            entry.core = core; entry.shield = shield;
+            entry.endChestFrame = Time.frameCount;
+            PutEntry(collider, entry);
+        }
+
+        // 새 항목을 만들어 저장한다. 풀·표적·엔드 상자 소속을 한 번의 부모 순회로 같이 판정해
+        // 이어지는 조회(Structure·ResolveEndChest)가 같은 콜라이더 부모 탐색을 반복하지 않게 한다.
+        private static Entry NewEntry(Collider collider)
+        {
+            ResolveLayers();
+            // 대여 인스턴스는 PoolManager나 다른 오브젝트 밑에 붙으므로 계층 루트가 아니다. 같은 순회에서 풀 표식도 찾는다.
+            bool pooled = false;
+            DestructibleTarget structure = null;
             bool coreLayerFound = false, shieldLayerFound = false;
             for (Transform current = collider.transform; current != null; current = current.parent)
             {
-                if (coreComponent == null) current.TryGetComponent(out coreComponent);
-                if (shieldComponent == null) current.TryGetComponent(out shieldComponent);
+                if (!pooled && current.TryGetComponent(out PooledCombatObject _)) pooled = true;
+                if (structure == null) current.TryGetComponent(out structure);
                 int layer = current.gameObject.layer;
-                if (layer == coreLayer) coreLayerFound = true;
-                if (layer == shieldLayer) shieldLayerFound = true;
+                if (layer == coreLayerId) coreLayerFound = true;
+                else if (layer == shieldLayerId) shieldLayerFound = true;
             }
-            entry.core = coreLayerFound ? coreComponent : null;
-            entry.shield = shieldLayerFound ? shieldComponent : null;
-            entry.endChestFrame = Time.frameCount;
-            PutEntry(collider, entry);
-            core = entry.core; shield = entry.shield;
-        }
-
-        // 새 항목을 만들어 저장한다. 이 시점에만 풀 소속 판정을 위해 루트까지 부모를 탄다.
-        private static Entry NewEntry(Collider collider)
-        {
+            EndChestCore core = null; EndChestShield shield = null;
+            if (coreLayerFound)
+                for (Transform current = collider.transform; current != null && core == null; current = current.parent)
+                    current.TryGetComponent(out core);
+            if (shieldLayerFound)
+                for (Transform current = collider.transform; current != null && shield == null; current = current.parent)
+                    current.TryGetComponent(out shield);
             var entry = new Entry
             {
-                pooled = FindInParents<PooledCombatObject>(collider) != null,
-                structureFrame = -NegativeValidFrames,
-                endChestFrame = -NegativeValidFrames
+                structure = structure,
+                structureFrame = structure != null ? StructureNeverExpires : -NegativeValidFrames,
+                core = core,
+                shield = shield,
+                endChestFrame = Time.frameCount,
+                pooled = pooled
             };
             PutEntry(collider, entry);
             return entry;
         }
 
+        private static void WalkLayers(Collider collider, out bool coreLayerFound, out bool shieldLayerFound)
+        {
+            ResolveLayers();
+            coreLayerFound = false; shieldLayerFound = false;
+            for (Transform current = collider.transform; current != null; current = current.parent)
+            {
+                int layer = current.gameObject.layer;
+                if (layer == coreLayerId) coreLayerFound = true;
+                else if (layer == shieldLayerId) shieldLayerFound = true;
+            }
+        }
+
         // 기존 항목을 꺼내기만 한다. 새 항목은 소비자 규칙(NewEntry·RegisterStructure)대로 만든다.
         private static bool TryPeek(Collider collider, out Entry entry)
         {
-            if (ReferenceEquals(collider, memoCollider)) { entry = memoEntry; return true; }
+            if (ReferenceEquals(collider, memoColliderA)) { entry = memoEntryA; return true; }
+            if (ReferenceEquals(collider, memoColliderB)) { entry = memoEntryB; return true; }
             if (!entries.TryGetValue(collider, out entry)) return false;
-            memoCollider = collider;
-            memoEntry = entry;
+            memoColliderB = memoColliderA; memoEntryB = memoEntryA;
+            memoColliderA = collider; memoEntryA = entry;
             return true;
         }
 
@@ -141,7 +188,8 @@ namespace WeaponWorkshop
         {
             entries[collider] = entry;
             if (entries.Count >= sweepAt) Sweep();
-            if (ReferenceEquals(collider, memoCollider)) memoEntry = entry;
+            if (ReferenceEquals(collider, memoColliderA)) memoEntryA = entry;
+            else if (ReferenceEquals(collider, memoColliderB)) memoEntryB = entry;
         }
 
         // 사라진 콜라이더의 항목만 지운다. 정리 기준을 넘기면 그 시점 항목 수의 두 배만큼 기다린다.

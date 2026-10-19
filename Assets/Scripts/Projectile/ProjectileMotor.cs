@@ -14,16 +14,14 @@ namespace WeaponWorkshop
         // LayerMask APIs throw inside a type initializer when Unity first touches this type from a
         // serialization/constructor context (e.g. prefab import), which poisons the type. Resolve lazily.
         private static bool layersResolved;
-        private static int endChestLayer, endChestShieldLayer, projectileExtraCollisionLayers;
-        private static int EndChestLayer { get { ResolveLayers(); return endChestLayer; } }
-        private static int EndChestShieldLayer { get { ResolveLayers(); return endChestShieldLayer; } }
+        private static int projectileExtraCollisionLayers, gunBlockLayers;
         private static int ProjectileExtraCollisionLayers { get { ResolveLayers(); return projectileExtraCollisionLayers; } }
+        private static int GunBlockLayers { get { ResolveLayers(); return gunBlockLayers; } }
         private static void ResolveLayers()
         {
             if (layersResolved) return;
-            endChestLayer = LayerMask.NameToLayer("EndChest");
-            endChestShieldLayer = LayerMask.NameToLayer("EndChestShield");
             projectileExtraCollisionLayers = LayerMask.GetMask("Weapon", "EndChest", "EndChestShield") & ~LayerMask.GetMask("Energy");
+            gunBlockLayers = LayerMask.GetMask("GunBlock");
             layersResolved = true;
         }
         [SerializeField] private Renderer drawRenderer;
@@ -49,6 +47,9 @@ namespace WeaponWorkshop
         private Vector3 homingLocalAim;
         private Transform ignoredOwner;
         private Transform ignoredWeapon;
+        // 예외 판정용 뿌리는 업데이트당 한 번만 다시 본다. 뿌리가 다른 후보는 부모 탐색 없이 예외가 아니다.
+        private Transform selfRoot, ownerRoot, weaponRoot;
+        private bool ignoreRootsCached;
         public Transform WeaponSource => ignoredWeapon;
         internal Vector3 CurrentDirection => velocity.normalized;
         private Vector3 halfExtents;
@@ -69,7 +70,7 @@ namespace WeaponWorkshop
         }
         // 코어·방어막 소속은 콜라이더마다 부모를 타지 않고 공용 인덱스가 캐시한 결과만 쓴다.
         private static void ResolveEndChest(Collider collider, out EndChestCore core, out EndChestShield shield)
-            => ColliderTargetIndex.ResolveEndChest(collider, EndChestLayer, EndChestShieldLayer, out core, out shield);
+            => ColliderTargetIndex.ResolveEndChest(collider, out core, out shield);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetActiveProjectiles() => activeProjectiles.Clear();
@@ -94,6 +95,7 @@ namespace WeaponWorkshop
             penetrationPower = effects != null ? Mathf.Max(0f, effects.Stats.penetration) : 0f;
             ignoredOwner = owner;
             ignoredWeapon = weapon;
+            selfRoot = ownerRoot = weaponRoot = null; ignoreRootsCached = false;
             traveledDistance = 0f;
             lifetime = 0f;
             ricochetsRemaining = effects != null
@@ -161,6 +163,8 @@ namespace WeaponWorkshop
 
             UpdateIgnoredColliders();
             ApplyHoming(deltaTime);
+            // 이번 업데이트의 예외 판정에서 쓸 뿌리를 다시 잡는다.
+            ignoreRootsCached = false;
 
             float distance = Mathf.Min(velocity.magnitude * deltaTime,
                 source.MaximumTravelDistance - traveledDistance);
@@ -226,7 +230,7 @@ namespace WeaponWorkshop
             nearestHit = default;
             float nearestDistance = float.PositiveInfinity;
             bool found = false;
-            int layers = (source.CollisionLayers | ProjectileExtraCollisionLayers) & ~LayerMask.GetMask("GunBlock");
+            int layers = (source.CollisionLayers | ProjectileExtraCollisionLayers) & ~GunBlockLayers;
             int count;
             CombatPhysicsQueries.Hit[] hits;
             using (CollisionQueryMarker.Auto())
@@ -265,7 +269,21 @@ namespace WeaponWorkshop
         // 탄 자체·쏘는 주체·무기, 그리고 관통·도탄으로 이미 지나친 콜라이더.
         private bool IsIgnoredBody(Collider collider)
         {
+            if (!ignoreRootsCached)
+            {
+                selfRoot = transform.root;
+                ownerRoot = ignoredOwner != null ? ignoredOwner.root : null;
+                weaponRoot = ignoredWeapon != null ? ignoredWeapon.root : null;
+                ignoreRootsCached = true;
+            }
             Transform hitTransform = collider.transform;
+            // 예외 대상과 뿌리가 다르면 자손일 수 없다. 흔한 벽 히트는 루트 비교만으로 세 번의 부모 탐색을 건너뛴다.
+            Transform root = hitTransform.root;
+            if (!ReferenceEquals(root, selfRoot) &&
+                (ownerRoot == null || !ReferenceEquals(root, ownerRoot)) &&
+                (weaponRoot == null || !ReferenceEquals(root, weaponRoot)))
+                return ignoredColliders.Count > 0 && ignoredColliders.Contains(collider);
+            // 같은 뿌리 안에서만 자손 판정이 의미가 있다.
             if (hitTransform.IsChildOf(transform)) return true;
             if (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) return true;
             if (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) return true;
@@ -535,6 +553,7 @@ namespace WeaponWorkshop
             activeProjectiles.Remove(this);
             terminal = true; velocity = Vector3.zero; source = null; effects = null;
             ignoredOwner = ignoredWeapon = null; homingTarget = null;
+            selfRoot = ownerRoot = weaponRoot = null; ignoreRootsCached = false;
             hitTargets.Clear(); hitStructures.Clear(); ignoredColliders.Clear();
             passages.Clear(); passagesRecorded = false;
             staleIgnoredColliders.Clear(); targetColliderBuffer.Clear();

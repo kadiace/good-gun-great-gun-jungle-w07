@@ -690,12 +690,16 @@ namespace WeaponWorkshop
         }
 
         // Resources 효과음 클립을 미리 로드해 첫 재생(첫 폭발 등) 스파이크를 없앤다.
+        // 캐시에 넣어 참조를 쥐어야 씬 전환의 UnloadUnusedAssets에 데이터가 내려가지 않는다.
         // BGM은 크고 재생 시점이 분명하므로 미리 올리지 않는다.
         private void PreloadConfiguredClips()
         {
-            if (string.IsNullOrEmpty(ResourcePath)) return;
             foreach (AudioClip clip in Resources.LoadAll<AudioClip>(ResourcePath.TrimEnd('/')))
-                if (clip != null && clip.loadState != AudioDataLoadState.Loaded) clip.LoadAudioData();
+            {
+                if (clip == null) continue;
+                if (!clips.ContainsKey(clip.name)) clips.Add(clip.name, clip);
+                if (clip.loadState != AudioDataLoadState.Loaded) clip.LoadAudioData();
+            }
         }
 
         // 레거시 테이블: Resources 경로 문자열 + 파일명 키. 새 테이블 값은 TableManager에서 받아온다.

@@ -48,8 +48,9 @@ namespace WeaponWorkshop
         }
 
         private const float MaximumMergedPowerMultiplier = 4f;
-        // Stopwatch 호출 비용을 줄이려 한 레이어의 조각 16개마다 예산을 본다.
-        private const int PieceBudgetCheckInterval = 16;
+        // 한 레이어의 조각 8개마다 예산을 본다. 조각당 비용이 큰 구간에서 확인 사이에
+        // 몰리는 초과폭을 줄여 30ms 상한을 지킨다(Stopwatch 호출 비용은 무시할 수준).
+        private const int PieceBudgetCheckInterval = 8;
         // Destruction work one frame may spend on all live waves when nothing is deferred.
         // Tunable in one place only: these static fields, never the inspector or a tuning asset.
         internal static float StepBudgetMilliseconds = 4f;
@@ -62,9 +63,11 @@ namespace WeaponWorkshop
         internal static float StepWaveBudgetMilliseconds = 1f;
         private static int stepBudgetFrame = -1;
         private static long stepFrameUsedTicks, stepFrameBudgetTicks;
-        // Waves the budget stops mid-work re-queue at the tail and take turns in FIFO order; only
-        // the queue head (and fresh waves while budget remains) may start heavy work. Released or
-        // disabled waves leave dead tickets that are skipped lazily so the queue cannot stall.
+        // Waves the budget stops mid-work re-queue at the tail and take turns in FIFO order; while
+        // the frame budget remains every queued wave keeps working, and once it is spent only the
+        // queue head still gets one guaranteed slice per frame (FIFO stays as the tie-break).
+        // Released or disabled waves leave dead tickets that are skipped lazily so the queue
+        // cannot stall.
         private static long stepServeTicket = 1, stepTicketTail = 1;
         // Live ticket -> frame it joined the queue.
         private static readonly Dictionary<long, int> stepLiveTickets = new Dictionary<long, int>(1024);
@@ -80,6 +83,15 @@ namespace WeaponWorkshop
         private static readonly Stack<Layer> sharedLayerCache = new Stack<Layer>(8192);
         private static int collectionBudgetFrame = -1;
         private static readonly List<ProjectileMotor> activeProjectileBuffer = new List<ProjectileMotor>(2048);
+        // 체인 기폭 검사용 프레임 스냅샷. 프레임당 1회 활성 탄환 목록·위치·활성 여부를 배열로
+        // 모아 웨이브마다 탄환 전체를 다시 조회하지 않고 배열 구 판정만 한다. 탄환은 웨이브
+        // Update(실행 순서 -1000)보다 뒤에서 움직이므로 프레임 중 위치가 변하지 않는다.
+        private static ProjectileMotor[] chainProjectiles = Array.Empty<ProjectileMotor>();
+        private static Vector3[] chainPositions = Array.Empty<Vector3>();
+        private static bool[] chainAlive = Array.Empty<bool>();
+        // 같은 프레임에 반납 후 재대여된 탄을 옛 위치로 기폭하지 않도록 발사 ID를 함께 담는다.
+        private static int[] chainLaunchIds = Array.Empty<int>();
+        private static int chainProjectileCount;
         private static int activeProjectileFrame = -1;
         private static readonly HashSet<DestructibleTarget> dirtyTargets = new HashSet<DestructibleTarget>(256);
         private static readonly Queue<ChainRequest> pendingChainDetonations = new Queue<ChainRequest>(2048);
@@ -160,6 +172,11 @@ namespace WeaponWorkshop
             collectTargetDistances.Clear(); collectNearest.Clear(); collectSlots.Clear();
             sharedLayerCache.Clear(); activeProjectileBuffer.Clear(); dirtyTargets.Clear();
             pendingChainDetonations.Clear(); pendingChainSet.Clear();
+            chainProjectiles = Array.Empty<ProjectileMotor>();
+            chainPositions = Array.Empty<Vector3>();
+            chainAlive = Array.Empty<bool>();
+            chainLaunchIds = Array.Empty<int>();
+            chainProjectileCount = 0;
             collectionBudgetFrame = -1;
             activeProjectileFrame = -1;
             pendingFrame = -1;
@@ -190,19 +207,20 @@ namespace WeaponWorkshop
                 Mathf.Clamp01(deferredFrames / (float)Mathf.Max(1, StepMaxDeferredFrames))));
         }
 
-        // Decides whether this wave may start heavy work now. Waves that never deferred start
-        // while the frame budget remains; deferred waves start only at the queue head, so the frame
-        // budget is spent in FIFO turn order instead of Update iteration order. The head still
-        // gets one guaranteed wave slice per frame even when the budget is already spent. The
-        // ticket dictionary is touched once per frame here and on deferral, not on every Step.
+        // Decides whether this wave may start heavy work now. Any wave — fresh or queued — starts
+        // while the frame budget remains, so leftover budget is spent on waiting waves instead of
+        // being thrown away while they age in the queue. The FIFO order only breaks ties once the
+        // budget is spent: the queue head alone still gets one guaranteed wave slice per frame,
+        // and the head's wait length drives the adaptive budget. The ticket dictionary is touched
+        // once per frame here and on deferral, not on every Step.
         private bool BeginStepTurn(out bool sliceTurn)
         {
             sliceTurn = false;
             BeginStepFrame();
             bool budgetLeft = stepFrameUsedTicks < stepFrameBudgetTicks;
-            if (stepTicket == 0) return budgetLeft;
-            if (stepTicket != stepServeTicket) return false;
             if (budgetLeft) return true;
+            if (stepTicket == 0) return false;
+            if (stepTicket != stepServeTicket) return false;
             if (stepSliceFrame != Time.frameCount)
             {
                 stepSliceFrame = Time.frameCount;
@@ -592,17 +610,42 @@ namespace WeaponWorkshop
             radius = Mathf.Min(maximumRadius, radius + speed * dt);
             if (activeProjectileFrame != Time.frameCount)
             {
+                // 프레임당 1회만 목록을 훑어 위치와 활성 여부를 배열로 모은다.
                 activeProjectileBuffer.Clear();
                 ProjectileMotor.CopyActiveProjectiles(activeProjectileBuffer);
+                int count = activeProjectileBuffer.Count;
+                if (chainProjectiles.Length < count)
+                {
+                    int size = Mathf.NextPowerOfTwo(Mathf.Max(64, count));
+                    chainProjectiles = new ProjectileMotor[size];
+                    chainPositions = new Vector3[size];
+                    chainAlive = new bool[size];
+                    chainLaunchIds = new int[size];
+                }
+                for (int i = 0; i < count; i++)
+                {
+                    var projectile = activeProjectileBuffer[i];
+                    chainProjectiles[i] = projectile;
+                    chainPositions[i] = projectile.transform.position;
+                    chainAlive[i] = projectile.isActiveAndEnabled;
+                    chainLaunchIds[i] = projectile.LaunchId;
+                }
+                chainProjectileCount = count;
                 activeProjectileFrame = Time.frameCount;
             }
-            foreach (var projectile in activeProjectileBuffer)
+            float radiusSqr = radius * radius;
+            Vector3 center = transform.position;
+            for (int i = 0; i < chainProjectileCount; i++)
             {
-                if (projectile == null || !projectile.isActiveAndEnabled ||
-                    (projectile == originatingProjectile && projectile.LaunchId == originatingLaunchId) ||
-                    Vector3.SqrMagnitude(projectile.transform.position - transform.position) > radius * radius) continue;
+                // 스냅샷 때 죽은 탄은 위치 연산 없이 건너뛴다. 스냅샷 뒤 이번 프레임에 기폭되거나
+                // 꺼진 탄은 아래 실제 상태 검사에서 걸러 기존과 같은 기폭 결과를 낸다.
+                if (!chainAlive[i] ||
+                    Vector3.SqrMagnitude(chainPositions[i] - center) > radiusSqr) continue;
+                var projectile = chainProjectiles[i];
+                if (projectile == null || !projectile.isActiveAndEnabled || projectile.LaunchId != chainLaunchIds[i] ||
+                    (projectile == originatingProjectile && projectile.LaunchId == originatingLaunchId)) continue;
                 if (PoolManager.TryConsumeChainDetonation()) projectile.DetonateFromExplosion();
-                else QueueChainDetonation(projectile, projectile.transform.position, projectile.CurrentDirection);
+                else QueueChainDetonation(projectile, chainPositions[i], projectile.CurrentDirection);
             }
         }
 
@@ -617,7 +660,12 @@ namespace WeaponWorkshop
                     stepTicket = stepTicketTail++;
                     stepLiveTickets[stepTicket] = Time.frameCount;
                 }
+                // 라이트 경로가 쓴 실제 시간도 프레임 예산에 가산해 30ms 상한이 프레임 비용을
+                // 반영하게 한다. 가산해도 라이트 작업(반경 확장·체인 검사) 자체는 예산과 무관하게
+                // 항상 돈다.
+                long lightStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
                 LightStep();
+                stepFrameUsedTicks += System.Diagnostics.Stopwatch.GetTimestamp() - lightStartTicks;
                 return;
             }
             stepTurnMarkTicks = System.Diagnostics.Stopwatch.GetTimestamp();

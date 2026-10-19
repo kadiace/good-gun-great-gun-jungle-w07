@@ -22,6 +22,7 @@ namespace WeaponWorkshop
             public bool resting;            // 착지·무속도·무회전. 수명 종료까지 자세가 그대로다.
             public bool restedDistant;      // 멀리서 정지한 파편. 가까워지면 근거리 물리로 복귀해 납작 정렬을 이어간다.
             public Matrix4x4 cachedMatrix;  // resting 동안 재계산 없이 다시 쓰는 최종 행렬.
+            public bool hasCachedMatrix;    // cachedMatrix가 유효한지. 먼 파편의 생략 프레임이 같은 행렬을 다시 쓴다.
             public Vector3 absorptionStart, absorptionCenter, spreadPosition;
             public float spreadFraction;
             public float distantElapsed;
@@ -44,6 +45,7 @@ namespace WeaponWorkshop
         private DestructibleTarget owner;
         internal int managerIndex = -1;  // 매니저 순회 목록의 자리. -1은 미등록.
         internal int tickFrame = -1;     // 프레임당 한 번만 갱신하기 위한 스탬프.
+        internal float pendingDeltaTime; // 매니저가 계산을 양보한 프레임의 시간 누적. 다음 Tick에 한꺼번에 더한다.
         public void BindOwner(DestructibleTarget value) => owner = value;
         public void ReserveBuffers(int initialFragmentCapacity, int maximumGroups)
         {
@@ -72,6 +74,16 @@ namespace WeaponWorkshop
             if (group.combinedMesh != null) group.combinedMesh.Clear();
             if (groupCache.Count < maximumCachedGroups) groupCache.Push(group);
             else if (group.combinedMesh != null) Destroy(group.combinedMesh);
+        }
+        // 매니저가 거리 등급 판정에 쓰는 기준점과 거리. 구름은 표적 자리에서 유지된다.
+        internal Vector3 FocusPosition => owner != null ? owner.transform.position : transform.position;
+        internal float FullDetailDistance => fullDetailDistance;
+        // 매니저가 계산을 양보한 프레임에 직전 그리기 결과(그룹·버킷 행렬)만 다시 제출한다. 아직 계산한 적이 없으면 false.
+        internal bool TrySubmitCache()
+        {
+            if (!drawCached || material == null) return false;
+            RedrawCache();
+            return true;
         }
         public int IntactGroupCount => groups.Count;
         public int IntactCellCount
@@ -128,7 +140,9 @@ namespace WeaponWorkshop
         private float settledElapsed;  // 스킵 동안 흐른 시간. 다음 전체 계산 때 나이에 한꺼번에 반영한다.
         private bool settledHasView;
         private Vector3 settledViewPosition;
-        private const float SettledViewMoveSq = 1f;  // 카메라가 1m 넘게 움직였으면 먼 파편 표본을 다시 고른다.
+        // 카메라가 3m 넘게 움직였을 때만 먼 파편 표본을 다시 고른다. 1m로 잡으면 걷는 동안 정지 구름이
+        // 계산 생략을 거의 누리지 못해 상시 전체 계산으로 돌아갔다.
+        private const float SettledViewMoveSq = 9f;
         private readonly DebrisWallCache wallCache = new DebrisWallCache();
         private int wallCursor;
         private bool[] wallSelected = System.Array.Empty<bool>();
@@ -560,6 +574,7 @@ namespace WeaponWorkshop
                     {
                         part.resting = false;
                         part.restedDistant = false;
+                        part.hasCachedMatrix = false;  // 다시 멀어지면 첫 계산에서 새 행렬을 만들게 한다.
                     }
                     else
                     {
@@ -582,16 +597,29 @@ namespace WeaponWorkshop
                 if (Distant(part.position))
                 {
                     part.distantElapsed += dt;
-                    if (((frameParity + (int)part.visualId) & 1) == 0)
+                    bool advancing = ((frameParity + (int)part.visualId) & 1) == 0;
+                    if (advancing)
                     {
                         AdvanceDistant(ref part, part.distantElapsed, gravity);
                         part.distantElapsed = 0f;
                         // 멀리 있는 파편은 회전 갱신이 없으므로 바닥 접촉 후 속도가 0이면 더는 움직이지 않는다. 여기서 정지로 본다.
-                        if (part.grounded && part.velocity.sqrMagnitude == 0f) part.resting = true;
+                        // 가까워지면 납작 정렬을 이어가도록 먼 정지로 표시한다.
+                        if (part.grounded && part.velocity.sqrMagnitude == 0f)
+                        {
+                            part.resting = true;
+                            part.restedDistant = true;
+                        }
                     }
                     fragments[i] = part;
-                    Matrix4x4 farPose = ScaleTranslate(RotationMatrix(part.rotation), part.scale, part.position);
-                    if (part.resting) part.cachedMatrix = farPose;
+                    // 움직이지 않는 교대 프레임은 지난 행렬을 다시 쓴다. 정지 파편의 cachedMatrix가 곧 최종 자세다.
+                    Matrix4x4 farPose;
+                    if (advancing || !part.hasCachedMatrix)
+                    {
+                        farPose = ScaleTranslate(RotationMatrix(part.rotation), part.scale, part.position);
+                        part.cachedMatrix = farPose;
+                        part.hasCachedMatrix = true;
+                    }
+                    else farPose = part.cachedMatrix;
                     if (DrawDistant(part, ref distantDrawn) && bucketIndex > 0)
                         AddMatrix(bucketIndex, farPose);
                     continue;
@@ -669,7 +697,7 @@ namespace WeaponWorkshop
                 else if(part.velocity.sqrMagnitude<=0.0225f)
                 { part.wallPosition=part.position;part.wallElapsed=0f; }
                 Matrix4x4 pose = ScaleTranslate(rotation, part.scale, part.position);
-                if (part.resting) part.cachedMatrix = pose;
+                if (part.resting) { part.cachedMatrix = pose; part.hasCachedMatrix = true; }
                 fragments[i] = part;
                 if (bucketIndex > 0) AddMatrix(bucketIndex, pose);
             }
