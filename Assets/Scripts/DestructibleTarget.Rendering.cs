@@ -74,9 +74,55 @@ namespace WeaponWorkshop
         {
             public Mesh mesh;
             public bool dirty = true;
+            // 드로 대상인지는 재구축 때만 갱신한다. 매 프레임 메시 정점수를 네이티브로 조회하지 않는다.
+            public bool hasGeometry;
+            // 격자에서 나오는 청크 경계(로컬). 청크가 비어도 유효해서 컬링 판정에 그대로 쓴다.
+            public Vector3 localMin, localMax;
             public CombineInstance[] combines = System.Array.Empty<CombineInstance>();
         }
         private readonly Dictionary<Vector3Int, RenderChunk> renderChunks = new Dictionary<Vector3Int, RenderChunk>();
+        // 매 프레임 돌리는 드로 리스트. Dictionary.Values는 접근마다 래퍼를 만들어 프레임 할당이 남는다.
+        private readonly List<RenderChunk> chunkDrawList = new List<RenderChunk>();
+
+        // ==== 화면 밖 청크 드로 컬링 ====
+        // Graphics.DrawMesh가 남은 청크 수만큼 그대로 나와 파괴가 진행될수록 드로가 1,000호대로 늘어난다.
+        // 절두체 평면은 프레임당 한 번 만들어 모든 표적이 공유하고 청크 경계는 격자에서 한 번만 구해,
+        // 화면에 걸리지 않는 드로는 발행 자체를 막는다.
+        private static readonly ProfilerMarker chunkDrawMarker = new ProfilerMarker("DestructibleTarget.DrawChunkMeshes");
+        private const int ChunkHidden = 0;
+        private const int ChunkDrawn = 1;
+        private const int ChunkShadowOnly = 2;
+        // 그림자를 켠 점·스포트 광원 확인은 화면 밖 청크가 나왔을 때만, 이 간격으로 한다.
+        private const float ShadowProbeInterval = 0.5f;
+        private static readonly List<ChunkFrustum> chunkFrustums = new List<ChunkFrustum>(4);
+        private static readonly Plane[] frustumPlaneScratch = new Plane[6];
+        private static Camera[] chunkCullCameras = System.Array.Empty<Camera>();
+        private static int chunkCullFrame = -1;
+        // 투영 행렬이 망가져 절두체가 이상해지면 드로가 통째로 사라진다. 카메라가 자기 절두체를
+        // 스스로 통과하는지 확인하고 아니하면 이번 프레임은 컬링을 켜지 않는다.
+        private static bool chunkCullingTrusted = true;
+        // 화면 밖 청크도 이 거리 안이면 그림자를 남길 수 있어 드로한다. 0이면 그림자 걱정이 없는 상태.
+        private static float shadowCasterReach;
+        private static float shadowProbeTime = float.NegativeInfinity;
+
+        private sealed class ChunkFrustum
+        {
+            public Camera camera;
+            // 법선·상수는 프레임당 한 번만 뽑아 두고 청크마다 평구조자를 다시 읽지 않는다.
+            public readonly Vector4[] planes = new Vector4[6];
+            public Vector3 position;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetChunkCulling()
+        {
+            chunkFrustums.Clear();
+            chunkCullCameras = System.Array.Empty<Camera>();
+            chunkCullFrame = -1;
+            chunkCullingTrusted = true;
+            shadowCasterReach = 0f;
+            shadowProbeTime = float.NegativeInfinity;
+        }
         private static readonly ProfilerMarker meshMarker = new ProfilerMarker("DestructibleTarget.RebuildChunkMeshes");
         private static readonly ProfilerMarker supportMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport");
         private static readonly ProfilerMarker collisionMarker = new ProfilerMarker("DestructibleTarget.UpdateCollisionRuns");
@@ -154,7 +200,7 @@ namespace WeaponWorkshop
                     {
                         var chunk = pair.Value;
                         if (!chunk.dirty) continue;
-                        if (SurfaceRendering) { RebuildSurfaceChunk(pair.Key, chunk); chunk.dirty = false; continue; }
+                        if (SurfaceRendering) { RebuildSurfaceChunk(pair.Key, chunk); CacheChunkBounds(pair.Key, chunk); chunk.dirty = false; continue; }
                         var origin = pair.Key * RenderChunkWidth;
                         int count = 0;
                         for (int x = origin.x; x < Mathf.Min(origin.x + RenderChunkWidth, divisions.x); x++)
@@ -181,17 +227,174 @@ namespace WeaponWorkshop
                             chunk.mesh.Clear();
                             if (used > 0) chunk.mesh.CombineMeshes(chunk.combines, true, true, false);
                         }
+                        CacheChunkBounds(pair.Key, chunk);
                         chunk.dirty = false;
                     }
                     renderDirty = false;
                 }
             }
-            foreach (var chunk in renderChunks.Values)
-                if (chunk.mesh != null && chunk.mesh.vertexCount > 0)
+            // 청크 사전은 만들 때 한 번만 채우므로 개수가 어긋난 프레임에만 리스트를 다시 채운다.
+            if (chunkDrawList.Count != renderChunks.Count)
+            {
+                chunkDrawList.Clear();
+                chunkDrawList.AddRange(renderChunks.Values);
+            }
+            Matrix4x4 matrix = CellRoot.localToWorldMatrix;
+            PrepareChunkCulling();
+            // 표적 전체가 모든 카메라 바깥이면 청크를 하나씩 볼 필요조차 없다.
+            WorldBoxBounds(matrix, gridOrigin, gridOrigin + Vector3.Scale((Vector3)divisions, gridStep),
+                out Vector3 targetCenter, out Vector3 targetExtents);
+            int targetVisibility = BoxVisibility(targetCenter, targetExtents);
+            if (targetVisibility == ChunkHidden) return;
+            // 표적 단위로 한 번만 읽어 드로마다 네이티브 조회를 되풀이하지 않는다.
+            int drawLayer = targetMesh.gameObject.layer;
+            MaterialPropertyBlock drawProperties = CurrentDamageProperties;
+            using (chunkDrawMarker.Auto())
+            {
+                for (int i = 0; i < chunkDrawList.Count; i++)
                 {
-                    Graphics.DrawMesh(chunk.mesh, CellRoot.localToWorldMatrix, instancedMaterial, targetMesh.gameObject.layer,
-                        null, 0, CurrentDamageProperties, UnityEngine.Rendering.ShadowCastingMode.On, true);
+                    RenderChunk chunk = chunkDrawList[i];
+                    if (!chunk.hasGeometry) continue;
+                    int visibility = targetVisibility;
+                    if (targetVisibility == ChunkDrawn)
+                    {
+                        WorldBoxBounds(matrix, chunk.localMin, chunk.localMax, out Vector3 center, out Vector3 extents);
+                        visibility = BoxVisibility(center, extents);
+                        if (visibility == ChunkHidden) continue;
+                    }
+                    // 화면 밖이지만 그림자를 남길 수 있는 청크는 그림자 패스만 태워 화면 결과를 유지한다.
+                    Graphics.DrawMesh(chunk.mesh, matrix, instancedMaterial, drawLayer, null, 0, drawProperties,
+                        visibility == ChunkShadowOnly ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
+                            : UnityEngine.Rendering.ShadowCastingMode.On, true);
                 }
+            }
+        }
+
+        // 프레임당 한 번: 이 프레임에 나오는 카메라의 절두체 평면을 한 번씩 만든다.
+        private static void PrepareChunkCulling()
+        {
+            if (chunkCullFrame == Time.frameCount) return;
+            chunkCullFrame = Time.frameCount;
+            chunkCullingTrusted = true;
+            // 꺼진 카메라는 목록에 나오지 않는다. 배열은 개수가 바뀔 때만 새로 만든다.
+            int cameraCount = Camera.allCamerasCount;
+            if (chunkCullCameras.Length != cameraCount) chunkCullCameras = new Camera[cameraCount];
+            if (cameraCount > 0) Camera.GetAllCameras(chunkCullCameras);
+            for (int i = chunkFrustums.Count - 1; i >= 0; i--)
+                if (chunkFrustums[i].camera == null || !chunkFrustums[i].camera.isActiveAndEnabled) chunkFrustums.RemoveAt(i);
+            for (int c = 0; c < chunkCullCameras.Length; c++)
+            {
+                Camera camera = chunkCullCameras[c];
+                if (camera == null) continue;
+                ChunkFrustum frustum = null;
+                for (int i = 0; i < chunkFrustums.Count; i++)
+                    if (chunkFrustums[i].camera == camera) { frustum = chunkFrustums[i]; break; }
+                if (frustum == null) { frustum = new ChunkFrustum { camera = camera }; chunkFrustums.Add(frustum); }
+                GeometryUtility.CalculateFrustumPlanes(camera, frustumPlaneScratch);
+                // 상수는 GetDistanceToPoint(0,0,0)으로 받아 부호 규칙 없이 쓴다(절두체 안쪽이 +).
+                for (int p = 0; p < frustum.planes.Length; p++)
+                {
+                    Vector3 normal = frustumPlaneScratch[p].normal;
+                    frustum.planes[p] = new Vector4(normal.x, normal.y, normal.z,
+                        frustumPlaneScratch[p].GetDistanceToPoint(Vector3.zero));
+                }
+                frustum.position = camera.transform.position;
+                // 카메라 바로 앞 축 위 점은 절두체 안에 있다. 투영 행렬이 이상하면 이 판정이 깨진다.
+                Vector3 insidePoint = frustum.position + camera.transform.forward * (camera.nearClipPlane + 0.01f);
+                for (int p = 0; p < frustum.planes.Length; p++)
+                {
+                    Vector4 plane = frustum.planes[p];
+                    if (plane.x * insidePoint.x + plane.y * insidePoint.y + plane.z * insidePoint.z + plane.w < 0f)
+                    {
+                        chunkCullingTrusted = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 화면 밖 캐스터도 화면 안에 그림자를 드리울 수 있다. 방향광 그림자가 켜져 있으면 거리와 무관하게
+        // 화면 밖 청크를 그림자 전용으로 남기고(그림자 컬링은 URP가 한다), 점·스포트 광원은 수신면이 그림자
+        // 거리 안에서만 그림자를 받으므로 광원 범위를 두 번 더 본다. 그림자 광원이 없으면 화면 밖 청크를 지운다.
+        // 확인을 놓친 최대 한 주기(0.5초) 동안만 새 그림자 광원의 그림자가 늦게 붙을 수 있다.
+        private static void ProbeShadowReach()
+        {
+            if (Time.unscaledTime - shadowProbeTime < ShadowProbeInterval) return;
+            shadowProbeTime = Time.unscaledTime;
+            // URP는 품질 설정과 따로 그림자 거리를 정한다. 큰 값 쪽으로 보수적으로 잡는다.
+            float shadowDistance = QualitySettings.shadowDistance;
+            UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset pipeline =
+                UnityEngine.Rendering.Universal.UniversalRenderPipeline.asset;
+            if (pipeline != null) shadowDistance = Mathf.Max(shadowDistance, pipeline.shadowDistance);
+            shadowCasterReach = 0f;
+            if (shadowDistance <= 0f) return;
+            Light[] lights = UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            for (int i = 0; i < lights.Length; i++)
+            {
+                Light light = lights[i];
+                if (!light.isActiveAndEnabled || light.shadows == LightShadows.None) continue;
+                if (light.type == LightType.Directional) { shadowCasterReach = float.MaxValue; return; }
+                if (light.type != LightType.Point && light.type != LightType.Spot) continue;
+                shadowCasterReach = Mathf.Max(shadowCasterReach, shadowDistance + 2f * light.range);
+            }
+        }
+
+        // 카메라 중 하나라도 박스를 보면 드로, 화면에는 없지만 그림자 도달 거리 안이면 그림자만 드로,
+        // 모두 아니면 건너뛴다. 판정할 카메라가 없으면 드로하는 쪽으로 잡는다.
+        private static int BoxVisibility(Vector3 center, Vector3 extents)
+        {
+            if (!chunkCullingTrusted || chunkFrustums.Count == 0) return ChunkDrawn;
+            for (int i = 0; i < chunkFrustums.Count; i++)
+                if (InsideFrustum(chunkFrustums[i].planes, center, extents)) return ChunkDrawn;
+            ProbeShadowReach();
+            if (shadowCasterReach > 0f)
+                for (int i = 0; i < chunkFrustums.Count; i++)
+                    if (NearPoint(center, extents, chunkFrustums[i].position, shadowCasterReach)) return ChunkShadowOnly;
+            return ChunkHidden;
+        }
+
+        // 평면 법선 방향으로 가장 먼저 닿는 꼭짓점 하나만 보는 AABB-평면 판정. GeometryUtility.TestPlanesAABB와
+        // 같은 판정을 관리 코드에서 하므로 거리 부호가 절두체 안쪽이다.
+        private static bool InsideFrustum(Vector4[] planes, Vector3 center, Vector3 extents)
+        {
+            for (int i = 0; i < planes.Length; i++)
+            {
+                Vector4 plane = planes[i];
+                float radius = Mathf.Abs(plane.x * extents.x) + Mathf.Abs(plane.y * extents.y) + Mathf.Abs(plane.z * extents.z);
+                if (plane.x * center.x + plane.y * center.y + plane.z * center.z + plane.w < -radius) return false;
+            }
+            return true;
+        }
+
+        // AABB와 점에서 거리가 reach 안쪽인지 제곱으로 비교한다.
+        private static bool NearPoint(Vector3 center, Vector3 extents, Vector3 point, float reach)
+        {
+            float dx = Mathf.Max(Mathf.Abs(point.x - center.x) - extents.x, 0f);
+            float dy = Mathf.Max(Mathf.Abs(point.y - center.y) - extents.y, 0f);
+            float dz = Mathf.Max(Mathf.Abs(point.z - center.z) - extents.z, 0f);
+            return dx * dx + dy * dy + dz * dz <= reach * reach;
+        }
+
+        // 로컬 박스를 회전·스케일까지 덮어 쓰는 world AABB로 옮긴다.
+        private static void WorldBoxBounds(Matrix4x4 matrix, Vector3 min, Vector3 max, out Vector3 center, out Vector3 extents)
+        {
+            Vector3 localCenter = (min + max) * 0.5f;
+            Vector3 localExtent = (max - min) * 0.5f;
+            center = matrix.MultiplyPoint3x4(localCenter);
+            extents = new Vector3(
+                Mathf.Abs(matrix.m00) * localExtent.x + Mathf.Abs(matrix.m01) * localExtent.y + Mathf.Abs(matrix.m02) * localExtent.z,
+                Mathf.Abs(matrix.m10) * localExtent.x + Mathf.Abs(matrix.m11) * localExtent.y + Mathf.Abs(matrix.m12) * localExtent.z,
+                Mathf.Abs(matrix.m20) * localExtent.x + Mathf.Abs(matrix.m21) * localExtent.y + Mathf.Abs(matrix.m22) * localExtent.z);
+        }
+
+        // 청크 경계는 격자에서 바로 나온다. 메시 바운즈와 달리 청크가 비어도 유효해 재구축 때 한 번만 계산한다.
+        private void CacheChunkBounds(Vector3Int key, RenderChunk chunk)
+        {
+            Vector3Int origin = key * RenderChunkWidth;
+            Vector3Int finish = Vector3Int.Min(origin + Vector3Int.one * RenderChunkWidth, divisions);
+            chunk.localMin = gridOrigin + Vector3.Scale((Vector3)origin, gridStep);
+            chunk.localMax = gridOrigin + Vector3.Scale((Vector3)finish, gridStep);
+            chunk.hasGeometry = chunk.mesh != null && chunk.mesh.vertexCount > 0;
         }
 
         private Material damageMaterial, undamagedMaterial;
@@ -373,13 +576,48 @@ namespace WeaponWorkshop
         private readonly HashSet<Vector3Int> changedBoundary = new HashSet<Vector3Int>();
         private readonly HashSet<Vector3Int> localSupportVisited = new HashSet<Vector3Int>();
         private readonly Queue<Vector3Int> localSupportQueue = new Queue<Vector3Int>();
+        private readonly List<int> localSupportGroup = new List<int>();
         private bool supportValidated, resolvingSupportDrop;
+        // 국소 붕괴 판정은 프레임 예산을 넘기면 여기까지 본 상태로 멈추고 다음 프레임에 이어서 한다.
+        // 같은 프레임에 ResolveSupport가 여러 번 불려도(중력 흡수 종료 + LateUpdate) 예산과 예약을
+        // 공유하고 방문 기록을 호출마다 비우지 않으므로 같은 컴포넌트를 다시 훑지 않는다.
+        private bool localSupportInProgress;
+        private bool localSupportSupported;
+        private Vector3Int localSupportSeed;
+        private int localSuspendSeedCount;
+        private int localSupportBudgetFrame = -1, localSupportBudgetLeft;
+        private Quaternion localSupportRootRotation;
+        // 프레임당 탐사 칸 수 예산. 지연 상한은 3프레임으로, 예약이 시작된 뒤 3프레임이 지나면
+        // 예산을 무시하고 남은 판정을 한 번에 마쳐 잃은 지지가 그 이상 늦게 떨어지지 않게 한다.
+        private const int LocalSupportVisitBudget = 8192;
+        private const int LocalSupportMaxDelayFrames = 3;
+        // 시든 시드 거르는 조건자를 호출마다 새로 만들지 않게 하나만 캐시한다.
+        private System.Predicate<Vector3Int> staleBoundaryFilter;
+        private int supportPendingSinceFrame = -1;
         private static readonly ProfilerMarker localSupportMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport.Local");
         private static readonly ProfilerMarker supportFallbackMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport.FullFallback");
         private void RecordSupportRemoval(Vector3Int coordinate)
         {
             if (!supportValidated || resolvingSupportDrop) return;
+            // 국소 판정이 진행 중이면 파괴 하나만으로도 방문 기록이 낡아진다(리셋으로 칸이
+            // 되살아나는 경우까지 포함). 기록을 버려 다시 탐색하지 않으면 끊긴 조각을 다시는
+            // 검사하지 않게 되므로 여기서는 정확성을 위해 보수적으로 초기화한다.
+            if (localSupportInProgress || localSupportVisited.Count > 0) ResetLocalSupportProgress();
             foreach (var direction in neighbors) changedBoundary.Add(coordinate + direction);
+        }
+        // 멈춰 둔 국소 탐색 상태를 버린다. 탐색 중이던 컴포넌트는 시작 시드를 예약 목록에 되돌려
+        // 다음 호출이 현재 상태에서 처음부터 다시 판정하게 한다.
+        private void ResetLocalSupportProgress()
+        {
+            if (!localSupportInProgress && localSupportVisited.Count == 0) return;
+            if (localSupportInProgress)
+            {
+                changedBoundary.Add(localSupportSeed);
+                localSupportInProgress = false;
+            }
+            localSupportQueue.Clear();
+            localSupportVisited.Clear();
+            localSupportGroup.Clear();
         }
         private void ResolveSupport()
         {
@@ -389,12 +627,130 @@ namespace WeaponWorkshop
                 if (!supportValidated)
                 {
                     using (supportFallbackMarker.Auto()) DropUnsupported();
+                    // 전체 재판정 뒤에는 국소 예약·방문 기록이 무의미하다.
+                    ResetLocalSupportProgress();
+                    changedBoundary.Clear();
+                    supportPendingSinceFrame = -1;
                 }
-                else if (changedBoundary.Count > 0)
-                    using (localSupportMarker.Auto()) DropUnsupportedNearRemovedBoundary();
+                else if (changedBoundary.Count > 0 || localSupportInProgress)
+                    using (localSupportMarker.Auto()) ResolveLocalSupportBudgeted();
                 supportValidated = true;
-                changedBoundary.Clear();
             }
+        }
+        // 바뀐 경계에 붙은 연결 조각을 프레임 예산 안에서 검사한다. 컴포넌트는 판정이 "통과" 또는
+        // "통째로 낙하" 둘 중 하나로만 끝나므로 탐색을 여러 프레임에 나눠 봐도 한 번에 다 본 것과
+        // 붕괴 결과가 같다. 지연 상한(LocalSupportMaxDelayFrames) 안에는 반드시 마친다.
+        private void ResolveLocalSupportBudgeted()
+        {
+            if (localSupportBudgetFrame != Time.frameCount)
+            {
+                localSupportBudgetFrame = Time.frameCount;
+                localSupportBudgetLeft = LocalSupportVisitBudget;
+            }
+            bool finishNow = supportPendingSinceFrame >= 0 &&
+                Time.frameCount - supportPendingSinceFrame >= LocalSupportMaxDelayFrames;
+            if (staleBoundaryFilter == null) staleBoundaryFilter = coordinate => !HasCell(coordinate);
+            changedBoundary.RemoveWhere(staleBoundaryFilter);
+            // 멈춰 둔 탐색이 있을 때 새 시드가 끼어들었거나(이웃 파츠 지지 변화 등) 뿌리가 돌았으면
+            // 방문 기록이 낡아진다. 기록을 비우고 다시 본다.
+            if ((localSupportInProgress || localSupportVisited.Count > 0) &&
+                (changedBoundary.Count != localSuspendSeedCount || CellRoot.rotation != localSupportRootRotation))
+                ResetLocalSupportProgress();
+            if (!(localSupportInProgress || changedBoundary.Count > 0))
+            {
+                // 남은 것이 시든 시드뿐이었다. 예약을 닫는다.
+                localSupportVisited.Clear();
+                localSuspendSeedCount = 0;
+                supportPendingSinceFrame = -1;
+                return;
+            }
+            if (!finishNow && localSupportBudgetLeft <= 0)
+            {
+                // 같은 프레임의 두 번째 호출(중력 흡수 종료 뒤 LateUpdate)은 예산을 새로 쓰지 않는다.
+                SuspendLocalSupport();
+                return;
+            }
+            int visits = finishNow ? int.MaxValue : localSupportBudgetLeft;
+
+            CollectExternalSupport();
+            externallyHeld = false;
+            foreach (int supportedIndex in externallySupportedCells)
+                if (supportedIndex >= 0 && supportedIndex < grid.Length && grid[supportedIndex])
+                { externallyHeld = true; break; }
+
+            while (true)
+            {
+                if (!localSupportInProgress)
+                {
+                    if (changedBoundary.Count == 0) break;
+                    foreach (Vector3Int candidate in changedBoundary) { localSupportSeed = candidate; break; }
+                    changedBoundary.Remove(localSupportSeed);
+                    localSupportGroup.Clear();
+                    localSupportSupported = false;
+                    if (TryGetCell(localSupportSeed, out _) && localSupportVisited.Add(localSupportSeed))
+                    {
+                        localSupportQueue.Clear();
+                        localSupportQueue.Enqueue(localSupportSeed);
+                        localSupportInProgress = true;
+                    }
+                    // 이미 다른 시드로 다 본 컴포넌트면 판정을 다시 내지 않는다(기존 경로와 같다).
+                    continue;
+                }
+                while (localSupportQueue.Count > 0)
+                {
+                    if (visits-- == 0)
+                    {
+                        localSupportBudgetLeft = 0;
+                        SuspendLocalSupport();
+                        return;
+                    }
+                    Vector3Int coordinate = localSupportQueue.Dequeue();
+                    if (!TryGetCell(coordinate, out Cell cell)) continue;
+                    int cellIndex = CellIndex(coordinate);
+                    localSupportGroup.Add(cellIndex);
+                    if (CellBottom(cell) <= transform.position.y + 0.001f || HasExternalSupport(cellIndex)) localSupportSupported = true;
+                    foreach (Vector3Int direction in neighbors)
+                    {
+                        Vector3Int next = coordinate + direction;
+                        if (TryGetCell(next, out _) && localSupportVisited.Add(next)) localSupportQueue.Enqueue(next);
+                    }
+                }
+                // 컴포넌트 하나를 끝까지 봤다. 지지를 잃었으면 그 컴포넌트만 통째로 떨어뜨린다.
+                localSupportInProgress = false;
+                if (!localSupportSupported && localSupportGroup.Count > 0)
+                {
+                    groupPieces.Clear();
+                    foreach (int cellIndex in localSupportGroup) groupPieces.Add(preparedCells[cellIndex].Snapshot);
+                    EnsureDebrisCloud();
+                    debrisCloud.EmitGroup(groupPieces, debrisLifetime, debrisFadeDuration);
+                    resolvingSupportDrop = true;
+                    try
+                    {
+                        foreach (int cellIndex in localSupportGroup) RemoveCell(cellIndex);
+                    }
+                    finally { resolvingSupportDrop = false; }
+                }
+                if (cells.Count == 0) externallyHeld = false;
+                if (visits == 0 && changedBoundary.Count > 0)
+                {
+                    localSupportBudgetLeft = 0;
+                    SuspendLocalSupport();
+                    return;
+                }
+            }
+            // 예약을 모두 처리했다. 방문 기록은 다음 일괄 때 낡아지므로 비워 둔다.
+            localSupportVisited.Clear();
+            localSuspendSeedCount = 0;
+            supportPendingSinceFrame = -1;
+        }
+        // 예산을 다 썼다. 이어하기 상태(방문 기록·큐·시드·남은 예약)를 보존하고 예약이 남아 있는
+        // 동안 표적이 갱신 대상에서 빠지지 않게 structureDirty를 되살린다.
+        private void SuspendLocalSupport()
+        {
+            localSuspendSeedCount = changedBoundary.Count;
+            localSupportRootRotation = CellRoot.rotation;
+            if (supportPendingSinceFrame < 0) supportPendingSinceFrame = Time.frameCount;
+            MarkStructureDirty();
         }
     }
 }

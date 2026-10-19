@@ -5,10 +5,11 @@ using Unity.Profiling;
 
 namespace WeaponWorkshop
 {
-    [DefaultExecutionOrder(10000)]
+    // 파편 이동·벽·그리기 갱신은 VisualDebrisCloudManager 의 단일 LateUpdate 가 부른다.
     public sealed class VisualDebrisCloud : MonoBehaviour
     {
         private static readonly ProfilerMarker ReserveBuffersMarker = new ProfilerMarker("VisualDebrisCloud.ReserveBuffers");
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private struct Fragment
         {
             public Vector3 position, velocity, scale, spin;
@@ -18,6 +19,9 @@ namespace WeaponWorkshop
             public float age, lifetime, fade;
             public bool grounded;
             public bool absorbing;
+            public bool resting;            // 착지·무속도·무회전. 수명 종료까지 자세가 그대로다.
+            public bool restedDistant;      // 멀리서 정지한 파편. 가까워지면 근거리 물리로 복귀해 납작 정렬을 이어간다.
+            public Matrix4x4 cachedMatrix;  // resting 동안 재계산 없이 다시 쓰는 최종 행렬.
             public Vector3 absorptionStart, absorptionCenter, spreadPosition;
             public float spreadFraction;
             public float distantElapsed;
@@ -32,11 +36,14 @@ namespace WeaponWorkshop
             public Mesh combinedMesh;
             public bool meshDirty = true;
             public CombineInstance[] combines = System.Array.Empty<CombineInstance>();
+            public Matrix4x4 drawMatrix;    // 마지막에 그린 변환. 먼 구름의 생략 프레임 다시 그리기용.
         }
         private readonly List<FallingGroup> groups = new List<FallingGroup>();
         private readonly Stack<FallingGroup> groupCache = new Stack<FallingGroup>();
         private int maximumCachedGroups = 8;
         private DestructibleTarget owner;
+        internal int managerIndex = -1;  // 매니저 순회 목록의 자리. -1은 미등록.
+        internal int tickFrame = -1;     // 프레임당 한 번만 갱신하기 위한 스탬프.
         public void BindOwner(DestructibleTarget value) => owner = value;
         public void ReserveBuffers(int initialFragmentCapacity, int maximumGroups)
         {
@@ -46,8 +53,8 @@ namespace WeaponWorkshop
                 if (fragments.Capacity < initialCapacity) fragments.Capacity = initialCapacity;
                 if (wallSelected.Length < initialCapacity) System.Array.Resize(ref wallSelected, initialCapacity);
                 maximumCachedGroups = Mathf.Max(0, maximumGroups);
-                for (int i = 0; i < buckets.Length; i++)
-                    if (buckets[i] == null) buckets[i] = new List<Matrix4x4>(initialCapacity);
+                for (int i = 0; i < bucketMatrices.Length; i++)
+                    if (bucketMatrices[i] == null) bucketMatrices[i] = new Matrix4x4[Mathf.Max(16, initialCapacity)];
             }
         }
         private FallingGroup RentGroup()
@@ -95,9 +102,12 @@ namespace WeaponWorkshop
             fragments.Clear();
             foreach (FallingGroup group in groups) ReturnGroup(group);
             groups.Clear();
-            foreach (var bucket in buckets) bucket?.Clear();
+            System.Array.Clear(bucketCounts, 0, bucketCounts.Length);
+            drawCached = false; pausedTime = 0f; settled = false; settledElapsed = 0f;
         }
-        private readonly List<Matrix4x4>[] buckets = new List<Matrix4x4>[16];
+        // 알파 버킷 행렬은 List 대신 배열+카운트로 재사용한다. 그리기만 하는 프레임은 비우거나 채우지 않는다.
+        private readonly Matrix4x4[][] bucketMatrices = new Matrix4x4[16][];
+        private readonly int[] bucketCounts = new int[16];
         private readonly Matrix4x4[] batch = new Matrix4x4[1023];
         private MaterialPropertyBlock appearance;
         private Material material;
@@ -108,6 +118,17 @@ namespace WeaponWorkshop
         private float rollingFriction = 3f, bounceMultiplier = 0.4f, motionMultiplier = 0.65f, wallSearchRadius = 12f;
         [SerializeField, Min(0f)] private float fullDetailDistance = 6f;
         [SerializeField, Min(0)] private int maximumDistantDraws = 256;
+        [SerializeField, Min(0f)] private float reducedUpdateDistance = 48f; // 이 거리 밖 구름은 프레임 건너 재계산한다.
+        private float pausedTime;   // 생략 프레임의 시간. 다음 재계산에 더해 흐름을 보존한다.
+        private bool drawCached;    // 직전 프레임의 버킷·그룹 그리기 결과가 다시 그리기 가능한 상태인지.
+        private int drawParity;     // 구름마다 건너뛰기 위상을 어긋나게 한다.
+        // 정지 구름 스킵: 전체 계산에서 모든 파편이 정지했을 때 세우고, 버킷·만료 시점이 오거나 카메라가 움직이면 튼다.
+        private bool settled;
+        private float settledNextBucketIn, settledNextExpiryIn;  // 다음 알파 버킷 경계·파편 만료까지 남은 시간.
+        private float settledElapsed;  // 스킵 동안 흐른 시간. 다음 전체 계산 때 나이에 한꺼번에 반영한다.
+        private bool settledHasView;
+        private Vector3 settledViewPosition;
+        private const float SettledViewMoveSq = 1f;  // 카메라가 1m 넘게 움직였으면 먼 파편 표본을 다시 고른다.
         private readonly DebrisWallCache wallCache = new DebrisWallCache();
         private int wallCursor;
         private bool[] wallSelected = System.Array.Empty<bool>();
@@ -118,7 +139,7 @@ namespace WeaponWorkshop
         private bool Distant(Vector3 position) => hasView && (position - viewPosition).sqrMagnitude > fullDetailDistance * fullDetailDistance;
         private bool MovingDebris(Fragment part) => !part.absorbing && !Distant(part.position) &&
             part.velocity.sqrMagnitude > .0225f && part.age < part.lifetime;
-        private void SelectWallChecks(int quota)
+        private void SelectWallChecks(int quota, float dt)
         {
             if(wallSelected.Length<fragments.Count)System.Array.Resize(ref wallSelected,Mathf.NextPowerOfTwo(fragments.Count));
             System.Array.Clear(wallSelected,0,fragments.Count);
@@ -139,7 +160,7 @@ namespace WeaponWorkshop
                 int index=nearCursor%fragments.Count;nearCursor=(index+1)%fragments.Count;visited++;
                 var part=fragments[index];
                 if(wallSelected[index]||!MovingDebris(part))continue;
-                float radius=.5f*part.scale.magnitude+.3f+part.velocity.magnitude*Mathf.Max(Time.deltaTime,.016f);
+                float radius=.5f*part.scale.magnitude+.3f+part.velocity.magnitude*Mathf.Max(dt,.016f);
                 if(!wallCache.Near(part.position,radius))continue;
                 wallSelected[index]=true;selected++;
             }
@@ -161,6 +182,7 @@ namespace WeaponWorkshop
             Material fragmentTemplate)
         {
             // Cache one horizontal floor plane per cloud. No per-fragment raycasts.
+            drawParity = GetInstanceID() & 1;
             floorHeight = reference != null ? reference.position.y : 0f;
             if (reference != null)
             {
@@ -243,6 +265,8 @@ namespace WeaponWorkshop
 
         public void Emit(Piece cell, Vector3 velocity, float lifetime, float fade)
         {
+            // 새 파편은 그리기 캐시에 없으므로 다음 프레임은 반드시 다시 계산한다.
+            drawCached = false;
             var part = new Fragment { position = cell.position, rotation = cell.rotation,
                 scale = cell.scale, velocity = velocity,
                 spin = Random.onUnitSphere * Random.Range(90f, 360f),
@@ -257,6 +281,7 @@ namespace WeaponWorkshop
 
         public void EmitGroup(List<Piece> cells, float lifetime, float fade, Vector3 velocity = default)
         {
+            drawCached = false;
             if (absorbEmission)
             {
                 foreach (var cell in cells) Emit(cell, Vector3.zero, lifetime, fade);
@@ -279,6 +304,7 @@ namespace WeaponWorkshop
 
         public void BreakIntactGroups()
         {
+            drawCached = false;
             foreach (var group in groups)
             {
                 foreach (var part in group.parts)
@@ -335,6 +361,7 @@ namespace WeaponWorkshop
                             + new Vector3(group.velocity.x, impactKick * 0.25f, group.velocity.z);
                         VaryDebris(ref part);
                         part.visualId = ++nextVisualId;
+                        part.resting = false;
                         fragments.Add(part);
                         group.parts[index] = group.parts[group.parts.Count - 1];
                         group.parts.RemoveAt(group.parts.Count - 1);
@@ -366,8 +393,9 @@ namespace WeaponWorkshop
                         group.combinedMesh.CombineMeshes(combines, true, true, false);
                         group.meshDirty = false;
                     }
-                    appearance.SetColor("_BaseColor", color);
-                    Graphics.DrawMesh(group.combinedMesh, Matrix4x4.TRS(group.position, group.rotation, Vector3.one),
+                    // 마지막 변환을 캐시해 먼 구름의 생략 프레임은 그룹 변환을 다시 만들지 않는다.
+                    group.drawMatrix = ScaleTranslate(RotationMatrix(group.rotation), Vector3.one, group.position);
+                    Graphics.DrawMesh(group.combinedMesh, group.drawMatrix,
                         groupMaterial, gameObject.layer, null, 0, null, ShadowCastingMode.On, true);
                 }
             }
@@ -377,6 +405,41 @@ namespace WeaponWorkshop
             Mathf.Abs((rotation * Vector3.right).y * scale.x) +
             Mathf.Abs((rotation * Vector3.up).y * scale.y) +
             Mathf.Abs((rotation * Vector3.forward).y * scale.z));
+
+        // 쿼터니언→회전 행렬. Matrix4x4.TRS 내부 작업과 HalfHeight의 회전 세 번을 한 번의 계산으로 합치기 위한 것.
+        private static Matrix4x4 RotationMatrix(Quaternion q)
+        {
+            float xx = q.x * q.x, yy = q.y * q.y, zz = q.z * q.z;
+            float xy = q.x * q.y, xz = q.x * q.z, yz = q.y * q.z;
+            float wx = q.w * q.x, wy = q.w * q.y, wz = q.w * q.z;
+            var m = new Matrix4x4();
+            m.m00 = 1f - 2f * (yy + zz); m.m01 = 2f * (xy - wz); m.m02 = 2f * (xz + wy); m.m03 = 0f;
+            m.m10 = 2f * (xy + wz); m.m11 = 1f - 2f * (xx + zz); m.m12 = 2f * (yz - wx); m.m13 = 0f;
+            m.m20 = 2f * (xz - wy); m.m21 = 2f * (yz + wx); m.m22 = 1f - 2f * (xx + yy); m.m23 = 0f;
+            m.m30 = 0f; m.m31 = 0f; m.m32 = 0f; m.m33 = 1f;
+            return m;
+        }
+
+        // 회전 행렬에 스케일·이동을 합친다. Matrix4x4.TRS와 같은 결과이며 임시 행렬 계산이 없다.
+        private static Matrix4x4 ScaleTranslate(Matrix4x4 rotation, Vector3 scale, Vector3 position) => new Matrix4x4(
+            new Vector4(rotation.m00 * scale.x, rotation.m10 * scale.x, rotation.m20 * scale.x, 0f),
+            new Vector4(rotation.m01 * scale.y, rotation.m11 * scale.y, rotation.m21 * scale.y, 0f),
+            new Vector4(rotation.m02 * scale.z, rotation.m12 * scale.z, rotation.m22 * scale.z, 0f),
+            new Vector4(position.x, position.y, position.z, 1f));
+
+        // 버킷 배열은 고수위를 넘을 때만 커지므로 정상 프레임에는 할당이 없다.
+        private void AddMatrix(int bucket, Matrix4x4 matrix)
+        {
+            Matrix4x4[] matrices = bucketMatrices[bucket];
+            int count = bucketCounts[bucket];
+            if (count == matrices.Length)
+            {
+                System.Array.Resize(ref matrices, count * 2);
+                bucketMatrices[bucket] = matrices;
+            }
+            matrices[count] = matrix;
+            bucketCounts[bucket] = count + 1;
+        }
 
         private void AdvanceDistant(ref Fragment part, float dt, Vector3 gravity)
         {
@@ -418,7 +481,8 @@ namespace WeaponWorkshop
             return true;
         }
 
-        private void LateUpdate()
+        // 매니저가 프레임당 한 번씩 부른다. 시선·시간·중력은 매니저에서 이미 읽은 값이다.
+        internal void Tick(Camera view, float dt, Vector3 gravity)
         {
             if (material == null) return;
             if (fragments.Count == 0 && groups.Count == 0)
@@ -426,16 +490,40 @@ namespace WeaponWorkshop
                 if (owner != null && owner.IsDestroyed) PoolManager.Release(gameObject);
                 return;
             }
-            foreach (var bucket in buckets) bucket.Clear();
-            float dt = Time.deltaTime;
-            AdvanceGroups(dt);
-            Camera view = Camera.main;
             hasView = view != null;
             if (hasView) viewPosition = view.transform.position;
+            // 정지 구름은 파편 루프를 돌지 않고 캐시된 버킷 행렬만 다시 그린다. 알파 버킷이 바뀌거나
+            // 파편이 만료되는 시점, 카메라가 충분히 움직인 시점에만 전체 계산으로 돌아온다.
+            if (settled && drawCached && groups.Count == 0 && hasView == settledHasView &&
+                (!hasView || (viewPosition - settledViewPosition).sqrMagnitude <= SettledViewMoveSq))
+            {
+                float elapsed = settledElapsed + dt;
+                if (settledNextBucketIn > elapsed && settledNextExpiryIn > elapsed)
+                {
+                    settledElapsed = elapsed;
+                    DrawBuckets();
+                    return;
+                }
+            }
+            // 먼 구름은 프레임 건너 재계산을 건너뛰고 직전 그리기 결과를 그대로 다시 제출한다. 지난 시간은 다음 계산에 더해진다.
+            if (drawCached && ReducedUpdate())
+            {
+                pausedTime += dt;
+                RedrawCache();
+                return;
+            }
+            dt += pausedTime + settledElapsed;
+            pausedTime = 0f; settledElapsed = 0f;
+            drawCached = true;
+            AdvanceGroups(dt);
             int wallQuota = Mathf.Min(fragments.Count,PoolManager.WallChecksPerCloud);
-            SelectWallChecks(wallQuota);
-            Vector3 gravity = Physics.gravity;
+            SelectWallChecks(wallQuota,dt);
+            System.Array.Clear(bucketCounts, 0, bucketCounts.Length);
             int distantDrawn = 0;
+            int frameParity = Time.frameCount & 1;
+            // 구름 전체 정지 판정: 움직이는 분기에 들어간 파편이 하나라도 있으면 무효가 된다.
+            bool allResting = groups.Count == 0;
+            float nextBucketIn = float.PositiveInfinity, nextExpiryIn = float.PositiveInfinity;
             for (int i = fragments.Count - 1; i >= 0; i--)
             {
                 Fragment part = fragments[i];
@@ -446,6 +534,8 @@ namespace WeaponWorkshop
                     fragments.RemoveAt(fragments.Count - 1);
                     continue;
                 }
+                float alpha = Mathf.Clamp01((part.lifetime - part.age) / part.fade);
+                int bucketIndex = Mathf.Clamp(Mathf.CeilToInt(alpha * 15f), 0, 15);
                 if (part.absorbing)
                 {
                     float t = Mathf.Clamp01(part.age / part.lifetime);
@@ -459,29 +549,55 @@ namespace WeaponWorkshop
                     }
                     else part.position = Vector3.LerpUnclamped(part.spreadPosition, part.absorptionCenter, eased);
                     fragments[i] = part;
-                    buckets[15].Add(Matrix4x4.TRS(part.position, part.rotation, part.scale * (1f - eased)));
+                    AddMatrix(15, ScaleTranslate(RotationMatrix(part.rotation), part.scale * (1f - eased), part.position));
+                    allResting = false;
                     continue;
                 }
+                if (part.resting)
+                {
+                    // 멀리서 정지한 파편이 근거리로 들어오면 정지를 풀어 납작 정렬·높이 보정을 이어간다.
+                    if (part.restedDistant && !Distant(part.position))
+                    {
+                        part.resting = false;
+                        part.restedDistant = false;
+                    }
+                    else
+                    {
+                        // 바닥에 앉은 파편은 수명 종료까지 자세가 고정: 물리·행렬 재계산 없이 캐시만 제출한다.
+                        // 정지 조건(마찰로 속도 0 고정, 정렬 도달)은 되돌아오지 않으므로 연속 프레임 확인 없이 세운다.
+                        fragments[i] = part;
+                        if ((!Distant(part.position) || DrawDistant(part, ref distantDrawn)) && bucketIndex > 0)
+                            AddMatrix(bucketIndex, part.cachedMatrix);
+                        float remaining = part.lifetime - part.age;
+                        if (remaining < nextExpiryIn) nextExpiryIn = remaining;
+                        if (bucketIndex > 0)
+                        {
+                            float bucketIn = remaining - part.fade * ((bucketIndex - 1) * (1f / 15f));
+                            if (bucketIn < nextBucketIn) nextBucketIn = bucketIn;
+                        }
+                        continue;
+                    }
+                }
+                allResting = false;
                 if (Distant(part.position))
                 {
                     part.distantElapsed += dt;
-                    if (((Time.frameCount + (int)part.visualId) & 1) == 0)
+                    if (((frameParity + (int)part.visualId) & 1) == 0)
                     {
                         AdvanceDistant(ref part, part.distantElapsed, gravity);
                         part.distantElapsed = 0f;
+                        // 멀리 있는 파편은 회전 갱신이 없으므로 바닥 접촉 후 속도가 0이면 더는 움직이지 않는다. 여기서 정지로 본다.
+                        if (part.grounded && part.velocity.sqrMagnitude == 0f) part.resting = true;
                     }
                     fragments[i] = part;
-                    if (DrawDistant(part, ref distantDrawn))
-                    {
-                        float opacity = Mathf.Clamp01((part.lifetime - part.age) / part.fade);
-                        buckets[Mathf.Clamp(Mathf.CeilToInt(opacity * 15f), 0, 15)]
-                            .Add(Matrix4x4.TRS(part.position, part.rotation, part.scale));
-                    }
+                    Matrix4x4 farPose = ScaleTranslate(RotationMatrix(part.rotation), part.scale, part.position);
+                    if (part.resting) part.cachedMatrix = farPose;
+                    if (DrawDistant(part, ref distantDrawn) && bucketIndex > 0)
+                        AddMatrix(bucketIndex, farPose);
                     continue;
                 }
                 float step = dt + part.distantElapsed;
                 part.distantElapsed = 0f;
-                float alpha = Mathf.Clamp01((part.lifetime - part.age) / part.fade);
                 if (part.grounded)
                 {
                     part.velocity.y = 0f;
@@ -499,6 +615,7 @@ namespace WeaponWorkshop
                     else
                     {
                         // Settle onto the nearest cube face without a collider/contact solver.
+                        Quaternion previousRotation = part.rotation;
                         Vector3 bestAxis = part.rotation * Vector3.up;
                         float best = Mathf.Abs(bestAxis.y);
                         Vector3 right = part.rotation * Vector3.right;
@@ -508,6 +625,9 @@ namespace WeaponWorkshop
                         if (bestAxis.y < 0f) bestAxis = -bestAxis;
                         Quaternion flat = Quaternion.FromToRotation(bestAxis, Vector3.up) * part.rotation;
                         part.rotation = Quaternion.RotateTowards(part.rotation, flat, 180f * step);
+                        // 속도가 0이고 회전 변화가 사실상 사라지면 이후 수명 종료까지 제자리에 있다.
+                        part.resting = part.velocity.sqrMagnitude == 0f &&
+                            Quaternion.Dot(previousRotation, part.rotation) > 0.999999f;
                     }
                     part.spin = Vector3.zero;
                 }
@@ -517,8 +637,11 @@ namespace WeaponWorkshop
                     part.velocity += gravity * step;
                 }
                 if (!part.grounded) part.rotation = (Quaternion.Euler(part.spin * step) * part.rotation).normalized;
+                // 회전 행렬을 한 번 만들어 높이 검사와 최종 행렬이 함께 쓴다.
+                Matrix4x4 rotation = RotationMatrix(part.rotation);
                 // Cube extent along world Y prevents rotating corners from sinking below the plane.
-                float halfHeight = HalfHeight(part.rotation, part.scale);
+                float halfHeight = 0.5f * (Mathf.Abs(rotation.m10) * part.scale.x +
+                    Mathf.Abs(rotation.m11) * part.scale.y + Mathf.Abs(rotation.m12) * part.scale.z);
                 float restingY = floorHeight + halfHeight;
                 if (part.grounded || part.position.y <= restingY)
                 {
@@ -545,27 +668,75 @@ namespace WeaponWorkshop
                 }
                 else if(part.velocity.sqrMagnitude<=0.0225f)
                 { part.wallPosition=part.position;part.wallElapsed=0f; }
+                Matrix4x4 pose = ScaleTranslate(rotation, part.scale, part.position);
+                if (part.resting) part.cachedMatrix = pose;
                 fragments[i] = part;
-                int bucketIndex = Mathf.Clamp(Mathf.CeilToInt(alpha * 15f), 0, 15);
-                buckets[bucketIndex].Add(Matrix4x4.TRS(part.position, part.rotation, part.scale));
+                if (bucketIndex > 0) AddMatrix(bucketIndex, pose);
             }
-            for (int i = 1; i < buckets.Length; i++)
+            // 모든 파편이 정지했고 남은 덩어리가 없으면 다음 프레임부터 구름 단위로 루프를 건너뛴다.
+            if (allResting && fragments.Count > 0)
             {
+                settled = true;
+                settledNextBucketIn = nextBucketIn;
+                settledNextExpiryIn = nextExpiryIn;
+                settledHasView = hasView;
+                settledViewPosition = viewPosition;
+            }
+            else { settled = false; settledElapsed = 0f; }
+            DrawBuckets();
+        }
+
+        // 바깥에서 보는 보크셀 크기보다 1프레임 자세 지연이 작아지는 거리부터 반 주기 갱신을 쓴다.
+        private bool ReducedUpdate()
+        {
+            if (reducedUpdateDistance <= 0f || !hasView || owner == null) return false;
+            float distance = reducedUpdateDistance;
+            if ((owner.transform.position - viewPosition).sqrMagnitude <= distance * distance) return false;
+            return ((Time.frameCount + drawParity) & 1) == 1;
+        }
+
+        // 재계산을 건너뛴 프레임: 직전 프레임의 그룹·버킷 행렬을 다시 제출하기만 한다.
+        private void RedrawCache()
+        {
+            for (int i = 0; i < groups.Count; i++)
+                if (groups[i].combinedMesh != null && !groups[i].meshDirty)
+                    Graphics.DrawMesh(groups[i].combinedMesh, groups[i].drawMatrix, groupMaterial,
+                    gameObject.layer, null, 0, null, ShadowCastingMode.On, true);
+            DrawBuckets();
+        }
+
+        private void DrawBuckets()
+        {
+            for (int i = 1; i < bucketMatrices.Length; i++)
+            {
+                int count = bucketCounts[i];
+                if (count == 0) continue;
                 Color faded = color;
                 faded.a *= i / 15f;
-                appearance.SetColor("_BaseColor", faded);
-                List<Matrix4x4> matrices = buckets[i];
-                for (int start = 0; start < matrices.Count; start += batch.Length)
+                appearance.SetColor(BaseColorId, faded);
+                Matrix4x4[] matrices = bucketMatrices[i];
+                if (count <= batch.Length)
                 {
-                    int count = Mathf.Min(batch.Length, matrices.Count - start);
-                    matrices.CopyTo(start, batch, 0, count);
-                    Graphics.DrawMeshInstanced(mesh, 0, material, batch, count, appearance,
+                    Graphics.DrawMeshInstanced(mesh, 0, material, matrices, count, appearance,
                         ShadowCastingMode.Off, false, gameObject.layer);
+                }
+                else
+                {
+                    // 최대 배치 크기를 넘는 버킷만 batch로 잘려 나간다.
+                    for (int start = 0; start < count; start += batch.Length)
+                    {
+                        int batchCount = Mathf.Min(batch.Length, count - start);
+                        System.Array.Copy(matrices, start, batch, 0, batchCount);
+                        Graphics.DrawMeshInstanced(mesh, 0, material, batch, batchCount, appearance,
+                            ShadowCastingMode.Off, false, gameObject.layer);
+                    }
                 }
             }
         }
+        private void OnEnable() => VisualDebrisCloudManager.Register(this);
         private void OnDisable()
         {
+            VisualDebrisCloudManager.Unregister(this);
             ClearDebris();
             var previousOwner = owner; owner = null;
             if (previousOwner != null) previousOwner.ForgetDebrisCloud(this);

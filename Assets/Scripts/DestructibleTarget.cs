@@ -270,6 +270,11 @@ namespace WeaponWorkshop
         private List<BoxCollider>[] collisionColumns;
         private readonly List<BoxCollider> collisionColliderPool = new List<BoxCollider>();
         private int collisionColliderCursor;
+        // 풀 오브젝트에 실리지 않은 표적만 콜라이더를 공용 인덱스에 고정 등록한다. 대여 때마다 부모가
+        // 바뀌는 풀 소속 표적은 등록하면 낡은 소속을 캐시하게 되므로 기존 부모 탐색 경로를 유지한다.
+        private bool registersColliders;
+        // 원본 콜라이더의 풀 편입은 한 번이면 충분하다. 매 성장마다 풀 전체를 다시 훑던 비용을 없앤다.
+        private bool collisionPoolMergedOriginals;
         private static readonly Stack<List<BoxCollider>> collisionColumnListPool = new Stack<List<BoxCollider>>(512);
         private bool[] dirtyColumnFlags;
         private readonly List<int> dirtyColumns = new List<int>();
@@ -347,8 +352,13 @@ namespace WeaponWorkshop
             totalCellCount = Mathf.Max(1, Mathf.CeilToInt(worldSize.x / size - 0.00001f))
                 * Mathf.Max(1, Mathf.CeilToInt(worldSize.y / size - 0.00001f))
                 * Mathf.Max(1, Mathf.CeilToInt(worldSize.z / size - 0.00001f));
+            registersColliders = GetComponentInParent<PooledCombatObject>(true) == null;
             foreach (Collider collider in targetMesh.GetComponents<Collider>())
+            {
                 originalColliders.Add(collider, collider.enabled);
+                // 미분할 상태에서 맞는 원본 콜라이더도 조회 때 부모 탐색 없이 바로 풀리도록 등록한다.
+                if (registersColliders) ColliderTargetIndex.RegisterStructure(collider, this);
+            }
             // Collision colliders grow on demand (AcquireCollisionCollider) and stay pooled; a worst-case prewarm
             // here would add hundreds of BoxColliders per target at scene load.
             CacheTransformMovement();
@@ -1309,12 +1319,18 @@ namespace WeaponWorkshop
 
         private void EnsureCollisionColliderPoolSize(int required)
         {
-            foreach (Collider collider in originalColliders.Keys)
-                if (collider is BoxCollider box && !collisionColliderPool.Contains(box)) collisionColliderPool.Add(box);
+            if (!collisionPoolMergedOriginals)
+            {
+                collisionPoolMergedOriginals = true;
+                foreach (Collider collider in originalColliders.Keys)
+                    if (collider is BoxCollider box && !collisionColliderPool.Contains(box)) collisionColliderPool.Add(box);
+            }
             while (collisionColliderPool.Count < required)
             {
                 BoxCollider box = CellRoot.gameObject.AddComponent<BoxCollider>();
                 box.enabled = false;
+                // 파괴 구간에 늘어나는 새 풀 콜라이더도 곧장 등록해 탄 조회의 탐색·항목 생성을 막는다.
+                if (registersColliders) ColliderTargetIndex.RegisterStructure(box, this);
                 collisionColliderPool.Add(box);
             }
         }

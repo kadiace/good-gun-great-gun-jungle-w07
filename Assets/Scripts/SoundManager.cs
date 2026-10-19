@@ -162,6 +162,7 @@ namespace WeaponWorkshop
             {
                 if (workbenchSounds == null) workbenchSounds = GetComponent<WorkbenchSoundSettings>();
                 LoadSoundSettings();
+                PreloadConfiguredClips();
                 // 필수 음원 누락은 명확히 알리고 새 자동 재생을 차단한다.
                 if (!ValidateBgmConfiguration(out string error)) Debug.LogError(error, this);
             }
@@ -686,6 +687,15 @@ namespace WeaponWorkshop
             raidMusicVolume = Mathf.Clamp01(raidMusicVolume);
             tutorialWorkshopMusicVolume = Mathf.Clamp01(tutorialWorkshopMusicVolume);
             tutorialRaidMusicVolume = Mathf.Clamp01(tutorialRaidMusicVolume);
+        }
+
+        // Resources 효과음 클립을 미리 로드해 첫 재생(첫 폭발 등) 스파이크를 없앤다.
+        // BGM은 크고 재생 시점이 분명하므로 미리 올리지 않는다.
+        private void PreloadConfiguredClips()
+        {
+            if (string.IsNullOrEmpty(ResourcePath)) return;
+            foreach (AudioClip clip in Resources.LoadAll<AudioClip>(ResourcePath.TrimEnd('/')))
+                if (clip != null && clip.loadState != AudioDataLoadState.Loaded) clip.LoadAudioData();
         }
 
         // 레거시 테이블: Resources 경로 문자열 + 파일명 키. 새 테이블 값은 TableManager에서 받아온다.

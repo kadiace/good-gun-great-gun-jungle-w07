@@ -18,11 +18,19 @@ namespace WeaponWorkshop
         private readonly List<Collider> colliders = new List<Collider>();
         private Collider[] hits = new Collider[128];
         private DestructibleTarget scanning;
+        private Transform scanningRoot;
         private int cursor;
         private bool changed;
         private bool needsSync;
         private const float ContactTolerance = 0.015f;
         private const int QueryBudget = 64;
+        // Milliseconds one frame spends rebuilding contacts; the dirty queue keeps its place and
+        // continues next frame. Tunable in one place only: this static field.
+        internal static float QueryBudgetMilliseconds = 3f;
+        // Resolved once instead of LayerMask.GetMask doing a string lookup for every query.
+        // Lazy because GetMask may not run inside a MonoBehaviour's static initializer during load.
+        private static int nonEnergyLayers;
+        private static int NonEnergyLayers => nonEnergyLayers != 0 ? nonEnergyLayers : nonEnergyLayers = ~LayerMask.GetMask("Energy");
 
         private void OnEnable()
         {
@@ -33,7 +41,15 @@ namespace WeaponWorkshop
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => instance = null;
+        private static void ResetStatics()
+        {
+            instance = null;
+            nonEnergyLayers = 0;
+            QueryBudgetMilliseconds = 3f;
+        }
+
+        private static float ElapsedMilliseconds(long startTicks) =>
+            (System.Diagnostics.Stopwatch.GetTimestamp() - startTicks) * 1000f / System.Diagnostics.Stopwatch.Frequency;
 
         internal static void Register(DestructibleTarget target)
         {
@@ -91,8 +107,13 @@ namespace WeaponWorkshop
             if (DestructionCollisionBatch.Flush()) needsSync = false;
             if (needsSync) { Physics.SyncTransforms(); needsSync = false; }
             int budget = QueryBudget;
+            long budgetStart = System.Diagnostics.Stopwatch.GetTimestamp();
             while (budget > 0)
             {
+                // Stop at this frame's time budget; the scan resumes at the same collider next frame.
+                if (ElapsedMilliseconds(budgetStart) >= QueryBudgetMilliseconds) break;
+                // A scan can span frames, so drop one whose target left the graph in the meantime.
+                if (scanning != null && !targets.Contains(scanning)) { scanning = null; colliders.Clear(); continue; }
                 if (scanning == null)
                 {
                     if (dirty.Count == 0) break;
@@ -104,6 +125,7 @@ namespace WeaponWorkshop
                     scanning.supportLinks.Clear();
                     scanning.structuralAnchor = scanning.UsesPhysicalGravity;
                     scanning.CollectSupportColliders(colliders);
+                    scanningRoot = scanning.transform;
                     cursor = 0;
                 }
                 if (cursor >= colliders.Count) { scanning = null; continue; }
@@ -117,14 +139,14 @@ namespace WeaponWorkshop
                 while (true)
                 {
                     count = Physics.OverlapBoxNonAlloc(box.transform.TransformPoint(box.center), extents, hits,
-                        box.transform.rotation, ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore);
+                        box.transform.rotation, NonEnergyLayers, QueryTriggerInteraction.Ignore);
                     if (count < hits.Length) break;
                     System.Array.Resize(ref hits, hits.Length * 2);
                 }
                 for (int i = 0; i < count; i++)
                 {
                     var hit = hits[i];
-                    if (hit == null || hit.transform.IsChildOf(scanning.transform)) continue;
+                    if (hit == null || hit.transform.IsChildOf(scanningRoot)) continue;
                     var other = hit.GetComponentInParent<DestructibleTarget>();
                     if (other != null)
                     {

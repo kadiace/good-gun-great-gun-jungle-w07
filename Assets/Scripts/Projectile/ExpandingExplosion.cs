@@ -48,6 +48,31 @@ namespace WeaponWorkshop
         }
 
         private const float MaximumMergedPowerMultiplier = 4f;
+        // Stopwatch 호출 비용을 줄이려 한 레이어의 조각 16개마다 예산을 본다.
+        private const int PieceBudgetCheckInterval = 16;
+        // Destruction work one frame may spend on all live waves when nothing is deferred.
+        // Tunable in one place only: these static fields, never the inspector or a tuning asset.
+        internal static float StepBudgetMilliseconds = 4f;
+        // 적응형 프레임 예산의 상한. 큐 헤어가 대기하는 동안 예산을 StepBudgetMilliseconds에서
+        // StepMaxDeferredFrames프레임에 걸쳐 이 값까지 선형으로 올린다. 밀린 일을 예산 없이
+        // 한 프레임에 처리하던 과거 따라잡기 프레임 대신, 밀린 일이 상한 있는 여러 프레임에 나누인다.
+        internal static float StepBudgetMaxMilliseconds = 30f;
+        // Extra slice the single most-deferred wave still gets on a frame whose budget is already
+        // spent, so deferred waves rotate through the queue instead of starving in a large storm.
+        internal static float StepWaveBudgetMilliseconds = 1f;
+        private static int stepBudgetFrame = -1;
+        private static long stepFrameUsedTicks, stepFrameBudgetTicks;
+        // Waves the budget stops mid-work re-queue at the tail and take turns in FIFO order; only
+        // the queue head (and fresh waves while budget remains) may start heavy work. Released or
+        // disabled waves leave dead tickets that are skipped lazily so the queue cannot stall.
+        private static long stepServeTicket = 1, stepTicketTail = 1;
+        // Live ticket -> frame it joined the queue.
+        private static readonly Dictionary<long, int> stepLiveTickets = new Dictionary<long, int>(1024);
+        private static int stepSliceFrame = -1;
+        // 큐 헤어가 이만큼 대기하면 프레임 예산이 StepBudgetMaxMilliseconds에 도달한다. 헤어진
+        // 보장 슬라이스까지 매 턴을 놓지 않으므로, 예산이 상한에 닿기 전에도 파괴가 폭발에 눈에
+        // 보이게 뒤처지지는 않는다.
+        internal static int StepMaxDeferredFrames = 6;
         private static readonly List<ExplosionRequest> pending = new List<ExplosionRequest>(2048);
         private static readonly Dictionary<DestructibleTarget, float> collectTargetDistances = new Dictionary<DestructibleTarget, float>(256);
         private static readonly Dictionary<TargetHealth, float> collectNearest = new Dictionary<TargetHealth, float>(512);
@@ -75,6 +100,15 @@ namespace WeaponWorkshop
         private ProjectileTuning tuning;
         private ParticleSystem explosionEffect;
         private int nextLayer, nextHealth, nextSlot, nextTargetCandidate;
+        // Layer group left half-applied when the frame budget stopped the wave mid-group;
+        // groupPieceIndex/groupChanged/groupResistance carry a layer broken in the middle of its
+        // piece list (the target may be gone by the time the layer completes).
+        private bool groupOpen, groupBlocked, groupChanged;
+        private int groupEnd, groupDirection, groupPieceIndex = -1;
+        private float groupIncoming, groupCost, groupResistance;
+        // Deferred-work queue ticket (0 = no deferred work) and the running turn's time marks.
+        private long stepTicket, stepTurnMarkTicks, stepTurnUsedTicks;
+        private bool stepSliceTurn;
         private bool collectionPending;
         private float checkDistance;
         private ProjectileMotor originatingProjectile;
@@ -129,6 +163,85 @@ namespace WeaponWorkshop
             collectionBudgetFrame = -1;
             activeProjectileFrame = -1;
             pendingFrame = -1;
+            stepBudgetFrame = -1;
+            stepFrameUsedTicks = 0;
+            stepServeTicket = 1; stepTicketTail = 1;
+            stepLiveTickets.Clear();
+            stepSliceFrame = -1;
+            stepFrameBudgetTicks = 0;
+        }
+
+        private static long BudgetTicks(float milliseconds) =>
+            (long)(Mathf.Max(0f, milliseconds) * System.Diagnostics.Stopwatch.Frequency / 1000f);
+
+        // Opens one frame's budget window: retires dead tickets (a released wave cannot stall the
+        // queue) and sizes the frame budget by how long the queue head has waited. Deep deferral
+        // therefore drains over several capped frames instead of one unbudgeted catch-up frame.
+        private static void BeginStepFrame()
+        {
+            if (stepBudgetFrame == Time.frameCount) return;
+            stepBudgetFrame = Time.frameCount;
+            stepFrameUsedTicks = 0;
+            // Skip tickets whose wave was released or disabled before its turn came up.
+            while (stepServeTicket < stepTicketTail && !stepLiveTickets.ContainsKey(stepServeTicket)) stepServeTicket++;
+            int deferredFrames = stepLiveTickets.TryGetValue(stepServeTicket, out int queuedFrame)
+                ? Mathf.Max(0, Time.frameCount - queuedFrame) : 0;
+            stepFrameBudgetTicks = BudgetTicks(Mathf.Lerp(StepBudgetMilliseconds, StepBudgetMaxMilliseconds,
+                Mathf.Clamp01(deferredFrames / (float)Mathf.Max(1, StepMaxDeferredFrames))));
+        }
+
+        // Decides whether this wave may start heavy work now. Waves that never deferred start
+        // while the frame budget remains; deferred waves start only at the queue head, so the frame
+        // budget is spent in FIFO turn order instead of Update iteration order. The head still
+        // gets one guaranteed wave slice per frame even when the budget is already spent. The
+        // ticket dictionary is touched once per frame here and on deferral, not on every Step.
+        private bool BeginStepTurn(out bool sliceTurn)
+        {
+            sliceTurn = false;
+            BeginStepFrame();
+            bool budgetLeft = stepFrameUsedTicks < stepFrameBudgetTicks;
+            if (stepTicket == 0) return budgetLeft;
+            if (stepTicket != stepServeTicket) return false;
+            if (budgetLeft) return true;
+            if (stepSliceFrame != Time.frameCount)
+            {
+                stepSliceFrame = Time.frameCount;
+                sliceTurn = true;
+                return true;
+            }
+            return false;
+        }
+
+        // Charges the time since the previous check to the frame budget and to the running turn.
+        // A budget-paid turn stops at the (adaptive) frame budget; a guaranteed slice stops at the
+        // wave share.
+        private bool StepBudgetExhausted()
+        {
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+            long elapsed = now - stepTurnMarkTicks;
+            stepTurnMarkTicks = now;
+            stepTurnUsedTicks += elapsed;
+            stepFrameUsedTicks += elapsed;
+            if (stepSliceTurn)
+                return stepTurnUsedTicks >= BudgetTicks(Mathf.Max(0.05f, StepWaveBudgetMilliseconds));
+            return stepFrameUsedTicks >= stepFrameBudgetTicks;
+        }
+
+        // Closes the turn: retires the queue ticket (advancing the head past it) and, while work
+        // remains, re-queues at the tail so the next most-deferred wave becomes the head.
+        private void EndStepTurn(bool workPending)
+        {
+            if (stepTicket != 0)
+            {
+                if (stepTicket == stepServeTicket) stepServeTicket++;
+                stepLiveTickets.Remove(stepTicket);
+                stepTicket = 0;
+            }
+            if (workPending)
+            {
+                stepTicket = stepTicketTail++;
+                stepLiveTickets[stepTicket] = Time.frameCount;
+            }
         }
 
         private static void BeginCollectionBudget(float timeBudgetMilliseconds)
@@ -341,6 +454,10 @@ namespace WeaponWorkshop
             if (!collectionPending) return true;
             using (collectionWaitMarker.Auto())
             {
+                // Spawn runs this outside a Step turn; open the frame budget and the marks so the
+                // first budget check charges real time against the frame budget.
+                BeginStepFrame();
+                if (stepTurnMarkTicks == 0) stepTurnMarkTicks = System.Diagnostics.Stopwatch.GetTimestamp();
                 BeginCollectionBudget(tuning != null ? tuning.subdivisionBudgetMilliseconds : 4f);
                 using (collectMarker.Auto())
                 {
@@ -352,6 +469,9 @@ namespace WeaponWorkshop
                             nextTargetCandidate++;
                             continue;
                         }
+                        // Collection is the wave's first heavy pass; the frame budget carries the
+                        // remaining candidates to the next frame instead of stalling this one.
+                        if (StepBudgetExhausted()) break;
                         if (!target.CanCollectExplosionPiecesNow(transform.position, maximumRadius)) break;
                         if (!target.TryCollectExplosionPieces(transform.position, maximumRadius, checkDistance, pieces)) break;
                         nextTargetCandidate++;
@@ -417,6 +537,15 @@ namespace WeaponWorkshop
             layers.Clear(); pieces.Clear(); targetCandidates.Clear(); healthHits.Clear(); slotHits.Clear(); blastOccluders.Clear(); radius = 0f;
             damagedPieces.Clear();
             nextLayer = nextHealth = nextSlot = nextTargetCandidate = 0;
+            groupOpen = false; groupBlocked = false; groupChanged = false;
+            groupEnd = groupDirection = 0; groupPieceIndex = -1; groupIncoming = groupCost = groupResistance = 0f;
+            if (stepTicket != 0)
+            {
+                if (stepTicket == stepServeTicket) stepServeTicket++;
+                stepLiveTickets.Remove(stepTicket);
+                stepTicket = 0;
+            }
+            stepTurnMarkTicks = 0; stepTurnUsedTicks = 0; stepSliceTurn = false;
             collectionPending = false;
             tuning = null; explosionEffect = null; stats = default; impactStats = default;
             WeaponSource = null;
@@ -444,11 +573,21 @@ namespace WeaponWorkshop
             return false;
         }
 
-        private void Step()
+        // Time-based work that keeps running even when this wave's destruction budget is spent:
+        // the radius keeps expanding with time, chain detonations keep being checked and the
+        // wave still releases once every queued piece of work is done.
+        private void LightStep()
         {
-            if (collectionPending && !ContinuePieceCollection()) return;
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
+            GrowRadiusAndCheckChain(dt);
+            if (!collectionPending && radius >= maximumRadius &&
+                nextLayer >= layers.Count && nextHealth >= healthHits.Count)
+                PoolManager.Release(gameObject);
+        }
+
+        private void GrowRadiusAndCheckChain(float dt)
+        {
             ProcessPendingChainDetonations();
             radius = Mathf.Min(maximumRadius, radius + speed * dt);
             if (activeProjectileFrame != Time.frameCount)
@@ -465,52 +604,121 @@ namespace WeaponWorkshop
                 if (PoolManager.TryConsumeChainDetonation()) projectile.DetonateFromExplosion();
                 else QueueChainDetonation(projectile, projectile.transform.position, projectile.CurrentDirection);
             }
+        }
+
+        private void Step()
+        {
+            if (!BeginStepTurn(out bool sliceTurn))
+            {
+                // Frame budget spent and not this wave's turn: join the queue, then only run
+                // the time-based work so no wave starves and the frame keeps its budget.
+                if (stepTicket == 0)
+                {
+                    stepTicket = stepTicketTail++;
+                    stepLiveTickets[stepTicket] = Time.frameCount;
+                }
+                LightStep();
+                return;
+            }
+            stepTurnMarkTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+            stepTurnUsedTicks = 0;
+            stepSliceTurn = sliceTurn;
+            if (collectionPending && !ContinuePieceCollection()) { EndStepTurn(true); return; }
+            float dt = Time.deltaTime;
+            if (dt <= 0f)
+            {
+                EndStepTurn(collectionPending || nextLayer < layers.Count || nextHealth < healthHits.Count);
+                return;
+            }
+            GrowRadiusAndCheckChain(dt);
             dirtyTargets.Clear();
             // Equal distance layers use the same incoming energy, then pay all material costs.
+            // Layers after the frame budget are left untouched and resume at the same layer next turn.
             while (nextLayer < layers.Count)
             {
-                int end = nextLayer + 1;
-                var first = layers[nextLayer];
-                while (end < layers.Count && layers[end].shell == first.shell && layers[end].direction == first.direction) end++;
-                float arrival = 0f;
-                for (int i = nextLayer; i < end; i++) arrival = Mathf.Max(arrival, layers[i].distance);
-                if (arrival > radius && radius < maximumRadius) break;
-                float incoming = energy[first.direction], cost = 0f;
-                bool blocked = false;
-                for (int i = nextLayer; i < end; i++)
+                if (!groupOpen)
                 {
-                    var layer = layers[i];
-                    if (layer.target == null || !layer.target.isActiveAndEnabled) continue;
-                    float resistance = layer.target.ExplosionResistance;
-                    if (incoming <= 0f ||
-                        !layer.target.AllowsImpact(impactStats)) { blocked = true; continue; }
-                    if (incoming < resistance) blocked = true;
-                    bool changed = false;
-                    int pieceEnd = layer.pieceStart + layer.pieceCount;
-                    for (int pieceIndex = layer.pieceStart; pieceIndex < pieceEnd; pieceIndex++)
-                    {
-                        var coordinate = pieces[pieceIndex].coordinate;
-                        if (!damagedPieces.Add((layer.target, coordinate))) continue;
-                        changed |= layer.target.ApplyExplosionDamage(coordinate, incoming, transform.position,
-                            incoming * tuning.explosionDebrisPushPerPower, tuning)
-                            == DestructibleTarget.ExplosionDamageResult.Destroyed;
-                    }
-                    if (changed) { cost += resistance; dirtyTargets.Add(layer.target); }
+                    int end = nextLayer + 1;
+                    var first = layers[nextLayer];
+                    while (end < layers.Count && layers[end].shell == first.shell && layers[end].direction == first.direction) end++;
+                    float arrival = 0f;
+                    for (int i = nextLayer; i < end; i++) arrival = Mathf.Max(arrival, layers[i].distance);
+                    if (arrival > radius && radius < maximumRadius) break;
+                    groupEnd = end; groupDirection = first.direction; groupIncoming = energy[first.direction];
+                    groupCost = 0f; groupBlocked = false; groupChanged = false; groupPieceIndex = -1; groupResistance = 0f; groupOpen = true;
                 }
-                energy[first.direction] = blocked ? 0f : Mathf.Max(0f, incoming - cost);
-                nextLayer = end;
+                if (StepBudgetExhausted()) break;
+                var layer = layers[nextLayer];
+                // Seeded from the previous turn when this exact layer was broken mid-piece list.
+                bool changed = groupPieceIndex >= 0 ? groupChanged : false;
+                bool layerDeferred = false;
+                if (layer.target != null && layer.target.isActiveAndEnabled)
+                {
+                    float resistance = layer.target.ExplosionResistance;
+                    groupResistance = resistance;
+                    if (groupIncoming <= 0f ||
+                        !layer.target.AllowsImpact(impactStats)) groupBlocked = true;
+                    else
+                    {
+                        if (groupIncoming < resistance) groupBlocked = true;
+                        int pieceStart = layer.pieceStart;
+                        int pieceEnd = pieceStart + layer.pieceCount;
+                        int pieceIndex = groupPieceIndex >= 0 ? groupPieceIndex : pieceStart;
+                        while (pieceIndex < pieceEnd)
+                        {
+                            if (pieceIndex > pieceStart && (pieceIndex - pieceStart) % PieceBudgetCheckInterval == 0 &&
+                                StepBudgetExhausted())
+                            {
+                                groupPieceIndex = pieceIndex;
+                                layerDeferred = true;
+                                break;
+                            }
+                            var coordinate = pieces[pieceIndex].coordinate;
+                            if (!damagedPieces.Add((layer.target, coordinate))) { pieceIndex++; continue; }
+                            changed |= layer.target.ApplyExplosionDamage(coordinate, groupIncoming, transform.position,
+                                groupIncoming * tuning.explosionDebrisPushPerPower, tuning)
+                                == DestructibleTarget.ExplosionDamageResult.Destroyed;
+                            pieceIndex++;
+                        }
+                    }
+                }
+                if (layerDeferred)
+                {
+                    // 이번 턴에 깎은 조각 결과를 보존해 다음 턴 이어짐이 같아지게 한다.
+                    groupChanged = changed;
+                    break;
+                }
+                if (changed)
+                {
+                    // 조각을 깎은 레이어만 저항만큼 비용을 낸다. 레이어 도중에 밀린 뒤
+                    // 대상이 사라졌어도 시작 때 읽은 저항으로 그룹 에너지 의미를 유지한다.
+                    groupCost += groupResistance;
+                    if (layer.target != null && layer.target.isActiveAndEnabled) dirtyTargets.Add(layer.target);
+                }
+                nextLayer++;
+                groupPieceIndex = -1;
+                groupChanged = false;
+                if (nextLayer >= groupEnd)
+                {
+                    energy[groupDirection] = groupBlocked ? 0f : Mathf.Max(0f, groupIncoming - groupCost);
+                    groupOpen = false;
+                }
             }
             PoolManager.QueueExplosionFinish(dirtyTargets);
             dirtyTargets.Clear();
-            if (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius)
-                PoolManager.FlushExplosionFinish();
-            while (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius)
+            // Health damage keeps the flush-before-query contract; the budget only moves it a frame later.
+            if (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius && !StepBudgetExhausted())
             {
-                var hit = healthHits[nextHealth++];
-                if (hit.target == null || hit.target.IsDead || IsHealthShielded(hit.target)) continue;
-                float falloff = 1f - Mathf.Clamp01(hit.distance / maximumRadius);
-                HitPayload.ApplyToTarget(hit.target, stats, tuning, baseDamage * stats.explosion * falloff,
-                    hit.target.transform.position - transform.position, true);
+                PoolManager.FlushExplosionFinish();
+                while (nextHealth < healthHits.Count && healthHits[nextHealth].distance <= radius)
+                {
+                    if (StepBudgetExhausted()) break;
+                    var hit = healthHits[nextHealth++];
+                    if (hit.target == null || hit.target.IsDead || IsHealthShielded(hit.target)) continue;
+                    float falloff = 1f - Mathf.Clamp01(hit.distance / maximumRadius);
+                    HitPayload.ApplyToTarget(hit.target, stats, tuning, baseDamage * stats.explosion * falloff,
+                        hit.target.transform.position - transform.position, true);
+                }
             }
             while (nextSlot < slotHits.Count)
             {
@@ -519,7 +727,10 @@ namespace WeaponWorkshop
                 nextSlot++;
                 if (hit.target != null) hit.target.ReceiveAttack(stats.penetration, stats.explosion, true);
             }
-            if (radius >= maximumRadius) PoolManager.Release(gameObject);
+            // Releasing early would drop the layers and health hits the budget has not reached yet.
+            if (radius >= maximumRadius && nextLayer >= layers.Count && nextHealth >= healthHits.Count)
+                PoolManager.Release(gameObject);
+            EndStepTurn(collectionPending || nextLayer < layers.Count || nextHealth < healthHits.Count);
         }
     }
 }

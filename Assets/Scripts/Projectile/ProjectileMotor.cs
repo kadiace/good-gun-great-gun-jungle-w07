@@ -32,7 +32,8 @@ namespace WeaponWorkshop
         private readonly HashSet<TargetHealth> hitTargets = new HashSet<TargetHealth>();
         private readonly HashSet<DestructibleTarget> hitStructures = new HashSet<DestructibleTarget>();
         private readonly PenetrationPassages passages = new PenetrationPassages();
-        private readonly Dictionary<Collider, DestructibleTarget> structureCache = new();
+        // 통과 구조물 필터는 관통 구간이 처음 기록된 뒤에만 의미를 갖는다. 그 전에는 표적 조회 자체를 건너뛴다.
+        private bool passagesRecorded;
         private readonly HashSet<Collider> ignoredColliders = new HashSet<Collider>();
         private readonly List<Collider> staleIgnoredColliders = new List<Collider>();
         private readonly List<Collider> targetColliderBuffer = new List<Collider>();
@@ -66,12 +67,9 @@ namespace WeaponWorkshop
                 if (current.TryGetComponent(out T component)) return component;
             return null;
         }
-        private static bool HasLayerInParents(Collider collider, int layer)
-        {
-            for (Transform current = collider != null ? collider.transform : null; current != null; current = current.parent)
-                if (current.gameObject.layer == layer) return true;
-            return false;
-        }
+        // 코어·방어막 소속은 콜라이더마다 부모를 타지 않고 공용 인덱스가 캐시한 결과만 쓴다.
+        private static void ResolveEndChest(Collider collider, out EndChestCore core, out EndChestShield shield)
+            => ColliderTargetIndex.ResolveEndChest(collider, EndChestLayer, EndChestShieldLayer, out core, out shield);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetActiveProjectiles() => activeProjectiles.Clear();
@@ -105,7 +103,7 @@ namespace WeaponWorkshop
             homingLocalAim = targeting != null ? targeting.LocalAim : Vector3.zero;
             hitTargets.Clear();
             hitStructures.Clear();
-            passages.Clear(); structureCache.Clear();
+            passages.Clear(); passagesRecorded = false;
             ignoredColliders.Clear();
 
             if (drawRenderer == null) drawRenderer = GetComponentInChildren<Renderer>(true);
@@ -233,15 +231,12 @@ namespace WeaponWorkshop
             CombatPhysicsQueries.Hit[] hits;
             using (CollisionQueryMarker.Auto())
                 count = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction, rotation, distance, layers, out hits, skipPassedStructure, resolveStructure);
+            // 통과 구조물은 BoxCast의 skip이 이미 걸러냈고 남은 조건에는 부작용이 없다.
+            // 가장 싼 거리 비교를 앞세워 후보마다 하던 계층·콜라이더 조회를 건너뛴다.
             for (int i = 0; i < count; i++)
             {
                 CombatPhysicsQueries.Hit hit = hits[i];
-                Transform hitTransform = hit.collider.transform;
-                if (hitTransform.IsChildOf(transform) ||
-                    (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) ||
-                    (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) ||
-                    ignoredColliders.Contains(hit.collider) || HasPassedStructure(hit.collider) || hit.distance >= nearestDistance ||
-                    !PassesEndChestGate(hit.collider))
+                if (hit.distance >= nearestDistance || IsIgnoredBody(hit.collider) || !PassesEndChestGate(hit.collider))
                     continue;
                 nearestHit = hit;
                 nearestDistance = hit.distance;
@@ -258,12 +253,7 @@ namespace WeaponWorkshop
                     for (int i = 0; i < count; i++)
                     {
                         var other = hits[i];
-                        Transform t = other.collider.transform;
-                        if (t.IsChildOf(transform) ||
-                            (ignoredOwner != null && t.IsChildOf(ignoredOwner)) ||
-                            (ignoredWeapon != null && t.IsChildOf(ignoredWeapon)) ||
-                            ignoredColliders.Contains(other.collider) || HasPassedStructure(other.collider) ||
-                            FindStructure(other.collider) == hitStructure) continue;
+                        if (IsIgnoredBody(other.collider) || FindStructure(other.collider) == hitStructure) continue;
                         structureSweepLimit = Mathf.Min(structureSweepLimit,
                             Mathf.Max(0f, other.distance - nearestHit.distance));
                     }
@@ -272,20 +262,29 @@ namespace WeaponWorkshop
             return found;
         }
 
+        // 탄 자체·쏘는 주체·무기, 그리고 관통·도탄으로 이미 지나친 콜라이더.
+        private bool IsIgnoredBody(Collider collider)
+        {
+            Transform hitTransform = collider.transform;
+            if (hitTransform.IsChildOf(transform)) return true;
+            if (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) return true;
+            if (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) return true;
+            // 예외 목록이 비어 있는 경우가 대부분이라 해시 조회조차 건너뛴다.
+            return ignoredColliders.Count > 0 && ignoredColliders.Contains(collider);
+        }
+
         // 엔드 상자: 코어는 중력·유도 조건을 갖춘 탄만 맞고, 방어막은 조건을 못 채운 탄만 막는다. 나머지는 통과한다.
         private bool PassesEndChestGate(Collider collider)
         {
-            var endChestCore = HasLayerInParents(collider, EndChestLayer)
-                ? GetComponentInParents<EndChestCore>(collider) : null;
+            ResolveEndChest(collider, out var endChestCore, out var shield);
             if (endChestCore != null) return effects != null && endChestCore.AcceptsHit(effects.Stats);
-            var shield = HasLayerInParents(collider, EndChestShieldLayer)
-                ? GetComponentInParents<EndChestShield>(collider) : null;
             return shield == null || effects == null || shield.Deflects(effects.Stats);
         }
 
         private void HandleImpact(CombatPhysicsQueries.Hit hit, Vector3 incomingDirection, ref float remaining)
         {
-            if (HasLayerInParents(hit.collider, EndChestShieldLayer) && GetComponentInParents<EndChestShield>(hit.collider) != null)
+            ResolveEndChest(hit.collider, out var endChestCore, out var endChestShield);
+            if (endChestShield != null)
             {
                 ShowImpact(hit.point, hit.normal, incomingDirection);
                 velocity = Vector3.Reflect(velocity, hit.normal);
@@ -294,8 +293,6 @@ namespace WeaponWorkshop
                 remaining = Mathf.Max(0f, remaining - 0.05f);
                 return;
             }
-            var endChestCore = HasLayerInParents(hit.collider, EndChestLayer)
-                ? GetComponentInParents<EndChestCore>(hit.collider) : null;
             if (endChestCore != null) endChestCore.NotifyHit();
             var slotMachine = GetComponentInParents<SlotMachineReels>(hit.collider);
             if (slotMachine != null && effects != null)
@@ -354,6 +351,7 @@ namespace WeaponWorkshop
                     }
                     if (passed && hitBlock)
                     {
+                        passagesRecorded = true;
                         passages.Record(structure, penetratedMaterial, transform.position, rotation, lineDistance);
                     }
                 }
@@ -438,6 +436,8 @@ namespace WeaponWorkshop
 
         private bool HasPassedStructure(Collider collider)
         {
+            // 관통 구간이 하나도 없으면 통과한 구조물은 없다. 표적 조회를 하지 않는다.
+            if (!passagesRecorded) return false;
             return passages.Ignore(FindStructure(collider));
         }
 
@@ -446,15 +446,8 @@ namespace WeaponWorkshop
             passages.Carve(start, rotation, halfExtents, distance);
         }
 
-        private DestructibleTarget FindStructure(Collider collider)
-        {
-            if (!structureCache.TryGetValue(collider, out var structure))
-            {
-                structure = GetComponentInParents<DestructibleTarget>(collider);
-                structureCache[collider] = structure;
-            }
-            return structure;
-        }
+        // 콜라이더→표적 매핑은 공용 인덱스가 게임 전체에서 한 번만 부모를 타고 찾는다.
+        private static DestructibleTarget FindStructure(Collider collider) => ColliderTargetIndex.Structure(collider);
 
         private void UpdateIgnoredColliders()
         {
@@ -543,7 +536,7 @@ namespace WeaponWorkshop
             terminal = true; velocity = Vector3.zero; source = null; effects = null;
             ignoredOwner = ignoredWeapon = null; homingTarget = null;
             hitTargets.Clear(); hitStructures.Clear(); ignoredColliders.Clear();
-            passages.Clear(); structureCache.Clear();
+            passages.Clear(); passagesRecorded = false;
             staleIgnoredColliders.Clear(); targetColliderBuffer.Clear();
         }
 
