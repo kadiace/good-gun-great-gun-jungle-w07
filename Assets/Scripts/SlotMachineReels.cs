@@ -136,15 +136,20 @@ namespace WeaponWorkshop
             return new[] { first, second, third };
         }
 
+        /// <summary>
+        /// 결과 심볼에 맞춰 릴을 회전시키고 정해진 시간표대로 순차 정지한다.
+        /// result와 wallet을 사용하며 정지음·당첨 지급을 처리한 뒤 회전을 종료 상태로 둔다.
+        /// </summary>
         private IEnumerator Spin(int[] result, PlayerWallet wallet)
         {
             if (marquee != null && glowingMarquee != null) marquee.sharedMaterial = glowingMarquee;
             if (lever != null) SlotMachineSound.PlayLever(transform.position);
-            SlotMachineSound.StartRotation(transform);
+            const float DEFAULT_SPIN_DURATION = 7.2f;
+            float spinDuration = SlotMachineSound.StartRotation(transform, DEFAULT_SPIN_DURATION);
             float[] start = new float[3];
             float[] finish = new float[3];
-            float[] stopTimes = { 4.4f, 5.2f, 7.2f };
-            const float fastDuration = 2.8f;
+            float[] stopTimes = { spinDuration * 4.4f / 7.2f, spinDuration * 5.2f / 7.2f, spinDuration };
+            float fastDuration = spinDuration * 2.8f / 7.2f;
             const float fastSpeed = 1080f;
             for (int i = 0; i < 3; i++)
             {
