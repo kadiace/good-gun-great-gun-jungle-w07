@@ -99,6 +99,7 @@ namespace WeaponWorkshop
             if (movement != null) StopCoroutine(movement);
             movement = null; IsMoving = false; IsEquipped = false; equippedGripPoint = null; disposing = false;
             RestorePhysics(); dropped = dynamicBody;
+            SetDroppedCollisionLayer(dynamicBody);
             transform.SetParent(parent, false);
             transform.localPosition = position; transform.localRotation = rotation; transform.localScale = scale;
             var body = GetComponent<Rigidbody>();
@@ -123,6 +124,7 @@ namespace WeaponWorkshop
         private readonly Dictionary<Collider, bool> colliderStates = new Dictionary<Collider, bool>();
         private readonly Dictionary<Collider, bool> triggerStates = new Dictionary<Collider, bool>();
         private readonly Dictionary<Rigidbody, bool> rigidbodyStates = new Dictionary<Rigidbody, bool>();
+        private readonly Dictionary<GameObject, int> droppedColliderLayers = new Dictionary<GameObject, int>();
         private readonly List<Collider> playerColliders = new List<Collider>();
         private int collisionIgnoreBatchDepth;
         private bool collisionIgnoreCacheReady;
@@ -424,6 +426,7 @@ namespace WeaponWorkshop
         public bool Equip(Transform handPoint)
         {
             if (IsEquipped || IsMoving || handPoint == null || handPoint.IsChildOf(transform)) return false;
+            SetDroppedCollisionLayer(false);
             originalParent = transform.parent;
             originalPosition = transform.localPosition;
             originalRotation = transform.localRotation;
@@ -482,6 +485,7 @@ namespace WeaponWorkshop
 
         public void PlaceOnWorkbench(Transform parent)
         {
+            SetDroppedCollisionLayer(false);
             Vector3 scale = IsEquipped || colliderStates.Count > 0 ? originalScale : transform.localScale;
             IsEquipped = false;
             equippedGripPoint = null;
@@ -506,6 +510,7 @@ namespace WeaponWorkshop
             transform.SetParent(null, true);
             transform.localScale = originalWorldScale;
             RestorePhysics();
+            SetDroppedCollisionLayer(true);
             Rigidbody body = GetComponent<Rigidbody>();
             if (body == null) body = gameObject.AddComponent<Rigidbody>();
             body.isKinematic = false;
@@ -514,6 +519,25 @@ namespace WeaponWorkshop
             body.linearVelocity = direction.normalized * speed;
             body.angularVelocity = Vector3.zero;
             return true;
+        }
+
+        private void SetDroppedCollisionLayer(bool isDropped)
+        {
+            if (!isDropped)
+            {
+                foreach (var entry in droppedColliderLayers)
+                    if (entry.Key != null) entry.Key.layer = entry.Value;
+                droppedColliderLayers.Clear();
+                return;
+            }
+
+            int layer = LayerMask.NameToLayer("DroppedGun");
+            foreach (Collider collider in GetComponentsInChildren<Collider>(true))
+            {
+                GameObject part = collider.gameObject;
+                if (!droppedColliderLayers.ContainsKey(part)) droppedColliderLayers.Add(part, part.layer);
+                part.layer = layer;
+            }
         }
 
         private void RestorePhysics()

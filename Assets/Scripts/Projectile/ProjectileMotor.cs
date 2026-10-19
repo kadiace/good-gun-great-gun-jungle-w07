@@ -228,7 +228,7 @@ namespace WeaponWorkshop
             nearestHit = default;
             float nearestDistance = float.PositiveInfinity;
             bool found = false;
-            int layers = source.CollisionLayers | ProjectileExtraCollisionLayers;
+            int layers = (source.CollisionLayers | ProjectileExtraCollisionLayers) & ~LayerMask.GetMask("GunBlock");
             int count;
             CombatPhysicsQueries.Hit[] hits;
             using (CollisionQueryMarker.Auto())

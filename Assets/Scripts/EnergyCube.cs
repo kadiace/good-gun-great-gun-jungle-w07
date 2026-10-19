@@ -68,7 +68,7 @@ namespace WeaponWorkshop
             float nearest = distance;
             bool hitObstacle = false;
             CombatPhysicsQueries.Hit nearestHit = default;
-            int layers = (collisionLayers | LayerMask.GetMask("Weapon")) & ~LayerMask.GetMask("Energy");
+            int layers = (collisionLayers | LayerMask.GetMask("Weapon")) & ~LayerMask.GetMask("Energy", "GunBlock");
             int hitCount = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction,
                 shotRotation, distance, layers, out var hits);
             for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
