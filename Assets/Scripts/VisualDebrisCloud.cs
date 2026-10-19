@@ -554,6 +554,8 @@ namespace WeaponWorkshop
         // 매니저 2단계. Job 을 완료하고 벽 검사·만료 정리·버킷 제출·그리기를 메인 스레드에서 한다.
         internal void FinishTick()
         {
+            // 1·2단계 사이에 반납(OnDisable)되면 Job 은 완료됐고 네이티브 버퍼는 해제됐다. 남은 일이 없다.
+            if (!isActiveAndEnabled || !fragments.IsCreated || !wallFlags.IsCreated) return;
             using (CompleteMarker.Auto())
             {
                 pendingJob.Complete();

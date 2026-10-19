@@ -325,7 +325,9 @@ namespace WeaponWorkshop
                     for (int s = 0; s < scheduledClouds.Count; s++)
                     {
                         tickWatch.Restart();
-                        scheduledClouds[s].FinishTick();
+                        // 같은 프레임에 반납·파괴된 구름은 건너뛴다(FinishTick 도 스스로 확인한다).
+                        var scheduled = scheduledClouds[s];
+                        if (scheduled != null) scheduled.FinishTick();
                         tickWatch.Stop();
                         budgetLeft -= (float)tickWatch.Elapsed.TotalMilliseconds;
                     }
