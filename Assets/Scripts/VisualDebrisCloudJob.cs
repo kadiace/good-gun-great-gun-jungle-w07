@@ -11,7 +11,7 @@ namespace WeaponWorkshop
     internal enum DebrisPathFlag : byte
     {
         Expired = 0,    // age >= lifetime. 제출 없이 만료 정리에서 목록에서 뺀다.
-        Absorbing = 1,  // 흡수 연출. 물리 없이 보간 위치만 알파 15 버킷으로 나간다.
+        Absorbing = 1,  // 흡수 연출. 물리 없이 보간 위치만 알파 최고 버킷으로 나간다.
         Resting = 2,    // 정지 파편. cachedMatrix를 다시 제출한다(원거리면 표본 상한 적용).
         Distant = 3,    // 원거리 파편. 교대 프레임 적분, 표본 해시로 그릴지 결정.
         Near = 4        // 근거리 파편. 굴림·낙하·바닥 접촉까지 전체 물리. 벽 검사만 메인에 남는다.
@@ -37,7 +37,7 @@ namespace WeaponWorkshop
         public float distantElapsed;
         public uint visualId;
         public Matrix4x4 pose;          // 이번 프레임 결과 행렬. 벽 해석을 통과한 파편만 메인 스레드에서 다시 만든다.
-        public byte bucket;             // 알파 버킷(0~15). 흡수 파편은 항상 15.
+        public byte bucket;             // 알파 버킷(0~AlphaBucketSteps). 흡수 파편은 항상 최고 버킷.
         public DebrisPathFlag pathFlag; // 이번 프레임 분기 기록.
         public byte sampled;            // 원거리 표본 해시 통과 여부. 상한 집계는 메인 스레드가 원래 순서로 적용한다.
     }
@@ -64,6 +64,9 @@ namespace WeaponWorkshop
     [BurstCompile]
     internal struct DebrisIntegrationJob : IJobParallelFor
     {
+        // 알파 단계 수. 15→8로 줄여 페이드 단계를 절반으로 모으면 키별 그리기 호출도 절반이 되고
+        // 작은 파편 페이드에서는 시각 차이가 거의 없다. 흡수 파편은 항상 최고 버킷이다.
+        internal const int AlphaBucketSteps = 8;
         public NativeArray<VisualDebrisFragment> states;  // 구름 파편 버퍼(NativeList.AsDeferredJobArray).
         [ReadOnly] public NativeArray<byte> wallSelected; // 이번 프레임에 벽 검사를 받을 파편(SelectWallChecks 결과).
         public DebrisJobParams p;
@@ -79,7 +82,7 @@ namespace WeaponWorkshop
                 return;
             }
             float alpha = math.saturate((part.lifetime - part.age) / part.fade);
-            part.bucket = (byte)math.clamp((int)math.ceil(alpha * 15f), 0, 15);
+            part.bucket = (byte)math.clamp((int)math.ceil(alpha * (float)AlphaBucketSteps), 0, AlphaBucketSteps);
             if (part.absorbing)
             {
                 IntegrateAbsorbing(ref part);
@@ -129,7 +132,7 @@ namespace WeaponWorkshop
             else position = math.lerp(part.spreadPosition, part.absorptionCenter, eased);
             part.position = position;
             part.pose = ToUnityMatrix(PoseMatrix(RotationColumns(part.rotation), part.scale * (1f - eased), position));
-            part.bucket = 15;
+            part.bucket = AlphaBucketSteps;
             part.pathFlag = DebrisPathFlag.Absorbing;
         }
 

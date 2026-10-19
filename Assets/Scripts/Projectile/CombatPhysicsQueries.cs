@@ -13,7 +13,9 @@ namespace WeaponWorkshop
         private static Hit[] resolvedCasts = new Hit[64];
         private static readonly System.Collections.Generic.HashSet<DestructibleTarget> refinedTargets = new();
         private static Collider[] overlaps = new Collider[128];
-        private static RaycastHit[] casts = new RaycastHit[64];
+        // 캐스트 결과 버퍼: 가득 차면 두 배로 키우고 같은 캐스트를 다시 돌린다. 파괴 구간의 촘촘한
+        // 후보 목록에서 64개 경계 재캐스트가 반복되지 않게 처음부터 넉넉히 둔다.
+        private static RaycastHit[] casts = new RaycastHit[128];
         public static int OverlapSphere(Vector3 center, float radius, int mask, out Collider[] results)
         {
             PoolManager.FlushExplosionFinish();

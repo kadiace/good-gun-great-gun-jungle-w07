@@ -14,14 +14,18 @@ namespace WeaponWorkshop
         // LayerMask APIs throw inside a type initializer when Unity first touches this type from a
         // serialization/constructor context (e.g. prefab import), which poisons the type. Resolve lazily.
         private static bool layersResolved;
-        private static int projectileExtraCollisionLayers, gunBlockLayers;
+        private static int projectileExtraCollisionLayers, gunBlockLayers, unusedCastLayers;
         private static int ProjectileExtraCollisionLayers { get { ResolveLayers(); return projectileExtraCollisionLayers; } }
         private static int GunBlockLayers { get { ResolveLayers(); return gunBlockLayers; } }
+        private static int UnusedCastLayers { get { ResolveLayers(); return unusedCastLayers; } }
         private static void ResolveLayers()
         {
             if (layersResolved) return;
             projectileExtraCollisionLayers = LayerMask.GetMask("Weapon", "EndChest", "EndChestShield") & ~LayerMask.GetMask("Energy");
             gunBlockLayers = LayerMask.GetMask("GunBlock");
+            // 탄이 맞을 일 없는 레이어(투과 FX·물·UI)는 캐스트 전체에서 뺀다. 현재 씬들의 콜라이더는
+            // Default·EndChest 계열뿐이고, 트리거는 조회가 이미 무시하므로 후보 수만 늘었다.
+            unusedCastLayers = LayerMask.GetMask("TransparentFX", "Water", "UI");
             layersResolved = true;
         }
         [SerializeField] private Renderer drawRenderer;
@@ -61,6 +65,7 @@ namespace WeaponWorkshop
         private int launchId;
         private float structureSweepLimit;
         internal int LaunchId => launchId;
+        internal ParticleSystem ImpactEffectPrefab => impactEffect;
 
         private static T GetComponentInParents<T>(Collider collider) where T : Component
         {
@@ -221,6 +226,17 @@ namespace WeaponWorkshop
             // Stop this frame at the collision budget instead of skipping unchecked obstacles.
         }
 
+        // BoxCast 후보 판정(거리·예외·소속)을 후보당 한 번만 계산해 모아 두는 버퍼.
+        // 종전의 두 번째 순회는 같은 후보의 예외·소속을 다시 물었으므로 버퍼 한 개로 대신한다.
+        private struct CastCandidate
+        {
+            public Collider collider;
+            public float distance;
+            public DestructibleTarget structure;
+            public bool ignored;
+        }
+        private CastCandidate[] castCandidates = new CastCandidate[64];
+
         private System.Predicate<Collider> skipPassedStructure;
         private System.Func<Collider, DestructibleTarget> resolveStructure;
         private bool TryFindHit(Vector3 direction, Quaternion rotation, float distance, out CombatPhysicsQueries.Hit nearestHit)
@@ -230,36 +246,51 @@ namespace WeaponWorkshop
             nearestHit = default;
             float nearestDistance = float.PositiveInfinity;
             bool found = false;
-            int layers = (source.CollisionLayers | ProjectileExtraCollisionLayers) & ~GunBlockLayers;
+            int layers = (source.CollisionLayers | ProjectileExtraCollisionLayers) & ~GunBlockLayers & ~UnusedCastLayers;
             int count;
             CombatPhysicsQueries.Hit[] hits;
             using (CollisionQueryMarker.Auto())
                 count = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction, rotation, distance, layers, out hits, skipPassedStructure, resolveStructure);
-            // 통과 구조물은 BoxCast의 skip이 이미 걸러냈고 남은 조건에는 부작용이 없다.
-            // 가장 싼 거리 비교를 앞세워 후보마다 하던 계층·콜라이더 조회를 건너뛴다.
+            if (castCandidates.Length < count) castCandidates = new CastCandidate[Mathf.NextPowerOfTwo(count)];
+            // 가장 싼 거리 비교를 앞세워 예외·소속 조회를 줄이되, 판정 결과는 후보당 한 번만 낸다.
             for (int i = 0; i < count; i++)
             {
                 CombatPhysicsQueries.Hit hit = hits[i];
-                if (hit.distance >= nearestDistance || IsIgnoredBody(hit.collider) || !PassesEndChestGate(hit.collider))
+                Collider collider = hit.collider;
+                castCandidates[i].collider = collider;
+                castCandidates[i].distance = hit.distance;
+                castCandidates[i].ignored = IsIgnoredBody(collider);
+                castCandidates[i].structure = FindStructure(collider);
+            }
+            int nearestIndex = -1;
+            for (int i = 0; i < count; i++)
+            {
+                ref CastCandidate candidate = ref castCandidates[i];
+                if (candidate.distance >= nearestDistance || candidate.ignored || !PassesEndChestGate(candidate.collider))
                     continue;
-                nearestHit = hit;
-                nearestDistance = hit.distance;
+                nearestHit = new CombatPhysicsQueries.Hit
+                {
+                    collider = candidate.collider, distance = candidate.distance,
+                    point = hits[i].point, normal = hits[i].normal
+                };
+                nearestDistance = candidate.distance;
+                nearestIndex = i;
                 found = true;
             }
             structureSweepLimit = 0f;
             if (found)
             {
-                var hitStructure = FindStructure(nearestHit.collider);
+                var hitStructure = castCandidates[nearestIndex].structure;
                 if (hitStructure != null)
                 {
-                    structureSweepLimit = Mathf.Max(0f, distance - nearestHit.distance);
-                    // Reuse the cast results: never clear past the first foreign obstacle.
+                    structureSweepLimit = Mathf.Max(0f, distance - nearestDistance);
+                    // Reuse the buffered judgments: never clear past the first foreign obstacle.
                     for (int i = 0; i < count; i++)
                     {
-                        var other = hits[i];
-                        if (IsIgnoredBody(other.collider) || FindStructure(other.collider) == hitStructure) continue;
+                        ref CastCandidate candidate = ref castCandidates[i];
+                        if (candidate.ignored || candidate.structure == hitStructure) continue;
                         structureSweepLimit = Mathf.Min(structureSweepLimit,
-                            Mathf.Max(0f, other.distance - nearestHit.distance));
+                            Mathf.Max(0f, candidate.distance - nearestDistance));
                     }
                 }
             }

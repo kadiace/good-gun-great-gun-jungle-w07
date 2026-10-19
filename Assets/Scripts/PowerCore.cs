@@ -36,6 +36,16 @@ namespace WeaponWorkshop
             if (spinRotor == null) spinRotor = gameObject.AddComponent<SpinRotor>();
         }
 
+        // 습격 첫 탄막에서 임팩트 이펙트 수백 개를 한 프레임에 새로 만들지 않도록 무기 활성화 때 풀을 미리 채운다.
+        private const int ImpactEffectPrewarm = 280;
+
+        private void OnEnable()
+        {
+            if (NightRaidController.Instance == null || energyTemplate == null) return;
+            if (energyTemplate.TryGetComponent(out ProjectileMotor motor) && motor.ImpactEffectPrefab != null)
+                PoolManager.EnsurePrefabPrewarm(motor.ImpactEffectPrefab.gameObject, ImpactEffectPrewarm);
+        }
+
         // Blocks attach as children of this object (CubeAssembly), so rebuild muzzles on change.
         private void OnTransformChildrenChanged() => muzzles = null;
 

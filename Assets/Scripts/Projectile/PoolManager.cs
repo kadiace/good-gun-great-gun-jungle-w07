@@ -191,6 +191,19 @@ namespace WeaponWorkshop
             manager.EnsurePrewarm(pool, manager.explosionEffectPrewarm);
         }
 
+        // 탄 임팩트처럼 첫 사용 프레임에 한꺼번에 대여되는 프리팹을 미리 만든다(무기 활성화 때 호출).
+        internal static void EnsurePrefabPrewarm(GameObject prefab, int count)
+        {
+            if (prefab == null || count <= 0) return;
+            var manager = Ensure();
+            if (!manager.prefabs.TryGetValue(prefab, out var pool))
+            {
+                pool = new Pool { prefab = prefab, maximumRetained = Mathf.Max(0, manager.defaultMaximumRetained) };
+                manager.prefabs.Add(prefab, pool);
+            }
+            manager.EnsurePrewarm(pool, count);
+        }
+
         private void EnsurePrewarm(Pool pool, int count)
         {
             count = Mathf.Max(0, count);

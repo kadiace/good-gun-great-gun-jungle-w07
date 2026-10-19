@@ -78,6 +78,10 @@ namespace WeaponWorkshop
             public bool hasGeometry;
             // 격자에서 나오는 청크 경계(로컬). 청크가 비어도 유효해서 컬링 판정에 그대로 쓴다.
             public Vector3 localMin, localMax;
+            // 표적·청크의 월드 경계. 드로 행렬이 그대로면 프레임마다 다시 만들지 않는다.
+            public Vector3 worldCenter, worldExtents;
+            // 청크 경계가 표적 경계와 같으면 표적 판정이 곧 청크 판정이라 두 번째 검사를 하지 않는다.
+            public bool spansTargetBounds;
             public CombineInstance[] combines = System.Array.Empty<CombineInstance>();
         }
         private readonly Dictionary<Vector3Int, RenderChunk> renderChunks = new Dictionary<Vector3Int, RenderChunk>();
@@ -98,6 +102,11 @@ namespace WeaponWorkshop
         private static readonly Plane[] frustumPlaneScratch = new Plane[6];
         private static Camera[] chunkCullCameras = System.Array.Empty<Camera>();
         private static int chunkCullFrame = -1;
+        // 표적 단위 고정비. 드로 행렬이 그대로면 월드 경계와 레이어를 다시 읽지 않는다.
+        private Matrix4x4 chunkBoundsMatrix;
+        private Vector3 chunkWorldCenter, chunkWorldExtents;
+        private int chunkDrawLayer = int.MinValue;
+        private int chunkBoundsCount = -1;
         // 투영 행렬이 망가져 절두체가 이상해지면 드로가 통째로 사라진다. 카메라가 자기 절두체를
         // 스스로 통과하는지 확인하고 아니하면 이번 프레임은 컬링을 켜지 않는다.
         private static bool chunkCullingTrusted = true;
@@ -110,6 +119,8 @@ namespace WeaponWorkshop
             public Camera camera;
             // 법선·상수는 프레임당 한 번만 뽑아 두고 청크마다 평구조자를 다시 읽지 않는다.
             public readonly Vector4[] planes = new Vector4[6];
+            // |법선|. 박스 반지름 계산에서 평면마다 절댓값을 다시 구하지 않게 미리 둔다.
+            public readonly Vector3[] absNormals = new Vector3[6];
             public Vector3 position;
         }
 
@@ -231,6 +242,8 @@ namespace WeaponWorkshop
                         chunk.dirty = false;
                     }
                     renderDirty = false;
+                    // 청크 경계가 새로 정해졌으니 월드 경계도 다시 만들어야 한다.
+                    chunkBoundsCount = -1;
                 }
             }
             // 청크 사전은 만들 때 한 번만 채우므로 개수가 어긋난 프레임에만 리스트를 다시 채운다.
@@ -241,13 +254,10 @@ namespace WeaponWorkshop
             }
             Matrix4x4 matrix = CellRoot.localToWorldMatrix;
             PrepareChunkCulling();
+            RefreshChunkWorldBounds(matrix);
             // 표적 전체가 모든 카메라 바깥이면 청크를 하나씩 볼 필요조차 없다.
-            WorldBoxBounds(matrix, gridOrigin, gridOrigin + Vector3.Scale((Vector3)divisions, gridStep),
-                out Vector3 targetCenter, out Vector3 targetExtents);
-            int targetVisibility = BoxVisibility(targetCenter, targetExtents);
+            int targetVisibility = BoxVisibility(chunkWorldCenter, chunkWorldExtents);
             if (targetVisibility == ChunkHidden) return;
-            // 표적 단위로 한 번만 읽어 드로마다 네이티브 조회를 되풀이하지 않는다.
-            int drawLayer = targetMesh.gameObject.layer;
             MaterialPropertyBlock drawProperties = CurrentDamageProperties;
             using (chunkDrawMarker.Auto())
             {
@@ -256,19 +266,43 @@ namespace WeaponWorkshop
                     RenderChunk chunk = chunkDrawList[i];
                     if (!chunk.hasGeometry) continue;
                     int visibility = targetVisibility;
-                    if (targetVisibility == ChunkDrawn)
+                    // 표적이 화면 안에 걸렸을 때만 청크 단위로 다시 잘라 본다. 경계가 표적과 같으면 판정도 같다.
+                    if (targetVisibility == ChunkDrawn && !chunk.spansTargetBounds)
                     {
-                        WorldBoxBounds(matrix, chunk.localMin, chunk.localMax, out Vector3 center, out Vector3 extents);
-                        visibility = BoxVisibility(center, extents);
+                        visibility = BoxVisibility(chunk.worldCenter, chunk.worldExtents);
                         if (visibility == ChunkHidden) continue;
                     }
                     // 화면 밖이지만 그림자를 남길 수 있는 청크는 그림자 패스만 태워 화면 결과를 유지한다.
-                    Graphics.DrawMesh(chunk.mesh, matrix, instancedMaterial, drawLayer, null, 0, drawProperties,
+                    Graphics.DrawMesh(chunk.mesh, matrix, instancedMaterial, chunkDrawLayer, null, 0, drawProperties,
                         visibility == ChunkShadowOnly ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
                             : UnityEngine.Rendering.ShadowCastingMode.On, true);
                 }
             }
         }
+
+        // 표적과 청크의 월드 AABB·드로 레이어는 드로 행렬이 바뀔 때만 다시 만든다.
+        // 정적 파츠는 프레임마다 행렬 견줌 비교만 하고, 컬링 판정만 남는다.
+        private void RefreshChunkWorldBounds(Matrix4x4 matrix)
+        {
+            if (chunkBoundsCount == chunkDrawList.Count && HasSameWorldTransform(chunkBoundsMatrix, matrix)) return;
+            chunkBoundsMatrix = matrix;
+            chunkBoundsCount = chunkDrawList.Count;
+            WorldBoxBounds(matrix, gridOrigin, gridOrigin + Vector3.Scale((Vector3)divisions, gridStep),
+                out chunkWorldCenter, out chunkWorldExtents);
+            for (int i = 0; i < chunkDrawList.Count; i++)
+            {
+                RenderChunk chunk = chunkDrawList[i];
+                if (chunk.spansTargetBounds) continue;
+                WorldBoxBounds(matrix, chunk.localMin, chunk.localMax, out chunk.worldCenter, out chunk.worldExtents);
+            }
+            // 드로 레이어는 표적 생성 이후 바뀌지 않는다. 재구축·이동처럼 경계를 다시 만드는 시점에만 읽는다.
+            chunkDrawLayer = targetMesh.gameObject.layer;
+        }
+
+        private static bool HasSameWorldTransform(Matrix4x4 a, Matrix4x4 b) =>
+            a.m00 == b.m00 && a.m01 == b.m01 && a.m02 == b.m02 && a.m03 == b.m03 &&
+            a.m10 == b.m10 && a.m11 == b.m11 && a.m12 == b.m12 && a.m13 == b.m13 &&
+            a.m20 == b.m20 && a.m21 == b.m21 && a.m22 == b.m22 && a.m23 == b.m23;
 
         // 프레임당 한 번: 이 프레임에 나오는 카메라의 절두체 평면을 한 번씩 만든다.
         private static void PrepareChunkCulling()
@@ -276,6 +310,8 @@ namespace WeaponWorkshop
             if (chunkCullFrame == Time.frameCount) return;
             chunkCullFrame = Time.frameCount;
             chunkCullingTrusted = true;
+            // 그림자 도달 거리는 박스마다 확인할 게 아니라 프레임당 한 번만 갱신한다.
+            ProbeShadowReach();
             // 꺼진 카메라는 목록에 나오지 않는다. 배열은 개수가 바뀔 때만 새로 만든다.
             int cameraCount = Camera.allCamerasCount;
             if (chunkCullCameras.Length != cameraCount) chunkCullCameras = new Camera[cameraCount];
@@ -297,6 +333,7 @@ namespace WeaponWorkshop
                     Vector3 normal = frustumPlaneScratch[p].normal;
                     frustum.planes[p] = new Vector4(normal.x, normal.y, normal.z,
                         frustumPlaneScratch[p].GetDistanceToPoint(Vector3.zero));
+                    frustum.absNormals[p] = new Vector3(Mathf.Abs(normal.x), Mathf.Abs(normal.y), Mathf.Abs(normal.z));
                 }
                 frustum.position = camera.transform.position;
                 // 카메라 바로 앞 축 위 점은 절두체 안에 있다. 투영 행렬이 이상하면 이 판정이 깨진다.
@@ -345,22 +382,24 @@ namespace WeaponWorkshop
         {
             if (!chunkCullingTrusted || chunkFrustums.Count == 0) return ChunkDrawn;
             for (int i = 0; i < chunkFrustums.Count; i++)
-                if (InsideFrustum(chunkFrustums[i].planes, center, extents)) return ChunkDrawn;
-            ProbeShadowReach();
-            if (shadowCasterReach > 0f)
-                for (int i = 0; i < chunkFrustums.Count; i++)
-                    if (NearPoint(center, extents, chunkFrustums[i].position, shadowCasterReach)) return ChunkShadowOnly;
+                if (InsideFrustum(chunkFrustums[i].planes, chunkFrustums[i].absNormals, center, extents)) return ChunkDrawn;
+            // 방향광 그림자가 켜진 상태는 거리와 무관하게 그림자가 남으므로 거리를 재지 않는다.
+            if (shadowCasterReach <= 0f) return ChunkHidden;
+            if (shadowCasterReach == float.MaxValue) return ChunkShadowOnly;
+            for (int i = 0; i < chunkFrustums.Count; i++)
+                if (NearPoint(center, extents, chunkFrustums[i].position, shadowCasterReach)) return ChunkShadowOnly;
             return ChunkHidden;
         }
 
         // 평면 법선 방향으로 가장 먼저 닿는 꼭짓점 하나만 보는 AABB-평면 판정. GeometryUtility.TestPlanesAABB와
-        // 같은 판정을 관리 코드에서 하므로 거리 부호가 절두체 안쪽이다.
-        private static bool InsideFrustum(Vector4[] planes, Vector3 center, Vector3 extents)
+        // 같은 판정을 관리 코드에서 하므로 거리 부호가 절두체 안쪽이다. 법선 절댓값은 미리 만들어 둔 값을 쓴다.
+        private static bool InsideFrustum(Vector4[] planes, Vector3[] absNormals, Vector3 center, Vector3 extents)
         {
             for (int i = 0; i < planes.Length; i++)
             {
                 Vector4 plane = planes[i];
-                float radius = Mathf.Abs(plane.x * extents.x) + Mathf.Abs(plane.y * extents.y) + Mathf.Abs(plane.z * extents.z);
+                Vector3 absNormal = absNormals[i];
+                float radius = absNormal.x * extents.x + absNormal.y * extents.y + absNormal.z * extents.z;
                 if (plane.x * center.x + plane.y * center.y + plane.z * center.z + plane.w < -radius) return false;
             }
             return true;
@@ -394,6 +433,8 @@ namespace WeaponWorkshop
             Vector3Int finish = Vector3Int.Min(origin + Vector3Int.one * RenderChunkWidth, divisions);
             chunk.localMin = gridOrigin + Vector3.Scale((Vector3)origin, gridStep);
             chunk.localMax = gridOrigin + Vector3.Scale((Vector3)finish, gridStep);
+            // 전체 격자를 하나로 덮는 청크는 표적 박스와 같은 박스다. 드로에서 컬링 판정을 한 번으로 끝낸다.
+            chunk.spansTargetBounds = origin == Vector3Int.zero && finish == divisions;
             chunk.hasGeometry = chunk.mesh != null && chunk.mesh.vertexCount > 0;
         }
 

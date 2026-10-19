@@ -9,10 +9,12 @@ using Unity.Profiling;
 
 namespace WeaponWorkshop
 {
-    // 파편 이동·벽·그리기 갱신은 VisualDebrisCloudManager 의 단일 LateUpdate 가 부른다.
+    // 파편 이동·벽·그리기 갱신은 VisualDebrisCloudManager 의 Update(1단계)·LateUpdate(2단계)가 부른다.
     // 파편 적분(위치·속도·회전·바닥·굴림·정지 판정·행렬)은 Burst Job(DebrisIntegrationJob)으로
     // 워커 스레드에서 돈다. 매니저 1단계 PrepareTick 이 캐시 경로를 처리하고 Job 을 스케줄하며,
-    // 2단계 FinishTick 이 완료를 기다린 뒤 벽 검사·만료 정리·버킷 제출·그리기만 메인에서 한다.
+    // 2단계 FinishTick 이 완료를 기다린 뒤 벽 검사·만료 정리·버킷 제출만 메인에서 한다.
+    // 그리기 호출은 구름별로 바로 내지 않고 같은 머티리얼 원본·색·메시·레이어를 쓰는 구름끼리
+    // 버킷 행렬을 매니저 싱크에 모아 프레임 끝에 버킷별로 한 번에 그린다.
     public sealed class VisualDebrisCloud : MonoBehaviour
     {
         private static readonly ProfilerMarker ReserveBuffersMarker = new ProfilerMarker("VisualDebrisCloud.ReserveBuffers");
@@ -20,11 +22,11 @@ namespace WeaponWorkshop
         private static readonly ProfilerMarker CompleteMarker = new ProfilerMarker("VisualDebrisCloud.Complete");
         private static readonly ProfilerMarker DrawMarker = new ProfilerMarker("VisualDebrisCloud.Draw");
         private static readonly ProfilerMarker GroupsMarker = new ProfilerMarker("VisualDebrisCloud.Groups");
-        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private const int JobBatchSize = 64;  // 파편 간 의존이 없어 배치 크기는 순수 오버헤드 절충일 뿐이다.
         private NativeList<VisualDebrisFragment> fragments;  // 파편 상태 원본. Job 은 AsDeferredJobArray 로 같은 버퍼를 본다.
         private NativeArray<byte> wallFlags;                 // SelectWallChecks 결과. Job 입력으로 그대로 넘긴다.
         private JobHandle pendingJob;                        // PrepareTick 이 스케줄하고 FinishTick 이 완료한다.
+        private bool hasPendingJob;                          // pendingJob 가 실행 중인 Job 을 담고 있는지.
         private sealed class FallingGroup
         {
             public Vector3 position, velocity, spin;
@@ -47,6 +49,7 @@ namespace WeaponWorkshop
         {
             using (ReserveBuffersMarker.Auto())
             {
+                CompletePendingJob();
                 EnsureNativeBuffers();
                 int initialCapacity = Mathf.Clamp(initialFragmentCapacity, 0, 64);
                 if (fragments.Capacity < initialCapacity) fragments.Capacity = initialCapacity;
@@ -76,6 +79,15 @@ namespace WeaponWorkshop
         {
             if (fragments.IsCreated) fragments.Dispose();
             if (wallFlags.IsCreated) wallFlags.Dispose();
+        }
+
+        // 매니저 1·2단계 사이에는 파편 적분 Job 이 살아 있다. 버퍼를 고치는 경로는 먼저 완료해 경합을 막는다.
+        private void CompletePendingJob()
+        {
+            if (!hasPendingJob) return;
+            pendingJob.Complete();
+            pendingJob = default;
+            hasPendingJob = false;
         }
         private FallingGroup RentGroup()
         {
@@ -129,6 +141,7 @@ namespace WeaponWorkshop
 
         public void ClearDebris()
         {
+            CompletePendingJob();
             EnsureNativeBuffers();
             fragments.Clear();
             foreach (FallingGroup group in groups) ReturnGroup(group);
@@ -137,12 +150,12 @@ namespace WeaponWorkshop
             drawCached = false; pausedTime = 0f; settled = false; settledElapsed = 0f;
         }
         // 알파 버킷 행렬은 List 대신 배열+카운트로 재사용한다. 그리기만 하는 프레임은 비우거나 채우지 않는다.
-        private readonly Matrix4x4[][] bucketMatrices = new Matrix4x4[16][];
-        private readonly int[] bucketCounts = new int[16];
-        private readonly Matrix4x4[] batch = new Matrix4x4[1023];
-        private MaterialPropertyBlock appearance;
+        private readonly Matrix4x4[][] bucketMatrices = new Matrix4x4[DebrisIntegrationJob.AlphaBucketSteps + 1][];
+        private readonly int[] bucketCounts = new int[DebrisIntegrationJob.AlphaBucketSteps + 1];
         private Material material;
         private Material groupMaterial;
+        private bool ownsMaterials;             // 매니저 캐시 인스턴스가 아니라 구름이 직접 만든 머티리얼인지(편집 모드뿐이다).
+        private Material fragmentTemplateSource; // 그리기 통합 키의 머티리얼 원본. 키별 공유 인스턴스는 매니저 캐시가 관리한다.
         private Mesh mesh;
         private Color color;
         private float floorHeight, floorBounce, floorFriction;
@@ -231,33 +244,15 @@ namespace WeaponWorkshop
             wallCache.Capture(reference, floorHeight, wallSearchRadius);
             floorBounce = Mathf.Clamp01(bounce) * bounceMultiplier;
             floorFriction = Mathf.Max(rollingFriction, friction);
-            if (appearance == null) appearance = new MaterialPropertyBlock();
-            appearance.Clear();
             mesh = cubeMesh;
-            if (groupMaterial == null) groupMaterial = new Material(source);
-            else { groupMaterial.shader = source.shader; groupMaterial.CopyPropertiesFromMaterial(source); }
-            groupMaterial.SetFloat("_Surface", 0f);
-            groupMaterial.SetFloat("_SrcBlend", (float)BlendMode.One);
-            groupMaterial.SetFloat("_DstBlend", (float)BlendMode.Zero);
-            groupMaterial.SetFloat("_ZWrite", 1f);
-            groupMaterial.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            groupMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            groupMaterial.SetOverrideTag("RenderType", "Opaque");
-            groupMaterial.renderQueue = (int)RenderQueue.Geometry;
+            // 머티리얼 인스턴스는 매니저 캐시로 공유한다. 같은 원본 머티리얼·색을 쓰는 구름이 하나의
+            // 인스턴스를 나눠 써야 그리기 호출을 키 하나로 묶을 수 있다. 매니저가 없을 때만 직접 소유한다.
             var template = fragmentTemplate != null ? fragmentTemplate : source;
-            if (material == null) material = new Material(template);
-            else { material.shader = template.shader; material.CopyPropertiesFromMaterial(template); }
-            material.enableInstancing = true;
+            ownsMaterials = !Application.isPlaying;
+            groupMaterial = VisualDebrisCloudManager.GetGroupMaterial(source);
+            material = VisualDebrisCloudManager.GetFragmentMaterial(template);
+            fragmentTemplateSource = template;
             color = source.GetColor("_BaseColor");
-            material.SetFloat("_Surface", 1f);
-            material.SetFloat("_Blend", 0f);
-            material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-            material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-            material.SetFloat("_ZWrite", 0f);
-            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            material.SetOverrideTag("RenderType", "Transparent");
-            material.renderQueue = (int)RenderQueue.Transparent;
             ReserveBuffers(64, maximumCachedGroups);
         }
         private static bool HasDestructibleParent(Collider collider)
@@ -297,6 +292,9 @@ namespace WeaponWorkshop
 
         public void Emit(Piece cell, Vector3 velocity, float lifetime, float fade)
         {
+            // Job 이 살아 있는 동안 생긴 파편은 이번 프레임 적분을 놓치므로 스폰 자세로 먼저 제출한다.
+            bool interrupted = hasPendingJob;
+            CompletePendingJob();
             EnsureNativeBuffers();
             // 새 파편은 그리기 캐시에 없으므로 다음 프레임은 반드시 다시 계산한다.
             drawCached = false;
@@ -309,12 +307,19 @@ namespace WeaponWorkshop
                 lifetime = absorbEmission ? emissionDuration : lifetime, fade = Mathf.Clamp(fade, 0.01f, lifetime) };
             VaryDebris(ref part);
             part.visualId = ++nextVisualId;
+            if (interrupted)
+            {
+                part.pathFlag = DebrisPathFlag.Near;
+                part.bucket = DebrisIntegrationJob.AlphaBucketSteps;
+                part.pose = ScaleTranslate(RotationMatrix(part.rotation), part.scale, part.position);
+            }
             fragments.Add(part);
         }
 
         public void EmitGroup(List<Piece> cells, float lifetime, float fade, Vector3 velocity = default)
         {
             drawCached = false;
+            CompletePendingJob();
             if (absorbEmission)
             {
                 foreach (var cell in cells) Emit(cell, Vector3.zero, lifetime, fade);
@@ -479,6 +484,8 @@ namespace WeaponWorkshop
         // 완료·벽 해석·제출·그리기는 FinishTick 이 맡는다.
         internal bool PrepareTick(Camera view, float dt, Vector3 gravity)
         {
+            // 이전 프레임 2단계가 돌지 못했으면(매니저 비활성 등) 남은 Job 을 먼저 끝낸다.
+            CompletePendingJob();
             EnsureNativeBuffers();
             if (material == null) return false;
             if (fragments.Length == 0 && groups.Count == 0)
@@ -497,7 +504,7 @@ namespace WeaponWorkshop
                 if (settledNextBucketIn > elapsed && settledNextExpiryIn > elapsed)
                 {
                     settledElapsed = elapsed;
-                    using (DrawMarker.Auto()) DrawBuckets();
+                    using (DrawMarker.Auto()) SubmitFragmentBatches();
                     return false;
                 }
             }
@@ -536,7 +543,10 @@ namespace WeaponWorkshop
                         hasView = hasView ? (byte)1 : (byte)0
                     }
                 };
-                pendingJob = fragments.Length > 0 ? job.Schedule(fragments.Length, JobBatchSize) : default;
+                // 스케줄 뒤에는 Job 이 버퍼에 쓰므로 길이를 다시 읽지 않는다(안전 검사 예외).
+                int fragmentCount = fragments.Length;
+                pendingJob = fragmentCount > 0 ? job.Schedule(fragmentCount, JobBatchSize) : default;
+                hasPendingJob = fragmentCount > 0;
             }
             return true;
         }
@@ -547,9 +557,12 @@ namespace WeaponWorkshop
             using (CompleteMarker.Auto())
             {
                 pendingJob.Complete();
+                pendingJob = default;
+                hasPendingJob = false;
                 // 벽 해석은 DebrisTargetIndex 질의가 관리 대상을 볼 수 있어 메인 스레드에 남는다.
                 // 허용 분(TryWallCheck)은 원래 루프와 같은 역순으로 소진한다.
-                for (int i = fragments.Length - 1; i >= 0; i--)
+                // 1·2단계 사이에 생긴 파편은 벽 검사 대상 선정 전이라 wallFlags 가 짧을 수 있다.
+                for (int i = Mathf.Min(fragments.Length, wallFlags.Length) - 1; i >= 0; i--)
                 {
                     VisualDebrisFragment part = fragments[i];
                     if (part.pathFlag != DebrisPathFlag.Near || wallFlags[i] == 0) continue;
@@ -605,7 +618,7 @@ namespace WeaponWorkshop
                             if (remaining < nextExpiryIn) nextExpiryIn = remaining;
                             if (part.bucket > 0)
                             {
-                                float bucketIn = remaining - part.fade * ((part.bucket - 1) * (1f / 15f));
+                                float bucketIn = remaining - part.fade * ((part.bucket - 1) * (1f / DebrisIntegrationJob.AlphaBucketSteps));
                                 if (bucketIn < nextBucketIn) nextBucketIn = bucketIn;
                             }
                             break;
@@ -635,7 +648,7 @@ namespace WeaponWorkshop
                     settledViewPosition = viewPosition;
                 }
                 else { settled = false; settledElapsed = 0f; }
-                DrawBuckets();
+                SubmitFragmentBatches();
             }
         }
 
@@ -672,36 +685,20 @@ namespace WeaponWorkshop
                     if (groups[i].combinedMesh != null && !groups[i].meshDirty)
                         Graphics.DrawMesh(groups[i].combinedMesh, groups[i].drawMatrix, groupMaterial,
                         gameObject.layer, null, 0, null, ShadowCastingMode.On, true);
-                DrawBuckets();
+                SubmitFragmentBatches();
             }
         }
 
-        private void DrawBuckets()
+        // 버킷 행렬을 매니저 싱크로 넘긴다. 같은 머티리얼 원본·색·메시·레이어 구름끼리 모여
+        // 프레임 끝에 버킷별로 한 번에 그려진다. 1023개 배치 한도는 매니저가 유지한다.
+        private void SubmitFragmentBatches()
         {
+            var key = new VisualDebrisCloudManager.FragmentDrawKey(fragmentTemplateSource, mesh, color, gameObject.layer);
             for (int i = 1; i < bucketMatrices.Length; i++)
             {
                 int count = bucketCounts[i];
                 if (count == 0) continue;
-                Color faded = color;
-                faded.a *= i / 15f;
-                appearance.SetColor(BaseColorId, faded);
-                Matrix4x4[] matrices = bucketMatrices[i];
-                if (count <= batch.Length)
-                {
-                    Graphics.DrawMeshInstanced(mesh, 0, material, matrices, count, appearance,
-                        ShadowCastingMode.Off, false, gameObject.layer);
-                }
-                else
-                {
-                    // 최대 배치 크기를 넘는 버킷만 batch로 잘려 나간다.
-                    for (int start = 0; start < count; start += batch.Length)
-                    {
-                        int batchCount = Mathf.Min(batch.Length, count - start);
-                        System.Array.Copy(matrices, start, batch, 0, batchCount);
-                        Graphics.DrawMeshInstanced(mesh, 0, material, batch, batchCount, appearance,
-                            ShadowCastingMode.Off, false, gameObject.layer);
-                    }
-                }
+                VisualDebrisCloudManager.AddFragmentMatrices(key, i, bucketMatrices[i], count);
             }
         }
         private void OnEnable()
@@ -712,14 +709,14 @@ namespace WeaponWorkshop
         private void OnDisable()
         {
             VisualDebrisCloudManager.Unregister(this);
+            // 1·2단계 사이에 Job 이 살아 있을 수 있으므로 ClearDebris 가 먼저 완료한다.
             ClearDebris();
-            // Job 은 Prepare→Finish 가 같은 LateUpdate 안에서만 살아 있어 해제 시점에 실행 중일 수 없다.
             ReleaseNativeBuffers();
             var previousOwner = owner; owner = null;
             if (previousOwner != null) previousOwner.ForgetDebrisCloud(this);
             absorbEmission = false; emissionCenter = Vector3.zero;
             emissionDuration = emissionSpreadDistance = emissionSpreadFraction = 0f;
-            mesh = null; appearance?.Clear(); wallCache.Clear(); wallCursor = nearCursor = 0;
+            mesh = null; fragmentTemplateSource = null; wallCache.Clear(); wallCursor = nearCursor = 0;
         }
         private void OnDestroy()
         {
@@ -728,8 +725,13 @@ namespace WeaponWorkshop
                 if (group.combinedMesh != null) Destroy(group.combinedMesh);
             foreach (FallingGroup group in groupCache)
                 if (group.combinedMesh != null) Destroy(group.combinedMesh);
-            if (material != null) Destroy(material);
-            if (groupMaterial != null) Destroy(groupMaterial);
+            // 공유 인스턴스는 매니저가 거둔다. 구름이 직접 만든 경우(편집 모드)에만 여기서 파괴한다.
+            if (ownsMaterials)
+            {
+                if (material != null) Destroy(material);
+                if (groupMaterial != null) Destroy(groupMaterial);
+            }
+            material = null; groupMaterial = null;
         }
     }
 }

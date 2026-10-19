@@ -168,7 +168,11 @@ namespace WeaponWorkshop
             if (IsTutorialMusicContext || activeRaidScene == scene) return;
             activeRaidScene = scene;
             if (!hasBeforeRaidBgm) CaptureRaidDeparture();
-            RequestMusic(RaidMusicId(SoundInfo.Raid(scene)?.number ?? 0, RaidBgmPhase.Travel));
+            int raidNumber = SoundInfo.Raid(scene)?.number ?? 0;
+            RequestMusic(RaidMusicId(raidNumber, RaidBgmPhase.Travel));
+            // 첫 벽 파괴 곡은 전투 중 첫 파괴 프레임에 바뀌므로 출발 때 미리 올려 그 프레임의 로드 스파이크(약 360ms)를 없앤다.
+            AudioClip firstWall = GetMusicClip(RaidMusicId(raidNumber, RaidBgmPhase.FirstWall));
+            if (firstWall != null && firstWall.loadState == AudioDataLoadState.Unloaded) firstWall.LoadAudioData();
         }
 
         // 첫 벽 파괴 여부는 씬의 NightRaidController가 소유한다.
