@@ -88,7 +88,12 @@ namespace WeaponWorkshop
             if (ScanComplete)
             {
                 if (Target != null && countedTarget != Target) { countedTarget = Target; GameLogger.Count("ScanUsed"); }
-                else if (ChestTarget != null && countedChest != ChestTarget) { countedChest = ChestTarget; GameLogger.Count("ScanUsed"); }
+                else if (ChestTarget != null && countedChest != ChestTarget)
+                {
+                    countedChest = ChestTarget;
+                    GameLogger.Count("ScanUsed");
+                    NightRaidController.Instance?.NotifyEndChestScanned(ChestTarget.CoreGate);
+                }
             }
         }
         private void UpdateTargetColor(RaycastHit hit, Component target)

@@ -16,12 +16,15 @@ namespace WeaponWorkshop
         [SerializeField] private Button quitButton;
         [SerializeField] private string mainMenuScene = "Intro";
         private bool leaving;
+        // 버튼이 눌리기 시작한 시각(실시간). 엔딩 로그의 panelSeconds용.
+        private float buttonsShownAt = -1f;
 
         // 씬에 저장된 활성 상태와 무관하게 전부 숨긴 상태로 시작한다.
         private void Awake()
         {
             leaving = false;
             SetWhite(0f); SetEnd(0f);
+            buttonsShownAt = -1f;
             if (continueButton != null) continueButton.onClick.AddListener(Continue);
             if (quitButton != null) quitButton.onClick.AddListener(ExitToMainMenu);
         }
@@ -42,11 +45,23 @@ namespace WeaponWorkshop
             if (buttonsGroup == null) return;
             buttonsGroup.alpha = alpha;
             buttonsGroup.interactable = buttonsGroup.blocksRaycasts = alpha >= 1f;
+            if (alpha >= 1f && buttonsShownAt < 0f) buttonsShownAt = Time.unscaledTime;
+            else if (alpha <= 0f) buttonsShownAt = -1f;
+        }
+
+        private void LogChoice(string choice)
+        {
+            var raid = NightRaidController.Instance;
+            var workshop = NightRaidTransfer.Workshop;
+            EndingLog.Choice(EndingLog.EndChest, choice, workshop != null ? workshop.day : -1,
+                buttonsShownAt >= 0f ? Time.unscaledTime - buttonsShownAt : 0f, raid != null && raid.EndChestFirstEnding);
         }
 
         private void Continue()
         {
-            if (!leaving && chest != null) chest.Continue();
+            if (leaving || chest == null || !chest.AwaitingChoice) return;
+            LogChoice("continue");
+            chest.Continue();
         }
 
         // 일시정지 메뉴의 '메인 메뉴로 나가기'와 같은 정리(확인 창만 생략).
@@ -59,6 +74,8 @@ namespace WeaponWorkshop
                 return;
             }
             leaving = true;
+            LogChoice("lobby");
+            NightRaidController.Instance?.NotifyEndingQuit();
             NightRaidTransfer.Abandon();
             GameSaveFiles.PendingLoad = null;
             Time.timeScale = 1f;

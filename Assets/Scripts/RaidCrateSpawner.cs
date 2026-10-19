@@ -29,6 +29,10 @@ namespace WeaponWorkshop
         private readonly List<ModuleCreditCrate> materialCrates = new List<ModuleCreditCrate>();
         public IReadOnlyList<Objective> Objectives => objectives;
         public bool IsReady { get; private set; }
+        public int SpawnedModuleCrates => objectives.Count;
+        public int SpawnedMaterialCrates => materialCrates.Count;
+        public int ReplacedModuleSpots { get; private set; }
+        public int MaterialPerCrate { get; private set; }
         public string RewardScene => string.IsNullOrEmpty(rewardScene) ? gameObject.scene.name : rewardScene;
         public int RemainingMaterialCrateCount
         {
@@ -44,6 +48,7 @@ namespace WeaponWorkshop
         private void Awake()
         {
             IsReady = false;
+            ReplacedModuleSpots = MaterialPerCrate = 0;
             objectives.Clear();
             materialCrates.Clear();
         }
@@ -60,6 +65,7 @@ namespace WeaponWorkshop
                 Debug.LogError($"스테이지 테이블에 {RewardScene} 보상 행이 없어 보상 상자를 만들지 않습니다.", this);
                 return;
             }
+            MaterialPerCrate = settings.reward.materialPerCrate;
             SpawnModuleCrates(settings.reward, unlocks);
             SpawnMaterialCrates(settings.reward);
         }
@@ -76,6 +82,7 @@ namespace WeaponWorkshop
                 if (!spawnUnlockedRewards && unlocks != null && unlocks.IsUnlocked(id))
                 {
                     SpawnMaterialCrate(spot.transform, reward.materialPerCrate);
+                    ReplacedModuleSpots++;
                     continue;
                 }
                 if (moduleCratePrefab == null) continue;

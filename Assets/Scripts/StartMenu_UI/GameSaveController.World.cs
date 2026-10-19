@@ -336,6 +336,7 @@ namespace WeaponWorkshop
             RestoreTrackUnlocks(data);
             retired = data.retired;
             retirementSavedDay = retired ? data.day : -1;
+            endChestOpened = data.endChestOpened;
             RefreshRetireButton();
             return true;
         }

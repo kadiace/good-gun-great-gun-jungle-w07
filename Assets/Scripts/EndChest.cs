@@ -44,6 +44,7 @@ namespace WeaponWorkshop
 
         public bool IsClosed => state == State.Closed;
         public bool IsOpen => state >= State.Open;
+        public bool AwaitingChoice => state == State.Open;
         public EndChestCore CoreGate => core != null ? core.GetComponent<EndChestCore>() : null;
 
         private void Awake()
@@ -122,7 +123,11 @@ namespace WeaponWorkshop
                     if (lid != null) lid.localRotation = lidClosed * Quaternion.Euler(lidOpenAngle * k, 0f, 0f);
                     if (innerLight != null) innerLight.intensity = openLightIntensity * k;
                     if (endingUI != null) endingUI.SetWhite(1f - Mathf.Clamp01(stateTime / whiteOutDuration));
-                    if (stateTime >= openDuration) { state = State.Open; stateTime = 0f; RestoreAudio(); }
+                    if (stateTime >= openDuration)
+                    {
+                        state = State.Open; stateTime = 0f; RestoreAudio();
+                        NightRaidController.Instance?.NotifyEndChestOpened();
+                    }
                     break;
                 case State.Open:
                     if (endingUI != null) endingUI.SetEnd(stateTime / endFadeDuration);

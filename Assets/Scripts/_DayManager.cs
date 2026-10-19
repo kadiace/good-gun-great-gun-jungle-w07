@@ -63,6 +63,8 @@ public class _DayManager : MonoBehaviour
     public bool CanStartNextDay { get; private set; }
     public bool IsBankrupt { get; private set; }
     public setTimer CurrentPeriod { get; private set; }
+    // 고정 일차(CustomerDay 에셋)가 끝난 뒤의 무한 모드 일차인지.
+    public bool IsEndlessDay => FindCustomerDay(DayNumber) == null;
     public event Action Changed;
     public event Action<int> DayAdvanced;
     public event Action<int, int> BusinessOpened;
@@ -265,14 +267,18 @@ public class _DayManager : MonoBehaviour
         Changed?.Invoke();
         // Stay at night until the player chooses a raid or the next morning.
     }
-    private void LogDaySettled(int balanceBefore) =>
+    private void LogDaySettled(int balanceBefore)
+    {
+        var save = FindFirstObjectByType<GameSaveController>();
         LogKit.GameLogger.Data("Info", "Game", "day_settled", new GameDaySettledLog
         {
+            retired = save != null && save.IsRetired, endChestOpened = save != null && save.EndChestOpened,
             day = DayNumber, balanceBefore = balanceBefore, income = TodayIncome,
             constructionCost = wallet != null ? wallet.TodayConstructionCost : 0, soldConstructionCost = TodaySoldConstructionCost,
             rent = TodayRent, balanceAfter = Money, completedGuests = CompletedGuests, dissatisfiedGuests = DissatisfiedGuests,
             killedGuests = KilledGuests, moduleCredits = ModuleCredits, bankrupt = IsBankrupt
         });
+    }
     public void DeclineNextDay()
     {
         if (!IsNight || !IsSettlementOpen || !HasRequiredReferences()) return;
@@ -371,6 +377,7 @@ public class _DayManager : MonoBehaviour
             SceneManager.LoadSceneAsync("Intro", LoadSceneMode.Single);
             return;
         }
+        int skippedDay = DayNumber;
         CustomerDay nextDay = PrepareDay(DayNumber + 1);
         if (!ApplyCustomerDay(nextDay)) return;
         wallet?.RestoreTodayConstructionCost(0);
@@ -392,7 +399,12 @@ public class _DayManager : MonoBehaviour
         IsSettlementOpen = false;
         CanStartNextDay = false;
         // 임시 지원: 습격 대신 다음 날 아침을 선택한 경우에만 지급합니다.
-        if (skippedNightRaid) wallet?.CreditModuleCredits(100);
+        if (skippedNightRaid)
+        {
+            wallet?.CreditModuleCredits(100);
+            LogKit.GameLogger.Data("Info", "Game", "raid_skipped", new RaidSkippedLog
+            { day = skippedDay, nextDay = DayNumber, moduleCreditsGranted = wallet != null ? 100 : 0, moduleCreditsAfter = ModuleCredits });
+        }
         ApplyMorning();
         gameManager.SetNight(false);
         Changed?.Invoke();

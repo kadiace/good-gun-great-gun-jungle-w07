@@ -182,6 +182,8 @@ namespace WeaponWorkshop
         public int constructionCost;
         public int soldConstructionCost;
         public bool night, settlement, confirmation, inWorkshop, retired;
+        // 정글 캠퍼스 엔드 상자를 한 번이라도 연 진행. 엔딩 로그의 firstEnding 판정에 쓴다.
+        public bool endChestOpened;
         public bool startedDayInDebt;
         public int workbench = -1;
         public Vector3 playerPosition, playerEuler, viewEuler, benchEuler;
@@ -300,6 +302,16 @@ namespace WeaponWorkshop
 
         public static void WriteAutoSave(GameSaveData data, bool prettyPrint = true)
             => WritePath(AutoSavePath, data, prettyPrint);
+
+        // 습격 중 엔드 상자를 열면 같은 진행의 자동 저장에도 표시한다. 그만하기로 바로 로비에 가도 남게 한다.
+        public static bool TryMarkEndChestOpened(string saveId)
+        {
+            if (string.IsNullOrEmpty(saveId) || !TryReadAutoSave(out var data) || data.saveId != saveId) return false;
+            if (data.endChestOpened) return true;
+            data.endChestOpened = true;
+            try { WriteAutoSave(data); return true; }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException) { return false; }
+        }
 
         private static void WritePath(string path, GameSaveData data, bool prettyPrint)
         {

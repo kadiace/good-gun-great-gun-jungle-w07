@@ -311,7 +311,7 @@ namespace WeaponWorkshop
                 remaining = Mathf.Max(0f, remaining - 0.05f);
                 return;
             }
-            if (endChestCore != null) endChestCore.NotifyHit();
+            if (endChestCore != null) endChestCore.NotifyHit(effects != null ? effects.Stats : default);
             var slotMachine = GetComponentInParents<SlotMachineReels>(hit.collider);
             if (slotMachine != null && effects != null)
                 slotMachine.ReceiveAttack(effects.Stats.penetration, effects.Stats.explosion, false);

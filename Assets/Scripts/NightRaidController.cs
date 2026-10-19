@@ -110,6 +110,10 @@ namespace WeaponWorkshop
             returningAfterDeath = died;
             if (isClear && !TutorialManager.TrainingRaidPending)
                 player.GetComponent<PlayerWallet>()?.CreditSlotTickets(earnedSlotTickets - collectedSlotTickets);
+            // 재료 달러는 획득 즉시 지급된다(OnMaterialCollected). 결과 로그에는 이번 습격에서 지급된 액수만 남긴다.
+            int materialPickups = pendingMaterialPickups.Count;
+            int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
+            int dollarReward = materialPickups * perPickup;
             materialCrateCredits = 0;
             foreach (int v in pendingMaterialPickups) materialCrateCredits += v;
             moduleCrateRewards.AddRange(pendingModuleCollects);
@@ -124,7 +128,11 @@ namespace WeaponWorkshop
                 time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
                 moduleCrateRewards = moduleCrateRewards.ToArray(),
                 materialCrateCredits = materialCrateCredits, enemyKills = enemyKills,
-                health = playerHealth != null ? playerHealth.CurrentHealth : 0f
+                health = playerHealth != null ? playerHealth.CurrentHealth : 0f,
+                exitReason = died ? "died" : "extracted", endChestOpened = endChestOpened,
+                day = RaidDay, training = TutorialManager.TrainingRaidPending,
+                materialPickups = materialPickups, dollarReward = dollarReward,
+                rewardsApplied = isClear && !TutorialManager.TrainingRaidPending
             });
             ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(), () =>
             { returnOpen = true; ReturnHome(); });
@@ -174,6 +182,8 @@ namespace WeaponWorkshop
             resultOpen = returningAfterDeath = false;
             loggedRaidWeaponAssemblies.Clear();
             firstWallDestroyed = false;
+            endChestScanned = endChestOpened = false;
+            endChestHitAt = -1f;
             CancelExtraction();
             ui.Bind(this); ui.ShowMap(false); ui.ShowReturn(false);
         }
@@ -300,6 +310,66 @@ namespace WeaponWorkshop
         {
             if (inRaid && collector == player && moduleId > 0) pendingModuleCollects.Add(moduleId);
         }
+        // 엔드 상자 지표. 상자는 습격 씬에 하나라 습격당 한 번씩만 남긴다.
+        private bool endChestScanned, endChestOpened;
+        private float endChestHitAt = -1f;
+        public bool EndChestFirstEnding { get; private set; }
+        private static int RaidDay => NightRaidTransfer.Workshop != null ? NightRaidTransfer.Workshop.day : -1;
+        private T EndChestEntry<T>(T entry) where T : EndChestLog
+        {
+            entry.scene = gameObject.scene.name;
+            entry.day = RaidDay;
+            entry.time = Time.timeSinceLevelLoad;
+            entry.duration = inRaid ? Time.timeSinceLevelLoad - raidStartedAt : 0f;
+            return entry;
+        }
+        public void NotifyEndChestScanned(EndChestCore core)
+        {
+            if (endChestScanned || core == null) return;
+            endChestScanned = true;
+            GameLogger.Data("Info", "NightRaid", "end_chest_scanned", EndChestEntry(new EndChestScannedLog
+            { requiredGravity = core.RequiredGravity, requiredHoming = core.RequiredHoming }));
+        }
+        public void NotifyEndChestHit(in ProjectileStats stats)
+        {
+            if (endChestHitAt >= 0f) return;
+            endChestHitAt = Time.timeSinceLevelLoad;
+            var entry = EndChestEntry(new EndChestHitLog { gravity = stats.gravity, homing = stats.homing, scanned = endChestScanned });
+            entry.weaponAssemblyId = CaptureAssemblyId(playerWeaponHolder != null ? playerWeaponHolder.EquippedWeapon : null,
+                out entry.weaponAssemblyIdStatus);
+            GameLogger.Data("Info", "NightRaid", "end_chest_hit", entry);
+        }
+        public void NotifyEndChestOpened()
+        {
+            if (endChestOpened) return;
+            endChestOpened = true;
+            var workshop = NightRaidTransfer.Workshop;
+            EndChestFirstEnding = workshop == null || (!workshop.retired && !workshop.endChestOpened);
+            NightRaidTransfer.MarkEndChestOpened();
+            GameLogger.Data("Info", "NightRaid", "end_chest_opened", EndChestEntry(new EndChestOpenedLog
+            { absorbSeconds = endChestHitAt >= 0f ? Time.timeSinceLevelLoad - endChestHitAt : 0f }));
+        }
+        // END 화면 그만하기: 결과 화면 없이 로비로 가므로 결과 로그를 여기서 닫는다. 보상은 확정하지 않는다.
+        public void NotifyEndingQuit()
+        {
+            if (!inRaid || resultOpen) return;
+            resultOpen = true;
+            FlushCellLogs();
+            int credits = 0;
+            foreach (int v in pendingMaterialPickups) credits += v;
+            var modules = new System.Collections.Generic.List<int>(moduleCrateRewards);
+            modules.AddRange(pendingModuleCollects);
+            GameLogger.Data("Info", "NightRaid", "습격 엔딩 종료", new RaidResultLog
+            {
+                scene = gameObject.scene.name, survived = playerHealth == null || !playerHealth.IsDead,
+                time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
+                moduleCrateRewards = modules.ToArray(), materialCrateCredits = credits, enemyKills = enemyKills,
+                health = playerHealth != null ? playerHealth.CurrentHealth : 0f,
+                exitReason = "ending_quit", endChestOpened = endChestOpened,
+                day = RaidDay, training = TutorialManager.TrainingRaidPending,
+                materialPickups = pendingMaterialPickups.Count, dollarReward = 0, rewardsApplied = false
+            });
+        }
         private static string CaptureAssemblyId(EquipableWeapon weapon, out string status)
         {
             if (weapon == null) { status = "no_weapon"; return ""; }
@@ -335,10 +405,19 @@ namespace WeaponWorkshop
             }
             catch (System.Exception) { penetration = explosion = 0f; }
         }
-        private void LogRaidStart()
+        private void LogRaidStart(RaidCrateSpawner crates)
         {
             EquipableWeapon weapon = playerWeaponHolder != null ? playerWeaponHolder.EquippedWeapon : null;
-            var entry = new RaidStartLog { scene = gameObject.scene.name, day = NightRaidTransfer.Workshop != null ? NightRaidTransfer.Workshop.day : -1 };
+            var entry = new RaidStartLog { scene = gameObject.scene.name, day = RaidDay };
+            entry.entryCost = NightRaidTransfer.EntryCost;
+            entry.training = TutorialManager.TrainingRaidPending;
+            if (crates != null)
+            {
+                entry.spawnedModuleCrates = crates.SpawnedModuleCrates;
+                entry.spawnedMaterialCrates = crates.SpawnedMaterialCrates;
+                entry.replacedModuleSpots = crates.ReplacedModuleSpots;
+                entry.materialPerCrate = crates.MaterialPerCrate;
+            }
             var raidWallet = player != null ? player.GetComponent<PlayerWallet>() : null;
             entry.balance = raidWallet != null ? raidWallet.Balance : 0;
             entry.moduleCredits = raidWallet != null ? raidWallet.ModuleCredits : 0;
@@ -479,10 +558,11 @@ namespace WeaponWorkshop
             earnedSlotTickets = collectedSlotTickets = 0;
             pendingModuleCollects.Clear(); discoveredEnemies.Clear();
             loggedRaidWeaponAssemblies.Clear();
-            LogRaidStart();
-            SubscribeWeaponEvents();
             // 보상 상자는 입장 상태(해금 모듈)를 복원한 뒤 한 번에 만든다. 이미 해금한 모듈 자리는 재료 상자가 된다.
-            Object.FindFirstObjectByType<RaidCrateSpawner>()?.Spawn(player.GetComponent<PlayerModuleUnlocks>());
+            var crateSpawner = Object.FindFirstObjectByType<RaidCrateSpawner>();
+            crateSpawner?.Spawn(player.GetComponent<PlayerModuleUnlocks>());
+            LogRaidStart(crateSpawner);
+            SubscribeWeaponEvents();
             if (playerHealth != null) playerHealth.Died += ShowDeathResult;
             gameManager.SetDialogue(false); gameManager.SetNight(false);
         }
@@ -549,7 +629,7 @@ namespace WeaponWorkshop
             if (training && !tutorial.PrepareTrainingRaid()) { wallet?.Credit(cost); return; }
             // 여기서부터는 실제 진입 확정. 사망·귀환을 포함해 환불하지 않는다.
             transitioning = true; ui.SetLoading(); PoolManager.ClearActive();
-            NightRaidTransfer.Begin(checkpoint);
+            NightRaidTransfer.Begin(checkpoint, cost);
             SoundManager.CaptureRaidDeparture();
             SceneManager.LoadSceneAsync(regionScene, LoadSceneMode.Single);
         }

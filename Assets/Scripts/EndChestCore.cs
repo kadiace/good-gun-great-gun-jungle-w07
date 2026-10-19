@@ -23,9 +23,11 @@ namespace WeaponWorkshop
         public bool Deflects(in ProjectileStats stats) => chest != null && chest.IsClosed && !Qualifies(stats);
 
         // ProjectileMotor가 AcceptsHit을 통과한 탄이 실제로 닿았을 때 호출한다.
-        public void NotifyHit()
+        public void NotifyHit(in ProjectileStats stats)
         {
-            if (chest != null) chest.BeginAbsorb();
+            if (chest == null || !chest.IsClosed) return;
+            NightRaidController.Instance?.NotifyEndChestHit(stats);
+            chest.BeginAbsorb();
         }
     }
 }

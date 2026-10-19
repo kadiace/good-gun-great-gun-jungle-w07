@@ -79,7 +79,9 @@ public sealed class Start_UI : MonoBehaviour
             new WeaponWorkshop.GameStartLog
             {
                 installId = WeaponWorkshop.PlayerIdentity.InstallId, saveId = WeaponWorkshop.PlayerIdentity.SaveId,
-                savedScene = savedScene ?? "", newGame = string.IsNullOrEmpty(savedScene)
+                savedScene = savedScene ?? "", newGame = string.IsNullOrEmpty(savedScene),
+                retired = WeaponWorkshop.GameSaveFiles.PendingLoad?.retired == true,
+                endChestOpened = WeaponWorkshop.GameSaveFiles.PendingLoad?.endChestOpened == true
             });
         SceneManager.LoadSceneAsync(sceneToLoad);
     }

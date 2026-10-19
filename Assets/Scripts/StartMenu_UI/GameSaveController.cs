@@ -23,6 +23,8 @@ namespace WeaponWorkshop
         private bool retired;
         private int retirementSavedDay = -1;
         public bool IsRetired => retired;
+        private bool endChestOpened;
+        public bool EndChestOpened => endChestOpened;
         public void CompleteRetirement()
         {
             retired = true;
@@ -162,7 +164,7 @@ namespace WeaponWorkshop
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
                 slotTickets = wallet.SlotTickets,
-                retired = retired,
+                retired = retired, endChestOpened = endChestOpened,
                 slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
                 unlockedMainTrackIds = _unlockedMainTrackIds.ToArray(), trackUnlocksMigrated = _trackUnlocksMigrated,
@@ -286,8 +288,13 @@ namespace WeaponWorkshop
             // 날짜 증가/습격 건너뛰기가 아닌 확정된 귀환 결과로만 진행도를 전진시킨다.
             if (_pendingClearedRaidScene != null && !SoundManager.IsTutorialMusicContext)
             {
-                if (TableManager.Instance.RaidMap.Find(_pendingClearedRaidScene) != null)
-                    clearedRaidScenes.Add(_pendingClearedRaidScene);
+                var clearedRegion = TableManager.Instance.RaidMap.Find(_pendingClearedRaidScene);
+                if (clearedRegion != null && clearedRaidScenes.Add(_pendingClearedRaidScene))
+                    LogKit.GameLogger.Data("Info", "Game", "raid_first_clear", new RaidFirstClearLog
+                    {
+                        scene = _pendingClearedRaidScene, day = dayManager.DayNumber,
+                        saleBonusAdded = clearedRegion.FirstClearSaleBonus(), saleBonusTotal = SaleBonusRatio
+                    });
                 raidClearProgress = Math.Max(raidClearProgress, SoundInfo.ClampProgress(pendingClearedRaid));
                 string clearedScene = _pendingClearedRaidScene;
                 string rewardTrackId = UnlockRaidRewardTrack(clearedScene);
@@ -370,6 +377,7 @@ namespace WeaponWorkshop
             RestoreTrackUnlocks(data);
             retired = data.retired;
             retirementSavedDay = retired ? data.day : -1;
+            endChestOpened = data.endChestOpened;
             RefreshRetireButton();
         }
         // 구버전 세이브의 누락 필드는 기본값 0이다. 음수는 0으로 보정하고 진행도를 보존한다.
