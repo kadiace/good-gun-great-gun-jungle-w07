@@ -26,6 +26,10 @@ namespace WeaponWorkshop
         [SerializeField] private AudioClip _failClip;
         [SerializeField, Range(0f, 1f)] private float _failVolume = 1f;
 
+        [Header("Destroy")]
+        [SerializeField] private AudioClip _destroyClip;
+        [SerializeField, Range(0f, 1f)] private float _destroyVolume = 1f;
+
         private AudioSource _rotationSource;
         private AudioSource _resultSource;
 
@@ -119,6 +123,18 @@ namespace WeaponWorkshop
         {
             if (_instance == null) return;
             _instance.PlayResult(_instance._failClip, position, _instance._failVolume);
+        }
+
+        /// <summary>
+        /// 실제 파괴 판정 시 회전음과 결과음을 끊고 position에서 파괴음을 한 번 재생한다.
+        /// 클립이나 활성 사운드 설정이 없으면 파괴음은 재생하지 않는다.
+        /// </summary>
+        internal static void PlayDestroyed(Vector3 position)
+        {
+            if (_instance == null) return;
+            _instance.StopRotationLoop();
+            _instance.StopResultSound();
+            _instance.PlayOneShot(_instance._destroyClip, position, _instance._destroyVolume);
         }
 
         /// <summary>
