@@ -598,6 +598,8 @@ namespace WeaponWorkshop
         {
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
+            // 조각 수집을 기다리는 웨이브는 원래처럼 반경도 키우지 않고 연쇄 검사도 하지 않는다.
+            if (collectionPending) return;
             GrowRadiusAndCheckChain(dt);
             if (!collectionPending && radius >= maximumRadius &&
                 nextLayer >= layers.Count && nextHealth >= healthHits.Count)
@@ -607,7 +609,11 @@ namespace WeaponWorkshop
         private void GrowRadiusAndCheckChain(float dt)
         {
             ProcessPendingChainDetonations();
+            // 원래 웨이브는 최대 반경에 닿은 프레임에 반납돼 그 뒤로는 연쇄 검사가 없었다. 예산으로 남아 있는
+            // 웨이브가 최대 반경 상태로 계속 검사하면 나중에 그 자리를 지나는 탄이 공중에서 터진다.
+            bool expanding = radius < maximumRadius;
             radius = Mathf.Min(maximumRadius, radius + speed * dt);
+            if (!expanding) return;
             if (activeProjectileFrame != Time.frameCount)
             {
                 // 프레임당 1회만 목록을 훑어 위치와 활성 여부를 배열로 모은다.
