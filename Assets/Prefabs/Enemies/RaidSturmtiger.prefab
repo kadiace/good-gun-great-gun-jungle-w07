@@ -7313,8 +7313,8 @@ MonoBehaviour:
   targetMesh: {fileID: 2966257038310195306}
   debrisMaterial: {fileID: 2100000, guid: f985c0c9a84f87b49b707804319c0da0, type: 2}
   partSize: 0.2
-  penetrationResistance: 15
-  explosionResistance: 15
+  penetrationResistance: 30
+  explosionResistance: 30
   explosionExpansionSpeed: 10
   explosionCheckDistance: 0.2
   resistanceSource: {fileID: 0}
@@ -12605,8 +12605,8 @@ MonoBehaviour:
   targetMesh: {fileID: 5476697169516432543}
   debrisMaterial: {fileID: 2100000, guid: f985c0c9a84f87b49b707804319c0da0, type: 2}
   partSize: 0.2
-  penetrationResistance: 15
-  explosionResistance: 15
+  penetrationResistance: 30
+  explosionResistance: 30
   explosionExpansionSpeed: 10
   explosionCheckDistance: 0.2
   resistanceSource: {fileID: 0}
@@ -16735,8 +16735,8 @@ MonoBehaviour:
   targetMesh: {fileID: 9100000000000000005}
   debrisMaterial: {fileID: 2100000, guid: f985c0c9a84f87b49b707804319c0da0, type: 2}
   partSize: 0.2
-  penetrationResistance: 8
-  explosionResistance: 8
+  penetrationResistance: 16
+  explosionResistance: 16
   explosionExpansionSpeed: 10
   explosionCheckDistance: 0.2
   resistanceSource: {fileID: 0}
@@ -16912,8 +16912,8 @@ MonoBehaviour:
   targetMesh: {fileID: 9100000000000000013}
   debrisMaterial: {fileID: 2100000, guid: f985c0c9a84f87b49b707804319c0da0, type: 2}
   partSize: 0.2
-  penetrationResistance: 8
-  explosionResistance: 8
+  penetrationResistance: 16
+  explosionResistance: 16
   explosionExpansionSpeed: 10
   explosionCheckDistance: 0.2
   resistanceSource: {fileID: 0}
@@ -17266,8 +17266,8 @@ MonoBehaviour:
   targetMesh: {fileID: 9100000000000000029}
   debrisMaterial: {fileID: 2100000, guid: f985c0c9a84f87b49b707804319c0da0, type: 2}
   partSize: 0.2
-  penetrationResistance: 15
-  explosionResistance: 15
+  penetrationResistance: 30
+  explosionResistance: 30
   explosionExpansionSpeed: 10
   explosionCheckDistance: 0.2
   resistanceSource: {fileID: 0}
