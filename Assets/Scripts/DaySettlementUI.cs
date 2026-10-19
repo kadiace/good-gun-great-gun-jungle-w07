@@ -35,6 +35,8 @@ public sealed class DaySettlementUI : MonoBehaviour
     [SerializeField, Min(0f)] private float dailyRentGap = 16f;
     [SerializeField, Min(1f)] private float dailyRentWidth = 340f;
     private TMPro.TextMeshProUGUI dailyRentText;
+    private RectTransform slotTicketDisplay;
+    private TMPro.TextMeshProUGUI slotTicketText;
     private Coroutine morningNotice;
     public RectTransform TutorialConfirmButton => declineButton != null ? declineButton.transform as RectTransform : null;
     [SerializeField, Min(0f), Tooltip("돈·모듈 재화 숫자 연출 시간(초). 정산 중에도 실제 시간으로 재생합니다.")]
@@ -46,6 +48,7 @@ public sealed class DaySettlementUI : MonoBehaviour
     [SerializeField, Min(1f)] private float insufficientFundsScale = 1.2f;
     private readonly BalanceDisplay moneyCounter = new BalanceDisplay();
     private readonly BalanceDisplay moduleCreditCounter = new BalanceDisplay();
+    private readonly BalanceDisplay slotTicketCounter = new BalanceDisplay();
 
     private void Awake()
     {
@@ -57,10 +60,13 @@ public sealed class DaySettlementUI : MonoBehaviour
             { if (CanConfirmWithInput) confirmRequested = true; };
         }
         if (wallet == null) wallet = WeaponWorkshop.PlayerWallet.ForScene(this);
+        slotTicketDisplay = CreateSlotTicketDisplay();
         moneyCounter.Initialize(moneyText);
         moduleCreditCounter.Initialize(moduleCreditText);
+        slotTicketCounter.Initialize(slotTicketText);
         dailyRentText = CreateDailyRentText();
         dailyRentText?.gameObject.SetActive(false);
+        slotTicketDisplay?.gameObject.SetActive(false);
         moneyDisplay?.gameObject.SetActive(false);
         moduleCreditDisplay?.gameObject.SetActive(false);
         todayIncomeText?.gameObject.SetActive(false);
@@ -99,10 +105,12 @@ public sealed class DaySettlementUI : MonoBehaviour
         HideMorningNotice();
         moneyCounter.Reset();
         moduleCreditCounter.Reset();
+        slotTicketCounter.Reset();
         // Hide displays without changing the authored hierarchy or layout.
         moneyDisplay?.gameObject.SetActive(false);
         moduleCreditDisplay?.gameObject.SetActive(false);
         dailyRentText?.gameObject.SetActive(false);
+        slotTicketDisplay?.gameObject.SetActive(false);
         todayIncomeText?.gameObject.SetActive(false);
         settlementPanel?.SetActive(false);
         reopenSettlementButton?.gameObject.SetActive(false);
@@ -183,6 +191,9 @@ public sealed class DaySettlementUI : MonoBehaviour
         if (!show) WeaponWorkshop.FeedbackUI.For(this)?.CancelChoice(this);
         moneyDisplay?.gameObject.SetActive(wallet != null);
         moduleCreditDisplay?.gameObject.SetActive(wallet != null);
+        slotTicketDisplay?.gameObject.SetActive(wallet != null);
+        if (slotTicketText != null && wallet != null)
+            slotTicketCounter.SetTarget(wallet.SlotTickets, moneyCountDuration);
         bool hasDailyRent = wallet != null && dayManager != null && dayManager.CurrentCustomerDay != null;
         dailyRentText?.gameObject.SetActive(hasDailyRent);
         if (hasDailyRent && dailyRentText != null)
@@ -288,6 +299,18 @@ public sealed class DaySettlementUI : MonoBehaviour
         text.raycastTarget = false;
         text.text = "자리세: $ 0";
         return text;
+    }
+
+    private RectTransform CreateSlotTicketDisplay()
+    {
+        if (moduleCreditDisplay == null || moduleCreditText == null) return null;
+        var display = Instantiate(moduleCreditDisplay, moduleCreditDisplay.parent);
+        display.name = "SlotTicketDisplay";
+        display.anchoredPosition = moduleCreditDisplay.anchoredPosition - new Vector2(0f, moduleCreditDisplay.rect.height + 6f);
+        slotTicketText = display.Find("ModuleCreditText")?.GetComponent<TMPro.TextMeshProUGUI>();
+        var icon = display.Find("ModuleIcon")?.GetComponent<Image>();
+        if (icon != null) icon.color = new Color(0.65f, 0.2f, 1f);
+        return display;
     }
 
     // Both balances use the same increase counting and decrease digit-roll effects.
@@ -429,6 +452,7 @@ public sealed class DaySettlementUI : MonoBehaviour
         }
         moneyCounter.Tick(moneyCountDuration);
         moduleCreditCounter.Tick(moneyCountDuration);
+        slotTicketCounter.Tick(moneyCountDuration);
     }
 
 }

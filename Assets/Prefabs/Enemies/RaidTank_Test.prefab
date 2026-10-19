@@ -11944,6 +11944,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemyRoot: {fileID: 2476374776425704725}
+  slotTicketReward: 1
+  ticketPickupPrefab: {fileID: 114002, guid: 02731a79b24c457a8990d0c56fca2752, type: 3}
   destroyAtLostRatio: 0
   breakBurstPrefab: {fileID: 0}
   breakBurstScale: 1.5

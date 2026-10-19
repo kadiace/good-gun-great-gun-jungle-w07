@@ -49,6 +49,7 @@ namespace WeaponWorkshop
         private int[] raidStartingModules;
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
+        private int earnedSlotTickets, collectedSlotTickets;
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.List<int> pendingMaterialPickups = new System.Collections.Generic.List<int>();
         // 스테이지 중 획득한 모듈도 완료 정산 때 반영.
@@ -75,6 +76,7 @@ namespace WeaponWorkshop
             if (training) text.AppendLine("연습 습격의 획득물은 공방에 반영되지 않습니다.").AppendLine();
             // 지갑 차이는 디버그 재화·무기 환급까지 섞이므로 상자에서 실제로 주운 재료만 보여준다.
             text.Append("모듈 재료  +").Append(materialCrateCredits).AppendLine();
+            text.Append("슬롯머신 티켓  +").Append(earnedSlotTickets).AppendLine();
             int money = Mathf.Max(0, wallet.Balance - raidStartingBalance);
             if (money > 0) text.Append("돈  +").Append(money).AppendLine();
             int count = 0;
@@ -106,13 +108,8 @@ namespace WeaponWorkshop
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             bool isClear = IsRaidClear(died);
             returningAfterDeath = died;
-            // 스테이지 중 획득 재화를 완료 정산 때 확정 반영.
-            if (isClear)
-            {
-                int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
-                int earned = pendingMaterialPickups.Count * perPickup;
-                player.GetComponent<PlayerWallet>()?.Credit(earned);
-            }
+            if (isClear && !TutorialManager.TrainingRaidPending)
+                player.GetComponent<PlayerWallet>()?.CreditSlotTickets(earnedSlotTickets - collectedSlotTickets);
             materialCrateCredits = 0;
             foreach (int v in pendingMaterialPickups) materialCrateCredits += v;
             moduleCrateRewards.AddRange(pendingModuleCollects);
@@ -260,9 +257,22 @@ namespace WeaponWorkshop
         }
         private void OnEnemyKilled(RaidEnemyCore core)
         {
-            if (!inRaid || core.gameObject.scene != gameObject.scene) return;
+            if (!inRaid || resultOpen || transitioning || entryRestoreFailed || core.gameObject.scene != gameObject.scene ||
+                (playerHealth != null && playerHealth.IsDead)) return;
             enemyKills++;
+            earnedSlotTickets += core.SlotTicketReward;
+            core.ReleaseTicketVisuals(player);
             GameLogger.Data("Info", "NightRaid", "적 처치", new RaidEnemyLog { time = Time.timeSinceLevelLoad, enemyId = core.EnemyId });
+        }
+        public bool TryCollectTicket(FirstPersonPlayer collector)
+        {
+            if (!inRaid || resultOpen || transitioning || entryRestoreFailed || collector != player ||
+                (playerHealth != null && playerHealth.IsDead) || collectedSlotTickets >= earnedSlotTickets) return false;
+            var wallet = player.GetComponent<PlayerWallet>();
+            if (wallet == null) return false;
+            collectedSlotTickets++;
+            wallet.CreditSlotTickets(1);
+            return true;
         }
         public void RecordPlayerHit(RaidPlayerHealth health, string enemyId, RaidEnemyType enemyType, float damage)
         {
@@ -280,9 +290,11 @@ namespace WeaponWorkshop
         }
         private void OnMaterialCollected(FirstPersonPlayer collector, int amount)
         {
-            if (inRaid && collector == player)
-                // 즉시 지갑 반영 없이 획득분만 기록.
-                pendingMaterialPickups.Add(amount);
+            if (!inRaid || resultOpen || transitioning || collector != player || amount <= 0 ||
+                (playerHealth != null && playerHealth.IsDead)) return;
+            pendingMaterialPickups.Add(amount);
+            int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
+            player.GetComponent<PlayerWallet>()?.Credit(perPickup);
         }
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
@@ -448,6 +460,7 @@ namespace WeaponWorkshop
                 player.GetComponent<PlayerWallet>().RestoreLoans(NightRaidTransfer.Workshop.outstandingLoans);
                 player.GetComponent<PlayerWallet>().RestoreLastLoanDay(NightRaidTransfer.Workshop.lastLoanDay);
                 player.GetComponent<PlayerWallet>().RestoreModuleCredits(moduleCredits);
+                player.GetComponent<PlayerWallet>().RestoreSlotTickets(NightRaidTransfer.Workshop.slotTickets);
                 player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(unlockedModules);
                 travelPaints = PaintMaterialLibrary.CreateDefaults();
                 if (!GameSaveController.TryRestoreCarried(weapon, carriedWeaponPrefab, player, travelPaints, out var error))
@@ -463,6 +476,7 @@ namespace WeaponWorkshop
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
             enemyKills = materialCrateCredits = 0;
+            earnedSlotTickets = collectedSlotTickets = 0;
             pendingModuleCollects.Clear(); discoveredEnemies.Clear();
             loggedRaidWeaponAssemblies.Clear();
             LogRaidStart();
@@ -582,7 +596,7 @@ namespace WeaponWorkshop
                 bool cleared = NightRaidTransfer.ResultCleared;
                 NightRaidTransfer.Abandon();
                 NightRaidTransfer.RecordResult(raidNumber, raidScene, cleared);
-                NightRaidTransfer.MarkStandaloneReturn();
+                NightRaidTransfer.MarkStandaloneReturn(cleared && !TutorialManager.TrainingRaidPending ? earnedSlotTickets : 0);
             }
             transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false);
             // 무기 복원 실패로 즉시 돌아온 경우에는 클리어/다음날 처리를 하지 않는다.
