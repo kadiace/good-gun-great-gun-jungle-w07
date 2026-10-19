@@ -118,6 +118,10 @@ namespace WeaponWorkshop
                 smokeInstance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
+        /// <summary>
+        /// explosionHit에 따라 penetration 또는 explosion을 해당 저항과 비교해 슬롯머신을 파괴한다.
+        /// 이미 파괴됐거나 위력이 부족하면 무시하고, 새 파괴 시 외형·파괴음·기록을 갱신한다.
+        /// </summary>
         public void ReceiveAttack(float penetration, float explosion, bool explosionHit)
         {
             if (destroyed || (explosionHit ? explosion < explosionResistance : penetration < penetrationResistance)) return;
@@ -137,6 +141,7 @@ namespace WeaponWorkshop
                 if (lever != null) lever.localRotation = restingLever;
             }
             RefreshDamageState();
+            SlotMachineSound.PlayDestroyed(transform.position);
             var entry = new ShopSlotMachineDestroyedLogEvent
             {
                 eventType = "slot_machine_destroyed", eventId = Guid.NewGuid().ToString("N"),
