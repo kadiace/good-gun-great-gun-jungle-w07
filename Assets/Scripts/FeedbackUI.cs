@@ -111,23 +111,22 @@ namespace WeaponWorkshop
             if (yesButton != null) yesButton.interactable = true;
             if (noButton != null) noButton.interactable = true;
         }
+        /// <summary>
+        /// 확인 문구와 단일 버튼 안내를 공용 선택창으로 표시한다.
+        /// requester, message, buttonLabel을 사용하며 표시 성공 여부를 반환한다.
+        /// </summary>
         public bool ShowAcknowledgement(object requester, string message, string buttonLabel = "확인했습니다")
         {
-            if (!isActiveAndEnabled || IsChoiceOpen || requester == null || choicePanel == null || choiceMessage == null || yesButton == null || noButton == null) return false;
-            owner = requester; yes = no = null;
-            openedFrame = Time.frameCount; confirmRequested = false;
-            choiceMessage.text = message;
-            yesButton.interactable = true;
+            if (!ShowChoice(requester, message, null, null, buttonLabel)) return false;
+
+            noButton.gameObject.SetActive(false);
             if (yesButtonRect != null)
             {
-                yesButtonRect.anchorMin = new Vector2(.5f, yesAnchorMin.y);
-                yesButtonRect.anchorMax = new Vector2(.5f, yesAnchorMax.y);
+                float anchorWidth = yesAnchorMax.x - yesAnchorMin.x;
+                yesButtonRect.anchorMin = new Vector2(.5f - anchorWidth * .5f, yesAnchorMin.y);
+                yesButtonRect.anchorMax = new Vector2(.5f + anchorWidth * .5f, yesAnchorMax.y);
             }
-            yesButton.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = buttonLabel;
-            noButton.gameObject.SetActive(false);
-            choicePanel.SetActive(true);
-            choicePanel.transform.SetAsLastSibling();
-            GameManager.Instance?.RefreshInputState();
+
             return true;
         }
         public void CancelChoice(object requester) { if (ReferenceEquals(owner, requester)) Cancel(); }
