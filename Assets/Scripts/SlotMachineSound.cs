@@ -52,17 +52,26 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 릴 회전 반복음을 슬롯머신 위치에서 시작한다.
-        /// followTarget을 반복 AudioSource의 위치 기준으로 사용하며 기존 루프는 먼저 정리한다.
+        /// 릴 회전음을 한 번 시작하고 사용할 회전 시간을 반환한다.
+        /// followTarget을 AudioSource 위치 기준으로 사용하며 음원이 없거나 길이를 쓸 수 없으면 fallbackDuration을 반환한다.
         /// </summary>
-        internal static void StartRotation(Transform followTarget)
+        internal static float StartRotation(Transform followTarget, float fallbackDuration)
         {
-            if (_instance == null) return;
+            if (_instance == null) return fallbackDuration;
             _instance.StopRotationLoop();
+            AudioClip rotationClip = _instance._rotationClip;
+            float duration = rotationClip != null ? rotationClip.length : fallbackDuration;
+            if (duration <= 0f || float.IsNaN(duration) || float.IsInfinity(duration)) duration = fallbackDuration;
+
             SoundManager soundManager = SoundManager.ActiveInstance;
-            if (soundManager != null)
+            if (soundManager != null && rotationClip != null)
+            {
                 _instance._rotationSource = soundManager.CreateLoop(
-                    _instance._rotationClip, followTarget, _instance._rotationVolume);
+                    rotationClip, followTarget, _instance._rotationVolume);
+                if (_instance._rotationSource != null) _instance._rotationSource.loop = false;
+            }
+
+            return duration;
         }
 
         /// <summary>
