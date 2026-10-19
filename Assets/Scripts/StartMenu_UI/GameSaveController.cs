@@ -161,6 +161,7 @@ namespace WeaponWorkshop
             var wallet = player.GetComponent<PlayerWallet>();
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
+                slotTickets = wallet.SlotTickets,
                 retired = retired,
                 slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
@@ -170,6 +171,13 @@ namespace WeaponWorkshop
                 lastLoanDay = wallet.LastLoanDay,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
                 savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null, saveId = PlayerIdentity.SaveId };
+            var slotMachine = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene);
+            if (slotMachine != null)
+            {
+                data.slotMachineDestructions = slotMachine.DestructionCount;
+                data.slotMachineDestroyedDay = slotMachine.DestroyedDay;
+                data.slotMachineDestroyedAtNight = slotMachine.DestroyedAtNight;
+            }
             data.playerPosition = player.transform.position; data.playerEuler = player.transform.eulerAngles;
             data.weaponPresets = player.GetComponent<WeaponPresets>()?.Capture();
             data.viewEuler = player.ViewPoint.localEulerAngles;
@@ -245,8 +253,9 @@ namespace WeaponWorkshop
                 else NightRaidTransfer.KeepRecovery(workshop);
                 return;
             }
-            if (NightRaidTransfer.TryConsumeStandaloneReturn())
+            if (NightRaidTransfer.TryConsumeStandaloneReturn(out int slotTickets))
             {
+                if (cleared) player.GetComponent<PlayerWallet>().CreditSlotTickets(slotTickets);
                 pendingClearedRaid = cleared ? resultRaid : 0;
                 _pendingClearedRaidScene = cleared ? resultRaidScene : null;
                 unsuccessfulRaidReturn = !cleared;
@@ -351,9 +360,12 @@ namespace WeaponWorkshop
             player.GetComponent<PlayerWallet>().RestoreLoans(data.outstandingLoans);
             player.GetComponent<PlayerWallet>().RestoreLastLoanDay(data.lastLoanDay);
             player.GetComponent<PlayerWallet>().RestoreModuleCredits(data.moduleCredits);
+            player.GetComponent<PlayerWallet>().RestoreSlotTickets(data.slotTickets);
             player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(data.unlockedModules);
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
+            FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.RestoreDamage(data.slotMachineDestructions,
+                data.slotMachineDestroyedDay, data.slotMachineDestroyedAtNight);
             RestoreRaidProgress(data);
             RestoreTrackUnlocks(data);
             retired = data.retired;

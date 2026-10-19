@@ -326,9 +326,12 @@ namespace WeaponWorkshop
             player.GetComponent<PlayerWallet>().RestoreLoans(data.outstandingLoans);
             player.GetComponent<PlayerWallet>().RestoreLastLoanDay(data.lastLoanDay);
             player.GetComponent<PlayerWallet>().RestoreModuleCredits(data.moduleCredits);
+            player.GetComponent<PlayerWallet>().RestoreSlotTickets(data.slotTickets);
             player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(data.unlockedModules);
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
+            FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.RestoreDamage(data.slotMachineDestructions,
+                data.slotMachineDestroyedDay, data.slotMachineDestroyedAtNight);
             RestoreRaidProgress(data);
             RestoreTrackUnlocks(data);
             retired = data.retired;

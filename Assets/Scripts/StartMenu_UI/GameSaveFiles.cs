@@ -156,7 +156,10 @@ namespace WeaponWorkshop
         public string[] passedTestIds = Array.Empty<string>();
         public int version = 8, day, balance, paidCost;
         public int slotMachineSpins;
+        public int slotMachineDestructions, slotMachineDestroyedDay = -1;
+        public bool slotMachineDestroyedAtNight;
         public int moduleCredits;
+        public int slotTickets;
         // 필드가 없는 이전 JSON은 0으로 읽힌다. 슬롯별 최고 클리어 습격 번호다.
         public int raidClearProgress;
         // 빈 배열은 신규 상태이며 DayFirst는 암묵적으로 해금된다. null은 구형 필드 부재다.

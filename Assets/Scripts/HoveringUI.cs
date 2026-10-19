@@ -245,7 +245,6 @@ namespace WeaponWorkshop
             bool available = interaction.CanInteractTarget;
             bool tutorialBlocked = TutorialManager.Instance != null && !TutorialManager.Instance.AllowsInteraction(interaction.AimedTarget);
             bool slotMachine = target is SlotMachineReels;
-            bool slotSpinning = target is SlotMachineReels machine && machine.IsSpinning;
             bool retire = target is RetireButton;
             bool manual = target is WorkshopManual && label.Title == "매뉴얼";
             if (description != null)
@@ -254,7 +253,8 @@ namespace WeaponWorkshop
                 description.color = slotMachine ? Color.white : bodyColor;
             }
             string condition = label.UnavailableCondition;
-            if (slotSpinning) condition = "회전 중...";
+            if (target is SlotMachineReels machine)
+                condition = machine.GetHoverDescription(PlayerWallet.ForPlayer(interaction.Player));
             else if (retire)
             {
                 PlayerWallet wallet = PlayerWallet.ForPlayer(interaction.Player);
@@ -263,12 +263,6 @@ namespace WeaponWorkshop
                 string shownAmount = wallet == null || wallet.Balance < cost
                     ? $"<color=#FF0000>{amount}</color>" : amount;
                 condition = condition.Replace("{RETIRE_COST}", shownAmount);
-            }
-            else if (slotMachine)
-            {
-                PlayerWallet wallet = PlayerWallet.ForPlayer(interaction.Player);
-                if (wallet == null || wallet.Balance < SlotMachineReels.SpinPrice)
-                    condition = condition.Replace("$500", "<color=#FF0000>$500</color>");
             }
             Show(label.Title, tutorialBlocked || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
                 retire || slotMachine);

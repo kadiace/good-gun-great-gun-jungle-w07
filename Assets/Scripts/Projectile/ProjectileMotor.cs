@@ -297,6 +297,9 @@ namespace WeaponWorkshop
             var endChestCore = HasLayerInParents(hit.collider, EndChestLayer)
                 ? GetComponentInParents<EndChestCore>(hit.collider) : null;
             if (endChestCore != null) endChestCore.NotifyHit();
+            var slotMachine = GetComponentInParents<SlotMachineReels>(hit.collider);
+            if (slotMachine != null && effects != null)
+                slotMachine.ReceiveAttack(effects.Stats.penetration, effects.Stats.explosion, false);
             bool water = effects != null && effects.IsWater;
             DestructibleTarget structure = FindStructure(hit.collider);
             if (structure != null && TutorialManager.Instance != null) TutorialManager.Instance.NotifyTargetHit(structure);

@@ -1553961,7 +1553961,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.RaidCrateSpawner
   materialCratePrefab: {fileID: 114001, guid: f6fb5b4d0f094e0a9a56297691e86ba8, type: 3}
-  moduleCratePrefab: {fileID: 114001, guid: 5362471a968346109f43bfe1d9fd126d, type: 3}
+  moduleCratePrefab: {fileID: 1063938059754495743, guid: 83de8f4ef0b369f4d8199a62d71b13c8, type: 3}
   catalog: {fileID: 11400000, guid: 9ba20ad561a32444ba7c6c150b2af8ea, type: 2}
   materialSpawnPoints:
   - {fileID: 821283342}
