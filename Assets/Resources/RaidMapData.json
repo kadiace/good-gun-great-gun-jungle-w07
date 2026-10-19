@@ -36,7 +36,7 @@
       "tanks": true
     },
     {
-      "entryCost": 1500,
+      "entryCost": 2500,
       "name": "군사기지",
       "selectionOrder": 4,
       "scene": "NightRaid_Millitary_base",
@@ -54,7 +54,7 @@
       "tanks": true
     },
     {
-      "entryCost": 2500,
+      "entryCost": 1500,
       "name": "정글 캠퍼스",
       "selectionOrder": 3,
       "scene": "NightRaid_JungleCampus",
