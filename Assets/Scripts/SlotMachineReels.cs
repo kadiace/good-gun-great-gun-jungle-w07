@@ -16,6 +16,10 @@ namespace WeaponWorkshop
         [SerializeField] private Interaction interaction;
         [SerializeField] private _DayManager dayManager;
         [SerializeField] private GameObject costPanel;
+        [SerializeField] private ParticleSystem damageSmoke;
+        [SerializeField] private GameObject intactVisual;
+        [SerializeField] private GameObject brokenVisual;
+        private ParticleSystem smokeInstance;
 
         public const int SpinPrice = 1000;
         private static readonly int[] Prizes = { 500, 1000, 2000, 4000, 50000, 5000 };
@@ -26,17 +30,40 @@ namespace WeaponWorkshop
         private bool spinning;
         private bool skipRequested;
         private int completedSpins;
+        private int destructionCount;
+        private int destroyedDay = -1;
+        private bool destroyedAtNight;
+        private bool destroyed;
+        private float penetrationResistance = 1f;
+        private float explosionResistance = 1f;
 
         public Transform OutlineRoot => transform;
         public int CompletedSpins => completedSpins;
         public bool IsSpinning => spinning;
+        public int DestructionCount => destructionCount;
+        public int DestroyedDay => destroyedDay;
+        public bool DestroyedAtNight => destroyedAtNight;
 
         public void RestoreSpins(int count) => completedSpins = Mathf.Clamp(count, 0, 3);
 
+        public void RestoreDamage(int count, int day, bool atNight)
+        {
+            destructionCount = Mathf.Max(0, count);
+            destroyedDay = day;
+            destroyedAtNight = atNight;
+            destroyed = day >= 0;
+            penetrationResistance = explosionResistance = 1f + 2f * Mathf.Max(0, destructionCount - (destroyed ? 1 : 0));
+            RefreshDamageState();
+        }
+
         private void Awake()
         {
+            if (dayManager == null) dayManager = FindFirstObjectByType<_DayManager>();
+            destroyed = false;
             if (costPanel != null) costPanel.SetActive(false);
             if (payoutBills != null) payoutBills.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            if (intactVisual != null) intactVisual.SetActive(true);
+            if (brokenVisual != null) brokenVisual.SetActive(false);
             if (lever != null) restingLever = lever.localRotation;
             if (marquee == null) return;
             originalMarquee = marquee.sharedMaterial;
@@ -48,8 +75,16 @@ namespace WeaponWorkshop
             glowingMarquee.EnableKeyword("_EMISSION");
         }
 
+        private void OnEnable()
+        {
+            if (dayManager == null) dayManager = FindFirstObjectByType<_DayManager>();
+            if (dayManager != null) dayManager.Changed += RefreshDamageState;
+            RefreshDamageState();
+        }
+
         private void OnDisable()
         {
+            if (dayManager != null) dayManager.Changed -= RefreshDamageState;
             StopAllCoroutines();
             spinning = false;
             skipRequested = false;
@@ -58,6 +93,60 @@ namespace WeaponWorkshop
             if (payoutBills != null) payoutBills.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             if (marquee != null) marquee.sharedMaterial = originalMarquee;
             if (lever != null) lever.localRotation = restingLever;
+            if (smokeInstance != null) smokeInstance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        private void RefreshDamageState()
+        {
+            if (destroyed && dayManager != null && dayManager.DayNumber > destroyedDay &&
+                dayManager.IsNight == destroyedAtNight)
+            {
+                destroyed = false;
+                destroyedDay = -1;
+                penetrationResistance = explosionResistance = 1f + 2f * destructionCount;
+            }
+            if (intactVisual != null) intactVisual.SetActive(!destroyed);
+            if (brokenVisual != null) brokenVisual.SetActive(destroyed);
+            if (destroyed && smokeInstance == null && damageSmoke != null)
+            {
+                smokeInstance = Instantiate(damageSmoke, transform);
+                smokeInstance.transform.localPosition = new Vector3(0f, 0.8f, 0f);
+            }
+            if (smokeInstance == null) return;
+            if (destroyed && !smokeInstance.isPlaying) smokeInstance.Play(true);
+            else if (!destroyed && smokeInstance.isPlaying)
+                smokeInstance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        public void ReceiveAttack(float penetration, float explosion, bool explosionHit)
+        {
+            if (destroyed || (explosionHit ? explosion < explosionResistance : penetration < penetrationResistance)) return;
+            float requiredPenetration = penetrationResistance;
+            float requiredExplosion = explosionResistance;
+            destroyed = true;
+            destroyedDay = dayManager != null ? dayManager.DayNumber : 0;
+            destroyedAtNight = dayManager != null && dayManager.IsNight;
+            destructionCount++;
+            if (spinning)
+            {
+                StopAllCoroutines();
+                spinning = false;
+                skipRequested = false;
+                SlotMachineSound.StopRotation();
+                if (marquee != null) marquee.sharedMaterial = originalMarquee;
+                if (lever != null) lever.localRotation = restingLever;
+            }
+            RefreshDamageState();
+            var entry = new ShopSlotMachineDestroyedLogEvent
+            {
+                eventType = "slot_machine_destroyed", eventId = Guid.NewGuid().ToString("N"),
+                day = destroyedDay, period = dayManager != null ? dayManager.CurrentPeriod.ToString() : "unknown",
+                isNight = destroyedAtNight, penetration = penetration, explosion = explosion,
+                penetrationResistance = requiredPenetration, explosionResistance = requiredExplosion,
+                destructionCount = destructionCount
+            };
+            try { GameLogger.Data("Info", "Shop", entry.eventType, entry); }
+            catch (Exception exception) { Debug.LogWarning("슬롯머신 파괴 로그 기록 실패: " + exception.Message, this); }
         }
 
         private void OnDestroy()
@@ -68,7 +157,7 @@ namespace WeaponWorkshop
         public bool CanInteract(Interaction interactor)
         {
             PlayerWallet wallet = interactor != null ? PlayerWallet.ForPlayer(interactor.Player) : null;
-            return isActiveAndEnabled && !GameManager.GameplayBlocked &&
+            return isActiveAndEnabled && !destroyed && !GameManager.GameplayBlocked &&
                 wallet != null && (spinning || wallet.SlotTickets > 0 || wallet.CanAfford(SpinPrice));
         }
 
@@ -99,12 +188,20 @@ namespace WeaponWorkshop
 
         public string GetHoverDescription(PlayerWallet wallet)
         {
-            if (spinning) return "회전 중... (F로 건너뛰기)";
+            string resistance = $"관통 내성 {penetrationResistance:0.##} / 폭발 내성 {explosionResistance:0.##}";
+            if (destroyed)
+            {
+                string when = dayManager != null && dayManager.DayNumber > destroyedDay &&
+                    destroyedAtNight && !dayManager.IsNight ? "오늘 밤" :
+                    $"다음 날 {(destroyedAtNight ? "밤" : "낮")}";
+                return resistance + $"\n파괴되어 수리 중입니다. {when}에 사용할 수 있습니다.";
+            }
+            if (spinning) return resistance + "\n회전 중... (F로 건너뛰기)";
             string ticketAmount = wallet == null || wallet.SlotTickets == 0
                 ? "<color=#FF0000>1개</color>" : "1개";
             string amount = wallet == null || (wallet.SlotTickets == 0 && !wallet.CanAfford(SpinPrice))
                 ? "<color=#FF0000>$1000</color>" : "$1000";
-            return $"슬롯머신 티켓 {ticketAmount} 또는 {amount}을 소모해 당길 수 있습니다.\n" +
+            return resistance + $"\n슬롯머신 티켓 {ticketAmount} 또는 {amount}을 소모해 당길 수 있습니다.\n" +
                 "슬롯머신 티켓이 있으면 먼저 사용합니다.\n당첨금:\n" +
                 "기본 $500\n연장 $1,000\n연사 $2,000\n관통 $4,000\n폭발 $5,000\n방사 $50,000";
         }

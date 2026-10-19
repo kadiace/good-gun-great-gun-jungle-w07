@@ -156,6 +156,8 @@ namespace WeaponWorkshop
         public string[] passedTestIds = Array.Empty<string>();
         public int version = 8, day, balance, paidCost;
         public int slotMachineSpins;
+        public int slotMachineDestructions, slotMachineDestroyedDay = -1;
+        public bool slotMachineDestroyedAtNight;
         public int moduleCredits;
         public int slotTickets;
         // 필드가 없는 이전 JSON은 0으로 읽힌다. 슬롯별 최고 클리어 습격 번호다.
