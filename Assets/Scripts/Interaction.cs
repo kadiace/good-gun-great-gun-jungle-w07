@@ -27,8 +27,7 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
-            // Weapon is excluded from energy hits, but must remain selectable by the player.
-            interactionLayers |= LayerMask.GetMask("Weapon");
+            interactionLayers |= LayerMask.GetMask("Weapon", "DroppedGun");
             view = GetComponent<Camera>();
             if (inputActions == null || player == null) { enabled = false; return; }
             controls = inputActions.FindActionMap("Workshop", true).Clone();
