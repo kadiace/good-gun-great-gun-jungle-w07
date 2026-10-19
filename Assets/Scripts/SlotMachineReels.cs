@@ -142,6 +142,8 @@ namespace WeaponWorkshop
             }
             RefreshDamageState();
             SlotMachineSound.PlayDestroyed(transform.position);
+            var wallet = FindFirstObjectByType<PlayerWallet>();
+            if (wallet != null) wallet.Credit(1500);
             var entry = new ShopSlotMachineDestroyedLogEvent
             {
                 eventType = "slot_machine_destroyed", eventId = Guid.NewGuid().ToString("N"),

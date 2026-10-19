@@ -249,7 +249,7 @@ namespace WeaponWorkshop
             bool manual = target is WorkshopManual && label.Title == "매뉴얼";
             if (description != null)
             {
-                description.gameObject.SetActive(!tutorialBlocked && (slotMachine || retire || manual || !available));
+                description.gameObject.SetActive((slotMachine || !tutorialBlocked) && (slotMachine || retire || manual || !available));
                 description.color = slotMachine ? Color.white : bodyColor;
             }
             string condition = label.UnavailableCondition;
@@ -264,7 +264,7 @@ namespace WeaponWorkshop
                     ? $"<color=#FF0000>{amount}</color>" : amount;
                 condition = condition.Replace("{RETIRE_COST}", shownAmount);
             }
-            Show(label.Title, tutorialBlocked || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
+            Show(label.Title, (tutorialBlocked && !slotMachine) || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
                 retire || slotMachine);
             ShowInteract();
             if (title != null) title.color = Color.white;
