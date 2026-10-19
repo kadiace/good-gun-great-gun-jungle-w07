@@ -512,12 +512,12 @@ namespace WeaponWorkshop
             // 잔액 검사는 버튼이 이미 꺼져 있어야 하므로 방어용이다.
             if (cost > 0 && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))
             { ui.ShowError("입장 비용이 부족합니다."); return; }
-            // 무료 구역은 확인 없이 바로 들어간다.
-            if (cost <= 0) { BeginRaid(regionScene, cost, training, tutorial); return; }
             // 확인 시점에는 지도·잔액 상태가 바뀌었을 수 있으므로 다시 검사한 뒤 진입한다.
-            ui.ShowEntryConfirm($"$ {cost:N0}를 내고 {region.name}에 입장하시겠습니까?", () =>
+            string name = training ? "연습 목조주택" : region.name;
+            string message = cost > 0 ? $"$ {cost:N0}를 내고 {name}에 입장하시겠습니까?" : $"{name}에 입장하시겠습니까?";
+            ui.ShowEntryConfirm(message, () =>
             {
-                if (!mapOpen || transitioning || player == null || !region.CanAffordEntry(player.GetComponent<PlayerWallet>())) return;
+                if (!mapOpen || transitioning || player == null || (!training && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))) return;
                 BeginRaid(regionScene, cost, training, tutorial);
             });
         }
