@@ -188,6 +188,8 @@ MonoBehaviour:
   _reelStopVolume: 1
   _payoutClip: {fileID: 8300000, guid: 3f7e9ec79939ea94abf7f930f0a1008e, type: 3}
   _payoutVolume: 1
+  _failClip: {fileID: 8300000, guid: 876e576db5523ad4dabe37211e4d3c8a, type: 3}
+  _failVolume: 1
 --- !u!1 &8750000000000000002
 GameObject:
   m_ObjectHideFlags: 0

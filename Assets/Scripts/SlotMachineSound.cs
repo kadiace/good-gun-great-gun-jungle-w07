@@ -22,7 +22,12 @@ namespace WeaponWorkshop
         [SerializeField] private AudioClip _payoutClip;
         [SerializeField, Range(0f, 1f)] private float _payoutVolume = 1f;
 
+        [Header("Fail")]
+        [SerializeField] private AudioClip _failClip;
+        [SerializeField, Range(0f, 1f)] private float _failVolume = 1f;
+
         private AudioSource _rotationSource;
+        private AudioSource _resultSource;
 
         private void OnEnable()
         {
@@ -32,12 +37,14 @@ namespace WeaponWorkshop
         private void OnDisable()
         {
             StopRotationLoop();
+            StopResultSound();
             if (_instance == this) _instance = null;
         }
 
         private void OnDestroy()
         {
             StopRotationLoop();
+            StopResultSound();
             if (_instance == this) _instance = null;
         }
 
@@ -52,12 +59,13 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 릴 회전음을 한 번 시작하고 사용할 회전 시간을 반환한다.
+        /// 이전 결과음을 끊고 릴 회전음을 한 번 시작한 뒤 사용할 회전 시간을 반환한다.
         /// followTarget을 AudioSource 위치 기준으로 사용하며 음원이 없거나 길이를 쓸 수 없으면 fallbackDuration을 반환한다.
         /// </summary>
         internal static float StartRotation(Transform followTarget, float fallbackDuration)
         {
             if (_instance == null) return fallbackDuration;
+            _instance.StopResultSound();
             _instance.StopRotationLoop();
             AudioClip rotationClip = _instance._rotationClip;
             float duration = rotationClip != null ? rotationClip.length : fallbackDuration;
@@ -100,7 +108,46 @@ namespace WeaponWorkshop
         internal static void PlayPayout(Vector3 position)
         {
             if (_instance == null) return;
-            _instance.PlayOneShot(_instance._payoutClip, position, _instance._payoutVolume);
+            _instance.PlayResult(_instance._payoutClip, position, _instance._payoutVolume);
+        }
+
+        /// <summary>
+        /// 모든 릴이 멈춘 뒤 꽝 결과의 실패 효과음을 슬롯머신 위치에서 한 번 재생한다.
+        /// position을 사용하며 클립이 지정되지 않았으면 재생하지 않는다.
+        /// </summary>
+        internal static void PlayFail(Vector3 position)
+        {
+            if (_instance == null) return;
+            _instance.PlayResult(_instance._failClip, position, _instance._failVolume);
+        }
+
+        /// <summary>
+        /// 기존 결과음을 끊고 clip을 position과 volume으로 한 번 재생한다.
+        /// 다음 회전에서 정지할 수 있도록 공통 SFX 경로가 반환한 AudioSource를 보관한다.
+        /// </summary>
+        private void PlayResult(AudioClip clip, Vector3 position, float volume)
+        {
+            StopResultSound();
+            SoundManager soundManager = SoundManager.ActiveInstance;
+            if (clip != null && soundManager != null)
+                _resultSource = soundManager.PlayClip(clip, position, volume);
+        }
+
+        /// <summary>
+        /// 보관한 당첨금 수령음 또는 실패음을 즉시 멈추고 SFX 추적과 오브젝트를 정리한다.
+        /// 다음 회전 시작과 컴포넌트 비활성화·파괴 시 결과음 참조를 비운다.
+        /// </summary>
+        private void StopResultSound()
+        {
+            if (_resultSource == null) return;
+            SoundManager soundManager = SoundManager.ActiveInstance;
+            if (soundManager != null) soundManager.StopLoop(_resultSource);
+            else
+            {
+                _resultSource.Stop();
+                Destroy(_resultSource.gameObject);
+            }
+            _resultSource = null;
         }
 
         /// <summary>

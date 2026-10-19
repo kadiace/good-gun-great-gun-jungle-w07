@@ -647,10 +647,13 @@ namespace WeaponWorkshop
             PlayClip(clip, position, volume);
         }
 
-        // 인스펙터에 연결한 음원도 기존 효과음과 동일한 마스터/SFX 채널로 재생한다.
-        internal void PlayClip(AudioClip clip, Vector3 position, float volume)
+        /// <summary>
+        /// clip을 position에서 volume과 공통 마스터/SFX 설정으로 한 번 재생한다.
+        /// 개별 정지에 사용할 AudioSource를 반환하며 클립이 없으면 null을 반환한다.
+        /// </summary>
+        internal AudioSource PlayClip(AudioClip clip, Vector3 position, float volume)
         {
-            if (clip == null) return;
+            if (clip == null) return null;
             // PlayClipAtPoint와 동일한 위치/기본 감쇠·수명을 사용하되 채널에서 추적한다.
             var sound = new GameObject("One shot audio");
             sound.transform.position = position;
@@ -660,6 +663,7 @@ namespace WeaponWorkshop
             TrackSfx(source, volume);
             source.Play();
             Destroy(sound, clip.length * (Time.timeScale < .01f ? .01f : Time.timeScale));
+            return source;
         }
 
         private void OnValidate()

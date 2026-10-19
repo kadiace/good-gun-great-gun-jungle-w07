@@ -138,7 +138,7 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 결과 심볼에 맞춰 릴을 회전시키고 정해진 시간표대로 순차 정지한다.
-        /// result와 wallet을 사용하며 정지음·당첨 지급을 처리한 뒤 회전을 종료 상태로 둔다.
+        /// result와 wallet을 사용하며 정지음·당첨 지급 또는 실패음을 처리한 뒤 회전을 종료 상태로 둔다.
         /// </summary>
         private IEnumerator Spin(int[] result, PlayerWallet wallet)
         {
@@ -202,7 +202,11 @@ namespace WeaponWorkshop
                 if (payoutBills != null) payoutBills.Emit(48);
                 FeedbackUI.For(this)?.ShowNotification($"{Symbols[result[0]]} 당첨! ${Prizes[result[0]]:N0}");
             }
-            else FeedbackUI.For(this)?.ShowNotification("다음 기회에!");
+            else
+            {
+                SlotMachineSound.PlayFail(transform.position);
+                FeedbackUI.For(this)?.ShowNotification("다음 기회에!");
+            }
             spinning = false;
         }
     }
