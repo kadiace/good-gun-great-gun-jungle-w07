@@ -1067,7 +1067,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8158536294019657861
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3728,7 +3728,6 @@ MonoBehaviour:
   - {fileID: 715341613567590670}
   - {fileID: 502869087424888377}
   - {fileID: 1434704876170160725}
-  - {fileID: 6862392697268041802}
   backButton: {fileID: 7399866862179371548}
   returnButton: {fileID: 0}
   stayButton: {fileID: 0}
