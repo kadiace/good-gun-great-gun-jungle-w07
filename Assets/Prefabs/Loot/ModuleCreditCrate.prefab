@@ -204,7 +204,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pickupPrefab: {fileID: 114002, guid: 7255c3617b4e4f94a9d9d7d246d8cb02, type: 3}
-  creditsPerPickup: 50
+  creditsPerPickup: 5
   scatterSpeed: 2
   upwardSpeed: 3
 --- !u!114 &7352774144054754105
