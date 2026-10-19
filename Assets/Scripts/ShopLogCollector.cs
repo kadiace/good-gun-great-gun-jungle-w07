@@ -169,7 +169,9 @@ namespace WeaponWorkshop
                 time = Time.realtimeSinceStartup,
                 period = dayManager.CurrentPeriod.ToString(), isNight = dayManager.IsNight,
                 profileId = order != null ? order.ProfileId ?? "" : "",
-                amount = PlayerWallet.LoanAmount, outstandingLoans = wallet.OutstandingLoans,
+                amount = PlayerWallet.LoanAmount,
+                interest = (int)((long)dayManager.NextSettlementRent * wallet.OutstandingLoans / 5),
+                outstandingLoans = wallet.OutstandingLoans,
                 balanceAfter = wallet.Balance, completedGuests = dayManager.CompletedGuests
             }, "loan_taken", order, day);
         }
