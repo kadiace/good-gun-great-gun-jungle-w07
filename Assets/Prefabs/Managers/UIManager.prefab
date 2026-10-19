@@ -15978,8 +15978,8 @@ RectTransform:
   - {fileID: 7809342697319076298}
   m_Father: {fileID: 872166532333396244}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.54, y: 0.4525278}
-  m_AnchorMax: {x: 0.6, y: 0.48900002}
+  m_AnchorMin: {x: 0.4, y: 0.4525278}
+  m_AnchorMax: {x: 0.46, y: 0.48900002}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -16042,11 +16042,11 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 0.48, g: 0.16, b: 0.16, a: 1}
-    m_HighlightedColor: {r: 0.64, g: 0.23, b: 0.23, a: 1}
-    m_PressedColor: {r: 0.35, g: 0.1, b: 0.1, a: 1}
-    m_SelectedColor: {r: 0.64, g: 0.23, b: 0.23, a: 1}
-    m_DisabledColor: {r: 0.26, g: 0.17, b: 0.17, a: 0.5}
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+    m_PressedColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
+    m_SelectedColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+    m_DisabledColor: {r: 0.55, g: 0.55, b: 0.55, a: 0.5}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.12
   m_SpriteState:
@@ -23625,7 +23625,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC544\uB2C8\uC624"
+  m_text: "\uC608"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: bcc82f7b16e14ed4bb223e050ba23c00, type: 2}
   m_sharedMaterial: {fileID: 1426258466443670400, guid: bcc82f7b16e14ed4bb223e050ba23c00, type: 2}
@@ -23634,8 +23634,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -36874,8 +36874,8 @@ RectTransform:
   - {fileID: 779108458760015909}
   m_Father: {fileID: 872166532333396244}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.4, y: 0.4525278}
-  m_AnchorMax: {x: 0.46, y: 0.48900002}
+  m_AnchorMin: {x: 0.54, y: 0.4525278}
+  m_AnchorMax: {x: 0.6, y: 0.48900002}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -36938,11 +36938,11 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 0.16078432, g: 0.1764706, b: 0.2, a: 1}
-    m_HighlightedColor: {r: 0.23921569, g: 0.26666668, b: 0.30980393, a: 1}
-    m_PressedColor: {r: 0.10980392, g: 0.1254902, b: 0.14901961, a: 1}
-    m_SelectedColor: {r: 0.23921569, g: 0.26666668, b: 0.30980393, a: 1}
-    m_DisabledColor: {r: 0.13333334, g: 0.14509805, b: 0.16862746, a: 1}
+    m_NormalColor: {r: 0.32, g: 0.18, b: 0.22, a: 1}
+    m_HighlightedColor: {r: 0.4, g: 0.23, b: 0.28, a: 1}
+    m_PressedColor: {r: 0.23, g: 0.13, b: 0.16, a: 1}
+    m_SelectedColor: {r: 0.4, g: 0.23, b: 0.28, a: 1}
+    m_DisabledColor: {r: 0.22, g: 0.16, b: 0.18, a: 0.5}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.12
   m_SpriteState:
@@ -42142,8 +42142,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   panel: {fileID: 4599983781285094905}
-  skipButton: {fileID: 6066822492888278935}
-  tutorialButton: {fileID: 891281009914029777}
+  skipButton: {fileID: 891281009914029777}
+  tutorialButton: {fileID: 6066822492888278935}
 --- !u!114 &3873522102171416751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -49462,7 +49462,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC608"
+  m_text: "\uC544\uB2C8\uC624"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: bcc82f7b16e14ed4bb223e050ba23c00, type: 2}
   m_sharedMaterial: {fileID: 1426258466443670400, guid: bcc82f7b16e14ed4bb223e050ba23c00, type: 2}

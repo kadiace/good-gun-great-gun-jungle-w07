@@ -41,6 +41,8 @@ namespace WeaponWorkshop
         private static int originalMoney, originalCredits;
         private static int[] originalUnlocks;
         private static string[] originalPresets;
+        private static int originalSlotMachineDestructions, originalSlotMachineDestroyedDay;
+        private static bool originalSlotMachineDestroyedAtNight;
         public const string TrainingScene = "Tutorial_WoodenHouse";
         public bool IsGuidedDayZero => dayZeroOwner != null || trainingSequence != null;
         public static bool TrainingRaidPending => trainingSequence != null && !trainingReturning;
@@ -51,6 +53,7 @@ namespace WeaponWorkshop
         {
             trainingSequence = null; trainingStep = 0; trainingReturning = practiceEconomy = false;
             originalUnlocks = null; originalPresets = null;
+            originalSlotMachineDestructions = 0; originalSlotMachineDestroyedDay = -1; originalSlotMachineDestroyedAtNight = false;
         }
         private FirstPersonPlayer TutorialPlayer => GameManager.Instance != null && GameManager.Instance.UI != null
             ? GameManager.Instance.UI.Player : null;
@@ -66,6 +69,10 @@ namespace WeaponWorkshop
             originalMoney = wallet.Balance; originalCredits = wallet.ModuleCredits;
             originalUnlocks = player.GetComponent<PlayerModuleUnlocks>().CaptureUnlockedModules();
             originalPresets = player.GetComponent<WeaponPresets>().Capture();
+            var slotMachine = FindFirstObjectByType<SlotMachineReels>();
+            originalSlotMachineDestructions = slotMachine != null ? slotMachine.DestructionCount : 0;
+            originalSlotMachineDestroyedDay = slotMachine != null ? slotMachine.DestroyedDay : -1;
+            originalSlotMachineDestroyedAtNight = slotMachine != null && slotMachine.DestroyedAtNight;
             var emptyFirst = (string[])originalPresets.Clone();
             emptyFirst[0] = null;
             player.GetComponent<WeaponPresets>().Restore(emptyFirst);
@@ -87,6 +94,9 @@ namespace WeaponWorkshop
                 var savedPresets = player.GetComponent<WeaponPresets>().Capture();
                 originalPresets[0] = savedPresets[0];
                 player.GetComponent<WeaponPresets>().Restore(originalPresets);
+                var slotMachine = FindFirstObjectByType<SlotMachineReels>();
+                if (slotMachine != null) slotMachine.RestoreDamage(originalSlotMachineDestructions,
+                    originalSlotMachineDestroyedDay, originalSlotMachineDestroyedAtNight);
             }
             ResetTraining();
         }
