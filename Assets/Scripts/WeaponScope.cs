@@ -51,6 +51,7 @@ namespace WeaponWorkshop
         private Rect baseRect = new Rect(0f, 0f, 1f, 1f);
         private float baseNearClipPlane = 0.3f;
         private bool zoomApplied;
+        private bool _tutorialCameraOverride;
 
         private readonly List<EquipableWeapon.ScopeView> views = new List<EquipableWeapon.ScopeView>();
         private readonly List<ScopeViewPose> scopeViewPoses = new List<ScopeViewPose>();
@@ -78,6 +79,19 @@ namespace WeaponWorkshop
         }
 
         public bool IsAiming => progress > 0f;
+
+        /// <summary>
+        /// 튜토리얼 카메라 연출 동안 스코프가 카메라를 갱신하지 않게 하며 기존 줌 상태를 보존합니다.
+        /// </summary>
+        public void SetTutorialCameraOverride(bool active)
+        {
+            if (_tutorialCameraOverride == active) return;
+            _tutorialCameraOverride = active;
+            if (!active) return;
+            RestoreWeaponRenderers();
+            RestoreScopeVisuals(true);
+            SetOverlay(0f, false);
+        }
 
         private void Awake()
         {
@@ -110,6 +124,7 @@ namespace WeaponWorkshop
             if (holder != null) holder.EquippedWeaponChanged -= OnEquippedWeaponChanged;
             BindScopeViewsWeapon(null);
             ResetZoom();
+            _tutorialCameraOverride = false;
         }
 
         private void OnDestroy()
@@ -119,6 +134,7 @@ namespace WeaponWorkshop
 
         private void LateUpdate()
         {
+            if (_tutorialCameraOverride) return;
             RestoreScopeVisuals(false);
             Camera view = holder.AimCamera;
             if (view == null)

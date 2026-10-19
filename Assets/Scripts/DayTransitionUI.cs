@@ -11,6 +11,7 @@ namespace WeaponWorkshop
         [SerializeField] private TMP_Text dayText;
         [SerializeField] private CanvasGroup titleFade;
         public event System.Action Covered;
+        public event System.Action DayTextShown;
         public event System.Action Completed;
         [SerializeField, Min(.01f)] private float fadeDuration = .45f;
         [SerializeField, Min(0f)] private float titleDuration = 1f;
@@ -55,6 +56,9 @@ namespace WeaponWorkshop
             transition = StartCoroutine(Advance(day, false, true));
             return true;
         }
+        /// <summary>
+        /// 날짜 전환을 진행하고 날짜 문구가 표시되는 순간을 알립니다.
+        /// </summary>
         private IEnumerator Advance(_DayManager day, bool firstDay = false, bool alreadyCovered = false)
         {
             if (!alreadyCovered) yield return Fade(0f, 1f);
@@ -63,6 +67,7 @@ namespace WeaponWorkshop
             if (GameManager.Instance != null) GameManager.Instance.SetDialogue(true);
             dayText.text = "Day " + day.DayNumber;
             dayText.gameObject.SetActive(true);
+            DayTextShown?.Invoke();
             yield return FadeTitle(0f, 1f);
             yield return new WaitForSecondsRealtime(titleDuration);
             yield return FadeTitle(1f, 0f);

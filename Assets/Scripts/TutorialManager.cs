@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -8,6 +10,8 @@ namespace WeaponWorkshop
     [DisallowMultipleComponent, DefaultExecutionOrder(-100)]
     public sealed partial class TutorialManager : MonoBehaviour
     {
+        private const float RETIREMENT_CAMERA_DURATION = 2f;
+
         [SerializeField] private DialogueUI dialogue;
         [SerializeField, Tooltip("Tutorial log guideMode. Policy names are not decided yet; empty by default.")] private string guideMode = "";
         [SerializeField] private TutorialSkipUI selection;
@@ -25,6 +29,47 @@ namespace WeaponWorkshop
         private Coroutine warningTurn;
         [SerializeField, Min(.01f)] private float warningTurnDuration = .25f;
         [SerializeField] private string blockedInteractionMessage = "튜토리얼 중에는 안내된 대상과만 상호작용할 수 있습니다.";
+        [Header("튜토리얼 은퇴 소개")]
+        [SerializeField] private Transform _retirementShotPoint;
+        [SerializeField] private GameObject[] _retirementHudElements = Array.Empty<GameObject>();
+        private readonly List<RetirementHudState> _retirementHudStates = new List<RetirementHudState>();
+        private readonly Dictionary<Renderer, bool> _retirementWeaponRendererStates = new Dictionary<Renderer, bool>();
+        private Camera _retirementCamera;
+        private WeaponScope _retirementWeaponScope;
+        private Vector3 _retirementCameraStartPosition;
+        private Quaternion _retirementCameraStartRotation;
+        private Coroutine _retirementCameraRoutine;
+        private bool _retirementPresentationActive;
+        private bool _retirementCameraOverrideActive;
+        private bool _retirementOwnsInputBlock;
+        private bool _retirementIntroductionAwaitingConfirmation;
+        private bool _retirementFinalAwaitingConfirmation;
+        private bool _retirementReturnInProgress;
+        private bool _retirementReturnOnNextStep;
+
+        private sealed class RetirementHudState
+        {
+            public CanvasGroup Group { get; }
+            public float Alpha { get; }
+            public bool Interactable { get; }
+            public bool BlocksRaycasts { get; }
+            public bool AddedByPresentation { get; }
+
+            /// <summary>
+            /// HUD CanvasGroup의 변경 전 값을 저장해 연출이 끝난 뒤 복원할 수 있게 합니다.
+            /// </summary>
+            /// <param name="group">연출 전에 상태를 보관할 HUD CanvasGroup입니다.</param>
+            /// <param name="addedByPresentation">CanvasGroup을 이번 연출에서 추가했는지 나타냅니다.</param>
+            public RetirementHudState(CanvasGroup group, bool addedByPresentation)
+            {
+                Group = group;
+                Alpha = group.alpha;
+                Interactable = group.interactable;
+                BlocksRaycasts = group.blocksRaycasts;
+                AddedByPresentation = addedByPresentation;
+            }
+        }
+
         private _DayManager dayZeroOwner;
         private DayTransitionUI endingTransition;
         private sealed class Request
@@ -150,6 +195,9 @@ namespace WeaponWorkshop
             BeginPractice();
             Run(dayZeroOwner.CurrentCustomerDay.startTutorial, dayZeroOwner, EndDayZero);
         }
+        /// <summary>
+        /// 튜토리얼을 마치고 기존 1일차 전환을 시작합니다.
+        /// </summary>
         private void EndDayZero()
         {
             ResolvePresentation();
@@ -158,21 +206,29 @@ namespace WeaponWorkshop
             {
                 endingTransition.Completed += CompleteDayZero;
                 endingTransition.Covered += PrepareFirstDay;
+                if (_retirementPresentationActive) endingTransition.DayTextShown += RestoreRetirementPresentationOnDayText;
                 if (endingTransition.BeginFirstDay(dayZeroOwner)) return;
                 endingTransition.Completed -= CompleteDayZero;
                 endingTransition.Covered -= PrepareFirstDay;
+                endingTransition.DayTextShown -= RestoreRetirementPresentationOnDayText;
             }
+            RestoreRetirementPresentation();
             PrepareFirstDay();
             if (dayZeroOwner != null) dayZeroOwner.BeginFirstBusinessDay();
             CompleteDayZero();
         }
+        /// <summary>
+        /// 0일차 튜토리얼 상태와 연출 참조를 정리합니다.
+        /// </summary>
         private void CompleteDayZero()
         {
+            RestoreRetirementPresentation();
             ClearShootingTarget(); pendingWarnings.Clear();
             if (endingTransition != null)
             {
                 endingTransition.Completed -= CompleteDayZero;
                 endingTransition.Covered -= PrepareFirstDay;
+                endingTransition.DayTextShown -= RestoreRetirementPresentationOnDayText;
             }
             endingTransition = null; dayZeroOwner = null; Changed?.Invoke();
         }
@@ -200,6 +256,9 @@ namespace WeaponWorkshop
             if (current != null || waiting.Count == 0) return;
             current = waiting.Dequeue(); StepIndex = 0; withheldBalance = 0; loanGuideShown = false; ShowStep();
         }
+        /// <summary>
+        /// 현재 단계의 준비·대사·은퇴 소개 연출을 표시합니다.
+        /// </summary>
         private void ShowStep()
         {
             stepIntroductionOpen = false;
@@ -221,6 +280,16 @@ namespace WeaponWorkshop
                 body.WakeUp();
             }
             Changed?.Invoke();
+            if (step.completion == TutorialCompletion.RetirementIntroduction)
+            {
+                if (!BeginRetirementIntroduction(step)) Finish("error");
+                return;
+            }
+            if (_retirementReturnOnNextStep)
+            {
+                BeginRetirementFinalStep(step);
+                return;
+            }
             if (step.completion == TutorialCompletion.Confirmation ||
                 (step.completion == TutorialCompletion.Signal && step.showDescriptionBeforeObjective &&
                     !string.IsNullOrWhiteSpace(step.description)))
@@ -285,10 +354,29 @@ namespace WeaponWorkshop
             if (!dialogue.Show(CurrentStep.description, "확인", Confirm, "튜토리얼"))
             { ownsDialogue = false; tankSpawnGuidanceOpen = false; Finish("error"); }
         }
+        /// <summary>
+        /// 대화 확인을 처리하고 은퇴 소개와 마지막 안내의 카메라 복귀를 진행합니다.
+        /// </summary>
         private void Confirm()
         {
             var step = CurrentStep;
             if (step == null) return;
+            if (_retirementIntroductionAwaitingConfirmation)
+            {
+                _retirementIntroductionAwaitingConfirmation = false;
+                _retirementReturnOnNextStep = true;
+                ReleaseDialogue();
+                Advance();
+                return;
+            }
+            if (_retirementFinalAwaitingConfirmation)
+            {
+                if (_retirementReturnInProgress) CompleteRetirementCameraReturn();
+                _retirementFinalAwaitingConfirmation = false;
+                ReleaseDialogue();
+                Advance();
+                return;
+            }
             if (stepIntroductionOpen)
             {
                 ReleaseDialogue();
@@ -523,13 +611,16 @@ namespace WeaponWorkshop
             ReleaseDialogue(); current = null; StepIndex = 0; Changed?.Invoke();
             done?.Invoke(); BeginNext();
         }
+        /// <summary>
+        /// 지정한 소유자의 튜토리얼을 취소하고 연출 상태를 복원합니다.
+        /// </summary>
         public void Cancel(Component owner)
         {
             int count = waiting.Count;
             for (int i = 0; i < count; i++) { var request = waiting.Dequeue(); if (request.owner != owner) waiting.Enqueue(request); }
             if (current == null || current.owner != owner) return;
             LogTutorialEnded("cancelled");
-            ReleaseDialogue(); current = null; StepIndex = 0; Changed?.Invoke(); BeginNext();
+            ReleaseDialogue(); RestoreRetirementPresentation(); current = null; StepIndex = 0; Changed?.Invoke(); BeginNext();
         }
 #if UNITY_EDITOR
         public void DebugEndTutorial()
@@ -561,12 +652,248 @@ namespace WeaponWorkshop
             try { Advance(); } finally { debugSkipping = false; }
         }
 #endif
+
+        /// <summary>
+        /// 은퇴 소개를 위해 현재 화면 상태를 보존하고 카메라를 촬영 기준점으로 이동합니다.
+        /// </summary>
+        /// <param name="step">은퇴 소개를 시작하는 현재 튜토리얼 단계입니다.</param>
+        /// <returns>필수 카메라·촬영 지점·대화 UI가 연결되어 있으면 true를 반환합니다.</returns>
+        private bool BeginRetirementIntroduction(TutorialStep step)
+        {
+            ReleaseDialogue();
+            var player = TutorialPlayer;
+            var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
+            _retirementCamera = holder != null ? holder.AimCamera : null;
+            if (_retirementCamera == null && player != null && player.ViewPoint != null)
+                _retirementCamera = player.ViewPoint.GetComponentInChildren<Camera>();
+            if (_retirementCamera == null || _retirementShotPoint == null || dialogue == null)
+            {
+                Debug.LogError("은퇴 소개의 카메라·촬영 기준점·대화 UI 연결을 확인하세요.", this);
+                return false;
+            }
+
+            _retirementPresentationActive = true;
+            _retirementWeaponScope = player != null ? player.GetComponent<WeaponScope>() : null;
+            if (_retirementWeaponScope != null)
+            {
+                _retirementWeaponScope.SetTutorialCameraOverride(true);
+                _retirementCameraOverrideActive = true;
+            }
+            _retirementCameraStartPosition = _retirementCamera.transform.position;
+            _retirementCameraStartRotation = _retirementCamera.transform.rotation;
+            HideRetirementWeapon();
+            HideRetirementHud();
+            _retirementOwnsInputBlock = true;
+            GameManager.Instance?.SetDialogue(true);
+            _retirementCameraRoutine = StartCoroutine(MoveRetirementCamera(
+                _retirementCameraStartPosition, _retirementCameraStartRotation,
+                _retirementShotPoint.position, _retirementShotPoint.rotation, false));
+            return true;
+        }
+
+        /// <summary>
+        /// step의 은퇴 소개 대사에 실제 은퇴 비용을 치환해 확인 UI를 표시합니다.
+        /// </summary>
+        /// <param name="step">비용 토큰을 포함한 은퇴 소개 튜토리얼 단계입니다.</param>
+        private void ShowRetirementIntroduction(TutorialStep step)
+        {
+            string description = step.description.Replace("{은퇴자금}", FormatKoreanRetirementCost(RetireUI.Cost));
+            _retirementIntroductionAwaitingConfirmation = true;
+            ownsDialogue = true;
+            if (!dialogue.Show(description, "확인", Confirm, step.title))
+            {
+                ownsDialogue = false;
+                _retirementIntroductionAwaitingConfirmation = false;
+                RestoreRetirementPresentation();
+                Finish("error");
+                return;
+            }
+            _retirementOwnsInputBlock = false;
+        }
+
+        /// <summary>
+        /// step의 마지막 안내를 표시하고 같은 2초 동안 카메라를 시작 시점으로 복귀시킵니다.
+        /// </summary>
+        /// <param name="step">복귀와 함께 표시할 마지막 튜토리얼 단계입니다.</param>
+        private void BeginRetirementFinalStep(TutorialStep step)
+        {
+            _retirementReturnOnNextStep = false;
+            if (!_retirementPresentationActive || dialogue == null || _retirementCamera == null)
+            {
+                RestoreRetirementPresentation();
+                ownsDialogue = true;
+                if (dialogue == null || !dialogue.Show(step.description, "확인", Confirm, step.title))
+                { ownsDialogue = false; Finish("error"); }
+                return;
+            }
+
+            _retirementFinalAwaitingConfirmation = true;
+            _retirementReturnInProgress = true;
+            ownsDialogue = true;
+            if (!dialogue.Show(step.description, "확인", Confirm, step.title))
+            {
+                ownsDialogue = false;
+                _retirementFinalAwaitingConfirmation = false;
+                RestoreRetirementPresentation();
+                Finish("error");
+                return;
+            }
+            _retirementOwnsInputBlock = false;
+            _retirementCameraRoutine = StartCoroutine(MoveRetirementCamera(
+                _retirementCamera.transform.position, _retirementCamera.transform.rotation,
+                _retirementCameraStartPosition, _retirementCameraStartRotation, true));
+        }
+
+        /// <summary>
+        /// 시작·도착 위치와 회전을 따라 카메라를 2초간 이동시키고 복귀 여부에 맞춰 상태를 갱신합니다.
+        /// </summary>
+        /// <param name="fromPosition">이동 시작 월드 위치입니다.</param>
+        /// <param name="fromRotation">이동 시작 월드 회전입니다.</param>
+        /// <param name="toPosition">이동할 도착 월드 위치입니다.</param>
+        /// <param name="toRotation">이동할 도착 월드 회전입니다.</param>
+        /// <param name="returning">복귀 이동인지 나타내며, 완료 시 복귀 상태를 해제합니다.</param>
+        private IEnumerator MoveRetirementCamera(Vector3 fromPosition, Quaternion fromRotation,
+            Vector3 toPosition, Quaternion toRotation, bool returning)
+        {
+            float elapsed = 0f;
+            while (elapsed < RETIREMENT_CAMERA_DURATION && _retirementPresentationActive && _retirementCamera != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / RETIREMENT_CAMERA_DURATION));
+                _retirementCamera.transform.SetPositionAndRotation(
+                    Vector3.Lerp(fromPosition, toPosition, t), Quaternion.Slerp(fromRotation, toRotation, t));
+                yield return null;
+            }
+            if (!_retirementPresentationActive) yield break;
+            if (_retirementCamera == null)
+            {
+                _retirementCameraRoutine = null;
+                RestoreRetirementPresentation();
+                Finish("error");
+                yield break;
+            }
+            _retirementCamera.transform.SetPositionAndRotation(toPosition, toRotation);
+            _retirementCameraRoutine = null;
+            if (returning) _retirementReturnInProgress = false;
+            else ShowRetirementIntroduction(CurrentStep);
+        }
+
+        /// <summary>
+        /// 확인 입력이 카메라 복귀 중 들어오면 원래 위치와 방향을 즉시 복원합니다.
+        /// </summary>
+        private void CompleteRetirementCameraReturn()
+        {
+            if (_retirementCameraRoutine != null) StopCoroutine(_retirementCameraRoutine);
+            _retirementCameraRoutine = null;
+            if (_retirementCamera != null)
+                _retirementCamera.transform.SetPositionAndRotation(_retirementCameraStartPosition, _retirementCameraStartRotation);
+            _retirementReturnInProgress = false;
+        }
+
+        /// <summary>
+        /// 장착 총의 Renderer 상태를 저장하고 화면에서 숨깁니다.
+        /// </summary>
+        private void HideRetirementWeapon()
+        {
+            _retirementWeaponRendererStates.Clear();
+            var player = TutorialPlayer;
+            var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
+            var weapon = holder != null ? holder.EquippedWeapon : null;
+            if (weapon == null) return;
+            foreach (Renderer renderer in weapon.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer == null || _retirementWeaponRendererStates.ContainsKey(renderer)) continue;
+                _retirementWeaponRendererStates.Add(renderer, renderer.enabled);
+                renderer.enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// 지정된 HUD를 숨기고 기존 CanvasGroup 상태를 보관해 이후 복원할 수 있게 합니다.
+        /// </summary>
+        private void HideRetirementHud()
+        {
+            _retirementHudStates.Clear();
+            if (_retirementHudElements == null) return;
+            foreach (GameObject element in _retirementHudElements)
+            {
+                if (element == null) continue;
+                CanvasGroup group = element.GetComponent<CanvasGroup>();
+                bool added = group == null;
+                if (added) group = element.AddComponent<CanvasGroup>();
+                _retirementHudStates.Add(new RetirementHudState(group, added));
+                group.alpha = 0f;
+                group.interactable = false;
+                group.blocksRaycasts = false;
+            }
+        }
+
+        /// <summary>
+        /// 은퇴 소개가 변경한 카메라·무기·HUD·입력 상태를 이전 값으로 되돌립니다.
+        /// </summary>
+        private void RestoreRetirementPresentation()
+        {
+            if (_retirementCameraRoutine != null) StopCoroutine(_retirementCameraRoutine);
+            _retirementCameraRoutine = null;
+            if (_retirementPresentationActive && _retirementCamera != null)
+                _retirementCamera.transform.SetPositionAndRotation(_retirementCameraStartPosition, _retirementCameraStartRotation);
+            foreach (KeyValuePair<Renderer, bool> state in _retirementWeaponRendererStates)
+                if (state.Key != null) state.Key.enabled = state.Value;
+            _retirementWeaponRendererStates.Clear();
+            foreach (RetirementHudState state in _retirementHudStates)
+            {
+                if (state.Group == null) continue;
+                state.Group.alpha = state.Alpha;
+                state.Group.interactable = state.Interactable;
+                state.Group.blocksRaycasts = state.BlocksRaycasts;
+                if (state.AddedByPresentation) Destroy(state.Group);
+            }
+            _retirementHudStates.Clear();
+            if (_retirementCameraOverrideActive && _retirementWeaponScope != null)
+                _retirementWeaponScope.SetTutorialCameraOverride(false);
+            _retirementCameraOverrideActive = false;
+            if (_retirementOwnsInputBlock && GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
+            _retirementOwnsInputBlock = false;
+            _retirementPresentationActive = false;
+            _retirementIntroductionAwaitingConfirmation = false;
+            _retirementFinalAwaitingConfirmation = false;
+            _retirementReturnInProgress = false;
+            _retirementReturnOnNextStep = false;
+            _retirementCamera = null;
+            _retirementWeaponScope = null;
+        }
+
+        /// <summary>
+        /// Day 1 문구가 표시되는 시점에 은퇴 연출용 화면 상태를 복원합니다.
+        /// </summary>
+        private void RestoreRetirementPresentationOnDayText()
+        {
+            if (endingTransition != null) endingTransition.DayTextShown -= RestoreRetirementPresentationOnDayText;
+            RestoreRetirementPresentation();
+        }
+
+        /// <summary>
+        /// 은퇴 비용 cost를 만 단위와 달러 단위의 한글 문자열로 변환해 반환합니다.
+        /// </summary>
+        /// <param name="cost">달러 단위의 은퇴 비용입니다.</param>
+        /// <returns>한글 금액과 달러 단위를 포함한 비용 문자열입니다.</returns>
+        private static string FormatKoreanRetirementCost(int cost)
+        {
+            if (cost < 10000) return $"{cost.ToString("N0", CultureInfo.InvariantCulture)} 달러";
+            int tenThousands = cost / 10000;
+            int remainder = cost % 10000;
+            return remainder == 0
+                ? $"{tenThousands.ToString("N0", CultureInfo.InvariantCulture)}만 달러"
+                : $"{tenThousands.ToString("N0", CultureInfo.InvariantCulture)}만 {remainder.ToString("N0", CultureInfo.InvariantCulture)} 달러";
+        }
+
         private void OnDisable()
         {
             RaidEnemyCore.Spawned -= HandleRaidEnemySpawned;
             if (warningTurn != null) StopCoroutine(warningTurn);
             warningTurn = null;
             waiting.Clear(); ReleaseDialogue();
+            RestoreRetirementPresentation();
             if (warningOpen && dialogue != null) dialogue.Hide();
             if (warningOpen && GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
             warningOpen = false; current = null; StepIndex = 0; CompleteDayZero();

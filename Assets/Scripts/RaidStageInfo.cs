@@ -91,7 +91,7 @@ namespace WeaponWorkshop
             text.AppendLine().Append("모듈 상자  ").Append(remaining).AppendLine("개")
                 .Append("재료 상자  ").Append(materialCrates).AppendLine("개").AppendLine().AppendLine("출몰 적");
             if (settings.tanks) text.AppendLine("• 탱크");
-            if (settings.maximumReinforcedTanks > 0) text.AppendLine("• 강화 탱크 (Sturmtiger)");
+            if (settings.maximumReinforcedTanks > 0 || region.scene == "NightRaid_Millitary_base") text.AppendLine("• 강화 탱크");
             if (settings.helicopters) text.AppendLine("• 헬기");
             if (!settings.tanks && !settings.helicopters && settings.maximumReinforcedTanks <= 0) text.AppendLine("• 없음");
             int cost = settings.EntryCost();

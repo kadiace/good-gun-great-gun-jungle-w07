@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -231,6 +232,9 @@ namespace WeaponWorkshop
                 muzzleTooltipObserved = hoveringMuzzle;
             }
         }
+        /// <summary>
+        /// 조준 대상의 상호작용 제목과 현재 비용 조건을 호버 UI에 표시합니다.
+        /// </summary>
         private bool ShowInteractionTitle()
         {
             if (interaction == null || !interaction.isActiveAndEnabled || !(interaction.AimedTarget is Component target)) return false;
@@ -251,15 +255,20 @@ namespace WeaponWorkshop
             }
             string condition = label.UnavailableCondition;
             if (slotSpinning) condition = "회전 중...";
-            else if (retire || slotMachine)
+            else if (retire)
             {
                 PlayerWallet wallet = PlayerWallet.ForPlayer(interaction.Player);
-                int cost = retire ? RetireUI.Cost : SlotMachineReels.SpinPrice;
-                if (wallet == null || wallet.Balance < cost)
-                {
-                    string amount = retire ? "$100,000" : "$500";
-                    condition = condition.Replace(amount, $"<color=#FF0000>{amount}</color>");
-                }
+                int cost = RetireUI.Cost;
+                string amount = "$" + cost.ToString("N0", CultureInfo.InvariantCulture);
+                string shownAmount = wallet == null || wallet.Balance < cost
+                    ? $"<color=#FF0000>{amount}</color>" : amount;
+                condition = condition.Replace("{RETIRE_COST}", shownAmount);
+            }
+            else if (slotMachine)
+            {
+                PlayerWallet wallet = PlayerWallet.ForPlayer(interaction.Player);
+                if (wallet == null || wallet.Balance < SlotMachineReels.SpinPrice)
+                    condition = condition.Replace("$500", "<color=#FF0000>$500</color>");
             }
             Show(label.Title, tutorialBlocked || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
                 retire || slotMachine);
