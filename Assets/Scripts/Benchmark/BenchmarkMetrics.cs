@@ -51,14 +51,14 @@ namespace WeaponWorkshop
         private readonly string recordingName;
         private readonly int runIndex;
 
-        private int[] frameIndices = new int[InitialCapacity];
-        private float[] values = new float[ValueStride * InitialCapacity];
+        private int[] frameIndices;
+        private float[] values;
         private int rowCount;
         private bool finished;
         private bool disposed;
         private string csvPath;
 
-        public BenchmarkMetrics(string sceneName, string recordingPath, int runIndex)
+        public BenchmarkMetrics(string sceneName, string recordingPath, int runIndex, int minFrameCapacity = 0)
         {
             this.sceneName = sceneName;
             this.runIndex = runIndex;
@@ -76,6 +76,11 @@ namespace WeaponWorkshop
                     : ProfilerCategory.Scripts;
                 markerRecorders[i] = ProfilerRecorder.StartNew(category, MarkerNames[i]);
             }
+
+            // 녹화 길이를 알면 처음부터 필요한 크기를 잡아 측정 중 버퍼 확장(할당 스파이크)이 없게 한다.
+            int capacity = Math.Max(InitialCapacity, minFrameCapacity);
+            frameIndices = new int[capacity];
+            values = new float[ValueStride * capacity];
         }
 
         // Resets the wall clock; call once just before frame 0.

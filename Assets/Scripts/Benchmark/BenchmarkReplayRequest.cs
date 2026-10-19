@@ -20,6 +20,9 @@ namespace WeaponWorkshop
             public int runs = 1;
             public int runIndex;
             public bool quitWhenDone;
+            // 측정 구간을 프로파일러에 기록해 끝날 때 ProfilerCaptures에 .data로 저장한다(에디터 전용).
+            // BenchmarkMenu의 토글이 이 값을 채워 넘기고, F10·명령줄 재생은 기본 끔이다.
+            public bool captureProfiler;
         }
 
         // static 필드는 LoadScene을 거쳐도 살아 있으므로 다음 런의 BenchmarkSession이 다시 읽는다.
@@ -56,7 +59,8 @@ namespace WeaponWorkshop
             SceneManager.LoadScene(Active.sceneName);
         }
 
-        public static void WritePending(string recordingPath, string sceneName, int runs, bool quitWhenDone)
+        public static void WritePending(string recordingPath, string sceneName, int runs, bool quitWhenDone,
+            bool captureProfiler = false)
         {
             Directory.CreateDirectory(BenchmarkFiles.Root);
             var data = new Data
@@ -66,6 +70,7 @@ namespace WeaponWorkshop
                 runs = Mathf.Max(1, runs),
                 runIndex = 0,
                 quitWhenDone = quitWhenDone,
+                captureProfiler = captureProfiler,
             };
             File.WriteAllText(Path.Combine(BenchmarkFiles.Root, PendingFileName), JsonUtility.ToJson(data));
         }

@@ -1,4 +1,8 @@
 using System.Collections.Generic;
+#if UNITY_EDITOR
+using System.IO;
+using UnityEngine.Profiling;
+#endif
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
@@ -28,6 +32,8 @@ namespace WeaponWorkshop
         [SerializeField] private int seed = 12345;
         [SerializeField] private bool disableEnemies = true;
         [SerializeField, Min(0)] private int warmupFrames = 120;
+        // 측정 구간 프로파일러 기록 한도(MB). .data 저장은 에디터 전용이라 빌드에서는 동작하지 않는다.
+        [SerializeField, Min(128)] private int profilerMaxMemoryMb = 1024;
 
         private InputActionMap benchmarkControls;
         private InputActionMap playerControls;
@@ -48,10 +54,22 @@ namespace WeaponWorkshop
         private PaintMaterialLibrary replayPaints;
         private BenchmarkMetrics metrics;
         private Mouse virtualMouse;
-        private InputSettings originalInputSettings;
+        // InputSystem.settings 대입은 기존 설정이 HideAndDontSave 임시 오브젝트면 DestroyImmediate로 지운다.
+        // 되돌릴 설정(프로젝트 에셋 원본 또는 임시 설정의 복제본)을 교체 전에 따로 잡아 둔다.
         private InputSettings replayInputSettings;
+        private InputSettings restorableInputSettings;
+        // 재생 중에만 꺼 두는 실제 마우스·키보드 장치 목록. 복원 때 같은 장치만 다시 켠다.
+        private readonly List<InputDevice> reenableDevices = new List<InputDevice>();
+        // OnGUI는 프레임당 여러 번 불리므로 라벨 문자열을 프레임마다 한 번만 만들어 둔다.
+        private string benchLabel;
         private int warmupRemaining;
         private int frameIndex;
+#if UNITY_EDITOR
+        // 측정 구간 동안만 켠 프로파일러 기록 상태. 되돌릴 때 사용자가 켜 둔 상태를 보존한다.
+        private bool profilerCapturing;
+        private bool profilerWasEnabled;
+        private bool driverWasEnabled;
+#endif
 
         private void Awake()
         {
@@ -71,6 +89,14 @@ namespace WeaponWorkshop
             replayRecording = null;
             metrics = null;
             virtualMouse = null;
+            replayInputSettings = null;
+            restorableInputSettings = null;
+            reenableDevices.Clear();
+            benchLabel = null;
+#if UNITY_EDITOR
+            profilerCapturing = false;
+            profilerWasEnabled = false;
+#endif
         }
 
         private void Start()
@@ -138,12 +164,14 @@ namespace WeaponWorkshop
 
         private void OnGUI()
         {
-            if (mode == Mode.Idle) return;
+            if (mode == Mode.Idle || benchLabel == null) return;
+            GUI.Label(new Rect(10f, 10f, 380f, 24f), benchLabel);
+        }
+
+        private void UpdateBenchLabel()
+        {
             int total = replayRecording?.frames.Length ?? 0;
-            string text = mode == Mode.Record
-                ? $"BENCH REC {seed}"
-                : $"BENCH REPLAY {Mathf.Min(Mathf.Max(0, frameIndex), total)}/{total} run {(replayRequest?.runIndex ?? 0) + 1}/{replayRequest?.runs ?? 1}";
-            GUI.Label(new Rect(10f, 10f, 380f, 24f), text);
+            benchLabel = $"BENCH REPLAY {Mathf.Min(Mathf.Max(0, frameIndex), total)}/{total} run {(replayRequest?.runIndex ?? 0) + 1}/{replayRequest?.runs ?? 1}";
         }
 
         // ---- 녹화 ----
@@ -176,6 +204,7 @@ namespace WeaponWorkshop
                 enemiesDisabled = disableEnemies,
                 weapon = recordedWeapon,
             };
+            benchLabel = $"BENCH REC {seed}";
             mode = Mode.Record;
             Time.captureDeltaTime = fixedDeltaTime;
             if (disableEnemies) DisableEnemies();
@@ -209,6 +238,7 @@ namespace WeaponWorkshop
             }
             recording = null;
             recordedWeapon = null;
+            benchLabel = null;
             mode = Mode.Idle;
         }
 
@@ -251,27 +281,51 @@ namespace WeaponWorkshop
                 CancelReplay();
                 return;
             }
-            if (replayRecording.enemiesDisabled) DisableEnemies();
-            // 현재 장착 무기를 치우고 녹화에 담긴 무기로 갈아끼운다.
-            EquipableWeapon previous = weaponHolder.TakeWeapon();
-            if (previous != null) Destroy(previous.gameObject);
-            replayPaints = PaintMaterialLibrary.CreateDefaults();
-            if (!GameSaveController.TryRestoreRaidWeapon(replayRecording.weapon,
-                NightRaidController.Instance.CarriedWeaponPrefab, player, replayPaints, true, out _, out string error))
+            // 준비 중 예외가 나면 WaitRaid에서 같은 준비를 매 프레임 반복해 녹화 재파싱·적 검색 비용이
+            // 계속 쌓인다. 실패는 한 번 기록하고 재생을 접는다.
+            try
             {
-                Debug.LogError($"[Benchmark] 녹화된 무기를 복원하지 못했습니다: {error}");
-                CancelReplay();
-                return;
+                if (replayRecording.enemiesDisabled) DisableEnemies();
+                // 현재 장착 무기를 치우고 녹화에 담긴 무기로 갈아끼운다.
+                EquipableWeapon previous = weaponHolder.TakeWeapon();
+                if (previous != null) Destroy(previous.gameObject);
+                // 이전 런의 도색 라이브러리는 그 라이브러리로 만든 무기를 치운 뒤에만 정리할 수 있다.
+                replayPaints?.Dispose();
+                replayPaints = PaintMaterialLibrary.CreateDefaults();
+                if (!GameSaveController.TryRestoreRaidWeapon(replayRecording.weapon,
+                    NightRaidController.Instance.CarriedWeaponPrefab, player, replayPaints, true, out _, out string error))
+                {
+                    Debug.LogError($"[Benchmark] 녹화된 무기를 복원하지 못했습니다: {error}");
+                    CancelReplay();
+                    return;
+                }
+                // 측정 구간 밖(준비 프레임)에서 샘플 버퍼와 레코더를 만든다.
+                if (metrics == null)
+                    metrics = new BenchmarkMetrics(gameObject.scene.name, replayRequest.recordingPath,
+                        replayRequest.runIndex, replayRecording.frames.Length);
+                if (!UseBackgroundInput())
+                {
+                    CancelReplay();
+                    return;
+                }
+                // 실제 마우스·키보드는 재생 내내 끈다. 포커스 무시 설정으로 입력을 계속 받는 동안
+                // 남아 있던 실제 버튼 상태(눌린 채로 남은 클릭 등)가 Attack·Aim에 반영되면 녹화와
+                // 다른 프레임에 발사된다. DisableDevice는 장치 상태를 기본값으로 되돌리므로 그 눌림도 지워진다.
+                DisableRealInputDevices();
+                virtualMouse = InputSystem.AddDevice<Mouse>("BenchmarkMouse");
+                ReplayActive = true;
+                player.ExternallyDriven = true;
+                Random.InitState(replayRecording.seed);
+                Time.captureDeltaTime = replayRecording.fixedDeltaTime;
+                warmupRemaining = warmupFrames;
+                frameIndex = 0;
+                mode = Mode.ReplayWarmup;
             }
-            UseBackgroundInput();
-            virtualMouse = InputSystem.AddDevice<Mouse>("BenchmarkMouse");
-            ReplayActive = true;
-            player.ExternallyDriven = true;
-            Random.InitState(replayRecording.seed);
-            Time.captureDeltaTime = replayRecording.fixedDeltaTime;
-            warmupRemaining = warmupFrames;
-            frameIndex = 0;
-            mode = Mode.ReplayWarmup;
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+                CancelReplay();
+            }
         }
 
         private void TickReplayWarmup()
@@ -280,9 +334,13 @@ namespace WeaponWorkshop
             BenchmarkFrame hold = replayRecording.frames[0];
             player.RestorePose(hold.position, new Vector3(0f, hold.yaw, 0f), new Vector3(hold.pitch, 0f, 0f));
             QueueButtons(0);
+            UpdateBenchLabel();
             if (--warmupRemaining > 0) return;
-            metrics = new BenchmarkMetrics(gameObject.scene.name, replayRequest.recordingPath, replayRequest.runIndex);
-            metrics.BeginMeasuring();
+            // 샘플 버퍼·레코더는 SetupReplay에서 이미 만들어 두었고, 여기서 벽시계만 0으로 맞춘다.
+            metrics?.BeginMeasuring();
+#if UNITY_EDITOR
+            StartProfilerCaptureIfRequested();
+#endif
             frameIndex = 0;
             mode = Mode.ReplayMeasure;
         }
@@ -296,6 +354,7 @@ namespace WeaponWorkshop
                 ? replayRecording.frames[frameIndex + 1].buttons
                 : (byte)0;
             QueueButtons(buttons);
+            UpdateBenchLabel();
             metrics.EndFrame(frameIndex);
             frameIndex++;
             if (frameIndex < replayRecording.frames.Length) return;
@@ -304,6 +363,9 @@ namespace WeaponWorkshop
 
         private void FinishReplay()
         {
+#if UNITY_EDITOR
+            FinishProfilerCapture();
+#endif
             metrics?.Finish();
             metrics?.Dispose();
             metrics = null;
@@ -325,12 +387,16 @@ namespace WeaponWorkshop
             BenchmarkReplayRequest.Active = null;
             replayRequest = null;
             replayRecording = null;
+            benchLabel = null;
             mode = Mode.Idle;
             if (quit) QuitApplication();
         }
 
         private void CancelReplay()
         {
+#if UNITY_EDITOR
+            AbortProfilerCapture();
+#endif
             ReleaseVirtualMouse();
             if (player != null) player.ExternallyDriven = false;
             Time.captureDeltaTime = 0f;
@@ -339,11 +405,15 @@ namespace WeaponWorkshop
             BenchmarkReplayRequest.Active = null;
             replayRequest = null;
             replayRecording = null;
+            benchLabel = null;
             mode = Mode.Idle;
         }
 
         private void RestoreBenchmarkState()
         {
+#if UNITY_EDITOR
+            AbortProfilerCapture();
+#endif
             Time.captureDeltaTime = 0f;
             if (player != null) player.ExternallyDriven = false;
             ReleaseVirtualMouse();
@@ -355,6 +425,7 @@ namespace WeaponWorkshop
             frames.Clear();
             replayRequest = null;
             replayRecording = null;
+            benchLabel = null;
         }
 
         // ---- 입력 장치·플레이어 ----
@@ -371,6 +442,7 @@ namespace WeaponWorkshop
         private void ReleaseVirtualMouse()
         {
             ReplayActive = false;
+            EnableRealInputDevices();
             if (virtualMouse != null)
             {
                 InputSystem.RemoveDevice(virtualMouse);
@@ -379,24 +451,65 @@ namespace WeaponWorkshop
             RestoreInputSettings();
         }
 
-        // 프로젝트 설정 에셋은 건드리지 않고 런타임 복제본만 포커스 무시로 바꿔 끼운다.
-        private void UseBackgroundInput()
+        // 실제 마우스·키보드(포인터·텍스트 입력 장치)만 골라 끄고, 복원 때 같은 장치만 다시 켠다.
+        private void DisableRealInputDevices()
         {
-            if (replayInputSettings != null) return;
-            originalInputSettings = InputSystem.settings;
-            replayInputSettings = Instantiate(originalInputSettings);
+            reenableDevices.Clear();
+            foreach (InputDevice device in InputSystem.devices)
+            {
+                if (device == null || !device.added || !device.enabled || device == virtualMouse) continue;
+                if (device is Mouse || device is Keyboard || device is Touchscreen || device is Pen)
+                {
+                    InputSystem.DisableDevice(device);
+                    reenableDevices.Add(device);
+                }
+            }
+        }
+
+        private void EnableRealInputDevices()
+        {
+            foreach (InputDevice device in reenableDevices)
+                if (device != null && device.added) InputSystem.EnableDevice(device);
+            reenableDevices.Clear();
+        }
+
+        // 프로젝트 설정 에셋은 건드리지 않고 런타임 복제본만 포커스 무시로 바꿔 끼운다.
+        // InputSystem.settings 대입은 기존 설정이 HideAndDontSave 임시 오브젝트면 DestroyImmediate 한다.
+        // 그런 경우에 대비해 되돌릴 복제본을 미리 만들어 두고, 복원 대입이 재생용 설정을 대신 파괴하게 한다.
+        private bool UseBackgroundInput()
+        {
+            if (replayInputSettings != null) return true;
+            InputSettings current = InputSystem.settings;
+            if (current == null)
+            {
+                Debug.LogError("[Benchmark] 입력 설정 오브젝트가 이미 파괴되어 재생 입력 설정을 교체할 수 없습니다.");
+                return false;
+            }
+            replayInputSettings = Instantiate(current);
             replayInputSettings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
             replayInputSettings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+            // 재생용 설정은 복원 대입 때 입력 시스템이 파괴하도록 임시 표시를 단다.
+            replayInputSettings.hideFlags = HideFlags.HideAndDontSave;
+            // 프로젝트 에셋이면 원본을 그대로 되돌리고, 파괴될 임시 설정일 때만 복제본을 남긴다.
+            if (current.hideFlags == HideFlags.HideAndDontSave)
+            {
+                restorableInputSettings = Instantiate(current);
+                restorableInputSettings.hideFlags = HideFlags.HideAndDontSave;
+            }
+            else restorableInputSettings = current;
             InputSystem.settings = replayInputSettings;
+            return true;
         }
 
         private void RestoreInputSettings()
         {
             if (replayInputSettings == null) return;
-            if (originalInputSettings != null) InputSystem.settings = originalInputSettings;
-            Destroy(replayInputSettings);
+            // 설정 교체 대입은 기존 오브젝트를 직접 파괴하므로 수동 Destroy 하지 않는다.
+            // 파괴된 오브젝트를 대입하면 복원이 생략되고, 설치된 재생용 설정만 파괴되어
+            // 다음 런 준비가 매 프레임 실패하는 고장의 원인이었다.
+            if (restorableInputSettings != null) InputSystem.settings = restorableInputSettings;
+            restorableInputSettings = null;
             replayInputSettings = null;
-            originalInputSettings = null;
         }
 
         private void FindPlayer()
@@ -412,6 +525,60 @@ namespace WeaponWorkshop
             FindPlayer();
             return player != null && weaponHolder != null;
         }
+
+#if UNITY_EDITOR
+        // 측정 구간 프로파일러 기록. 재생 요청에 captureProfiler가 있을 때만 켠다(BenchmarkMenu 토글).
+        // 프로파일러 버퍼에는 프레임 수 한도가 없고 maxUsedMemory(에디터 기본 256MB)를 넘어가면
+        // 오래된 프레임부터 버려져 런 앞부분이 잘리므로, 기록 전에 인스펙터 값(기본 1024MB)으로 올린다.
+        // maxUsedMemory가 바이트 단위 int라 2047MB가 표현 한도다.
+        private void StartProfilerCaptureIfRequested()
+        {
+            profilerCapturing = false;
+            profilerWasEnabled = Profiler.enabled;
+            driverWasEnabled = UnityEditorInternal.ProfilerDriver.enabled;
+            if (replayRequest == null || !replayRequest.captureProfiler) return;
+            Profiler.maxUsedMemory = Mathf.Clamp(profilerMaxMemoryMb, 128, 2047) * 1024 * 1024;
+            // 저장 파일은 프로파일러 창 버퍼(ProfilerDriver)에서 나오므로, 워밍업 프레임을 비우고 창 기록도 켠다.
+            // 창 설정 "메모리 부족 시 프레임 버림"이 켜져 있으면 메모리 압박 때 앞 프레임이 빠질 수 있다.
+            UnityEditorInternal.ProfilerDriver.ClearAllFrames();
+            UnityEditorInternal.ProfilerDriver.enabled = true;
+            Profiler.enabled = true;
+            profilerCapturing = true;
+            Debug.Log($"[Benchmark] 측정 구간 프로파일러 기록 시작 (maxUsedMemory {Profiler.maxUsedMemory / (1024 * 1024)}MB)");
+        }
+
+        // 정상 종료: 기록을 끄고 현재 버퍼를 ProfilerCaptures/<씬>_<시각>.data로 저장한다. 런마다 한 파일.
+        private void FinishProfilerCapture()
+        {
+            if (!profilerCapturing) return;
+            Profiler.enabled = profilerWasEnabled;
+            UnityEditorInternal.ProfilerDriver.enabled = driverWasEnabled;
+            profilerCapturing = false;
+            try
+            {
+                string folder = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "ProfilerCaptures");
+                Directory.CreateDirectory(folder);
+                string scene = gameObject.scene.name;
+                foreach (char c in Path.GetInvalidFileNameChars()) scene = scene.Replace(c, '_');
+                string path = Path.Combine(folder, $"{scene}_{System.DateTime.Now:yyyyMMdd_HHmmss}.data");
+                UnityEditorInternal.ProfilerDriver.SaveProfile(path);
+                Debug.Log($"[Benchmark] 프로파일러 캡처 저장: {path}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+        // 중단: 저장 없이 기록만 끈고 사용자가 켜 둔 프로파일러 상태는 되돌린다.
+        private void AbortProfilerCapture()
+        {
+            if (!profilerCapturing) return;
+            Profiler.enabled = profilerWasEnabled;
+            UnityEditorInternal.ProfilerDriver.enabled = driverWasEnabled;
+            profilerCapturing = false;
+        }
+#endif
 
         private static void QuitApplication()
         {

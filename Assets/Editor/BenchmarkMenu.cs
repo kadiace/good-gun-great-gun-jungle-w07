@@ -15,6 +15,9 @@ namespace WeaponWorkshop.EditorTools
     {
         private const string MenuRoot = "Tools/Benchmark/";
         private const string RunsPrefKey = "WeaponWorkshop.Benchmark.Runs";
+        // 측정 구간 프로파일러 기록 토글. 켜면 리플레이 요청에 captureProfiler를 실어 보내고,
+        // BenchmarkSession이 측정 시작 때 Profiler를 켜 끝날 때 ProfilerCaptures/<씬>_<시각>.data로 저장한다.
+        private const string CaptureProfilerPrefKey = "WeaponWorkshop.Benchmark.CaptureProfiler";
         private const int DefaultRuns = 3;
         private const string OriginalScene = "Assets/Scenes/NightRaid/NightRaid_JungleCampus.unity";
         private const string ImproveScene = "Assets/Scenes/NightRaid/NightRaid_JungleCampus_improve.unity";
@@ -26,6 +29,21 @@ namespace WeaponWorkshop.EditorTools
         private const float FrameOver50Ms = 50f;
 
         private static int RunsPerReplay => EditorPrefs.GetInt(RunsPrefKey, DefaultRuns);
+
+        private static bool CaptureProfiler => EditorPrefs.GetBool(CaptureProfilerPrefKey, false);
+
+        [MenuItem(MenuRoot + "Capture Profiler To .data")]
+        private static void ToggleCaptureProfiler()
+        {
+            EditorPrefs.SetBool(CaptureProfilerPrefKey, !CaptureProfiler);
+        }
+
+        [MenuItem(MenuRoot + "Capture Profiler To .data", true)]
+        private static bool ValidateCaptureProfiler()
+        {
+            Menu.SetChecked(MenuRoot + "Capture Profiler To .data", CaptureProfiler);
+            return true;
+        }
 
         [MenuItem(MenuRoot + "Replay Latest In Original")]
         private static void ReplayLatestInOriginal() => ReplayLatest(OriginalScene);
@@ -89,7 +107,7 @@ namespace WeaponWorkshop.EditorTools
                     "녹화 파일이 없습니다. 먼저 게임에서 루트를 녹화하세요.", "확인");
                 return;
             }
-            BenchmarkReplayRequest.WritePending(recording, "", RunsPerReplay, true);
+            BenchmarkReplayRequest.WritePending(recording, "", RunsPerReplay, true, CaptureProfiler);
             EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
             EditorApplication.EnterPlaymode();
         }
