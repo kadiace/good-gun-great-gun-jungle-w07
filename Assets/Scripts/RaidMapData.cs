@@ -32,6 +32,8 @@ namespace WeaponWorkshop
             public float firstClearSaleBonus;
             // 스테이지 내 모듈 재화 1회 획득당 지급할 달러(표 단일 출처).
             public int dollarsPerMaterialPickup;
+            // 처치한 적 코어 1개당 지급할 달러(표 단일 출처). 성공 추출에만 지급한다. 상속 행은 부모 reward를 쓴다.
+            public int dollarsPerCore;
         }
 
         public Region[] regions;

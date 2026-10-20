@@ -21,6 +21,11 @@ namespace WeaponWorkshop
 
         private readonly Dictionary<Vector3Int, PaintedFace> faces = new Dictionary<Vector3Int, PaintedFace>();
 
+        public IEnumerable<Material> PaintedMaterials
+        {
+            get { foreach (var face in faces.Values) if (face.renderer != null && face.renderer.sharedMaterial != null) yield return face.renderer.sharedMaterial; }
+        }
+
         public void ClearAll()
         {
             foreach (PaintedFace painted in faces.Values) DestroyPaintedFace(painted);

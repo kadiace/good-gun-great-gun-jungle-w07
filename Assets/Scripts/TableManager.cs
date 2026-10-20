@@ -20,6 +20,8 @@ namespace WeaponWorkshop
 
         /// <summary>습격 스테이지 테이블. 로드 실패 시 빈 표이며 원인은 이미 로그로 남았다.</summary>
         public RaidMapData RaidMap { get; private set; }
+        public GunShapeData GunShape { get; private set; }
+        public RetirementData Retirement { get; private set; }
         public CustomerRequestData CustomerRequest { get; private set; }
         public ShootingTestTableData ShootingTestTable { get; private set; }
         public CustomerOrderData CustomerOrder { get; private set; }
@@ -32,8 +34,12 @@ namespace WeaponWorkshop
             RaidStageInfo.Validate(RaidMap, RaidMapResource);
             ShootingTestTable = Load<ShootingTestTableData>(nameof(ShootingTestTableData));
             ShootingTestInfo.Validate(ShootingTestTable);
+            GunShape = Load<GunShapeData>(nameof(GunShapeData));
+            GunShapeInfo.Validate(GunShape);
+            Retirement = Load<RetirementData>(nameof(RetirementData));
+            RetirementInfo.Validate(Retirement);
             CustomerRequest = Load<CustomerRequestData>(nameof(CustomerRequestData));
-            CustomerRequestInfo.Validate(CustomerRequest, ShootingTestTable);
+            CustomerRequestInfo.Validate(CustomerRequest, ShootingTestTable, GunShape);
             CustomerOrder = Load<CustomerOrderData>(nameof(CustomerOrderData));
             CustomerOrderInfo.Validate(CustomerOrder, CustomerRequest);
             CustomerSound = Load<CustomerSoundData>(nameof(CustomerSoundData));

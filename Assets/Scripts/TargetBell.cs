@@ -7,6 +7,17 @@ namespace WeaponWorkshop
         [SerializeField] private Transform spawnPoint;
         [SerializeField] private TargetSelectionUI selectionUI;
         [SerializeField] private ShootingTestController testController;
+        [SerializeField] private Bell customerBell;
+        public System.Collections.Generic.List<string> RequiredTestIds()
+        {
+            var ids = new System.Collections.Generic.List<string>();
+            var customer = customerBell != null ? customerBell.Current : null;
+            if (customer == null || !customer.HasActiveOrder || customer.Profile == null) return ids;
+            foreach (var requestId in customer.Profile.RequestIds)
+                foreach (var id in TableManager.Instance.CustomerRequest.FindRequest(requestId)?.requiredTestIds ?? System.Array.Empty<string>())
+                    if (!ids.Contains(id)) ids.Add(id);
+            return ids;
+        }
         public ShootingTestController TestController => testController;
         public string SpawnFailureReason { get; private set; }
         [SerializeField, Min(0.01f), Tooltip("기본 허용 높이와 폭발저항 1당 추가 허용 높이(m). 소환 표적에 적용. 허용 높이 = (폭발저항 + 1) × 이 값.")]

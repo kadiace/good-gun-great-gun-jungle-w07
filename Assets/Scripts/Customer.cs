@@ -114,6 +114,11 @@ namespace WeaponWorkshop
             int price = satisfied ? Mathf.RoundToInt(cost * (1f + bonusRatio * tagCount)) + Mathf.Max(0, profile.Price)
                 : Mathf.RoundToInt(cost * sale.dissatisfiedRatio);
             Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
+            // 은퇴 누적 실적은 판매 1건당 한 번, WeaponSold 이벤트 전에 기록한다.
+            // 튜토리얼 Day0 판매와 불만족 판매도 매출에 포함한다(표의 revenueIncludesDissatisfied).
+            var rule = RetirementInfo.Rule;
+            bool countRevenue = satisfied || rule == null || rule.revenueIncludesDissatisfied;
+            save?.RecordSale(satisfied, countRevenue ? price : 0);
             WeaponSold?.Invoke(profile, weapon, price, satisfied, tagCount);
             GameLogger.Count("WeaponSold");
             GameLogger.Measure("SalePrice", price);

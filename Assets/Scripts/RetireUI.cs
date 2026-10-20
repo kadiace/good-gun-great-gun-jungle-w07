@@ -7,7 +7,7 @@ namespace WeaponWorkshop
 {
     public sealed class RetireUI : MonoBehaviour
     {
-        public const int Cost = 250000;
+        // 은퇴 비용은 RetireUI.Cost 상수가 아니라 RetirementData 테이블의 RetirementInfo.Cost로 읽는다.
         [SerializeField] private GameObject panel;
         [SerializeField] private TMP_Text continueText;
         [SerializeField] private Button lobbyButton;

@@ -25,7 +25,6 @@ namespace WeaponWorkshop
             public int pieceStart, pieceCount;
         }
         private struct HealthHit { public TargetHealth target; public float distance; }
-        private struct SlotHit { public SlotMachineReels target; public float distance; }
         private struct TargetCandidate { public DestructibleTarget target; public float distanceSqr; }
         private struct ExplosionRequest
         {
@@ -79,7 +78,6 @@ namespace WeaponWorkshop
         private static readonly List<ExplosionRequest> pending = new List<ExplosionRequest>(2048);
         private static readonly Dictionary<DestructibleTarget, float> collectTargetDistances = new Dictionary<DestructibleTarget, float>(256);
         private static readonly Dictionary<TargetHealth, float> collectNearest = new Dictionary<TargetHealth, float>(512);
-        private static readonly Dictionary<SlotMachineReels, float> collectSlots = new Dictionary<SlotMachineReels, float>();
         private static readonly Stack<Layer> sharedLayerCache = new Stack<Layer>(8192);
         private static int collectionBudgetFrame = -1;
         private static readonly List<ProjectileMotor> activeProjectileBuffer = new List<ProjectileMotor>(2048);
@@ -104,14 +102,13 @@ namespace WeaponWorkshop
         private readonly List<TargetCandidate> targetCandidates = new List<TargetCandidate>();
         private ProjectileStats impactStats;
         private readonly List<HealthHit> healthHits = new List<HealthHit>();
-        private readonly List<SlotHit> slotHits = new List<SlotHit>();
         private readonly List<DestructibleTarget> blastOccluders = new List<DestructibleTarget>();
         private float[] energy;
         private float radius, maximumRadius, speed, baseDamage;
         private WeaponStats stats;
         private ProjectileTuning tuning;
         private ParticleSystem explosionEffect;
-        private int nextLayer, nextHealth, nextSlot, nextTargetCandidate;
+        private int nextLayer, nextHealth, nextTargetCandidate;
         // Layer group left half-applied when the frame budget stopped the wave mid-group;
         // groupPieceIndex/groupChanged/groupResistance carry a layer broken in the middle of its
         // piece list (the target may be gone by the time the layer completes).
@@ -134,7 +131,6 @@ namespace WeaponWorkshop
         private static readonly ProfilerMarker stepMarker = new ProfilerMarker("ExpandingExplosion.Step");
         private static readonly Comparison<Layer> layerComparison = CompareLayers;
         private static readonly Comparison<HealthHit> healthHitComparison = CompareHealthHits;
-        private static readonly Comparison<SlotHit> slotHitComparison = (a, b) => a.distance.CompareTo(b.distance);
         private static readonly Comparison<Piece> pieceComparison = ComparePieces;
         private static readonly Comparison<TargetCandidate> targetCandidateComparison = CompareTargetCandidates;
 
@@ -169,7 +165,7 @@ namespace WeaponWorkshop
         private static void ResetStatics()
         {
             pending.Clear();
-            collectTargetDistances.Clear(); collectNearest.Clear(); collectSlots.Clear();
+            collectTargetDistances.Clear(); collectNearest.Clear();
             sharedLayerCache.Clear(); activeProjectileBuffer.Clear(); dirtyTargets.Clear();
             pendingChainDetonations.Clear(); pendingChainSet.Clear();
             chainProjectiles = Array.Empty<ProjectileMotor>();
@@ -415,7 +411,7 @@ namespace WeaponWorkshop
             wave.speed = Mathf.Max(0.01f, wave.tuning.explosionExpansionSpeed);
             if (wave.energy == null) wave.energy = new float[384];
             for (int i = 0; i < wave.energy.Length; i++) wave.energy[i] = stats.explosion;
-            collectTargetDistances.Clear(); collectNearest.Clear(); collectSlots.Clear();
+            collectTargetDistances.Clear(); collectNearest.Clear();
             DestructibleTarget settingsTarget = null;
             float closest = float.PositiveInfinity;
             int count = CombatPhysicsQueries.OverlapSphere(center, maximumRadius, collisionLayers, out var overlaps);
@@ -442,12 +438,6 @@ namespace WeaponWorkshop
                     float distance = Vector3.Distance(center, collider.ClosestPoint(center));
                     if (!collectNearest.TryGetValue(health, out float old) || distance < old) collectNearest[health] = distance;
                 }
-                var slot = collider.GetComponentInParent<SlotMachineReels>();
-                if (slot != null)
-                {
-                    float distance = Vector3.Distance(center, collider.ClosestPoint(center));
-                    if (!collectSlots.TryGetValue(slot, out float old) || distance < old) collectSlots[slot] = distance;
-                }
             }
             // The closest struck material supplies wave settings; empty-space impacts use projectile tuning.
             wave.speed = settingsTarget != null ? settingsTarget.ExplosionExpansionSpeed : Mathf.Max(0.01f,wave.tuning.explosionExpansionSpeed);
@@ -459,8 +449,7 @@ namespace WeaponWorkshop
             }
             wave.targetCandidates.Sort(targetCandidateComparison);
             foreach (var entry in collectNearest) wave.healthHits.Add(new HealthHit { target = entry.Key, distance = entry.Value });
-            foreach (var entry in collectSlots) wave.slotHits.Add(new SlotHit { target = entry.Key, distance = entry.Value });
-            collectTargetDistances.Clear(); collectNearest.Clear(); collectSlots.Clear();
+            collectTargetDistances.Clear(); collectNearest.Clear();
             wave.collectionPending = true;
             root.SetActive(true);
             wave.PlayExplosionEffect();
@@ -527,7 +516,6 @@ namespace WeaponWorkshop
                 }
                 layers.Sort(layerComparison);
                 healthHits.Sort(healthHitComparison);
-                slotHits.Sort(slotHitComparison);
             }
             targetCandidates.Clear();
             nextTargetCandidate = 0;
@@ -552,9 +540,9 @@ namespace WeaponWorkshop
                 layer.target = null; layer.pieceStart = layer.pieceCount = 0;
                 if (sharedLayerCache.Count < 8192) sharedLayerCache.Push(layer);
             }
-            layers.Clear(); pieces.Clear(); targetCandidates.Clear(); healthHits.Clear(); slotHits.Clear(); blastOccluders.Clear(); radius = 0f;
+            layers.Clear(); pieces.Clear(); targetCandidates.Clear(); healthHits.Clear(); blastOccluders.Clear(); radius = 0f;
             damagedPieces.Clear();
-            nextLayer = nextHealth = nextSlot = nextTargetCandidate = 0;
+            nextLayer = nextHealth = nextTargetCandidate = 0;
             groupOpen = false; groupBlocked = false; groupChanged = false;
             groupEnd = groupDirection = 0; groupPieceIndex = -1; groupIncoming = groupCost = groupResistance = 0f;
             if (stepTicket != 0)
@@ -773,13 +761,6 @@ namespace WeaponWorkshop
                     HitPayload.ApplyToTarget(hit.target, stats, tuning, baseDamage * stats.explosion * falloff,
                         hit.target.transform.position - transform.position, true);
                 }
-            }
-            while (nextSlot < slotHits.Count)
-            {
-                var hit = slotHits[nextSlot];
-                if (hit.distance > radius) break;
-                nextSlot++;
-                if (hit.target != null) hit.target.ReceiveAttack(stats.penetration, stats.explosion, true);
             }
             // Releasing early would drop the layers and health hits the budget has not reached yet.
             if (radius >= maximumRadius && nextLayer >= layers.Count && nextHealth >= healthHits.Count)

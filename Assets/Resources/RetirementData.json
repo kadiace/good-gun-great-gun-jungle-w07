@@ -1,0 +1,9 @@
+{
+  "rule": {
+    "cost": 250000,
+    "satisfiedSales": 40,
+    "lifetimeRevenue": 200000,
+    "revenueIncludesDissatisfied": true,
+    "legacySaveCostOnly": true
+  }
+}

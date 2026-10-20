@@ -16,7 +16,6 @@ namespace WeaponWorkshop
         public int TodayConstructionCost { get; private set; }
         [SerializeField, Min(0)] private int startingModuleCredits;
         public int ModuleCredits { get; private set; }
-        public int SlotTickets { get; private set; }
 
         private void Awake()
         {
@@ -25,7 +24,6 @@ namespace WeaponWorkshop
             LastLoanDay = -1;
             TodayConstructionCost = 0;
             ModuleCredits = Mathf.Max(0, startingModuleCredits);
-            SlotTickets = 0;
         }
         public event Action Changed;
         public event Action<int> ModuleCreditsLost;
@@ -90,27 +88,6 @@ namespace WeaponWorkshop
         {
             ModuleCredits = Mathf.Max(0, amount);
             Changed?.Invoke();
-        }
-
-        public void CreditSlotTickets(int amount)
-        {
-            if (amount <= 0) return;
-            SlotTickets = (int)Math.Min(int.MaxValue, (long)SlotTickets + amount);
-            Changed?.Invoke();
-        }
-
-        public void RestoreSlotTickets(int amount)
-        {
-            SlotTickets = Mathf.Max(0, amount);
-            Changed?.Invoke();
-        }
-
-        public bool TrySpendSlotTicket()
-        {
-            if (!isActiveAndEnabled || SlotTickets <= 0) return false;
-            SlotTickets--;
-            Changed?.Invoke();
-            return true;
         }
 
         public bool CanAfford(int price) => isActiveAndEnabled && price >= 0 && (price == 0 || Balance >= price);

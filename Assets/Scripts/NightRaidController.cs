@@ -49,7 +49,7 @@ namespace WeaponWorkshop
         private int[] raidStartingModules;
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
-        private int earnedSlotTickets, collectedSlotTickets;
+        private int earnedCores;
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.List<int> pendingMaterialPickups = new System.Collections.Generic.List<int>();
         // 스테이지 중 획득한 모듈도 완료 정산 때 반영.
@@ -66,7 +66,7 @@ namespace WeaponWorkshop
                 FeedbackUI.For(this)?.ShowNotification("튜토리얼 모듈 획득: " + player.GetComponent<PlayerModuleUnlocks>().GetModuleName(moduleId));
             return true;
         }
-        private string RaidRewards()
+        private string RaidRewards(int coreDollars)
         {
             var wallet = player.GetComponent<PlayerWallet>();
             var unlocks = player.GetComponent<PlayerModuleUnlocks>();
@@ -76,8 +76,9 @@ namespace WeaponWorkshop
             if (training) text.AppendLine("연습 습격의 획득물은 공방에 반영되지 않습니다.").AppendLine();
             // 지갑 차이는 디버그 재화·무기 환급까지 섞이므로 상자에서 실제로 주운 재료만 보여준다.
             text.Append("모듈 재료  +").Append(materialCrateCredits).AppendLine();
-            text.Append("슬롯머신 티켓  +").Append(earnedSlotTickets).AppendLine();
-            int money = Mathf.Max(0, wallet.Balance - raidStartingBalance);
+            // 코어 보상은 성공 추출에만 지급되고 이미 지갑에 들어갔다. 돈 줄과 이중으로 세지 않게 돈 줄에서 뺀다.
+            if (coreDollars > 0) text.Append("코어 보상  +$ ").Append(coreDollars).AppendLine();
+            int money = Mathf.Max(0, wallet.Balance - raidStartingBalance - coreDollars);
             if (money > 0) text.Append("돈  +").Append(money).AppendLine();
             int count = 0;
             foreach (int id in unlocks.CaptureUnlockedModules())
@@ -108,8 +109,9 @@ namespace WeaponWorkshop
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             bool isClear = IsRaidClear(died);
             returningAfterDeath = died;
-            if (isClear && !TutorialManager.TrainingRaidPending)
-                player.GetComponent<PlayerWallet>()?.CreditSlotTickets(earnedSlotTickets - collectedSlotTickets);
+            // 코어 보상은 성공 추출(사망·훈련 습격 제외)에만 지급한다. 코어당 달러는 스테이지 표의 단일 출처다.
+            int coreDollars = isClear && !TutorialManager.TrainingRaidPending ? earnedCores * DollarsPerCore : 0;
+            if (coreDollars > 0) player.GetComponent<PlayerWallet>()?.Credit(coreDollars);
             // 재료 달러는 획득 즉시 지급된다(OnMaterialCollected). 결과 로그에는 이번 습격에서 지급된 액수만 남긴다.
             int materialPickups = pendingMaterialPickups.Count;
             int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
@@ -134,9 +136,12 @@ namespace WeaponWorkshop
                 materialPickups = materialPickups, dollarReward = dollarReward,
                 rewardsApplied = isClear && !TutorialManager.TrainingRaidPending
             });
-            ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(), () =>
+            ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(coreDollars), () =>
             { returnOpen = true; ReturnHome(); });
         }
+        // 스테이지 표의 코어당 달러. 상속 행은 부모 reward를 쓴다. 표를 못 읽으면 확정 보상 500으로 본다.
+        private int DollarsPerCore =>
+            TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerCore ?? 500;
         public void ShowDeathResult() => ShowRaidResult(true);
         // 향후 목표 조건을 추가할 단일 확장 지점. 지금은 생존한 추출 성공만 클리어다.
         private bool IsRaidClear(bool died) => !died;
@@ -270,19 +275,8 @@ namespace WeaponWorkshop
             if (!inRaid || resultOpen || transitioning || entryRestoreFailed || core.gameObject.scene != gameObject.scene ||
                 (playerHealth != null && playerHealth.IsDead)) return;
             enemyKills++;
-            earnedSlotTickets += core.SlotTicketReward;
-            core.ReleaseTicketVisuals(player);
+            earnedCores++;
             GameLogger.Data("Info", "NightRaid", "적 처치", new RaidEnemyLog { time = Time.timeSinceLevelLoad, enemyId = core.EnemyId });
-        }
-        public bool TryCollectTicket(FirstPersonPlayer collector)
-        {
-            if (!inRaid || resultOpen || transitioning || entryRestoreFailed || collector != player ||
-                (playerHealth != null && playerHealth.IsDead) || collectedSlotTickets >= earnedSlotTickets) return false;
-            var wallet = player.GetComponent<PlayerWallet>();
-            if (wallet == null) return false;
-            collectedSlotTickets++;
-            wallet.CreditSlotTickets(1);
-            return true;
         }
         public void RecordPlayerHit(RaidPlayerHealth health, string enemyId, RaidEnemyType enemyType, float damage)
         {
@@ -539,7 +533,6 @@ namespace WeaponWorkshop
                 player.GetComponent<PlayerWallet>().RestoreLoans(NightRaidTransfer.Workshop.outstandingLoans);
                 player.GetComponent<PlayerWallet>().RestoreLastLoanDay(NightRaidTransfer.Workshop.lastLoanDay);
                 player.GetComponent<PlayerWallet>().RestoreModuleCredits(moduleCredits);
-                player.GetComponent<PlayerWallet>().RestoreSlotTickets(NightRaidTransfer.Workshop.slotTickets);
                 player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(unlockedModules);
                 travelPaints = PaintMaterialLibrary.CreateDefaults();
                 if (!GameSaveController.TryRestoreCarried(weapon, carriedWeaponPrefab, player, travelPaints, out var error))
@@ -555,7 +548,7 @@ namespace WeaponWorkshop
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
             enemyKills = materialCrateCredits = 0;
-            earnedSlotTickets = collectedSlotTickets = 0;
+            earnedCores = 0;
             pendingModuleCollects.Clear(); discoveredEnemies.Clear();
             loggedRaidWeaponAssemblies.Clear();
             // 보상 상자는 입장 상태(해금 모듈)를 복원한 뒤 한 번에 만든다. 이미 해금한 모듈 자리는 재료 상자가 된다.
@@ -676,7 +669,7 @@ namespace WeaponWorkshop
                 bool cleared = NightRaidTransfer.ResultCleared;
                 NightRaidTransfer.Abandon();
                 NightRaidTransfer.RecordResult(raidNumber, raidScene, cleared);
-                NightRaidTransfer.MarkStandaloneReturn(cleared && !TutorialManager.TrainingRaidPending ? earnedSlotTickets : 0);
+                NightRaidTransfer.MarkStandaloneReturn(cleared && !TutorialManager.TrainingRaidPending ? earnedCores * DollarsPerCore : 0);
             }
             transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false);
             // 무기 복원 실패로 즉시 돌아온 경우에는 클리어/다음날 처리를 하지 않는다.

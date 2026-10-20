@@ -13,6 +13,8 @@ namespace WeaponWorkshop
             public string id, label;
             // enum 이름(GunMeasure·StatType). 로드 때 CustomerRequestInfo.Validate가 아래 값으로 해석한다.
             public string measure, stat;
+            public string shapeId, colorHex;
+            public float colorTolerance;
             public float min, max = float.MaxValue;
             public bool maxExclusive;
             [NonSerialized] public GunMeasure Measure;

@@ -16,6 +16,9 @@ namespace WeaponWorkshop
             private readonly int splitTwoCount, splitFourCount;
             public bool HasWeapon { get; }
             private readonly EquipableWeapon weapon;
+            private readonly CubeAssembly assembly;
+            private readonly List<Material> paintedMaterials = new List<Material>();
+            private readonly int colorModules;
             public bool HasPassedTest(string id) => weapon != null && weapon.HasPassedTest(id);
             public WeaponSnapshot(EquipableWeapon weapon) : this(weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null) { }
             public WeaponSnapshot(PowerCore core)
@@ -23,7 +26,14 @@ namespace WeaponWorkshop
                 if (core == null) return;
                 weapon = core.GetComponentInParent<EquipableWeapon>();
                 HasWeapon = true;
-                var assembly = core.GetComponent<CubeAssembly>();
+                assembly = core.GetComponent<CubeAssembly>();
+                if (assembly != null)
+                    foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>())
+                    {
+                        if (block.transform.parent != assembly.transform) continue;
+                        if (block.GetComponent<ColorModule>() != null) colorModules++;
+                        foreach (var paint in block.GetComponentsInChildren<ModuleFacePaint>()) paintedMaterials.AddRange(paint.PaintedMaterials);
+                    }
                 var collector = core.GetComponent<StatCollector>();
                 var baseStats = collector != null && collector.BaseStats != null
                     ? collector.BaseStats.Stats : new WeaponStats { fireRate = core.EmissionsPerSecond };
@@ -65,6 +75,16 @@ namespace WeaponWorkshop
                 if (!HasWeapon || condition == null) return 0f;
                 switch (condition.Measure)
                 {
+                    case GunMeasure.ConstructionCost: return weapon != null ? weapon.PaidConstructionCost : 0;
+                    case GunMeasure.Shape: return TableManager.Instance.GunShape.Matches(condition.shapeId, assembly) ? 1 : 0;
+                    case GunMeasure.PaintedFaces: return paintedMaterials.Count;
+                    case GunMeasure.ColorModules: return colorModules;
+                    case GunMeasure.PaintedColorFaces:
+                        if (!ColorUtility.TryParseHtmlString(condition.colorHex, out var target)) return 0;
+                        int matched = 0;
+                        foreach (var material in paintedMaterials)
+                            if (TryPaintColor(material, out var color) && Mathf.Max(Mathf.Abs(color.r-target.r), Mathf.Abs(color.g-target.g), Mathf.Abs(color.b-target.b)) <= condition.colorTolerance) matched++;
+                        return matched;
                     case GunMeasure.WeaponStat:
                         if (condition.Stat == StatType.Weight || condition.Stat == StatType.Scope) return whole.Get(condition.Stat);
                         return firingStats.Get(condition.Stat);
@@ -77,6 +97,19 @@ namespace WeaponWorkshop
                     case GunMeasure.Muzzles: return muzzles;
                     default: return muzzleStats.TryGetValue(condition.Stat, out var value) ? value : 0f;
                 }
+            }
+            private static bool TryPaintColor(Material material, out Color color)
+            {
+                color = default;
+                var match = System.Text.RegularExpressions.Regex.Match(material.name, @"#[0-9a-fA-F]{6}(?![0-9a-fA-F])");
+                if (match.Success) return ColorUtility.TryParseHtmlString(match.Value, out color);
+                // 텍스처 기반 위장색은 단색 조건에서 제외한다.
+                if ((material.HasProperty("_BaseMap") && material.GetTexture("_BaseMap") != null) ||
+                    (material.HasProperty("_MainTex") && material.GetTexture("_MainTex") != null)) return false;
+                if (material.HasProperty("_BaseColor")) color = material.GetColor("_BaseColor");
+                else if (material.HasProperty("_Color")) color = material.GetColor("_Color");
+                else return false;
+                return true;
             }
             public bool Meets(CustomerRequestData.Condition condition)
             {
@@ -182,6 +215,7 @@ namespace WeaponWorkshop
         }
         public static string Describe(CustomerRequestData.Condition condition, float currentValue)
         {
+            if (condition.Measure == GunMeasure.Shape) return Describe(condition) + (currentValue >= 1 ? " (충족)" : " (불충족)");
             string current = currentValue.ToString("0.##");
             if ((condition.Measure == GunMeasure.SplitTwoBlocks || condition.Measure == GunMeasure.SplitFourBlocks)
                 && condition.max == float.MaxValue)
@@ -191,6 +225,7 @@ namespace WeaponWorkshop
         public static string Describe(CustomerRequestData.Condition condition, bool includePathScope = true)
         {
             string label = condition.label;
+            if (condition.Measure == GunMeasure.Shape) return label + " · 흰색 영역 안 자유 배치";
             bool splitModule = condition.Measure == GunMeasure.SplitTwoBlocks || condition.Measure == GunMeasure.SplitFourBlocks;
             if (includePathScope && splitModule) label = "발사 경로 전체의 " + label;
             bool scopedModule = condition.Measure == GunMeasure.PathModules || condition.Measure == GunMeasure.TotalModules;
@@ -207,13 +242,13 @@ namespace WeaponWorkshop
             foreach (var condition in tag?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) yield return condition;
             foreach (var condition in request?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) yield return condition;
         }
-        public static void Validate(CustomerRequestData table, ShootingTestTableData tests)
+        public static void Validate(CustomerRequestData table, ShootingTestTableData tests, GunShapeData shapes)
         {
             // 조건의 enum 이름을 한 번 해석해 둔다. 해석하지 못한 조건은 ValidCondition에서 거부된다.
             foreach (var tag in table.tags ?? Array.Empty<CustomerRequestData.Tag>())
-                foreach (var condition in tag?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) Parse(condition, tag.id);
+                foreach (var condition in tag?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) Parse(condition, tag.id, shapes);
             foreach (var row in table.requests ?? Array.Empty<CustomerRequestData.Request>())
-                foreach (var condition in row?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) Parse(condition, row.id);
+                foreach (var condition in row?.conditions ?? Array.Empty<CustomerRequestData.Condition>()) Parse(condition, row.id, shapes);
             var ids = new HashSet<string>();
             foreach (var tag in table.tags ?? Array.Empty<CustomerRequestData.Tag>())
                 if (tag == null || string.IsNullOrEmpty(tag.id) || !ids.Add(tag.id)) Debug.LogError("요청 표에 빈/중복 태그 ID가 있습니다.");
@@ -235,12 +270,15 @@ namespace WeaponWorkshop
                     if (string.IsNullOrEmpty(alias) || !ids.Add(alias)) Debug.LogError("요청 표에 빈/중복 이전 요청 ID가 있습니다: " + row.id);
             }
         }
-        private static void Parse(CustomerRequestData.Condition condition, string owner)
+        private static bool RequiresStat(GunMeasure measure) => measure == GunMeasure.WeaponStat || measure == GunMeasure.MuzzleStat || measure == GunMeasure.PathModules || measure == GunMeasure.TotalModules;
+        private static void Parse(CustomerRequestData.Condition condition, string owner, GunShapeData shapes)
         {
             if (condition == null) return;
             condition.Parsed = Enum.TryParse<GunMeasure>(condition.measure, false, out condition.Measure) &&
                 Enum.IsDefined(typeof(GunMeasure), condition.Measure) &&
-                Enum.TryParse<StatType>(condition.stat, false, out condition.Stat) && Enum.IsDefined(typeof(StatType), condition.Stat);
+                (!RequiresStat(condition.Measure) || (Enum.TryParse<StatType>(condition.stat, false, out condition.Stat) && Enum.IsDefined(typeof(StatType), condition.Stat)));
+            if (condition.Parsed && condition.Measure == GunMeasure.Shape) condition.Parsed = shapes.Find(condition.shapeId) != null;
+            if (condition.Parsed && condition.Measure == GunMeasure.PaintedColorFaces) condition.Parsed = ColorUtility.TryParseHtmlString(condition.colorHex, out _) && condition.colorTolerance >= 0 && condition.colorTolerance <= 1;
             if (!condition.Parsed) Debug.LogError($"요청 표 {owner} 조건의 measure/stat 이름을 해석하지 못했습니다: {condition.measure}/{condition.stat}");
         }
     }
