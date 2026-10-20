@@ -21705,6 +21705,10 @@ PrefabInstance:
       value: ShootingRange
       objectReference: {fileID: 0}
     - target: {fileID: 7708408792354316905, guid: 6816cf8f0cf2a8a418ffbf51bdb71178, type: 3}
+      propertyPath: customerBell
+      value: 
+      objectReference: {fileID: 66214490}
+    - target: {fileID: 7708408792354316905, guid: 6816cf8f0cf2a8a418ffbf51bdb71178, type: 3}
       propertyPath: selectionUI
       value: 
       objectReference: {fileID: 6951644726921892601}
