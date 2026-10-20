@@ -89,6 +89,18 @@
         {
           "id": "tag/water-gun",
           "unlockDay": 3
+        },
+        {
+          "id": "shooting-test/around-cover",
+          "unlockDay": 4
+        },
+        {
+          "id": "shooting-test/behind-barrier",
+          "unlockDay": 5
+        },
+        {
+          "id": "shooting-test/wide-targets",
+          "unlockDay": 6
         }
       ],
       "orderTemplates": [
