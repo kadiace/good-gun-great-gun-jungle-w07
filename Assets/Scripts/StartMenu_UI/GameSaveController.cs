@@ -219,11 +219,9 @@ namespace WeaponWorkshop
             var wallet = player.GetComponent<PlayerWallet>();
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
             data = new GameSaveData { version = 9, day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
-                slotTickets = wallet.SlotTickets,
                 lifetimeSatisfiedSales = lifetimeSatisfiedSales, lifetimeSaleRevenue = lifetimeSaleRevenue,
                 retirementLegacy = retirementLegacy,
                 retired = retired, endChestOpened = endChestOpened,
-                slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
                 unlockedMainTrackIds = _unlockedMainTrackIds.ToArray(), trackUnlocksMigrated = _trackUnlocksMigrated,
                 clearedRaidScenes = clearedRaidScenes.ToArray(),
@@ -231,13 +229,6 @@ namespace WeaponWorkshop
                 lastLoanDay = wallet.LastLoanDay,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
                 savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null, saveId = PlayerIdentity.SaveId };
-            var slotMachine = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene);
-            if (slotMachine != null)
-            {
-                data.slotMachineDestructions = slotMachine.DestructionCount;
-                data.slotMachineDestroyedDay = slotMachine.DestroyedDay;
-                data.slotMachineDestroyedAtNight = slotMachine.DestroyedAtNight;
-            }
             data.playerPosition = player.transform.position; data.playerEuler = player.transform.eulerAngles;
             data.weaponPresets = player.GetComponent<WeaponPresets>()?.Capture();
             data.viewEuler = player.ViewPoint.localEulerAngles;
@@ -313,9 +304,9 @@ namespace WeaponWorkshop
                 else NightRaidTransfer.KeepRecovery(workshop);
                 return;
             }
-            if (NightRaidTransfer.TryConsumeStandaloneReturn(out int slotTickets))
+            if (NightRaidTransfer.TryConsumeStandaloneReturn(out int coreDollars))
             {
-                if (cleared) player.GetComponent<PlayerWallet>().CreditSlotTickets(slotTickets);
+                if (cleared) player.GetComponent<PlayerWallet>().Credit(coreDollars);
                 pendingClearedRaid = cleared ? resultRaid : 0;
                 _pendingClearedRaidScene = cleared ? resultRaidScene : null;
                 unsuccessfulRaidReturn = !cleared;
@@ -423,16 +414,12 @@ namespace WeaponWorkshop
             else if (restored != null && !player.GetComponent<WeaponHolder>().Equip(restored))
             { Destroy(restored.gameObject); Debug.LogError("저장 무기를 장착하지 못했습니다.", this); return; }
             player.GetComponent<PlayerWallet>().RestoreBalance(data.balance);
-            FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.RestoreSpins(data.slotMachineSpins);
             player.GetComponent<PlayerWallet>().RestoreLoans(data.outstandingLoans);
             player.GetComponent<PlayerWallet>().RestoreLastLoanDay(data.lastLoanDay);
             player.GetComponent<PlayerWallet>().RestoreModuleCredits(data.moduleCredits);
-            player.GetComponent<PlayerWallet>().RestoreSlotTickets(data.slotTickets);
             player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(data.unlockedModules);
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
-            FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.RestoreDamage(data.slotMachineDestructions,
-                data.slotMachineDestroyedDay, data.slotMachineDestroyedAtNight);
             RestoreRaidProgress(data);
             RestoreTrackUnlocks(data);
             RestoreRetirementState(data);

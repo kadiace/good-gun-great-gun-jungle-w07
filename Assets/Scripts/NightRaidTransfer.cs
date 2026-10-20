@@ -12,7 +12,7 @@ namespace WeaponWorkshop
         private static void ResetReturnFade() => ReturnDayFadePending = false;
         private static bool enteringRaid;
         private static bool standaloneReturn;
-        private static int standaloneSlotTickets;
+        private static int standaloneCoreDollars;
         // 결과 확정 시에만 채운다. 훈련 습격과 결과 없는 복귀는 번호 0·클리어 false다.
         public static int ResultRaidNumber { get; private set; }
         public static string ResultRaidScene { get; private set; }
@@ -31,17 +31,17 @@ namespace WeaponWorkshop
         public static int EntryCost { get; private set; }
         private static int moduleCreditsBeforeLoss;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneSlotTickets = 0; EntryCost = 0; RecordResult(0, null, false); }
+        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneCoreDollars = 0; EntryCost = 0; RecordResult(0, null, false); }
         // 씬을 직접 연 경우에는 공방 스냅샷 없이 결과만 전달한다.
-        public static void MarkStandaloneReturn(int slotTickets)
+        public static void MarkStandaloneReturn(int coreDollars)
         {
             standaloneReturn = true;
-            standaloneSlotTickets = Mathf.Max(0, slotTickets);
+            standaloneCoreDollars = Mathf.Max(0, coreDollars);
         }
-        public static bool TryConsumeStandaloneReturn(out int slotTickets)
+        public static bool TryConsumeStandaloneReturn(out int coreDollars)
         {
             bool pending = standaloneReturn;
-            slotTickets = pending ? standaloneSlotTickets : 0;
+            coreDollars = pending ? standaloneCoreDollars : 0;
             if (pending) Reset();
             return pending;
         }
@@ -92,7 +92,6 @@ namespace WeaponWorkshop
             if (!died)
             {
                 Workshop.moduleCredits = player.GetComponent<PlayerWallet>().ModuleCredits;
-                Workshop.slotTickets = player.GetComponent<PlayerWallet>().SlotTickets;
                 Workshop.unlockedModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             }
             Workshop.inWorkshop = false; Workshop.confirmation = false; Workshop.settlement = !died;

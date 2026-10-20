@@ -243,25 +243,21 @@ namespace WeaponWorkshop
             if (tagGrid != null) tagGrid.gameObject.SetActive(false);
             bool available = interaction.CanInteractTarget;
             bool tutorialBlocked = TutorialManager.Instance != null && !TutorialManager.Instance.AllowsInteraction(interaction.AimedTarget);
-            bool slotMachine = target is SlotMachineReels;
             bool retire = target is RetireButton;
             bool manual = target is WorkshopManual && label.Title == "매뉴얼";
             if (description != null)
             {
-                description.gameObject.SetActive((slotMachine || !tutorialBlocked) && (slotMachine || retire || manual || !available));
-                description.color = slotMachine ? Color.white : bodyColor;
+                description.gameObject.SetActive(!tutorialBlocked && (retire || manual || !available));
+                description.color = bodyColor;
             }
             string condition = label.UnavailableCondition;
-            if (target is SlotMachineReels machine)
-                condition = machine.GetHoverDescription(PlayerWallet.ForPlayer(interaction.Player));
-            else if (retire)
+            if (retire)
             {
                 // 은퇴 버튼은 비용 치환 대신 세 조건 진행도를 여러 줄로 표시한다.
                 condition = RetirementInfo.Describe(FindFirstObjectByType<GameSaveController>(),
                     PlayerWallet.ForPlayer(interaction.Player));
             }
-            Show(label.Title, (tutorialBlocked && !slotMachine) || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
-                retire || slotMachine);
+            Show(label.Title, tutorialBlocked || (!retire && !manual && available) ? string.Empty : condition, retire);
             ShowInteract();
             if (title != null) title.color = Color.white;
             return true;

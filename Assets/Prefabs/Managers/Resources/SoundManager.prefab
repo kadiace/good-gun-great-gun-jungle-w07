@@ -33,7 +33,6 @@ Transform:
   m_Children:
   - {fileID: 8750000000000000003}
   - {fileID: 9100000000000000012}
-  - {fileID: 7600600000000000002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8549607141102546984
@@ -136,62 +135,6 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: 8bc1f96b645ca6b47be49315bc2f67a9, type: 3}
     volume: 0.85
---- !u!1 &7600600000000000001
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7600600000000000002}
-  - component: {fileID: 7600600000000000003}
-  m_Layer: 0
-  m_Name: SlotMachine
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7600600000000000002
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7600600000000000001}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 8273641672993498232}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7600600000000000003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7600600000000000001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6a8e31fcb324ba4a6c5dc89c46140f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.SlotMachineSound
-  _leverClip: {fileID: 8300000, guid: 72be408f8cde5834c8fb1748dc2e7f70, type: 3}
-  _leverVolume: 1
-  _rotationClip: {fileID: 8300000, guid: a52cc8b76eed04e4ea34eeaf85931641, type: 3}
-  _rotationVolume: 1
-  _reelStopClip: {fileID: 8300000, guid: eee6d46b4a539e54e9c0833f89b90027, type: 3}
-  _reelStopVolume: 1
-  _payoutClip: {fileID: 8300000, guid: 3f7e9ec79939ea94abf7f930f0a1008e, type: 3}
-  _payoutVolume: 1
-  _failClip: {fileID: 8300000, guid: 876e576db5523ad4dabe37211e4d3c8a, type: 3}
-  _failVolume: 1
-  _destroyClip: {fileID: 8300000, guid: c167898be88f94441837dff46fcf8e89, type: 3}
-  _destroyVolume: 1
 --- !u!1 &8750000000000000002
 GameObject:
   m_ObjectHideFlags: 0

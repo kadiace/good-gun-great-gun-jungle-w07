@@ -143,6 +143,7 @@ namespace WeaponWorkshop
                 if (settings.reward == null) { Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 보상(reward)이 없습니다."); settings.reward = new RaidMapData.Reward(); }
                 if (settings.reward.moduleCodes == null) settings.reward.moduleCodes = Array.Empty<string>();
                 if (settings.reward.dollarsPerMaterialPickup < 0) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 재화 1회당 달러가 음수입니다.");
+                if (settings.reward.dollarsPerCore < 0) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 코어당 달러가 음수입니다.");
                 if (settings.reward.firstClearSaleBonus < 0f) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 최초 클리어 판매 보너스가 음수입니다.");
                 if (settings.reward.materialPerCrate <= 0 && (settings.reward.materialCrates > 0 || settings.reward.moduleCodes.Length > 0))
                     Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 상자당 재료(materialPerCrate)가 0 이하입니다.");

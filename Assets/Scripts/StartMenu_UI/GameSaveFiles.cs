@@ -154,12 +154,8 @@ namespace WeaponWorkshop
         [NonSerialized] public CustomerDay travelCustomerDay;
         public string testAssemblyKey;
         public string[] passedTestIds = Array.Empty<string>();
-        public int version = 8, day, balance, paidCost;
-        public int slotMachineSpins;
-        public int slotMachineDestructions, slotMachineDestroyedDay = -1;
-        public bool slotMachineDestroyedAtNight;
+        public int version, day, balance, paidCost;
         public int moduleCredits;
-        public int slotTickets;
         // 은퇴 누적 실적. 만족 판매 수와 누적 매출(불만족·튜토리얼 판매 포함)이다.
         public int lifetimeSatisfiedSales, lifetimeSaleRevenue;
         // v8 이하에서 온 세이브는 계속 잔액 조건만으로 은퇴한다. 저장 왕복에서 유지된다.

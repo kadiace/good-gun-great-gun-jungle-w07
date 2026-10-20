@@ -44,20 +44,4 @@ namespace WeaponWorkshop
     { public bool manual; public int balance, guestsServed, guestsRemaining; public float businessSeconds; }
     [Serializable] public sealed class ShopWeaponFiredLogEvent : ShopLogEvent
     { public float time; public UnityEngine.Vector3 position; public string weaponAssemblyId = "", weaponAssemblyIdStatus = "no_weapon"; }
-    [Serializable] public sealed class ShopSlotMachineLogEvent : ShopLogEvent
-    {
-        public float playSeconds, secondsSinceDayNightTransition;
-        public string period, oddsPool, plannedSymbol;
-        public bool isNight;
-        public bool paidWithTicket, paidWithMoney;
-        public int introductorySpinsUsed, balanceBefore, balanceAfter, price, plannedPrize;
-        public int[] reelSymbols;
-    }
-    [Serializable] public sealed class ShopSlotMachineDestroyedLogEvent : ShopLogEvent
-    {
-        public string period;
-        public bool isNight;
-        public float penetration, explosion, penetrationResistance, explosionResistance;
-        public int destructionCount;
-    }
 }
