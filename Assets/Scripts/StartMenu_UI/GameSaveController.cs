@@ -23,18 +23,74 @@ namespace WeaponWorkshop
         private bool retired;
         private int retirementSavedDay = -1;
         public bool IsRetired => retired;
+        // v8 이하에서 온 세이브면 true. 세이브 왕복에서 유지되고 은퇴 조건을 잔액만으로 바꾼다.
+        private bool retirementLegacy;
+        // 은퇴 누적 실적. 만족 판매 수와 누적 매출이다.
+        private int lifetimeSatisfiedSales, lifetimeSaleRevenue;
+        public bool RetirementLegacy => retirementLegacy;
+        public int LifetimeSatisfiedSales => lifetimeSatisfiedSales;
+        public int LifetimeSaleRevenue => lifetimeSaleRevenue;
+
+        /// <summary>판매 실적을 누적한다. 만족 수·매출 모두 int 범위에서 포화된다.</summary>
+        public void RecordSale(bool satisfied, int revenue)
+        {
+            if (satisfied)
+                lifetimeSatisfiedSales = (int)Math.Min(int.MaxValue, (long)lifetimeSatisfiedSales + 1);
+            if (revenue > 0)
+                lifetimeSaleRevenue = (int)Math.Min(int.MaxValue, (long)lifetimeSaleRevenue + revenue);
+        }
+
         private bool endChestOpened;
         public bool EndChestOpened => endChestOpened;
-        public void CompleteRetirement()
+
+        /// <summary>
+        /// 은퇴 상태를 확정하고 은퇴 시점 저장을 강제로 기록한다.
+        /// SaveAuto는 은퇴 당일 저장을 건너뛰므로 여기서 직접 기록해야 잔액 차감과 retired가 남는다.
+        /// 저장에 실패하면 은퇴 상태를 되돌리고 false를 반환한다. 잔액 복구는 호출부가 담당한다.
+        /// </summary>
+        public bool CompleteRetirement(out string error)
         {
+            error = null;
+            // 은퇴 시점 저장에 retired가 들어가도록 상태를 먼저 세팅한다.
             retired = true;
-            retirementSavedDay = dayManager.DayNumber;
-            if (autoSaveRoutine != null)
-            {
-                StopCoroutine(autoSaveRoutine);
-                autoSaveRoutine = null;
-            }
+            retirementSavedDay = dayManager != null ? dayManager.DayNumber : -1;
             RefreshRetireButton();
+            bool saved = false;
+            if (TryCaptureWorkshop(out var data, out error))
+            {
+                try
+                {
+                    GameSaveFiles.WriteAutoSave(data, prettyPrint);
+                    saved = true;
+                }
+                catch (Exception e) when (e is System.IO.IOException || e is UnauthorizedAccessException)
+                { error = "자동 저장 파일을 기록하지 못했습니다. " + e.Message; }
+            }
+            if (saved)
+            {
+                // 이후 같은 날짜의 SaveAuto는 early return으로 은퇴 시점 저장을 유지한다.
+                if (autoSaveRoutine != null)
+                {
+                    StopCoroutine(autoSaveRoutine);
+                    autoSaveRoutine = null;
+                }
+                return true;
+            }
+            retired = false;
+            retirementSavedDay = -1;
+            RefreshRetireButton();
+            return false;
+        }
+
+        /// <summary>은퇴 상태와 누적 실적을 저장 데이터에서 복원한다.</summary>
+        private void RestoreRetirementState(GameSaveData data)
+        {
+            lifetimeSatisfiedSales = Mathf.Max(0, data.lifetimeSatisfiedSales);
+            lifetimeSaleRevenue = Mathf.Max(0, data.lifetimeSaleRevenue);
+            retirementLegacy = data.retirementLegacy;
+            retired = data.retired;
+            retirementSavedDay = retired ? data.day : -1;
+            endChestOpened = data.endChestOpened;
         }
         private void RefreshRetireButton()
         {
@@ -162,8 +218,10 @@ namespace WeaponWorkshop
             { error = "무기와 카메라 이동이 끝난 후 저장하세요."; return false; }
             var wallet = player.GetComponent<PlayerWallet>();
             if (wallet == null) { error = "지갑 연결을 확인하세요."; return false; }
-            data = new GameSaveData { day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
+            data = new GameSaveData { version = 9, day = dayManager.DayNumber, balance = wallet.Balance, moduleCredits = wallet.ModuleCredits,
                 slotTickets = wallet.SlotTickets,
+                lifetimeSatisfiedSales = lifetimeSatisfiedSales, lifetimeSaleRevenue = lifetimeSaleRevenue,
+                retirementLegacy = retirementLegacy,
                 retired = retired, endChestOpened = endChestOpened,
                 slotMachineSpins = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.CompletedSpins ?? 0,
                 raidClearProgress = raidClearProgress,
@@ -325,7 +383,9 @@ namespace WeaponWorkshop
         private void RestoreCore(GameSaveData data)
         {
             GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
-            if (data.version >= 3) { RestoreWorldSave(data); return; }
+            // v2 압축 세이브(legacyCompactSave)는 월드 스냅샷 대신 블록 나열 복원을 쓴다.
+            // 읽기에서 version을 9로 통일하므로 경로 선택은 version이 아니라 표식으로 한다.
+            if (!data.legacyCompactSave) { RestoreWorldSave(data); return; }
             if (dayManager == null || player == null || !dayManager.CanRestoreSave(data) || player.GetComponent<PlayerWallet>() == null ||
                 (data.inWorkshop && (workbenches == null || data.workbench < 0 || data.workbench >= workbenches.Length || workbenches[data.workbench] == null)))
             { Debug.LogError("저장된 일차 또는 플레이어 연결을 확인하세요.", this); return; }
@@ -375,9 +435,7 @@ namespace WeaponWorkshop
                 data.slotMachineDestroyedDay, data.slotMachineDestroyedAtNight);
             RestoreRaidProgress(data);
             RestoreTrackUnlocks(data);
-            retired = data.retired;
-            retirementSavedDay = retired ? data.day : -1;
-            endChestOpened = data.endChestOpened;
+            RestoreRetirementState(data);
             RefreshRetireButton();
         }
         // 구버전 세이브의 누락 필드는 기본값 0이다. 음수는 0으로 보정하고 진행도를 보존한다.

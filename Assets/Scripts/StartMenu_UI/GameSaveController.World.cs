@@ -334,9 +334,7 @@ namespace WeaponWorkshop
                 data.slotMachineDestroyedDay, data.slotMachineDestroyedAtNight);
             RestoreRaidProgress(data);
             RestoreTrackUnlocks(data);
-            retired = data.retired;
-            retirementSavedDay = retired ? data.day : -1;
-            endChestOpened = data.endChestOpened;
+            RestoreRetirementState(data);
             RefreshRetireButton();
             return true;
         }

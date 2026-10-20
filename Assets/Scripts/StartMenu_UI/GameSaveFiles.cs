@@ -160,6 +160,12 @@ namespace WeaponWorkshop
         public bool slotMachineDestroyedAtNight;
         public int moduleCredits;
         public int slotTickets;
+        // 은퇴 누적 실적. 만족 판매 수와 누적 매출(불만족·튜토리얼 판매 포함)이다.
+        public int lifetimeSatisfiedSales, lifetimeSaleRevenue;
+        // v8 이하에서 온 세이브는 계속 잔액 조건만으로 은퇴한다. 저장 왕복에서 유지된다.
+        public bool retirementLegacy;
+        // v2 압축 세이브 표식. 블록 나열 복원 경로를 가리고 월드 전용 검증을 건너뛴다.
+        public bool legacyCompactSave;
         // 필드가 없는 이전 JSON은 0으로 읽힌다. 슬롯별 최고 클리어 습격 번호다.
         public int raidClearProgress;
         // 빈 배열은 신규 상태이며 DayFirst는 암묵적으로 해금된다. null은 구형 필드 부재다.
@@ -237,8 +243,11 @@ namespace WeaponWorkshop
             {
                 if (!File.Exists(path)) return false;
                 var read = JsonUtility.FromJson<GameSaveData>(File.ReadAllText(path));
-                if (read == null || (read.version < 2 || read.version > 8) || read.day < 0 ||
+                // 구형 파일에 version이 없으면 이전 기본값과 같은 v8로 취급한다.
+                if (read != null && read.version == 0) read.version = 8;
+                if (read == null || (read.version < 2 || read.version > 9) || read.day < 0 ||
                     read.paidCost < 0 || read.savedUtcTicks <= 0 || read.savedUtcTicks > DateTime.MaxValue.Ticks ||
+                    read.lifetimeSatisfiedSales < 0 || read.lifetimeSaleRevenue < 0 ||
                     read.completed < 0 || read.dissatisfied < 0 || read.killed < 0 || read.income < 0 ||
                     read.dissatisfied + read.killed > read.completed || read.nextCustomer < 0 ||
                     (read.trackUnlocksMigrated && read.unlockedMainTrackIds == null) ||
@@ -247,7 +256,11 @@ namespace WeaponWorkshop
                     read.blocks == null || read.blocks.Length > 10000 ||
                     read.blocks.Any(b => b == null || b.slot < 1 || b.paidCost < 0 || b.cell == Vector3Int.zero) ||
                     read.blocks.Select(b => b.cell).Distinct().Count() != read.blocks.Length) return false;
-                if (read.version >= 3 && (string.IsNullOrEmpty(read.sceneName) || read.map == null || read.weapons == null || read.targets == null ||
+                // v3~8 파일에 압축 표식이 있으면 깨진 플래그다. v9 압축 세이브만 유효한다.
+                if (read.version >= 3 && read.version <= 8 && read.legacyCompactSave) return false;
+                // 압축 세이브에는 씬·월드 스냅샷이 없으므로 월드 전용 검증을 건너뛴다.
+                // v2 → v9 압축 세이브를 제자리에 다시 써도(예: TryMarkEndChestOpened) 읽힌다.
+                if (!read.legacyCompactSave && read.version >= 3 && (string.IsNullOrEmpty(read.sceneName) || read.map == null || read.weapons == null || read.targets == null ||
                     read.weapons.Any(w => w == null || w.blocks == null || w.blocks.Any(b => b == null || b.slot < 1 || b.paidCost < 0)))) return false;
                 if (read.version < 4)
                 {
@@ -259,6 +272,17 @@ namespace WeaponWorkshop
                     if (read.unlockedModules != null)
                         read.unlockedModules = read.unlockedModules.Select(id => id > 0 && id < ids.Length ? ids[id] : id).ToArray();
                     if (read.version == 3) read.version = 4;
+                }
+                // 구세이브(v8 이하)는 영구히 잔액만으로 은퇴를 허용하고 누적 실적은 0에서 다시 쌓는다.
+                // v2 압축 세이브는 legacyCompactSave로 표식해 세계 복원 대신 압축 복원을 쓴다.
+                // version을 9로 통일해도 표식이 경로와 검증을 가린다.
+                if (read.version <= 8)
+                {
+                    read.retirementLegacy = true;
+                    read.lifetimeSatisfiedSales = 0;
+                    read.lifetimeSaleRevenue = 0;
+                    if (read.version == 2) read.legacyCompactSave = true;
+                    read.version = 9;
                 }
                 data = read;
                 return true;

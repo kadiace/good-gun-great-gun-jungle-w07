@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -257,12 +256,9 @@ namespace WeaponWorkshop
                 condition = machine.GetHoverDescription(PlayerWallet.ForPlayer(interaction.Player));
             else if (retire)
             {
-                PlayerWallet wallet = PlayerWallet.ForPlayer(interaction.Player);
-                int cost = RetireUI.Cost;
-                string amount = "$" + cost.ToString("N0", CultureInfo.InvariantCulture);
-                string shownAmount = wallet == null || wallet.Balance < cost
-                    ? $"<color=#FF0000>{amount}</color>" : amount;
-                condition = condition.Replace("{RETIRE_COST}", shownAmount);
+                // 은퇴 버튼은 비용 치환 대신 세 조건 진행도를 여러 줄로 표시한다.
+                condition = RetirementInfo.Describe(FindFirstObjectByType<GameSaveController>(),
+                    PlayerWallet.ForPlayer(interaction.Player));
             }
             Show(label.Title, (tutorialBlocked && !slotMachine) || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
                 retire || slotMachine);

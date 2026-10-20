@@ -697,7 +697,7 @@ namespace WeaponWorkshop
         /// <param name="step">비용 토큰을 포함한 은퇴 소개 튜토리얼 단계입니다.</param>
         private void ShowRetirementIntroduction(TutorialStep step)
         {
-            string description = step.description.Replace("{은퇴자금}", FormatKoreanRetirementCost(RetireUI.Cost));
+            string description = step.description.Replace("{은퇴자금}", FormatKoreanRetirementCost(RetirementInfo.Cost));
             _retirementIntroductionAwaitingConfirmation = true;
             ownsDialogue = true;
             if (!dialogue.Show(description, "확인", Confirm, step.title))
