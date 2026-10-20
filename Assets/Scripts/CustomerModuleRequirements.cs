@@ -25,6 +25,14 @@ namespace WeaponWorkshop
                     if (condition.min <= 0f) continue;
                     switch (condition.Measure)
                     {
+                        case GunMeasure.ConstructionCost:
+                        case GunMeasure.Shape:
+                        case GunMeasure.PaintedFaces:
+                        case GunMeasure.PaintedColorFaces:
+                            break; // 제작비·영역·도색은 특정 스탯 모듈 해금을 요구하지 않는다.
+                        case GunMeasure.ColorModules:
+                            if (unlocks == null || !unlocks.IsUnlocked(ModuleKind.Color)) return false;
+                            break;
                         case GunMeasure.SplitTwoBlocks:
                             if (unlocks == null || !unlocks.IsUnlocked(ModuleKind.SplitTwo)) return false;
                             break;
@@ -66,7 +74,10 @@ namespace WeaponWorkshop
                     {
                         case GunMeasure.SplitTwoBlocks: Need(ModuleKind.SplitTwo, Mathf.CeilToInt(condition.min), need); break;
                         case GunMeasure.SplitFourBlocks: Need(ModuleKind.SplitFour, Mathf.CeilToInt(condition.min), need); break;
-                        case GunMeasure.TotalModules: case GunMeasure.Muzzles: break;
+                        case GunMeasure.TotalModules: case GunMeasure.Muzzles:
+                        case GunMeasure.ConstructionCost: case GunMeasure.Shape:
+                        case GunMeasure.PaintedFaces: case GunMeasure.PaintedColorFaces: break;
+                        case GunMeasure.ColorModules: Need(ModuleKind.Color, Mathf.CeilToInt(condition.min), need); break;
                         default:
                             if (!ModuleCounter.TryToKind(condition.Stat, out var kind)) break;
                             float missing = condition.Measure == GunMeasure.PathModules ? condition.min : condition.min - core.Get(condition.Stat);
