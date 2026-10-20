@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 835000001}
-  - component: {fileID: 835000002}
   m_Layer: 0
   m_Name: ModuleCrateSpawnManager
   m_TagString: Untagged
@@ -62,53 +61,6 @@ Transform:
   - {fileID: 835001291}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &835000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 835000000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f84dfba08474984acc1dd75e8df921b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cratePrefab: {fileID: 114001, guid: 5362471a968346109f43bfe1d9fd126d, type: 3}
-  catalog: {fileID: 11400000, guid: 9ba20ad561a32444ba7c6c150b2af8ea, type: 2}
-  spawnPoints:
-  - {fileID: 835001001}
-  - {fileID: 835001011}
-  - {fileID: 835001021}
-  - {fileID: 835001031}
-  - {fileID: 835001041}
-  - {fileID: 835001051}
-  - {fileID: 835001061}
-  - {fileID: 835001071}
-  - {fileID: 835001081}
-  - {fileID: 835001091}
-  - {fileID: 835001101}
-  - {fileID: 835001111}
-  - {fileID: 835001121}
-  - {fileID: 835001131}
-  - {fileID: 835001141}
-  - {fileID: 835001151}
-  - {fileID: 835001161}
-  - {fileID: 835001171}
-  - {fileID: 835001181}
-  - {fileID: 835001191}
-  - {fileID: 835001201}
-  - {fileID: 835001211}
-  - {fileID: 835001221}
-  - {fileID: 835001231}
-  - {fileID: 835001241}
-  - {fileID: 835001251}
-  - {fileID: 835001261}
-  - {fileID: 835001271}
-  - {fileID: 835001281}
-  - {fileID: 835001291}
-  minimumCount: 2
-  maximumCount: 3
 --- !u!1 &835001000
 GameObject:
   m_ObjectHideFlags: 0

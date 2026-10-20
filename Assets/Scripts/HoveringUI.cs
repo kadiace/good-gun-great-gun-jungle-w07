@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -36,6 +37,7 @@ namespace WeaponWorkshop
         private readonly List<WeaponTypeData> weaponTags = new List<WeaponTypeData>();
         private readonly List<RectTransform> tagPills = new List<RectTransform>();
         private CubeBuilder builder;
+        private bool muzzleTooltipObserved;
         private Color bodyColor;
         private readonly StringBuilder text = new StringBuilder();
         private readonly Dictionary<ModuleData, int> counts = new Dictionary<ModuleData, int>();
@@ -43,7 +45,7 @@ namespace WeaponWorkshop
 
         public void Initialize(CubeBuilder source, Interaction interactionSource) { interaction = interactionSource; builder = source; if (tagTemplate != null) tagTemplate.gameObject.SetActive(false); if (tagGrid != null) tagGrid.gameObject.SetActive(false); bodyColor = description != null ? description.color : Color.white; Hide(); }
         private void Awake() { Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
-        private void OnDisable() { Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
+        private void OnDisable() { muzzleTooltipObserved = false; Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
         private void Hide() { if (interact != null) interact.SetActive(false); if (panel != null) panel.SetActive(false); if (scanLoading != null) scanLoading.gameObject.SetActive(false); }
         private void CreateScanLoading()
         {
@@ -60,7 +62,7 @@ namespace WeaponWorkshop
             label.transform.SetParent(root.transform, false);
             scanLoadingText = label.GetComponent<TextMeshProUGUI>();
             scanLoadingText.font = title.font;
-            scanLoadingText.fontSize = 22f;
+            scanLoadingText.fontSize = 26f;
             scanLoadingText.alignment = TextAlignmentOptions.Center;
             scanLoadingText.raycastTarget = false;
             scanLoadingText.color = scanLoading.color;
@@ -93,6 +95,9 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
+            bool hoveringMuzzle = false;
+            try
+            {
             if (scanner == null && interaction != null && interaction.Player != null)
                 scanner = interaction.Player.GetComponent<PlayerScanMode>();
             bool scanning = scanner != null && scanner.isActiveAndEnabled && scanner.IsScanning && !GameManager.GameplayBlocked;
@@ -172,7 +177,7 @@ namespace WeaponWorkshop
                 var unlocks = interaction != null && interaction.Player != null ? interaction.Player.GetComponent<PlayerModuleUnlocks>() : null;
                 if (unlocks != null && !unlocks.IsUnlocked(id))
                 {
-                    Show(entry.displayName, "잠긴 모듈\n" + RaidMapData.Current.Locations(entry.data));
+                    Show(entry.displayName, "잠긴 모듈\n" + TableManager.Instance.RaidMap.Locations(entry.data));
                     if (title != null) title.color = entry.color;
                     if (description != null) description.color = bodyColor;
                 }
@@ -201,13 +206,35 @@ namespace WeaponWorkshop
                     // An exposed output must be reachable from the core, on this exact block and face.
                     if (end != block || muzzle.direction != face || cell != (end != null ? end.Cell : Vector3Int.zero) + face) continue;
                     PowerCore core = assembly.GetComponent<PowerCore>();
-                    if (core != null) { ShowMuzzle(core, muzzle.path); return; }
+                    if (core != null)
+                    {
+                        ShowMuzzle(core, muzzle.path);
+                        var tutorial = TutorialManager.Instance;
+                        if (panel != null && panel.activeInHierarchy && title != null && description != null &&
+                            tutorial != null && tutorial.CurrentStep?.requiredSignal == "muzzle-stats-viewed" &&
+                            tutorial.TutorialWorkbench != null && tutorial.TutorialWorkbench.CurrentWeapon != null &&
+                            assembly == tutorial.TutorialWorkbench.CurrentWeapon.GetComponentInChildren<CubeAssembly>())
+                            hoveringMuzzle = true;
+                        return;
+                    }
                 }
             }
             ModuleData data = block != null ? block.GetComponent<ModuleStats>()?.Data : null;
             if (data == null && block != null && builder.Catalog != null && builder.Catalog.TryGet(block.ModuleSlot, out var module)) data = module.data;
             if (data != null) ShowModule(data); else Hide();
+            }
+            finally
+            {
+                var tutorial = TutorialManager.Instance;
+                if (!hoveringMuzzle && muzzleTooltipObserved && !GameManager.GameplayBlocked &&
+                    tutorial != null && tutorial.CurrentStep?.requiredSignal == "muzzle-stats-viewed")
+                    tutorial.NotifySignal("muzzle-stats-viewed", tutorial.TutorialWorkbench);
+                muzzleTooltipObserved = hoveringMuzzle;
+            }
         }
+        /// <summary>
+        /// 조준 대상의 상호작용 제목과 현재 비용 조건을 호버 UI에 표시합니다.
+        /// </summary>
         private bool ShowInteractionTitle()
         {
             if (interaction == null || !interaction.isActiveAndEnabled || !(interaction.AimedTarget is Component target)) return false;
@@ -217,8 +244,28 @@ namespace WeaponWorkshop
             if (tagGrid != null) tagGrid.gameObject.SetActive(false);
             bool available = interaction.CanInteractTarget;
             bool tutorialBlocked = TutorialManager.Instance != null && !TutorialManager.Instance.AllowsInteraction(interaction.AimedTarget);
-            if (description != null) description.gameObject.SetActive(!available && !tutorialBlocked);
-            Show(label.Title, available || tutorialBlocked ? string.Empty : label.UnavailableCondition);
+            bool slotMachine = target is SlotMachineReels;
+            bool retire = target is RetireButton;
+            bool manual = target is WorkshopManual && label.Title == "매뉴얼";
+            if (description != null)
+            {
+                description.gameObject.SetActive((slotMachine || !tutorialBlocked) && (slotMachine || retire || manual || !available));
+                description.color = slotMachine ? Color.white : bodyColor;
+            }
+            string condition = label.UnavailableCondition;
+            if (target is SlotMachineReels machine)
+                condition = machine.GetHoverDescription(PlayerWallet.ForPlayer(interaction.Player));
+            else if (retire)
+            {
+                PlayerWallet wallet = PlayerWallet.ForPlayer(interaction.Player);
+                int cost = RetireUI.Cost;
+                string amount = "$" + cost.ToString("N0", CultureInfo.InvariantCulture);
+                string shownAmount = wallet == null || wallet.Balance < cost
+                    ? $"<color=#FF0000>{amount}</color>" : amount;
+                condition = condition.Replace("{RETIRE_COST}", shownAmount);
+            }
+            Show(label.Title, (tutorialBlocked && !slotMachine) || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
+                retire || slotMachine);
             ShowInteract();
             if (title != null) title.color = Color.white;
             return true;
@@ -299,12 +346,13 @@ namespace WeaponWorkshop
             if (title != null) title.color = Color.white;
             if (description != null) description.color = Color.white;
         }
-        private void Show(string heading, string body)
+        private void Show(string heading, string body, bool richText = false)
         {
             if (title != null) title.maxVisibleCharacters = int.MaxValue;
             if (description != null) description.maxVisibleCharacters = int.MaxValue;
             if (interact != null) interact.SetActive(false);
             if (panel == null || title == null || description == null) return;
+            description.richText = richText;
             bool changed = title.text != heading || description.text != body;
             if (title.text != heading) title.text = heading;
             if (description.text != body) description.text = body;

@@ -12,19 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D1_2_Extension
   m_EditorClassIdentifier: 
-  lines:
-  - "\uAD00\uD1B5 \uBAA8\uB4C8\uC744 \uD558\uB098 \uC774\uC0C1 \uB2EC\uC544\uC8FC\uC138\uC694."
-  endsClear: 1
+  profileId: f350a20ea1c6a314b9a2ebfd39e192be
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
-  conditions:
-  - measure: 2
-    stat: 0
-    min: 1
-    max: 999
-  happyLine: "\uAD00\uD1B5 \uBAA8\uB4C8 \uB531 \uBD99\uC5B4\uC788\uB124\uC694. \uAC10\uC0AC\uD569\uB2C8\uB2E4!"
-  angryLine: "\uAD00\uD1B5 \uBAA8\uB4C8... \uC5B4\uB514 \uC788\uC5B4\uC694?"
-  price: 200
+  conditions: []
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 29b74ce080a15784fa576d4745cf251a, type: 3}

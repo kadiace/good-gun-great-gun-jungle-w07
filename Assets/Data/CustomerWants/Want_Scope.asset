@@ -12,15 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Scope
   m_EditorClassIdentifier: 
-  displayName: "\uC2A4\uCF54\uD504"
-  request: "\uC2A4\uCF54\uD504"
-  conditions:
-  - measure: 1
-    stat: 12
-    min: 1
-    max: 999
+  tableId: module/scope/min-1
+  displayName: 
+  request: 
+  conditions: []
   weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 1
-  requiredModules:
-  - {fileID: 11400000, guid: cc30a6f07cbd432428e9db5a6f3315ae, type: 2}
+  unlockDay: 0
+  requiredModules: []

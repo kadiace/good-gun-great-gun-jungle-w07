@@ -12,17 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D4_8_Homing
   m_EditorClassIdentifier: 
-  lines:
-  - "\uC54C\uC544\uC11C \uB530\uB77C\uAC00\uB294 \uCD1D \uC788\uC5B4\uC694? \uC81C\uAC00
-    \uC5D0\uC784\uC774 \uC880..."
-  - "유도 태그가 붙게 해주세요. 끝까지 따라가도록요."
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: a577397affb1dba46a5ab05ee475eec6, type: 2}
+  profileId: 2d9afc0f00161344c98c8238201fb8ca
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
-  happyLine: "\uB2E4\uC774\uC57C \uB2EC\uB9AC\uAE30 \uB450\uAC00\uD2F0~~"
-  angryLine: "\uC774\uAC74 \uC81C \uC5D0\uC784\uC774\uB791 \uB611\uAC19\uC774 \uC548
-    \uB9DE\uC796\uC544\uC694."
-  price: 600
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 2388a160bc226d445a35960573f9a004, type: 3}

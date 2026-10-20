@@ -1,17 +1,45 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Profiling;
+using LogKit;
 
 namespace WeaponWorkshop
 {
     [DisallowMultipleComponent]
     public sealed class ProjectileMotor : MonoBehaviour
     {
+        private static readonly ProfilerMarker CollisionQueryMarker = new ProfilerMarker("ProjectileMotor.CollisionQuery");
+        private static readonly ProfilerMarker ImpactEffectMarker = new ProfilerMarker("ProjectileMotor.ImpactEffect");
+        private static readonly HashSet<ProjectileMotor> activeProjectiles = new HashSet<ProjectileMotor>();
+        // LayerMask APIs throw inside a type initializer when Unity first touches this type from a
+        // serialization/constructor context (e.g. prefab import), which poisons the type. Resolve lazily.
+        private static bool layersResolved;
+        private static int projectileExtraCollisionLayers, gunBlockLayers, unusedCastLayers;
+        private static int ProjectileExtraCollisionLayers { get { ResolveLayers(); return projectileExtraCollisionLayers; } }
+        private static int GunBlockLayers { get { ResolveLayers(); return gunBlockLayers; } }
+        private static int UnusedCastLayers { get { ResolveLayers(); return unusedCastLayers; } }
+        private static void ResolveLayers()
+        {
+            if (layersResolved) return;
+            projectileExtraCollisionLayers = LayerMask.GetMask("Weapon", "EndChest", "EndChestShield") & ~LayerMask.GetMask("Energy");
+            gunBlockLayers = LayerMask.GetMask("GunBlock");
+            // 탄이 맞을 일 없는 레이어(투과 FX·물·UI)는 캐스트 전체에서 뺀다. 현재 씬들의 콜라이더는
+            // Default·EndChest 계열뿐이고, 트리거는 조회가 이미 무시하므로 후보 수만 늘었다.
+            unusedCastLayers = LayerMask.GetMask("TransparentFX", "Water", "UI");
+            layersResolved = true;
+        }
         [SerializeField] private Renderer drawRenderer;
         [SerializeField] private ParticleSystem impactEffect;
 
         private readonly HashSet<TargetHealth> hitTargets = new HashSet<TargetHealth>();
         private readonly HashSet<DestructibleTarget> hitStructures = new HashSet<DestructibleTarget>();
+        private readonly PenetrationPassages passages = new PenetrationPassages();
+        // 통과 구조물 필터는 관통 구간이 처음 기록된 뒤에만 의미를 갖는다. 그 전에는 표적 조회 자체를 건너뛴다.
+        private bool passagesRecorded;
         private readonly HashSet<Collider> ignoredColliders = new HashSet<Collider>();
+        private readonly List<Collider> staleIgnoredColliders = new List<Collider>();
+        private readonly List<Collider> targetColliderBuffer = new List<Collider>();
+        private MaterialPropertyBlock debrisTint;
         private ProjectileStatsSource source;
         private ProjectileEffects effects;
         private Vector3 velocity;
@@ -23,29 +51,58 @@ namespace WeaponWorkshop
         private Vector3 homingLocalAim;
         private Transform ignoredOwner;
         private Transform ignoredWeapon;
+        // 예외 판정용 뿌리는 업데이트당 한 번만 다시 본다. 뿌리가 다른 후보는 부모 탐색 없이 예외가 아니다.
+        private Transform selfRoot, ownerRoot, weaponRoot;
+        private bool ignoreRootsCached;
+        public Transform WeaponSource => ignoredWeapon;
+        internal Vector3 CurrentDirection => velocity.normalized;
         private Vector3 halfExtents;
-        private int penetrationsRemaining;
         private float penetrationPower;
+        private bool hitCounted;
         private bool exploded;
         private int ricochetsRemaining;
         private bool terminal;
+        private int launchId;
         private float structureSweepLimit;
+        internal int LaunchId => launchId;
+        internal ParticleSystem ImpactEffectPrefab => impactEffect;
+
+        private static T GetComponentInParents<T>(Collider collider) where T : Component
+        {
+            for (Transform current = collider != null ? collider.transform : null; current != null; current = current.parent)
+                if (current.TryGetComponent(out T component)) return component;
+            return null;
+        }
+        // 코어·방어막 소속은 콜라이더마다 부모를 타지 않고 공용 인덱스가 캐시한 결과만 쓴다.
+        private static void ResolveEndChest(Collider collider, out EndChestCore core, out EndChestShield shield)
+            => ColliderTargetIndex.ResolveEndChest(collider, out core, out shield);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetActiveProjectiles() => activeProjectiles.Clear();
+
+        internal static void CopyActiveProjectiles(List<ProjectileMotor> destination)
+        {
+            destination.Clear();
+            destination.AddRange(activeProjectiles);
+        }
 
         public void Initialize(ProjectileStatsSource statsSource, Vector3 direction, float speed,
             Transform owner, Transform weapon)
         {
             source = statsSource;
+            launchId++;
             launchSpeed = Mathf.Max(0f, speed);
             effects = GetComponent<ProjectileEffects>();
             terminal = false;
             exploded = false;
+            hitCounted = false;
+            GameLogger.Count("Attack");
             penetrationPower = effects != null ? Mathf.Max(0f, effects.Stats.penetration) : 0f;
             ignoredOwner = owner;
             ignoredWeapon = weapon;
+            selfRoot = ownerRoot = weaponRoot = null; ignoreRootsCached = false;
             traveledDistance = 0f;
             lifetime = 0f;
-            penetrationsRemaining = effects != null
-                ? Mathf.Max(0, Mathf.FloorToInt(effects.Stats.penetration + 0.5f)) : 0; // charged values round half up
             ricochetsRemaining = effects != null
                 ? Mathf.Max(0, Mathf.FloorToInt(effects.Stats.ricochet + 0.5f)) : 0;
             var targeting = owner != null ? owner.GetComponent<PlayerHomingLock>() : null;
@@ -53,6 +110,7 @@ namespace WeaponWorkshop
             homingLocalAim = targeting != null ? targeting.LocalAim : Vector3.zero;
             hitTargets.Clear();
             hitStructures.Clear();
+            passages.Clear(); passagesRecorded = false;
             ignoredColliders.Clear();
 
             if (drawRenderer == null) drawRenderer = GetComponentInChildren<Renderer>(true);
@@ -70,6 +128,25 @@ namespace WeaponWorkshop
             }
             halfExtents = Vector3.Max(halfExtents, Vector3.one * 0.0001f);
             SetDirection(direction);
+            if (isActiveAndEnabled) activeProjectiles.Add(this);
+        }
+
+        private void OnEnable()
+        {
+            if (source != null) activeProjectiles.Add(this);
+        }
+
+        internal void DetonateFromExplosion()
+            => DetonateFromExplosion(transform.position, velocity.normalized);
+
+        internal void DetonateFromExplosion(Vector3 point, Vector3 direction)
+        {
+            if (terminal || !isActiveAndEnabled) return;
+            terminal = true;
+            exploded = true;
+            if (effects != null)
+                effects.ApplyStoppedArea(point, direction, null, ignoredOwner, ignoredWeapon);
+            PoolManager.Release(gameObject);
         }
 
         private void Update()
@@ -91,6 +168,8 @@ namespace WeaponWorkshop
 
             UpdateIgnoredColliders();
             ApplyHoming(deltaTime);
+            // 이번 업데이트의 예외 판정에서 쓸 뿌리를 다시 잡는다.
+            ignoreRootsCached = false;
 
             float distance = Mathf.Min(velocity.magnitude * deltaTime,
                 source.MaximumTravelDistance - traveledDistance);
@@ -126,8 +205,9 @@ namespace WeaponWorkshop
             {
                 Vector3 direction = velocity.normalized;
                 Quaternion rotation = RotationForDirection(direction);
-                if (!TryFindHit(direction, rotation, remaining, out RaycastHit hit))
+                if (!TryFindHit(direction, rotation, remaining, out CombatPhysicsQueries.Hit hit))
                 {
+                    CarvePassedStructures(transform.position, rotation, remaining);
                     transform.position += direction * remaining;
                     traveledDistance += remaining;
                     return;
@@ -135,6 +215,7 @@ namespace WeaponWorkshop
 
                 collisionCount++;
                 float advanced = Mathf.Clamp(hit.distance, 0f, remaining);
+                CarvePassedStructures(transform.position, rotation, advanced);
                 transform.position += direction * advanced;
                 traveledDistance += advanced;
                 remaining -= advanced;
@@ -145,64 +226,114 @@ namespace WeaponWorkshop
             // Stop this frame at the collision budget instead of skipping unchecked obstacles.
         }
 
-        private bool TryFindHit(Vector3 direction, Quaternion rotation, float distance, out RaycastHit nearestHit)
+        // BoxCast 후보 판정(거리·예외·소속)을 후보당 한 번만 계산해 모아 두는 버퍼.
+        // 종전의 두 번째 순회는 같은 후보의 예외·소속을 다시 물었으므로 버퍼 한 개로 대신한다.
+        private struct CastCandidate
         {
+            public Collider collider;
+            public float distance;
+            public DestructibleTarget structure;
+            public bool ignored;
+        }
+        private CastCandidate[] castCandidates = new CastCandidate[64];
+
+        private System.Predicate<Collider> skipPassedStructure;
+        private System.Func<Collider, DestructibleTarget> resolveStructure;
+        private bool TryFindHit(Vector3 direction, Quaternion rotation, float distance, out CombatPhysicsQueries.Hit nearestHit)
+        {
+            skipPassedStructure ??= HasPassedStructure;
+            resolveStructure ??= FindStructure;
             nearestHit = default;
             float nearestDistance = float.PositiveInfinity;
             bool found = false;
-            int layers = (source.CollisionLayers | LayerMask.GetMask("Weapon", "EndChest", "EndChestShield")) & ~LayerMask.GetMask("Energy");
-            int count = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction, rotation, distance, layers, out var hits);
+            int layers = (source.CollisionLayers | ProjectileExtraCollisionLayers) & ~GunBlockLayers & ~UnusedCastLayers;
+            int count;
+            CombatPhysicsQueries.Hit[] hits;
+            using (CollisionQueryMarker.Auto())
+                count = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction, rotation, distance, layers, out hits, skipPassedStructure, resolveStructure);
+            if (castCandidates.Length < count) castCandidates = new CastCandidate[Mathf.NextPowerOfTwo(count)];
+            // 가장 싼 거리 비교를 앞세워 예외·소속 조회를 줄이되, 판정 결과는 후보당 한 번만 낸다.
             for (int i = 0; i < count; i++)
             {
-                RaycastHit hit = hits[i];
-                Transform hitTransform = hit.collider.transform;
-                if (hitTransform.IsChildOf(transform) ||
-                    (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) ||
-                    (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) ||
-                    ignoredColliders.Contains(hit.collider) || hit.distance >= nearestDistance ||
-                    !PassesEndChestGate(hit.collider))
+                CombatPhysicsQueries.Hit hit = hits[i];
+                Collider collider = hit.collider;
+                castCandidates[i].collider = collider;
+                castCandidates[i].distance = hit.distance;
+                castCandidates[i].ignored = IsIgnoredBody(collider);
+                castCandidates[i].structure = FindStructure(collider);
+            }
+            int nearestIndex = -1;
+            for (int i = 0; i < count; i++)
+            {
+                ref CastCandidate candidate = ref castCandidates[i];
+                if (candidate.distance >= nearestDistance || candidate.ignored || !PassesEndChestGate(candidate.collider))
                     continue;
-                nearestHit = hit;
-                nearestDistance = hit.distance;
+                nearestHit = new CombatPhysicsQueries.Hit
+                {
+                    collider = candidate.collider, distance = candidate.distance,
+                    point = hits[i].point, normal = hits[i].normal
+                };
+                nearestDistance = candidate.distance;
+                nearestIndex = i;
                 found = true;
             }
             structureSweepLimit = 0f;
             if (found)
             {
-                var hitStructure = nearestHit.collider.GetComponentInParent<DestructibleTarget>();
+                var hitStructure = castCandidates[nearestIndex].structure;
                 if (hitStructure != null)
                 {
-                    structureSweepLimit = Mathf.Max(0f, distance - nearestHit.distance);
-                    // Reuse the cast results: never clear past the first foreign obstacle.
+                    structureSweepLimit = Mathf.Max(0f, distance - nearestDistance);
+                    // Reuse the buffered judgments: never clear past the first foreign obstacle.
                     for (int i = 0; i < count; i++)
                     {
-                        var other = hits[i];
-                        Transform t = other.collider.transform;
-                        if (t.IsChildOf(transform) ||
-                            (ignoredOwner != null && t.IsChildOf(ignoredOwner)) ||
-                            (ignoredWeapon != null && t.IsChildOf(ignoredWeapon)) ||
-                            ignoredColliders.Contains(other.collider) ||
-                            other.collider.GetComponentInParent<DestructibleTarget>() == hitStructure) continue;
+                        ref CastCandidate candidate = ref castCandidates[i];
+                        if (candidate.ignored || candidate.structure == hitStructure) continue;
                         structureSweepLimit = Mathf.Min(structureSweepLimit,
-                            Mathf.Max(0f, other.distance - nearestHit.distance));
+                            Mathf.Max(0f, candidate.distance - nearestDistance));
                     }
                 }
             }
             return found;
         }
 
+        // 탄 자체·쏘는 주체·무기, 그리고 관통·도탄으로 이미 지나친 콜라이더.
+        private bool IsIgnoredBody(Collider collider)
+        {
+            if (!ignoreRootsCached)
+            {
+                selfRoot = transform.root;
+                ownerRoot = ignoredOwner != null ? ignoredOwner.root : null;
+                weaponRoot = ignoredWeapon != null ? ignoredWeapon.root : null;
+                ignoreRootsCached = true;
+            }
+            Transform hitTransform = collider.transform;
+            // 예외 대상과 뿌리가 다르면 자손일 수 없다. 흔한 벽 히트는 루트 비교만으로 세 번의 부모 탐색을 건너뛴다.
+            Transform root = hitTransform.root;
+            if (!ReferenceEquals(root, selfRoot) &&
+                (ownerRoot == null || !ReferenceEquals(root, ownerRoot)) &&
+                (weaponRoot == null || !ReferenceEquals(root, weaponRoot)))
+                return ignoredColliders.Count > 0 && ignoredColliders.Contains(collider);
+            // 같은 뿌리 안에서만 자손 판정이 의미가 있다.
+            if (hitTransform.IsChildOf(transform)) return true;
+            if (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) return true;
+            if (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) return true;
+            // 예외 목록이 비어 있는 경우가 대부분이라 해시 조회조차 건너뛴다.
+            return ignoredColliders.Count > 0 && ignoredColliders.Contains(collider);
+        }
+
         // 엔드 상자: 코어는 중력·유도 조건을 갖춘 탄만 맞고, 방어막은 조건을 못 채운 탄만 막는다. 나머지는 통과한다.
         private bool PassesEndChestGate(Collider collider)
         {
-            var endChestCore = collider.GetComponentInParent<EndChestCore>();
+            ResolveEndChest(collider, out var endChestCore, out var shield);
             if (endChestCore != null) return effects != null && endChestCore.AcceptsHit(effects.Stats);
-            var shield = collider.GetComponentInParent<EndChestShield>();
             return shield == null || effects == null || shield.Deflects(effects.Stats);
         }
 
-        private void HandleImpact(RaycastHit hit, Vector3 incomingDirection, ref float remaining)
+        private void HandleImpact(CombatPhysicsQueries.Hit hit, Vector3 incomingDirection, ref float remaining)
         {
-            if (hit.collider.GetComponentInParent<EndChestShield>() != null)
+            ResolveEndChest(hit.collider, out var endChestCore, out var endChestShield);
+            if (endChestShield != null)
             {
                 ShowImpact(hit.point, hit.normal, incomingDirection);
                 velocity = Vector3.Reflect(velocity, hit.normal);
@@ -211,36 +342,79 @@ namespace WeaponWorkshop
                 remaining = Mathf.Max(0f, remaining - 0.05f);
                 return;
             }
-            var endChestCore = hit.collider.GetComponentInParent<EndChestCore>();
-            if (endChestCore != null) endChestCore.NotifyHit();
+            if (endChestCore != null) endChestCore.NotifyHit(effects != null ? effects.Stats : default);
+            var slotMachine = GetComponentInParents<SlotMachineReels>(hit.collider);
+            if (slotMachine != null && effects != null)
+                slotMachine.ReceiveAttack(effects.Stats.penetration, effects.Stats.explosion, false);
             bool water = effects != null && effects.IsWater;
-            DestructibleTarget structure = hit.collider.GetComponentInParent<DestructibleTarget>();
+            DestructibleTarget structure = FindStructure(hit.collider);
             if (structure != null && TutorialManager.Instance != null) TutorialManager.Instance.NotifyTargetHit(structure);
-            TargetHealth target = hit.collider.GetComponentInParent<TargetHealth>();
-            bool firstHitOnTarget = target != null && hitTargets.Add(target);
+            TargetHealth target = GetComponentInParents<TargetHealth>(hit.collider);
+            bool firstHitOnTarget = target != null && !hitTargets.Contains(target);
             bool firstHitOnStructure = structure != null && hitStructures.Add(structure);
+            // 명중률 지표: 탄 하나당 처음 맞은 순간만 센다.
+            if (!hitCounted && (structure != null || target != null))
+            {
+                hitCounted = true;
+                GameLogger.Count("AttackHit");
+            }
             // Internal voxel crossings do not need their own particle systems.
             if (structure != null ? firstHitOnStructure : target != null ? firstHitOnTarget : true)
                 ShowImpact(hit.point, hit.normal, incomingDirection);
             if (effects != null && (target == null || firstHitOnTarget) &&
                 (structure == null || firstHitOnStructure))
-                effects.ApplyHit(hit.point, incomingDirection, target, ignoredOwner, ignoredWeapon, false);
+            {
+                if (structure == null && target != null) hitTargets.Add(target);
+                effects.ApplyHit(hit.point, incomingDirection, structure == null ? target : null, ignoredOwner, ignoredWeapon, false);
+            }
             if (structure != null)
             {
+                // Evaluate incoming power at this wall. A bullet reduced to 1 leaves the previous
+                // block, then stops when it reaches this next wall.
+                if (penetrationPower <= 1f)
+                {
+                    StopAtImpact(hit.point, incomingDirection, target);
+                    return;
+                }
                 Quaternion rotation = RotationForDirection(incomingDirection);
                 bool passed = false;
                 bool penetratedMaterial = false;
+                bool hitBlock = false;
                 if (effects != null) structure.BreakAttributeImpact(effects.Stats, transform.position + incomingDirection * 0.001f, rotation, halfExtents);
                 float lineDistance = Mathf.Min(structure.PenetrationStepDistance, Mathf.Min(remaining, structureSweepLimit));
                 if (!water && (effects == null || structure.AllowsImpact(effects.Stats)))
+                {
                     penetrationPower = structure.PenetrateAlongLine(penetrationPower,
                         transform.position, rotation, halfExtents, lineDistance,
-                        out passed, out _, out penetratedMaterial);
+                        out passed, out float resistanceBeforeHit, out penetratedMaterial,
+                        allowResistanceReduction: !passages.Contains(structure));
+                    hitBlock = penetratedMaterial || structure.PenetrationResistance < resistanceBeforeHit;
+                    bool blockedByResistance = !passed && resistanceBeforeHit > penetrationPower;
+                    if (hitBlock) penetrationPower = Mathf.Max(0f, penetrationPower - 1f);
+                    if (blockedByResistance)
+                    {
+                        // Stronger armor consumes the bullet at this impact, before
+                        // ricochet or any passage/health-target handling can run.
+                        StopAtImpact(hit.point, incomingDirection, target);
+                        return;
+                    }
+                    if (passed && hitBlock)
+                    {
+                        passagesRecorded = true;
+                        passages.Record(structure, penetratedMaterial, transform.position, rotation, lineDistance);
+                    }
+                }
+                if (passed && target != null && firstHitOnTarget && penetratedMaterial && effects != null)
+                {
+                    hitTargets.Add(target);
+                    effects.ApplyHit(hit.point, incomingDirection, target, ignoredOwner, ignoredWeapon, false);
+                }
                 if (passed)
                 {
                     if (penetratedMaterial && effects != null)
                         effects.ApplyPenetrationExplosion(hit.point, incomingDirection, ignoredOwner, ignoredWeapon);
                     float advance = Mathf.Min(0.001f, Mathf.Min(remaining, structureSweepLimit));
+                    CarvePassedStructures(transform.position, rotation, advance);
                     transform.position += incomingDirection * advance;
                     traveledDistance += advance;
                     remaining -= advance;
@@ -248,26 +422,32 @@ namespace WeaponWorkshop
                 }
             }
             // 손님은 한 발에 죽음 (예전 EnergyCube 동작). 물총은 살상력 없음.
-            Customer customer = hit.collider.GetComponentInParent<Customer>();
+            Customer customer = GetComponentInParents<Customer>(hit.collider);
             if (customer != null && (effects == null || !effects.IsWater)) customer.Kill();
 
-            bool canPenetrate = target != null && penetrationsRemaining > 0 &&
+            bool canPenetrate = structure == null && target != null && penetrationPower > 1f &&
                                 (!water || !source.Tuning.waterStopsPenetration);
             if (canPenetrate)
             {
                 if (firstHitOnTarget)
                 {
-                    penetrationsRemaining--;
+                    penetrationPower = Mathf.Max(0f, penetrationPower - 1f);
                     if (effects != null)
                         effects.ApplyPenetrationExplosion(hit.point, incomingDirection, ignoredOwner, ignoredWeapon);
                 }
                 AddTargetCollidersToIgnore(target);
+                CarvePassedStructures(transform.position, RotationForDirection(incomingDirection), Mathf.Min(0.002f, remaining));
                 transform.position += incomingDirection * 0.002f;
                 traveledDistance += 0.002f;
                 remaining = Mathf.Max(0f, remaining - 0.002f);
                 return;
             }
 
+            if (target != null && penetrationPower <= 1f)
+            {
+                StopAtImpact(hit.point, incomingDirection, target);
+                return;
+            }
             bool canRicochet = ricochetsRemaining > 0 && hit.normal.sqrMagnitude > 0.0001f;
             if (canRicochet)
             {
@@ -281,24 +461,50 @@ namespace WeaponWorkshop
                 return;
             }
 
-            // Terminal collisions retain the full explosion/gravity payload.
+            StopAtImpact(hit.point, incomingDirection, target);
+        }
+
+        // A terminal wall impact triggers area effects once, without ricocheting at low power.
+        private void StopAtImpact(Vector3 point, Vector3 direction, TargetHealth target)
+        {
             if (!exploded && effects != null)
             {
                 exploded = true;
-                effects.ApplyStoppedArea(hit.point, incomingDirection, target, ignoredOwner, ignoredWeapon);
+                effects.ApplyStoppedArea(point, direction, target, ignoredOwner, ignoredWeapon);
             }
             Terminate();
         }
 
         private void AddTargetCollidersToIgnore(TargetHealth target)
         {
-            foreach (Collider collider in target.GetComponentsInChildren<Collider>(true))
+            target.GetComponentsInChildren(true, targetColliderBuffer);
+            foreach (Collider collider in targetColliderBuffer)
                 if (collider != null) ignoredColliders.Add(collider);
+            targetColliderBuffer.Clear();
         }
+
+        private bool HasPassedStructure(Collider collider)
+        {
+            // 관통 구간이 하나도 없으면 통과한 구조물은 없다. 표적 조회를 하지 않는다.
+            if (!passagesRecorded) return false;
+            return passages.Ignore(FindStructure(collider));
+        }
+
+        private void CarvePassedStructures(Vector3 start, Quaternion rotation, float distance)
+        {
+            passages.Carve(start, rotation, halfExtents, distance);
+        }
+
+        // 콜라이더→표적 매핑은 공용 인덱스가 게임 전체에서 한 번만 부모를 타고 찾는다.
+        private static DestructibleTarget FindStructure(Collider collider) => ColliderTargetIndex.Structure(collider);
 
         private void UpdateIgnoredColliders()
         {
-            ignoredColliders.RemoveWhere(collider => collider == null || !collider.bounds.Contains(transform.position));
+            staleIgnoredColliders.Clear();
+            foreach (Collider collider in ignoredColliders)
+                if (collider == null || !collider.bounds.Contains(transform.position)) staleIgnoredColliders.Add(collider);
+            for (int i = 0; i < staleIgnoredColliders.Count; i++) ignoredColliders.Remove(staleIgnoredColliders[i]);
+            staleIgnoredColliders.Clear();
         }
 
         private void SetDirection(Vector3 direction)
@@ -325,11 +531,22 @@ namespace WeaponWorkshop
 
         private void ShowImpact(Vector3 point, Vector3 normal, Vector3 direction)
         {
+            using (ImpactEffectMarker.Auto())
+                ShowImpactEffect(point, normal, direction);
+        }
+
+        private void ShowImpactEffect(Vector3 point, Vector3 normal, Vector3 direction)
+        {
             if (impactEffect == null) return;
             if (normal.sqrMagnitude < 0.0001f) normal = -direction;
             GameObject effect = PoolManager.RentPrefab(impactEffect.gameObject, point + normal * 0.01f,
                 RotationForDirection(normal));
-            foreach (ParticleSystem particles in effect.GetComponentsInChildren<ParticleSystem>(true))
+            if (!effect.TryGetComponent(out PooledCombatObject pooledEffect))
+            {
+                PoolManager.Release(effect);
+                return;
+            }
+            foreach (ParticleSystem particles in pooledEffect.Particles)
             {
                 var main = particles.main;
                 main.startColor = Color.white;
@@ -347,25 +564,30 @@ namespace WeaponWorkshop
             if (tinted)
             {
                 Color debrisColor = source.Tuning.waterColor;
-                debrisTint = new MaterialPropertyBlock();
+                if (debrisTint == null) debrisTint = new MaterialPropertyBlock();
+                debrisTint.Clear();
                 debrisTint.SetColor("_BaseColor", debrisColor);
                 debrisTint.SetColor("_Color", debrisColor);
             }
             if (drawRenderer != null && drawRenderer.sharedMaterial != null)
-                foreach (ParticleSystemRenderer renderer in effect.GetComponentsInChildren<ParticleSystemRenderer>(true))
+                foreach (ParticleSystemRenderer renderer in pooledEffect.ParticleRenderers)
                 {
                     renderer.sharedMaterial = drawRenderer.sharedMaterial;
                     renderer.trailMaterial = drawRenderer.sharedMaterial;
                     if (debrisTint != null) renderer.SetPropertyBlock(debrisTint);
                 }
-            effect.GetComponent<PooledCombatObject>().PlayParticles(true);
+            pooledEffect.PlayParticles(true);
         }
 
         private void OnDisable()
         {
+            activeProjectiles.Remove(this);
             terminal = true; velocity = Vector3.zero; source = null; effects = null;
             ignoredOwner = ignoredWeapon = null; homingTarget = null;
+            selfRoot = ownerRoot = weaponRoot = null; ignoreRootsCached = false;
             hitTargets.Clear(); hitStructures.Clear(); ignoredColliders.Clear();
+            passages.Clear(); passagesRecorded = false;
+            staleIgnoredColliders.Clear(); targetColliderBuffer.Clear();
         }
 
         private void OnValidate()

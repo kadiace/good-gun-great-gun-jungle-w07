@@ -12,17 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D0_3_TagCustomer
   m_EditorClassIdentifier: 
-  lines:
-  - "\uC0B0\uD0C4\uCD1D\uC744 \uD558\uB098 \uB9CC\uB4E4\uC5B4 \uC8FC\uC138\uC694."
-  endsClear: 1
+  profileId: c2e5e67315c2e684bb468481f9a2bc5b
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
-  archetypes:
-  - {fileID: 11400000, guid: 9dc28f49f1304f142a4751f178f39cdf, type: 2}
+  archetypes: []
   conditions: []
-  happyLine: "\uC0B0\uD0C4\uCD1D\uC774 \uC798 \uB098\uC654\uB124\uC694. \uC798 \uC4F0\uACA0\uC2B5\uB2C8\uB2E4!"
-  angryLine: "\uBD80\uD0C1\uB4DC\uB9B0 \uC0B0\uD0C4\uCD1D\uC774 \uC544\uB2CC \uAC83
-    \uAC19\uC740\uB370\uC694."
-  price: 300
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 411975f766c31524295c3ef756fdb1ed, type: 3}

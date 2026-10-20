@@ -40,8 +40,9 @@ namespace WeaponWorkshop
         private bool hasGunAim;
         private Vector3 gunAim;
 
-        public void Initialize(FirstPersonPlayer target)
+        public void Initialize(FirstPersonPlayer target, string enemyId)
         {
+            core.AssignIdentity(enemyId, RaidEnemyType.Helicopter);
             player = target;
             missileTimer = missileInterval;
             gunTimer = 0f;

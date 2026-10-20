@@ -12,11 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
   m_Name: Type_Ricochet
   m_EditorClassIdentifier: 
-  displayName: "\uB3C4\uD0C4"
-  tagColor: {r: 0.22352941, g: 0.49803922, b: 0.54901963, a: 1}
-  conditions:
-  - stat: 3
-    comparison: 0
-    value: 1
-    source: 1
-  sellMultiplier: 1
+  tableId: 36dc9431816b1d84182d3e07c11a2c4c
+  displayName: 
+  tagColor: {r: 0, g: 0, b: 0, a: 0}
+  conditions: []
+  sellMultiplier: 0

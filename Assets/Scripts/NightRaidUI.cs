@@ -14,6 +14,8 @@ namespace WeaponWorkshop
         [SerializeField] private TMPro.TextMeshProUGUI statusText;
         private NightRaidController controller;
         [SerializeField] private TMPro.TextMeshProUGUI regionInfo;
+        private TMPro.TMP_Text[] regionLabels;
+        private string[] originalRegionLabels;
         [SerializeField] private ModuleCatalog moduleCatalog;
         [SerializeField] private GameObject extractionPanel;
         [SerializeField] private UnityEngine.UI.Image extractionFill;
@@ -38,8 +40,10 @@ namespace WeaponWorkshop
             if (regionInfo == null || controller == null) return;
             hoveredRegion = index;
             var player = GameManager.Instance != null && GameManager.Instance.UI != null ? GameManager.Instance.UI.Player : null;
-            var region = RaidMapData.Current.Find(controller.RegionScene(index));
-            regionInfo.text = region != null ? region.Describe(moduleCatalog, player != null ? player.GetComponent<PlayerModuleUnlocks>() : null) : "이 구역의 정보가 아직 등록되지 않았습니다.";
+            var region = TableManager.Instance.RaidMap.Find(controller.RegionScene(index));
+            var save = FindFirstObjectByType<GameSaveController>();
+            regionInfo.text = region.Describe(moduleCatalog, player != null ? player.GetComponent<PlayerModuleUnlocks>() : null,
+                save != null && save.HasClearedRaid(region?.scene));
         }
         public void ClearRegionInfo(int index)
         {
@@ -76,8 +80,12 @@ namespace WeaponWorkshop
         public void Bind(NightRaidController owner)
         {
             controller=owner;
+            regionLabels = new TMPro.TMP_Text[regionButtons.Length];
+            originalRegionLabels = new string[regionButtons.Length];
             for(int i=0;i<regionButtons.Length;i++)
             {
+                regionLabels[i] = regionButtons[i].GetComponentInChildren<TMPro.TMP_Text>(true);
+                if (regionLabels[i] != null) originalRegionLabels[i] = regionLabels[i].text;
                 int region=i;regionButtons[i].onClick.AddListener(()=>controller.EnterRegion(region));
                 var hover = regionButtons[i].GetComponent<RaidRegionHoverUI>();
                 if (hover == null) hover = regionButtons[i].gameObject.AddComponent<RaidRegionHoverUI>();
@@ -92,10 +100,56 @@ namespace WeaponWorkshop
             ClearRegionInfo(hoveredRegion);
             if (show) mapPanel.transform.SetAsLastSibling();
             if(statusText!=null)statusText.gameObject.SetActive(false);
-            for (int i = 0; i < regionButtons.Length; i++)
-                regionButtons[i].interactable = show && (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(i));
+            WatchWallet(show);
+            RefreshRegionButtons();
         }
-        private void OnDisable() => FeedbackUI.For(this)?.CancelChoice(this);
+        private PlayerWallet watchedWallet;
+        // 지도가 열려 있는 동안에만 잔액 변화를 구독해 버튼 상태를 다시 계산한다.
+        private void WatchWallet(bool watch)
+        {
+            var wallet = watch ? PlayerWallet.ForScene(this) : null;
+            if (watchedWallet == wallet) return;
+            if (watchedWallet != null) watchedWallet.Changed -= RefreshRegionButtons;
+            watchedWallet = wallet;
+            if (watchedWallet != null) watchedWallet.Changed += RefreshRegionButtons;
+        }
+        private void RefreshRegionButtons()
+        {
+            bool show = mapPanel != null && mapPanel.activeSelf;
+            int listedCount = controller != null ? controller.RegionCount : regionButtons.Length;
+            var save = show ? FindFirstObjectByType<GameSaveController>() : null;
+            for (int i = 0; i < regionButtons.Length; i++)
+            {
+                if (regionButtons[i] == null) continue;
+                // 테이블에 없는 칸은 계속 꺼 둠으로써 표의 행 수가 지도의 칸 수를 결정하게 한다.
+                bool listed = i < listedCount;
+                if (!listed) regionButtons[i].gameObject.SetActive(false);
+                if (regionLabels != null && regionLabels[i] != null)
+                {
+                    var region = listed && controller != null ? TableManager.Instance.RaidMap.Find(controller.RegionScene(i)) : null;
+                    bool firstClearAvailable = region != null && region.FirstClearSaleBonus() > 0f &&
+                        (save == null || !save.HasClearedRaid(region.scene));
+                    regionLabels[i].text = originalRegionLabels[i] + (firstClearAvailable ? " <size=65%><color=#F04D4D>●</color></size>" : string.Empty);
+                }
+                regionButtons[i].interactable = show && listed && CanAffordEntry(i) &&
+                    (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(i));
+            }
+        }
+        // 잔액이 입장 비용을 충족하는지. 0일차 안내 습격 중에는 비용 조건을 적용하지 않는다.
+        private bool CanAffordEntry(int index)
+        {
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return true;
+            if (watchedWallet == null || controller == null) return false;
+            var region = TableManager.Instance.RaidMap.Find(controller.RegionScene(index));
+            return region.CanAffordEntry(watchedWallet);
+        }
+        private void OnDisable()
+        {
+            FeedbackUI.For(this)?.CancelChoice(this); WatchWallet(false);
+        }
+        // 입장 확인은 지도 소유로 띄워 지도를 다시 열거나 닫으면(CancelChoice(this)) 함께 취소되게 한다.
+        public void ShowEntryConfirm(string message, System.Action onYes) => FeedbackUI.For(this)?.ShowChoice(this, message, onYes);
+        public void ShowUnarmedNotice() => FeedbackUI.For(this)?.ShowAcknowledgement(this, "무기를 장착해야 야간 습격에 입장할 수 있습니다.");
         public void ShowReturn(bool show)
         {
             if (show) FeedbackUI.For(this)?.ShowChoice(this, "공방으로 귀환하시겠습니까?", () => controller.ReturnHome(), () => controller.CancelReturn());

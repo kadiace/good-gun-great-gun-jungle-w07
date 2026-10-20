@@ -12,23 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D4_4_Professional
   m_EditorClassIdentifier: 
-  lines:
-  - "\uC5EC\uAE30\uC11C \uAC00\uC7A5 \uD504\uB85C\uB2E4\uC6B4 \uCD1D \uD55C \uC815\uB9CC
-    \uC918."
-  - "돌격소총·저격총·유탄 태그를 모두 붙이고 스코프 모듈도 두 개 달아줘."
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: a953407380ff6594a942af751bf23efb, type: 2}
-  - {fileID: 11400000, guid: d6d6fd1701a033d4b849c531f7f4f5f1, type: 2}
-  - {fileID: 11400000, guid: 982660b8fcc3c1340adfa1edcdfb1257, type: 2}
-  - {fileID: 11400000, guid: c8e35a29c16ae91459a744997e871c23, type: 2}
-  conditions:
-  - measure: 1
-    stat: 12
-    min: 2
-    max: 999
-  happyLine: "\uC88B\uC544. \uD504\uB85C\uC758 \uBB3C\uAC74\uC774\uC57C."
-  angryLine: "\uC544\uB9C8\uCD94\uC5B4 \uAC19\uC740 \uBB3C\uAC74\uC774\uAD70."
-  price: 600
+  profileId: fd770da102b6f294191f246f9ca975f5
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
+  conditions: []
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 7738fafa742de5d42af109bc7cbc58f5, type: 3}

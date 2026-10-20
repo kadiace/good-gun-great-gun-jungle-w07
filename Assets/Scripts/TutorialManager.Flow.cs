@@ -41,22 +41,26 @@ namespace WeaponWorkshop
         private static int originalMoney, originalCredits;
         private static int[] originalUnlocks;
         private static string[] originalPresets;
+        private static int originalSlotMachineDestructions, originalSlotMachineDestroyedDay;
+        private static bool originalSlotMachineDestroyedAtNight;
         public const string TrainingScene = "Tutorial_WoodenHouse";
         public bool IsGuidedDayZero => dayZeroOwner != null || trainingSequence != null;
         public static bool TrainingRaidPending => trainingSequence != null && !trainingReturning;
         public static bool TrainingReturnPending => trainingSequence != null && trainingReturning;
-        public static void AbandonTraining() => ResetTraining();
+        public static void AbandonTraining() { LogAbandoned(); ResetTraining(); }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetTraining()
         {
             trainingSequence = null; trainingStep = 0; trainingReturning = practiceEconomy = false;
             originalUnlocks = null; originalPresets = null;
+            originalSlotMachineDestructions = 0; originalSlotMachineDestroyedDay = -1; originalSlotMachineDestroyedAtNight = false;
         }
         private FirstPersonPlayer TutorialPlayer => GameManager.Instance != null && GameManager.Instance.UI != null
             ? GameManager.Instance.UI.Player : null;
         private CubeAssembly TutorialAssembly => workbench != null && workbench.CurrentWeapon != null
             ? workbench.CurrentWeapon.GetComponentInChildren<CubeAssembly>() : null;
         public static bool ActionAllowed(string action) => Instance == null || Instance.AllowsAction(action);
+        public static bool TryAction(string action) => Instance == null || Instance.TryAuthorizeAction(action);
         private void BeginPractice()
         {
             var player = TutorialPlayer;
@@ -65,6 +69,10 @@ namespace WeaponWorkshop
             originalMoney = wallet.Balance; originalCredits = wallet.ModuleCredits;
             originalUnlocks = player.GetComponent<PlayerModuleUnlocks>().CaptureUnlockedModules();
             originalPresets = player.GetComponent<WeaponPresets>().Capture();
+            var slotMachine = FindFirstObjectByType<SlotMachineReels>();
+            originalSlotMachineDestructions = slotMachine != null ? slotMachine.DestructionCount : 0;
+            originalSlotMachineDestroyedDay = slotMachine != null ? slotMachine.DestroyedDay : -1;
+            originalSlotMachineDestroyedAtNight = slotMachine != null && slotMachine.DestroyedAtNight;
             var emptyFirst = (string[])originalPresets.Clone();
             emptyFirst[0] = null;
             player.GetComponent<WeaponPresets>().Restore(emptyFirst);
@@ -86,14 +94,27 @@ namespace WeaponWorkshop
                 var savedPresets = player.GetComponent<WeaponPresets>().Capture();
                 originalPresets[0] = savedPresets[0];
                 player.GetComponent<WeaponPresets>().Restore(originalPresets);
+                var slotMachine = FindFirstObjectByType<SlotMachineReels>();
+                if (slotMachine != null) slotMachine.RestoreDamage(originalSlotMachineDestructions,
+                    originalSlotMachineDestroyedDay, originalSlotMachineDestroyedAtNight);
             }
             ResetTraining();
         }
         private TutorialStep scannedStep;
         private ModuleUnlockCrate scannedCrate;
+        private int withheldBalance;
         private void PrepareStep(TutorialStep step)
         {
             scannedStep = null; scannedCrate = null;
+            if (step.setBalanceOnStart >= 0)
+            {
+                var wallet = TutorialPlayer != null ? TutorialPlayer.GetComponent<PlayerWallet>() : null;
+                if (wallet != null)
+                {
+                    withheldBalance = Mathf.Max(0, wallet.Balance - step.setBalanceOnStart);
+                    wallet.RestoreBalance(step.setBalanceOnStart);
+                }
+            }
             if (step.discardHeldWeapon)
             {
                 var player = TutorialPlayer;
@@ -106,7 +127,26 @@ namespace WeaponWorkshop
                 var player = TutorialPlayer;
                 var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
                 // A retry already carries the departure weapon; do not exchange it for a second practice core.
-                if (workbench.CurrentWeapon == null && (holder == null || holder.EquippedWeapon == null)) workbench.SpawnCore();
+                if (workbench.CurrentWeapon == null && (holder == null || holder.EquippedWeapon == null))
+                {
+                    if (step.preparedWeaponPrefab == null) workbench.SpawnCore();
+                    else
+                    {
+                        var prepared = Instantiate(step.preparedWeaponPrefab);
+                        prepared.name = step.preparedWeaponPrefab.name;
+                        var preparedAssembly = prepared.GetComponentInChildren<CubeAssembly>();
+                        bool placed = false;
+                        if (preparedAssembly != null && preparedAssembly.TryCaptureLayout(out var layout))
+                        {
+                            var blocks = new System.Collections.Generic.List<CubeAssembly.BlockSnapshot>();
+                            foreach (var block in layout.blocks)
+                                if (Array.IndexOf(step.preparedWeaponOpenCells, block.cell) < 0) blocks.Add(block);
+                            placed = preparedAssembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks.ToArray(), layout.paidConstructionCost)) &&
+                                workbench.PlaceWeapon(prepared);
+                        }
+                        if (!placed) Destroy(prepared.gameObject);
+                    }
+                }
                 var assembly = TutorialAssembly;
                 if (assembly != null)
                     foreach (var face in new[] { Vector3Int.right, Vector3Int.left, Vector3Int.up, Vector3Int.down, Vector3Int.back })
@@ -125,6 +165,18 @@ namespace WeaponWorkshop
             var assembly = TutorialAssembly;
             switch (step.completion)
             {
+                case TutorialCompletion.Signal:
+                    // 작업대 모드 전환 단계는 신호 외에 현재 상태로도 판정한다. 삭제 모드는 모듈 선택·작업대 퇴장 등으로
+                    // 신호 없이 꺼지고, 팔레트는 단계 시작 전에 이미 열려 있을 수 있어 신호만 기다리면 진행이 막힌다.
+                    var builder = player != null ? player.GetComponentInChildren<CubeBuilder>(true) : null;
+                    if (builder == null) return false;
+                    switch (step.requiredSignal)
+                    {
+                        case "delete-mode-enabled": return builder.DeleteMode;
+                        case "delete-mode-disabled": return !builder.DeleteMode;
+                        case "palette-opened": return builder.PaletteOpen;
+                        default: return false;
+                    }
                 case TutorialCompletion.TargetNearby:
                 case TutorialCompletion.TargetScanned:
                     var scanner = player != null ? player.GetComponent<PlayerScanMode>() : null;
@@ -174,7 +226,7 @@ namespace WeaponWorkshop
         }
         public bool TryAuthorizeRemoval(PlacedBlock block)
         {
-            if (!AllowsAction("delete")) return false;
+            if (!TryAuthorizeAction("delete")) return false;
             var step = CurrentStep;
             if (step != null && step.completion == TutorialCompletion.Signal &&
                 (step.requiredSignal == "delete-mode-enabled" || step.requiredSignal == "delete-mode-disabled"))
@@ -192,6 +244,8 @@ namespace WeaponWorkshop
         {
             if (!IsGuidedDayZero) return false;
             if (CurrentStep == null || CurrentStep.requiredSignal != "raid-entered") return false;
+            // 입장 단계는 Advance 대신 씬 이동으로 넘어가므로 완료 기록을 여기서 남긴다.
+            LogStepCompleted();
             trainingSequence = CurrentSequence; trainingStep = StepIndex + 1; trainingReturning = false;
             return true;
         }
@@ -211,7 +265,7 @@ namespace WeaponWorkshop
             {
                 trainingStep = Array.FindIndex(trainingSequence.steps, s => s != null && s.id == "raid-retry");
             }
-            else if (Instance != null) trainingStep = Instance.StepIndex + 1;
+            else if (Instance != null) { Instance.LogStepCompleted(); trainingStep = Instance.StepIndex + 1; }
         }
         public bool ResumeTrainingHome(_DayManager day)
         {
@@ -232,7 +286,7 @@ namespace WeaponWorkshop
         }
         private Component RaidLootTarget()
         {
-            var spawner = FindFirstObjectByType<ModuleUnlockCrateSpawner>();
+            var spawner = FindFirstObjectByType<RaidCrateSpawner>();
             if (spawner == null) return null;
             foreach (var objective in spawner.Objectives)
                 if (objective.Target != null && (CurrentStep.requiredModuleId == 0 || objective.ModuleId == CurrentStep.requiredModuleId))

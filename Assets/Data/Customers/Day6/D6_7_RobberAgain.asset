@@ -12,15 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D6_7_RobberAgain
   m_EditorClassIdentifier: 
-  lines:
-  - "\uC548\uB155\uD558\uC138\uC694?  \uAC15\uB3C4\uC785\uB2C8\uB2E4. "
-  - "\uC5B4? \uC5EC\uAE30 \uBB54\uAC00 \uAE30\uC5B5\uC774 \uB098\uB294\uB370? \uD639\uC2DC
-    \uC800 \uC544\uC138\uC694?"
-  endsClear: 0
+  profileId: 4dbebd0100c6bc24db1270af6d2e8600
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uAC10\uC0AC\uD569\uB2C8\uB2E4 \uAC15\uB3C4\uC600\uC2B5\uB2C8\uB2E4."
-  angryLine: "\uAC10\uC0AC\uD569\uB2C8\uB2E4 \uAC15\uB3C4\uC600\uC2B5\uB2C8\uB2E4."
-  price: 0
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 021e8de3863c4fc4894a301847b2ceca, type: 3}

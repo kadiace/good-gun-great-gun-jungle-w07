@@ -60,13 +60,7 @@ namespace WeaponWorkshop.Editor
             if (raidUI == null) raidUI = ((GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/NightRaidUI.prefab"), ui.transform)).GetComponent<NightRaidUI>();
             Set(controller, "dayManager", day); Set(controller, "gameManager", manager); Set(controller, "uiManager", ui); Set(controller, "ui", raidUI); Set(controller, "workshopSave", Find<GameSaveController>(scene));
             Set(controller, "carriedWeaponPrefab", AssetDatabase.LoadAssetAtPath<EquipableWeapon>("Assets/Prefabs/MainCore/MainCore.prefab"));
-            var data = new SerializedObject(controller); var destinations = data.FindProperty("regionScenes");
-            if (destinations.arraySize < 4) destinations.arraySize = 4;
-            string[] names = { "NightRaid_WoodenHouse", "NightRaid_Explosion", "NightRaid_Fire", "NightRaid_Water" };
-            destinations.GetArrayElementAtIndex(0).stringValue = names[0];
-            for (int i = 1; i < 4; i++)
-                if (string.IsNullOrEmpty(destinations.GetArrayElementAtIndex(i).stringValue)) destinations.GetArrayElementAtIndex(i).stringValue = names[i];
-            data.ApplyModifiedPropertiesWithoutUndo();
+            // 목적지는 스테이지 테이블(Resources/RaidMapData.json)에서 읽으므로 이곳에서 설정하지 않는다.
             var settlement = Find<DaySettlementUI>(scene); if (settlement != null) Set(settlement, "nightRaid", controller);
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene);
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);

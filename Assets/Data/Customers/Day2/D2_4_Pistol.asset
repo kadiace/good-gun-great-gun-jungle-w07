@@ -12,15 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D2_4_Pistol
   m_EditorClassIdentifier: 
-  lines:
-  - "권총 태그 붙은 걸로 부탁해요."
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: afce91ece9f68f44b92e48a1652ea36b, type: 2}
+  profileId: d29f7a9b9e4256f449ba2276cf0fa0e4
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
-  happyLine: "\uC8FC\uBA38\uB2C8\uC5D0 \uC3D9 \uB4E4\uC5B4\uAC00\uACA0\uB124\uC694!"
-  angryLine: "\uC774\uAC83\uC740 \uAD8C\uCD1D\uC774\uB77C\uAE30\uC5D4 \uB108\uBB34
-    \uCEF8\uB2E4."
-  price: 300
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 340333c5a07b82845830923fcb1743bd, type: 3}

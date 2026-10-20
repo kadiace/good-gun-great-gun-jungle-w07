@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using LogKit;
 
 namespace WeaponWorkshop
 {
@@ -10,6 +11,8 @@ namespace WeaponWorkshop
         [SerializeField, Min(0f)] private float scanDistance = 50f;
         [SerializeField, Min(0f)] private float scanDuration = 0.5f;
         private float hoverElapsed;
+        private DestructibleTarget countedTarget;
+        private EndChest countedChest;
         public float ScanProgress => !HasTarget ? 0f : scanDuration <= 0f ? 1f : Mathf.Clamp01(hoverElapsed / scanDuration);
         public bool ScanComplete => HasTarget && ScanProgress >= 1f;
         public float CompletedElapsed => Mathf.Max(0f, hoverElapsed - scanDuration);
@@ -26,6 +29,8 @@ namespace WeaponWorkshop
             Target = null;
             ChestTarget = null;
             hoverElapsed = 0f;
+            countedTarget = null;
+            countedChest = null;
             interaction = GetComponentInChildren<Interaction>(true);
             if (inputActions != null) scanHold = inputActions.FindAction("Player/Scan", true).Clone();
         }
@@ -37,13 +42,19 @@ namespace WeaponWorkshop
             Target = null;
             ChestTarget = null;
             hoverElapsed = 0f;
+            countedTarget = null;
+            countedChest = null;
         }
         private void OnDestroy() => scanHold?.Dispose();
         private void Update()
         {
             if (GameManager.GameplayBlocked) { IsScanning = false; Target = null; ChestTarget = null; hoverElapsed = 0f; return; }
-            IsScanning = Application.isFocused && scanHold != null && scanHold.IsPressed();
-            if (!IsScanning) { Target = null; ChestTarget = null; hoverElapsed = 0f; }
+            bool wasScanning = IsScanning;
+            if (Application.isFocused && scanHold != null && scanHold.WasPressedThisFrame())
+                TutorialManager.TryAction("scan");
+            IsScanning = Application.isFocused && TutorialManager.ActionAllowed("scan") && scanHold != null && scanHold.IsPressed();
+            if (IsScanning && !wasScanning) GameLogger.Count("Scan");
+            if (!IsScanning) { Target = null; ChestTarget = null; hoverElapsed = 0f; countedTarget = null; countedChest = null; }
         }
         private void LateUpdate()
         {
@@ -72,6 +83,17 @@ namespace WeaponWorkshop
                     UpdateTargetColor(hit, chest);
                 }
                 else hoverElapsed = 0f;
+            }
+            // 스캔 사용 지표: 같은 대상 스캔 완료는 한 번만 센다.
+            if (ScanComplete)
+            {
+                if (Target != null && countedTarget != Target) { countedTarget = Target; GameLogger.Count("ScanUsed"); }
+                else if (ChestTarget != null && countedChest != ChestTarget)
+                {
+                    countedChest = ChestTarget;
+                    GameLogger.Count("ScanUsed");
+                    NightRaidController.Instance?.NotifyEndChestScanned(ChestTarget.CoreGate);
+                }
             }
         }
         private void UpdateTargetColor(RaycastHit hit, Component target)

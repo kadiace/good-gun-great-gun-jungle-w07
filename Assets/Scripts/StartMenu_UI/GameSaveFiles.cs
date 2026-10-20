@@ -20,6 +20,8 @@ namespace WeaponWorkshop
     [Serializable] public sealed class WeaponWorldSave
     {
         public string weaponName;
+        public string testAssemblyKey;
+        public string[] passedTestIds = Array.Empty<string>();
         public string parentId, rackId, benchId, returnBenchId;
         public bool held, active, dynamicBody, gravity, constructionLocked;
         public PaintFaceSave[] paint = Array.Empty<PaintFaceSave>();
@@ -30,18 +32,88 @@ namespace WeaponWorkshop
         public Vector3Int selectedScopeCell;
         public SaveBlock[] blocks;
     }
+    [Serializable] public sealed class CellExplosionSave
+    {
+        public Vector3Int coordinate;
+        public double health;
+    }
     [Serializable] public sealed class TargetWorldSave
     {
         public string id;
         public bool spawnedByBell, exists, subdivided;
         public int prefabSlot = -1;
-        public TargetWorldSave[] spawnedTargets;
+        // 자기 자신과 같은 타입을 담으면 직렬화 계층이 무한히 늘어 JsonUtility의 깊이 제한(10)에서
+        // 파싱이 중단되고, 그 뒤의 필드(timer·savedUtcTicks·blocks)가 비어 저장을 읽지 못한다.
+        // 그래서 bells이 낳은 표적은 한 층에서 끊은 얕은 기록으로 담는다.
+        public TargetSpawnSave[] spawnedTargets;
         public Vector3 meshSize, velocity, angularVelocity;
         public float penetration, explosion, heat, water;
+        public float penetrationResistanceLoss;
         public Vector3 position, scale;
         public Quaternion rotation;
         public Vector3Int[] remaining;
+        public CellExplosionSave[] explosionDamage;
     }
+    /// <summary>표적 종이 새로 만들어 낸 표적 한 층. 재귀 필드가 없어 직렬화 깊이를 고정한다.</summary>
+    [Serializable] public sealed class TargetSpawnSave
+    {
+        public string id;
+        public bool spawnedByBell, exists, subdivided;
+        public int prefabSlot = -1;
+        public Vector3 meshSize, velocity, angularVelocity;
+        public float penetration, explosion, heat, water;
+        public float penetrationResistanceLoss;
+        public Vector3 position, scale;
+        public Quaternion rotation;
+        public Vector3Int[] remaining;
+        public CellExplosionSave[] explosionDamage;
+
+        public static TargetSpawnSave From(TargetWorldSave saved) => saved == null ? null : new TargetSpawnSave
+        {
+            id = saved.id,
+            spawnedByBell = saved.spawnedByBell,
+            exists = saved.exists,
+            subdivided = saved.subdivided,
+            prefabSlot = saved.prefabSlot,
+            meshSize = saved.meshSize,
+            velocity = saved.velocity,
+            angularVelocity = saved.angularVelocity,
+            penetration = saved.penetration,
+            penetrationResistanceLoss = saved.penetrationResistanceLoss,
+            explosion = saved.explosion,
+            heat = saved.heat,
+            water = saved.water,
+            position = saved.position,
+            scale = saved.scale,
+            rotation = saved.rotation,
+            remaining = saved.remaining,
+            explosionDamage = saved.explosionDamage,
+        };
+
+        // 표적 복원 쪽은 TargetWorldSave를 받는다. 하위 계층은 애초에 없으므로 빈 참조로 되돌린다.
+        public TargetWorldSave ToSave() => new TargetWorldSave
+        {
+            id = id,
+            spawnedByBell = spawnedByBell,
+            exists = exists,
+            subdivided = subdivided,
+            prefabSlot = prefabSlot,
+            meshSize = meshSize,
+            velocity = velocity,
+            angularVelocity = angularVelocity,
+            penetration = penetration,
+            penetrationResistanceLoss = penetrationResistanceLoss,
+            explosion = explosion,
+            heat = heat,
+            water = water,
+            position = position,
+            scale = scale,
+            rotation = rotation,
+            remaining = remaining,
+            explosionDamage = explosionDamage,
+        };
+    }
+
     [Serializable] public sealed class CustomerSave
     {
         public int stage, line, price;
@@ -62,7 +134,10 @@ namespace WeaponWorkshop
     }
     [Serializable] public sealed class CustomerOrderSave
     {
-        // Fixed profiles use their authored day/slot; generated profiles use pool indices.
+        public CustomerOrderState orderState;
+        public string profileId;
+        public string[] requestIds;
+        // New saves use stable profile/request IDs. Numeric slots only read pre-migration saves.
         public int sourceDay, sourceSlot = -1;
         public int[] requests = Array.Empty<int>();
         public string[] lines;
@@ -74,12 +149,27 @@ namespace WeaponWorkshop
     {
         public string[] weaponPresets;
         public string weaponName;
+        // 로그용 진행 식별자(PlayerIdentity). 새 게임마다 새로 만들고 불러오면 이어 쓴다.
+        public string saveId;
         [NonSerialized] public CustomerDay travelCustomerDay;
-        public int version = 4, day, balance, paidCost;
+        public string testAssemblyKey;
+        public string[] passedTestIds = Array.Empty<string>();
+        public int version = 8, day, balance, paidCost;
+        public int slotMachineSpins;
+        public int slotMachineDestructions, slotMachineDestroyedDay = -1;
+        public bool slotMachineDestroyedAtNight;
         public int moduleCredits;
+        public int slotTickets;
+        // 필드가 없는 이전 JSON은 0으로 읽힌다. 슬롯별 최고 클리어 습격 번호다.
+        public int raidClearProgress;
+        // 빈 배열은 신규 상태이며 DayFirst는 암묵적으로 해금된다. null은 구형 필드 부재다.
+        public string[] unlockedMainTrackIds;
+        public bool trackUnlocksMigrated;
+        public string[] clearedRaidScenes = Array.Empty<string>();
+        public int outstandingLoans, todayLoanRepayment, todayLoanInterest;
+        public int todayLoanIncome;
+        public int lastLoanDay = -1;
         public int[] unlockedModules = Array.Empty<int>();
-        public RaidDeathDropSave[] raidDeathDrops = Array.Empty<RaidDeathDropSave>();
-        public bool raidDeathReturnPending;
         public CustomerOrderSave[] dailyOrders;
         public CustomerOrderSave[] deferredCustomers;
         public int dailyRent;
@@ -89,7 +179,11 @@ namespace WeaponWorkshop
         public WeaponWorldSave[] weapons = Array.Empty<WeaponWorldSave>();
         public TargetWorldSave[] targets = Array.Empty<TargetWorldSave>();
         public int completed, dissatisfied, killed, income, period, nextCustomer, currentCustomer = -1;
-        public bool night, settlement, confirmation, inWorkshop;
+        public int constructionCost;
+        public int soldConstructionCost;
+        public bool night, settlement, confirmation, inWorkshop, retired;
+        // 정글 캠퍼스 엔드 상자를 한 번이라도 연 진행. 엔딩 로그의 firstEnding 판정에 쓴다.
+        public bool endChestOpened;
         public bool startedDayInDebt;
         public int workbench = -1;
         public Vector3 playerPosition, playerEuler, viewEuler, benchEuler;
@@ -108,27 +202,11 @@ namespace WeaponWorkshop
         private static string AutoSavePath => Path.Combine(Application.persistentDataPath, "Saves", "autosave.json");
         private static string RaidRecoveryPath => Path.Combine(Application.persistentDataPath, "Saves", "raid-recovery.json");
         public static bool HasRaidRecovery => File.Exists(RaidRecoveryPath);
-        public static bool TryReadRaidRecovery(out GameSaveData data) => TryReadPath(RaidRecoveryPath, out data);
         public static void ClearRaidRecovery()
         {
             if (HasRaidRecovery) File.Delete(RaidRecoveryPath);
             string temp = RaidRecoveryPath + ".tmp";
             if (File.Exists(temp)) File.Delete(temp);
-        }
-        public static bool TryWriteRaidRecovery(GameSaveData data)
-        {
-            if (data == null) return false;
-            try
-            {
-                data.savedUtcTicks = DateTime.UtcNow.Ticks;
-                WritePath(RaidRecoveryPath, data, true);
-                return true;
-            }
-            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
-            {
-                Debug.LogError("사망 드롭 복구 상태를 저장하지 못했습니다: " + e.Message);
-                return false;
-            }
         }
         private static string PathFor(int slot)
         {
@@ -148,6 +226,10 @@ namespace WeaponWorkshop
         public static bool TryReadAutoSave(out GameSaveData data)
             => TryReadPath(AutoSavePath, out data);
 
+        /// <summary>
+        /// 저장 JSON을 읽고 지원하는 버전 및 필드 범위를 확인한다.
+        /// path에서 읽은 GameSaveData와 성공 여부를 반환한다.
+        /// </summary>
         private static bool TryReadPath(string path, out GameSaveData data)
         {
             data = null;
@@ -155,10 +237,11 @@ namespace WeaponWorkshop
             {
                 if (!File.Exists(path)) return false;
                 var read = JsonUtility.FromJson<GameSaveData>(File.ReadAllText(path));
-                if (read == null || (read.version != 2 && read.version != 3 && read.version != 4) || read.day < 0 ||
+                if (read == null || (read.version < 2 || read.version > 8) || read.day < 0 ||
                     read.paidCost < 0 || read.savedUtcTicks <= 0 || read.savedUtcTicks > DateTime.MaxValue.Ticks ||
                     read.completed < 0 || read.dissatisfied < 0 || read.killed < 0 || read.income < 0 ||
                     read.dissatisfied + read.killed > read.completed || read.nextCustomer < 0 ||
+                    (read.trackUnlocksMigrated && read.unlockedMainTrackIds == null) ||
                     read.timer == null || read.period < 0 || read.period > 3 ||
                     (read.currentCustomer >= 0 && (read.customer == null || read.customer.stage < 0 || read.customer.stage > 4 || read.customer.line < 0 || read.customer.price < 0)) ||
                     read.blocks == null || read.blocks.Length > 10000 ||
@@ -166,9 +249,6 @@ namespace WeaponWorkshop
                     read.blocks.Select(b => b.cell).Distinct().Count() != read.blocks.Length) return false;
                 if (read.version >= 3 && (string.IsNullOrEmpty(read.sceneName) || read.map == null || read.weapons == null || read.targets == null ||
                     read.weapons.Any(w => w == null || w.blocks == null || w.blocks.Any(b => b == null || b.slot < 1 || b.paidCost < 0)))) return false;
-                if (read.raidDeathDrops != null && read.raidDeathDrops.Any(d => d == null || string.IsNullOrEmpty(d.id) ||
-                    string.IsNullOrEmpty(d.sceneName) || d.credits < 0 || d.modules == null ||
-                    (d.weapon != null && (d.weapon.blocks == null || d.weapon.blocks.Any(b => b == null || b.slot < 1 || b.paidCost < 0))))) return false;
                 if (read.version < 4)
                 {
                     int[] ids = { 0, 1, 2, 3, 4, 8, 5, 9, 11, 10, 16, 13, 14, 12, 15, 7, 17, 6, 19, 18 };
@@ -199,7 +279,6 @@ namespace WeaponWorkshop
             if (AutoSaveExists) File.Delete(AutoSavePath);
             string temp = AutoSavePath + ".tmp";
             if (File.Exists(temp)) File.Delete(temp);
-            // The raid recovery file is an internal companion snapshot, not an independent save slot.
             ClearRaidRecovery();
         }
         public static void DeleteAllSaves()
@@ -207,7 +286,6 @@ namespace WeaponWorkshop
             for (int slot = 0; slot < SlotCount; slot++) Delete(slot);
             DeleteAutoSave();
             PendingLoad = null;
-            RaidDeathLoot.Clear();
             NightRaidTransfer.Abandon();
         }
         public static int LatestSlot()
@@ -224,6 +302,16 @@ namespace WeaponWorkshop
 
         public static void WriteAutoSave(GameSaveData data, bool prettyPrint = true)
             => WritePath(AutoSavePath, data, prettyPrint);
+
+        // 습격 중 엔드 상자를 열면 같은 진행의 자동 저장에도 표시한다. 그만하기로 바로 로비에 가도 남게 한다.
+        public static bool TryMarkEndChestOpened(string saveId)
+        {
+            if (string.IsNullOrEmpty(saveId) || !TryReadAutoSave(out var data) || data.saveId != saveId) return false;
+            if (data.endChestOpened) return true;
+            data.endChestOpened = true;
+            try { WriteAutoSave(data); return true; }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException) { return false; }
+        }
 
         private static void WritePath(string path, GameSaveData data, bool prettyPrint)
         {
@@ -246,6 +334,6 @@ namespace WeaponWorkshop
         }
 
         private static string Describe(GameSaveData data)
-            => $"{data.day}일차 · $ {data.balance:N0}\n{new DateTime(data.savedUtcTicks, DateTimeKind.Utc).ToLocalTime():yyyy-MM-dd HH:mm} · 무기 {(data.hasWeapon ? "있음" : "없음")}";
+            => $"{data.day}일차 · $ {data.balance:N0}\n{new DateTime(data.savedUtcTicks, DateTimeKind.Utc).ToLocalTime():yyyy-MM-dd HH:mm} · 무기 {(data.hasWeapon ? "있음" : "없음")}{(data.retired ? " · 은퇴 성공" : "")}";
     }
 }

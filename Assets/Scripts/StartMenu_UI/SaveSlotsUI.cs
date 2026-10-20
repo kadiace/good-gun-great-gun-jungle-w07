@@ -69,16 +69,22 @@ namespace WeaponWorkshop
             if (mainPanel != null) mainPanel.SetActive(true);
             if (openSaveSlotsButton != null) openSaveSlotsButton.SetActive(true);
         }
+
+        // 찾았다 십색기 이거야
+        
         public void Refresh()
         {
+            bool hasAutoSave = GameSaveFiles.TryReadAutoSave(out _); // 자동 저장 슬롯이 존재하는지 확인하는 변수임
             if (autoSaveText != null)
                 autoSaveText.text = "자동 저장\n" + GameSaveFiles.AutoSaveDescription();
             if (autoSaveButton != null)
-                autoSaveButton.interactable = saveController == null && startMenu != null &&
-                                              GameSaveFiles.TryReadAutoSave(out _);
+            {
+                autoSaveButton.gameObject.SetActive(hasAutoSave); // 화면 띄우는거 
+                autoSaveButton.interactable = saveController == null && startMenu != null && hasAutoSave; // 버튼 못만지게 하는거
+            }
             if (autoSaveDeleteButton != null)
             {
-                autoSaveDeleteButton.gameObject.SetActive(saveController == null && startMenu != null);
+                autoSaveDeleteButton.gameObject.SetActive(saveController == null && startMenu != null && hasAutoSave); // 위랑 조건 같게 ㅇㅇ
                 autoSaveDeleteButton.interactable = GameSaveFiles.AutoSaveExists;
             }
 
@@ -94,6 +100,8 @@ namespace WeaponWorkshop
                 if (slotButtons != null && i < slotButtons.Length && slotButtons[i] != null)
                     slotButtons[i].interactable = saveController != null || GameSaveFiles.TryRead(i, out _);
             }
+
+            FitSlotLayout(); // 갱신해서 안깨지게
         }
 
         private void EnsureAutoSaveSlot()
@@ -214,7 +222,7 @@ namespace WeaponWorkshop
             var label = labelObject.GetComponent<TMPro.TextMeshProUGUI>();
             label.font = font;
             label.text = "삭제";
-            label.fontSize = 24f;
+            label.fontSize = parent.GetComponentInParent<UIManager>(true) != null ? 28f : 24f;
             label.fontStyle = TMPro.FontStyles.Bold;
             label.alignment = TMPro.TextAlignmentOptions.Center;
             label.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
@@ -253,6 +261,7 @@ namespace WeaponWorkshop
             if (width > 0f) deleteRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
         }
 
+        // 슬롯 위치 조정 ㅇㅇ
         private void FitSlotLayout()
         {
             if (slotButtons == null || autoSaveButton == null || slotButtons.Length == 0)
@@ -269,7 +278,8 @@ namespace WeaponWorkshop
                 return;
             }
 
-            int count = slotButtons.Length + 1;
+            bool hasAutoSaveSlot = autoSaveButton.gameObject.activeSelf;
+            int count = slotButtons.Length + (hasAutoSaveSlot ? 1 : 0); // 있는지 없는지 체크하기 
             float available = parentRect.rect.width - layout.padding.horizontal - layout.spacing * (count - 1);
             if (available <= 0f) { FitDeleteButtons(); return; }
             float width = available / count;
@@ -280,8 +290,8 @@ namespace WeaponWorkshop
                 if (rect != null) rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             }
             var autoRect = autoSaveButton.transform as RectTransform;
-            if (autoRect != null) autoRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            FitDeleteButtons();
+            if (hasAutoSaveSlot && autoRect != null) autoRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            FitDeleteButtons(); // 애도 뭐 잘보이게 조절하는놈
         }
 
         private void LoadAutoSave()

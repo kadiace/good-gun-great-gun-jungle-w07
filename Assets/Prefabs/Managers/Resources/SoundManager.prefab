@@ -1,0 +1,315 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6442189128341866832
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8273641672993498232}
+  - component: {fileID: 8549607141102546984}
+  - component: {fileID: 8750000000000000001}
+  m_Layer: 0
+  m_Name: SoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8273641672993498232
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6442189128341866832}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8750000000000000003}
+  - {fileID: 9100000000000000012}
+  - {fileID: 7600600000000000002}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8549607141102546984
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6442189128341866832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4da91f50b0cd339488cf2ba9b777af11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.SoundManager
+  musicFadeDuration: 0.75
+  defaultMusicClip: {fileID: 8300000, guid: ec5d530fa8e997446968da8879dae5b6, type: 3}
+  daySecondMusicClip: {fileID: 8300000, guid: ee0440be00c934443ac4cec96cd99681, type: 3}
+  dayThirdMusicClip: {fileID: 8300000, guid: cade4c46ba7c4af4f80c7b6a8d2020d6, type: 3}
+  dayFourthMusicClip: {fileID: 8300000, guid: bef3b32cc8ddf3047acce6a1310f3c00, type: 3}
+  dayLastMusicClip: {fileID: 8300000, guid: cdcf268b2dda99e4cb102115f343985b, type: 3}
+  dayAttack0MusicClip: {fileID: 8300000, guid: 17137df706be2ba458f686264e51e2cd, type: 3}
+  dayAttack1MusicClip: {fileID: 8300000, guid: 164f71bd85e548540a150568da0f8148, type: 3}
+  dayAttack2MusicClip: {fileID: 8300000, guid: f16c3fa34749ac04f9afe12d75696ea6, type: 3}
+  tutorialRainMusicClip: {fileID: 8300000, guid: 7f170654648d23e428beaea4e338d58d, type: 3}
+  tutorialWorkshopMusicVolume: 0.35
+  nightMusicClip: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+  tutorialRaidMusicVolume: 0.35
+  raidMusicSets:
+  - stage: 1
+    travel: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+    firstWall: {fileID: 8300000, guid: ee0440be00c934443ac4cec96cd99681, type: 3}
+    _legacyClear: {fileID: 8300000, guid: cdcf268b2dda99e4cb102115f343985b, type: 3}
+  - stage: 2
+    travel: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+    firstWall: {fileID: 8300000, guid: 17137df706be2ba458f686264e51e2cd, type: 3}
+    _legacyClear: {fileID: 8300000, guid: cade4c46ba7c4af4f80c7b6a8d2020d6, type: 3}
+  - stage: 3
+    travel: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+    firstWall: {fileID: 8300000, guid: 164f71bd85e548540a150568da0f8148, type: 3}
+    _legacyClear: {fileID: 8300000, guid: ec5d530fa8e997446968da8879dae5b6, type: 3}
+  - stage: 4
+    travel: {fileID: 8300000, guid: 65628d42a8b7225498a4d41717a2339c, type: 3}
+    firstWall: {fileID: 8300000, guid: f16c3fa34749ac04f9afe12d75696ea6, type: 3}
+    _legacyClear: {fileID: 8300000, guid: bef3b32cc8ddf3047acce6a1310f3c00, type: 3}
+  basicShotMinimumInterval: 0.05
+  chargedShotMinimumInterval: 0.05
+  shotgunMinimumInterval: 0.05
+  waterShotMinimumInterval: 0.05
+  explosionMinimumInterval: 0.05
+  collapseMinimumInterval: 0.05
+  helicopterAttackMinimumInterval: 0.05
+  playerWeaponSoundVolumeMultiplier: 0.7
+  enemySoundVolumeMultiplier: 1.25
+  tankMoveVolume: 0.03
+  helicopterAmbientVolume: 0.4
+  helicopterAmbientMinDistance: 5
+  helicopterAmbientMaxDistance: 35
+  helicopterAttackVolume: 0.5
+  shopMusicVolume: 0.35
+  raidMusicVolume: 0.35
+  uiClickVolume: 0.65
+  spawnButtonClickVolume: 0.7
+  workbenchSounds: {fileID: 0}
+--- !u!114 &8750000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6442189128341866832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed53748b73954de78b13473d65fb1fa3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.WorkbenchSoundSettings
+  installation:
+    clips:
+    - {fileID: 8300000, guid: 588c6e5b474f8164da82910fc30b25f2, type: 3}
+    volume: 0.65
+  installationExtra:
+    clips:
+    - {fileID: 8300000, guid: 4567bd6d73c3d974b855eb3ad4703767, type: 3}
+    volume: 0.65
+  removal:
+    clips:
+    - {fileID: 8300000, guid: f91e23593bd1b3b4282065a8f51c0404, type: 3}
+    volume: 0.65
+  weaponPlacement:
+    clips:
+    - {fileID: 8300000, guid: 396de8506b2a4f24f9b98393e0913857, type: 3}
+    volume: 0.8
+  assemblyComplete:
+    clips: []
+    volume: 0.8
+  paper:
+    clips:
+    - {fileID: 8300000, guid: 7dd9efb6d60120c4cba89bc8b8ee87bc, type: 3}
+    volume: 0.8
+  limitReached:
+    clips:
+    - {fileID: 8300000, guid: 8bc1f96b645ca6b47be49315bc2f67a9, type: 3}
+    volume: 0.85
+--- !u!1 &7600600000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7600600000000000002}
+  - component: {fileID: 7600600000000000003}
+  m_Layer: 0
+  m_Name: SlotMachine
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7600600000000000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7600600000000000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8273641672993498232}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7600600000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7600600000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6a8e31fcb324ba4a6c5dc89c46140f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.SlotMachineSound
+  _leverClip: {fileID: 8300000, guid: 72be408f8cde5834c8fb1748dc2e7f70, type: 3}
+  _leverVolume: 1
+  _rotationClip: {fileID: 8300000, guid: a52cc8b76eed04e4ea34eeaf85931641, type: 3}
+  _rotationVolume: 1
+  _reelStopClip: {fileID: 8300000, guid: eee6d46b4a539e54e9c0833f89b90027, type: 3}
+  _reelStopVolume: 1
+  _payoutClip: {fileID: 8300000, guid: 3f7e9ec79939ea94abf7f930f0a1008e, type: 3}
+  _payoutVolume: 1
+  _failClip: {fileID: 8300000, guid: 876e576db5523ad4dabe37211e4d3c8a, type: 3}
+  _failVolume: 1
+  _destroyClip: {fileID: 8300000, guid: c167898be88f94441837dff46fcf8e89, type: 3}
+  _destroyVolume: 1
+--- !u!1 &8750000000000000002
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8750000000000000003}
+  - component: {fileID: 8750000000000000004}
+  m_Layer: 0
+  m_Name: PlayerSound
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8750000000000000003
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8750000000000000002}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8273641672993498232}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8750000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8750000000000000002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2d730c1d8c942c481260dd414271aea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.PlayerSound
+  soundManager: {fileID: 8549607141102546984}
+  walkingFootstepClip: {fileID: 8300000, guid: f73dc906366d97a48b37c5c079135d32, type: 3}
+  walkingFootstepVolume: 0.2
+  walkingSoundInterval: 0.45
+  sprintingFootstepClip: {fileID: 8300000, guid: f73dc906366d97a48b37c5c079135d32, type: 3}
+  sprintingFootstepVolume: 0.2
+  sprintSoundIntervalMultiplier: 2.5
+  sprintStartClip: {fileID: 8300000, guid: f73dc906366d97a48b37c5c079135d32, type: 3}
+  sprintStartVolume: 0.6
+  jumpClip: {fileID: 8300000, guid: aece8a9789efa444dbf2088a6f7420fa, type: 3}
+  jumpVolume: 0.65
+--- !u!1 &9100000000000000011
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9100000000000000012}
+  - component: {fileID: 9100000000000000013}
+  m_Layer: 0
+  m_Name: Customer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9100000000000000012
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9100000000000000011}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8273641672993498232}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9100000000000000013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9100000000000000011}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91e4c2a6b8d043f5a7c9e1b3d5f7082a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.CustomerSound
+  commonScreams:
+  - {fileID: 8300000, guid: a1291a263733e824aaa0a0a3699a6d19, type: 3}
+  - {fileID: 8300000, guid: 4cf3a567b44f8334c853362ddb43744f, type: 3}
+  - {fileID: 8300000, guid: 46dc468a923ee14439222ae59c783910, type: 3}
+  - {fileID: 8300000, guid: aeb81fe72dbe5854e939e2f97dca08d6, type: 3}
+  commonVolume: 1
+  _manScreams:
+  - {fileID: 8300000, guid: adde3c5f120cb0a46aa4bb5f8104b801, type: 3}
+  - {fileID: 8300000, guid: 44ad5d031fce35e4c94535421c856673, type: 3}
+  _manVolume: 1
+  _d2_7Ricochet1Clip: {fileID: 8300000, guid: 44ad5d031fce35e4c94535421c856673, type: 3}
+  _d2_7Ricochet1Volume: 1
+  _d3_5LakeParkClip: {fileID: 8300000, guid: 48c55b902ef6ffe4a84504073a47ca10, type: 3}
+  _d3_5LakeParkVolume: 1
+  _d3_9ChristClip: {fileID: 8300000, guid: 21a545775dc0bf64f97b331f2b5fd5ff, type: 3}
+  _d3_9ChristVolume: 1
+  _d4_3RobberClip: {fileID: 8300000, guid: 9c38033f9a915c841a572c40c91dfebd, type: 3}
+  _d4_3RobberVolume: 1
+  _d5_11RicsMonkeyClip: {fileID: 8300000, guid: ab704fb878007d34792d99e6f5b6b618, type: 3}
+  _d5_11RicsMonkeyVolume: 1
+  _d6_7RobberAgainClip: {fileID: 8300000, guid: 9c38033f9a915c841a572c40c91dfebd, type: 3}
+  _d6_7RobberAgainVolume: 1

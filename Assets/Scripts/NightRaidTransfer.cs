@@ -11,21 +11,48 @@ namespace WeaponWorkshop
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetReturnFade() => ReturnDayFadePending = false;
         private static bool enteringRaid;
-        private static bool standaloneDeathReturn;
-        public static bool HasPendingReturn => Returning || standaloneDeathReturn;
+        private static bool standaloneReturn;
+        private static int standaloneSlotTickets;
+        // 결과 확정 시에만 채운다. 훈련 습격과 결과 없는 복귀는 번호 0·클리어 false다.
+        public static int ResultRaidNumber { get; private set; }
+        public static string ResultRaidScene { get; private set; }
+        public static bool ResultCleared { get; private set; }
+        /// <summary>
+        /// 확정 습격 결과에 번호와 안정적인 씬 키를 기록한다.
+        /// </summary>
+        public static void RecordResult(int raidNumber, string raidScene, bool cleared)
+        {
+            ResultRaidNumber = raidNumber;
+            ResultRaidScene = raidScene;
+            ResultCleared = cleared;
+        }
+        public static bool HasPendingReturn => Returning || standaloneReturn;
+        // 로그용. 이번 습격에 낸 입장 비용.
+        public static int EntryCost { get; private set; }
         private static int moduleCreditsBeforeLoss;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneDeathReturn = false; moduleCreditsBeforeLoss = 0; }
-        public static void MarkStandaloneDeathReturn() => standaloneDeathReturn = true;
-        public static bool TryConsumeStandaloneDeathReturn()
+        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneSlotTickets = 0; EntryCost = 0; RecordResult(0, null, false); }
+        // 씬을 직접 연 경우에는 공방 스냅샷 없이 결과만 전달한다.
+        public static void MarkStandaloneReturn(int slotTickets)
         {
-            bool pending = standaloneDeathReturn;
-            standaloneDeathReturn = false;
+            standaloneReturn = true;
+            standaloneSlotTickets = Mathf.Max(0, slotTickets);
+        }
+        public static bool TryConsumeStandaloneReturn(out int slotTickets)
+        {
+            bool pending = standaloneReturn;
+            slotTickets = pending ? standaloneSlotTickets : 0;
+            if (pending) Reset();
             return pending;
         }
-        public static void Begin(GameSaveData checkpoint)
+        /// <summary>
+        /// 공방 체크포인트를 보관하고 습격 진입 상태를 시작한다.
+        /// checkpoint를 저장하고 이전 습격 결과를 초기화한다.
+        /// </summary>
+        public static void Begin(GameSaveData checkpoint, int entryCost = 0)
         {
-            Workshop = checkpoint; Returning = false; enteringRaid = true; moduleCreditsBeforeLoss = 0;
+            Workshop = checkpoint; Returning = false; enteringRaid = true; moduleCreditsBeforeLoss = 0; EntryCost = entryCost;
+            RecordResult(0, null, false);
         }
         public static bool TryConsumeEntry(out int balance, out int moduleCredits, out int[] unlockedModules, out WeaponWorldSave weapon)
         {
@@ -47,21 +74,28 @@ namespace WeaponWorkshop
             }
             var held = player.GetComponent<WeaponHolder>().EquippedWeapon;
             WeaponWorldSave carried = null;
-            // A failed raid forfeits the carried weapon; only successful returns capture it.
             if (!died && held != null && !GameSaveController.TryCaptureCarried(held, out carried, out error)) return false;
-            var weapons = Workshop.weapons.Where(w => !w.held).ToList();
-            if (carried != null) weapons.Add(carried);
-            Workshop.weapons = weapons.ToArray(); Workshop.hasWeapon = carried != null;
-            if (!died) Workshop.balance = player.GetComponent<PlayerWallet>().Balance;
+            if (!died)
+            {
+                var weapons = Workshop.weapons.Where(w => !w.held).ToList();
+                if (carried != null) weapons.Add(carried);
+                Workshop.weapons = weapons.ToArray(); Workshop.hasWeapon = carried != null;
+            }
+            if (!died)
+            {
+                Workshop.balance = player.GetComponent<PlayerWallet>().Balance;
+                Workshop.outstandingLoans = player.GetComponent<PlayerWallet>().OutstandingLoans;
+                Workshop.lastLoanDay = player.GetComponent<PlayerWallet>().LastLoanDay;
+            }
             moduleCreditsBeforeLoss = died ? player.GetComponent<PlayerWallet>().ModuleCredits : 0;
             // Death forfeits raid module credits and unlocks; keep the departure snapshot.
             if (!died)
             {
                 Workshop.moduleCredits = player.GetComponent<PlayerWallet>().ModuleCredits;
+                Workshop.slotTickets = player.GetComponent<PlayerWallet>().SlotTickets;
                 Workshop.unlockedModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             }
-            Workshop.inWorkshop = false; Workshop.confirmation = false; Workshop.settlement = true;
-            Workshop.raidDeathDrops = RaidDeathLoot.Capture();
+            Workshop.inWorkshop = false; Workshop.confirmation = false; Workshop.settlement = !died;
             Returning = true; return true;
         }
         public static bool TryConsumeReturn(out GameSaveData checkpoint, out int creditsBeforeLoss)
@@ -72,6 +106,12 @@ namespace WeaponWorkshop
             checkpoint = Workshop; Reset(); return true;
         }
         public static void Abandon() => Reset();
+        // 사망 귀환도 출발 스냅샷을 쓰므로 스냅샷에 직접 기록한다.
+        public static void MarkEndChestOpened()
+        {
+            if (Workshop != null) Workshop.endChestOpened = true;
+            GameSaveFiles.TryMarkEndChestOpened(PlayerIdentity.SaveId);
+        }
         public static void MarkReturning() { if (Workshop != null) Returning = true; }
         public static void KeepRecovery(GameSaveData checkpoint)
         {

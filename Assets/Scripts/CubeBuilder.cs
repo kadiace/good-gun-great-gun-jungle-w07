@@ -17,6 +17,8 @@ namespace WeaponWorkshop
             public CubeAssembly.LayoutSnapshot snapshot;
             public PlayerWallet wallet;
             public int walletBalance;
+            public int outstandingLoans;
+            public int todayConstructionCost;
             public int walletModuleCredits;
         }
 
@@ -30,10 +32,11 @@ namespace WeaponWorkshop
         private int[] favorites = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
         private bool paletteOpen;
         private int hoveredPaletteModule;
+        private bool favoriteDragActive;
         public void SetHoveredPaletteModule(int moduleId) => hoveredPaletteModule = moduleId;
         private void HandleFavoriteKey(int index)
         {
-            if (GameManager.GameplayBlocked) return;
+            if (GameManager.GameplayBlocked || favoriteDragActive || !TutorialManager.TryAction("select-module")) return;
             if (PaletteOpen && hoveredPaletteModule > 0) { SetFavorite(index, hoveredPaletteModule); return; }
             SelectModule(GetFavorite(index));
         }
@@ -167,6 +170,8 @@ namespace WeaponWorkshop
             return unlocks == null || !unlocks.IsUnlocked(moduleId);
         }
         public int FavoriteCount => favorites.Length;
+        public bool CanEditFavorites => isActiveAndEnabled && !paintingMode && !ColorPickerOpen &&
+            !GameManager.GameplayBlocked && TutorialManager.ActionAllowed("quickslot");
         public int GetFavorite(int index) => index >= 0 && index < favorites.Length ? ValidModuleOrBlocker(favorites[index]) : 1;
 
         private int ValidModuleOrBlocker(int moduleId) => moduleCatalog != null &&
@@ -174,17 +179,50 @@ namespace WeaponWorkshop
 
         public void SetFavorite(int index, int moduleId)
         {
-            if (index < 0 || index >= favorites.Length) return;
+            if (!CanEditFavorites || index < 0 || index >= favorites.Length) return;
             moduleId = ValidModuleOrBlocker(moduleId);
             if (IsModuleLocked(moduleId)) return;
+            if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeQuickslotChange(moduleId, index)) return;
+            int previousModule = GetFavorite(index);
             int existing = System.Array.IndexOf(favorites, moduleId);
-            if (existing >= 0 && existing != index) favorites[existing] = GetFavorite(index);
+            if (existing >= 0 && existing != index) favorites[existing] = previousModule;
             favorites[index] = moduleId;
+            if (existing >= 0 && existing != index) NotifyFavoriteChanged(existing, moduleId);
+            NotifyFavoriteChanged(index, previousModule);
+        }
+
+        public bool SwapFavorites(int sourceIndex, int targetIndex)
+        {
+            if (!CanEditFavorites || sourceIndex < 0 || sourceIndex >= favorites.Length ||
+                targetIndex < 0 || targetIndex >= favorites.Length || sourceIndex == targetIndex) return false;
+            int sourceModule = GetFavorite(sourceIndex);
+            if (IsModuleLocked(sourceModule)) return false;
+            if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeQuickslotChange(sourceModule, targetIndex)) return false;
+            int targetModule = GetFavorite(targetIndex);
+            if (sourceModule == targetModule) return false;
+            favorites[sourceIndex] = targetModule;
+            favorites[targetIndex] = sourceModule;
+            NotifyFavoriteChanged(sourceIndex, sourceModule);
+            NotifyFavoriteChanged(targetIndex, targetModule);
+            return true;
+        }
+
+        private void NotifyFavoriteChanged(int index, int previousModule)
+        {
+            int moduleId = GetFavorite(index);
+            if (moduleId != previousModule)
+                TutorialManager.Instance?.NotifySignal($"quickslot-{index + 1}-module-{moduleId}", this);
+        }
+
+        public void SetFavoriteDrag(bool active)
+        {
+            favoriteDragActive = active;
+            if (active) CancelPreview();
         }
 
         public void SelectModule(int moduleId)
         {
-            if (GameManager.GameplayBlocked || paintingMode) return;
+            if (GameManager.GameplayBlocked || paintingMode || !TutorialManager.TryAction("select-module")) return;
             CancelPreview();
             int slot = ValidModuleOrBlocker(moduleId);
             if (IsModuleLocked(slot)) return;
@@ -244,6 +282,7 @@ namespace WeaponWorkshop
             deleteMode = false;
             paletteOpen = false;
             colorPickerOpen = false;
+            favoriteDragActive = false;
             paintFillMode = false;
             if (eraseModeUI != null) eraseModeUI.SetActive(false);
             view = GetComponent<Camera>();
@@ -257,7 +296,7 @@ namespace WeaponWorkshop
             controls.FindAction("TogglePalette", true).performed += _ =>
             {
                 if (GameManager.GameplayBlocked || paintingMode) return;
-                if (!TutorialManager.ActionAllowed("palette")) return;
+                if (!TutorialManager.TryAction("palette")) return;
                 CancelPreview();
                 paletteOpen = !paletteOpen; hoveredPaletteModule = 0;
                 if (paletteOpen && TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("palette-opened");
@@ -292,8 +331,10 @@ namespace WeaponWorkshop
             attach.canceled += _ => paintPointerHeld = false;
             attach.performed += _ =>
             {
-                if (GameManager.GameplayBlocked || (!paintingMode && (paletteOpen || colorPickerOpen)) ||
+                if (GameManager.GameplayBlocked || favoriteDragActive ||
                     IsPointerOverUI(AimPoint())) return;
+                if (!paintingMode && (paletteOpen || colorPickerOpen))
+                { TutorialManager.Instance?.NotifyBlockedAction(); return; }
                 if (controls.FindAction("Rotate", true).IsPressed()) return;
                 if (!paintingMode && !deleteMode && TutorialManager.Instance != null &&
                     !TutorialManager.Instance.TryAuthorizeAttachAction()) return;
@@ -307,7 +348,10 @@ namespace WeaponWorkshop
             controls.FindAction("ToggleDelete", true).performed += _ =>
             {
                 if (GameManager.GameplayBlocked || paintingMode) return;
-                if (!TutorialManager.ActionAllowed("delete")) return;
+                // 기존 단계에서는 켜진 삭제 모드를 끌 수 있지만, 엄격 제한 단계는 이 예외도 적용하지 않는다.
+                if (!TutorialManager.ActionAllowed("delete") &&
+                    (!deleteMode || TutorialManager.Instance?.CurrentStep?.strictAllowedActions == true))
+                { TutorialManager.TryAction("delete"); return; }
                 CancelPreview();
                 CancelModuleColor();
                 deleteMode = !deleteMode;
@@ -331,6 +375,7 @@ namespace WeaponWorkshop
         }
         private void OnDisable()
         {
+            favoriteDragActive = false;
             CancelPreview();
             CancelModuleColor();
             deleteMode = false;
@@ -401,7 +446,7 @@ namespace WeaponWorkshop
         private void UpdateHoverPreview()
         {
             if (hoverPreview != null) hoverPreview.SetActive(false);
-            if (paintingMode || paletteOpen || colorPickerOpen || preview != null ||
+            if (paintingMode || paletteOpen || colorPickerOpen || favoriteDragActive || preview != null ||
                 GameManager.GameplayBlocked || view == null || controls == null ||
                 controls.FindAction("Rotate", true).IsPressed() || IsPointerOverUI(AimPoint())) return;
             var pointer = AimPoint();
@@ -556,17 +601,42 @@ namespace WeaponWorkshop
             ModuleCatalog.Entry entry = default;
             int dollars = moduleCatalog != null && moduleCatalog.TryGet(slot, out entry)
                 ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
-            int materials = entry.data != null ? Mathf.Max(0, entry.moduleCreditCost) : 0;
+            int materials = WeaponPurchasePrices.ModuleCredits(entry.data, WeaponPurchasePrices.InstalledShotgunCount(assembly));
+            string partKind = PartLogName(assembly, slot);
+            if (wallet.Balance < dollars)
+            {
+                if (wallet.CanAffordModuleCredits(materials))
+                {
+                    var feedback = FeedbackUI.For(this);
+                    var dayManager = FindFirstObjectByType<_DayManager>();
+                    if (dayManager != null && wallet.LastLoanDay != dayManager.DayNumber)
+                    {
+                        int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
+                        var tutorial = TutorialManager.Instance;
+                        if (feedback != null && feedback.ShowChoice(this, $"$3,000 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
+                            () => { if (wallet.TryTakeLoan(dayManager.DayNumber))
+                                TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench); },
+                            null, "대출받기", "취소") && tutorial != null &&
+                            tutorial.CurrentStep?.requiredSignal == "loan-taken")
+                            tutorial.ShowLoanGuide(feedback);
+                    }
+                    else if (dayManager != null) feedback?.ShowNotification("대출은 하루에 한 번만 받을 수 있습니다.");
+                }
+                return false;
+            }
             bool purchased = wallet.TryPurchaseModule(dollars, materials,
-                () => assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell));
+                () => assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell), partKind);
             if (purchased)
             {
+                wallet.NotifyPartPurchased(partKind, dollars, materials);
                 assembly.RecordPurchasedModule(cell, dollars);
                 assembly.RecordPurchasedModuleCredits(cell, materials);
                 WorkshopSoundEffects.RaiseBlockInstalled(assembly.transform.TransformPoint(cell));
             }
             return purchased;
         }
+        private static string PartLogName(CubeAssembly assembly, int slot)
+            => assembly != null ? ModuleCounter.LogName(assembly.GetPrefab(slot)?.GetComponent<PlacedBlock>()) : "";
         private void TryPlace()
         {
             if (paintingMode || IsPointerOverUI(AimPoint())) return;
@@ -574,11 +644,9 @@ namespace WeaponWorkshop
             if (wallet == null) return;
             int slotToBuy = preview != null ? pendingSlot : selectedSlot;
             if (IsModuleLocked(slotToBuy)) { CancelPreview(); return; }
-            ModuleCatalog.Entry entry = default;
-            int dollars = moduleCatalog != null && moduleCatalog.TryGet(slotToBuy, out entry)
-                ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
-            int materials = entry.data != null ? Mathf.Max(0, entry.moduleCreditCost) : 0;
-            if (!wallet.CheckModuleFunds(dollars, materials)) return;
+            int materials = GetNextModuleCreditCost(slotToBuy);
+            if (!wallet.CheckPurchaseFunds(materials, true, PartLogName(pendingAssembly != null ? pendingAssembly :
+                    FindWorkspaceWeapon()?.GetComponentInChildren<CubeAssembly>(true), slotToBuy))) return;
             Vector2 pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer)) return;
             if (preview != null)
@@ -656,6 +724,16 @@ namespace WeaponWorkshop
             UpdatePreview();
         }
 
+        public int GetNextModuleCreditCost(int slot)
+        {
+            if (moduleCatalog == null || !moduleCatalog.TryGet(slot, out var entry)) return 0;
+            if (entry.data.ModuleType != StatType.Shotgun) return WeaponPurchasePrices.ModuleCredits(entry.data, 0);
+            var weapon = FindWorkspaceWeapon();
+            var assembly = pendingAssembly != null ? pendingAssembly :
+                weapon != null ? weapon.GetComponentInChildren<CubeAssembly>(true) : null;
+            return WeaponPurchasePrices.ModuleCredits(entry.data, WeaponPurchasePrices.InstalledShotgunCount(assembly));
+        }
+
         private static bool IsScope(CubeAssembly assembly, int slot)
         {
             GameObject prefab = assembly.GetPrefab(slot);
@@ -679,6 +757,8 @@ namespace WeaponWorkshop
                 snapshot = snapshot,
                 wallet = wallet,
                 walletBalance = walletBalance,
+                outstandingLoans = wallet != null ? wallet.OutstandingLoans : 0,
+                todayConstructionCost = wallet != null ? wallet.TodayConstructionCost : 0,
                 walletModuleCredits = walletModuleCredits
             });
             return true;
@@ -686,7 +766,7 @@ namespace WeaponWorkshop
 
         private void UndoLastEdit()
         {
-            if (!TutorialManager.ActionAllowed("undo")) return;
+            if (!TutorialManager.TryAction("undo")) return;
             if (GameManager.GameplayBlocked) return;
             if (paintingMode)
             {
@@ -706,14 +786,17 @@ namespace WeaponWorkshop
 
             CancelPreview();
             if (!entry.assembly.RestoreLayout(entry.snapshot)) return;
-            entry.wallet?.RestoreBalance(entry.walletBalance);
+            if (entry.wallet != null)
+                entry.wallet.RestoreBalance((int)System.Math.Min(int.MaxValue,
+                    (long)entry.walletBalance + (long)(entry.wallet.OutstandingLoans - entry.outstandingLoans) * PlayerWallet.LoanAmount));
+            entry.wallet?.RestoreTodayConstructionCost(entry.todayConstructionCost);
             entry.wallet?.RestoreModuleCredits(entry.walletModuleCredits);
             undoHistory.RemoveAt(last);
         }
 
         public bool BeginCustomMode()
         {
-            if (!TutorialManager.ActionAllowed("custom")) return false;
+            if (!TutorialManager.TryAction("custom")) return false;
             if (!CanStartCustom) return false;
             EquipableWeapon weapon = FindWorkspaceWeapon();
             if (weapon == null) return false;

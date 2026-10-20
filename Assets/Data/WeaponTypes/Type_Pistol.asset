@@ -12,11 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
   m_Name: Type_Pistol
   m_EditorClassIdentifier: 
-  displayName: "\uAD8C\uCD1D"
-  tagColor: {r: 0.38039216, g: 0.39607844, b: 0.41960785, a: 1}
-  conditions:
-  - stat: 11
-    comparison: 1
-    value: 20
-    source: 0
-  sellMultiplier: 1
+  tableId: f9e8d0ecf0b963e4aa51f837b5ae8602
+  displayName: 
+  tagColor: {r: 0, g: 0, b: 0, a: 0}
+  conditions: []
+  sellMultiplier: 0

@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using LogKit;
 
 namespace WeaponWorkshop
 {
@@ -14,7 +15,6 @@ namespace WeaponWorkshop
         [SerializeField, Min(0f), Tooltip("초당 튀는 횟수")] private float bobRate = 3f;
         [SerializeField, Min(0f), Tooltip("그림 크기(PPU)와 상관없이 이 높이(m)로 맞춤. 0이면 원본 크기")] private float portraitHeight = 2f;
         [SerializeField, Min(0f), Tooltip("가로로 넓은 그림은 이 너비(m)를 넘지 않게 줄임 (매대 구멍 2m). 0이면 제한 없음")] private float portraitMaxWidth = 1.8f;
-        private DaySettings paymentSettings;
         private Vector3 exitPoint;
         private Vector3 portraitRest;
         private int saveStage, dialogueIndex, soldPrice;
@@ -22,9 +22,9 @@ namespace WeaponWorkshop
         public CustomerSave CaptureSave() => new CustomerSave { stage = saveStage, line = dialogueIndex,
             price = soldPrice, talked = HasTalked, satisfied = SaleSatisfied, position = transform.position };
 
-        public void RestoreSave(CustomerSave state, CustomerProfile savedProfile, Vector3 counter, Vector3 exit, DaySettings settings)
+        public void RestoreSave(CustomerSave state, CustomerProfile savedProfile, Vector3 counter, Vector3 exit)
         {
-            Arrive(savedProfile, counter, exit, settings);
+            Arrive(savedProfile, counter, exit);
             StopAllCoroutines();
             transform.position = state.position;
             HasTalked = state.talked; SaleSatisfied = state.satisfied; soldPrice = state.price;
@@ -47,21 +47,28 @@ namespace WeaponWorkshop
             portraitColor = portrait.color;
         }
         public event System.Action<int> SaleCompleted;
-        public event System.Action<int> SaleAccepted;
+        public event System.Action<int, int> SaleAccepted;
         public event System.Action CustomerKilled;
+        /// <summary>보호 피격 또는 실제 사망에서 손님 비명 재생을 요청한다.</summary>
+        public static event System.Action<string, Vector3> ScreamRequested;
+        /// <summary>실제 사망이 확정된 경우에만 손님 ID와 위치를 전달한다.</summary>
+        public static event System.Action<string, Vector3> DeathConfirmed;
+        public event System.Action<CustomerProfile> Interacted;
+        public event System.Action<CustomerProfile, bool, bool> OrderFinished;
+        public event System.Action<CustomerProfile, EquipableWeapon, int, bool, int> WeaponSold;
         public CustomerProfile Profile => profile;
         public bool HasTalked { get; private set; }
+        public bool HasActiveOrder => HasTalked && atCounter && !deathStarted && saveStage < 3;
         public bool SaleSatisfied { get; private set; }
         public Transform OutlineRoot => transform;
 
-        public void Arrive(CustomerProfile customerProfile, Vector3 counterPoint, Vector3 exit, DaySettings saleSettings = null)
+        public void Arrive(CustomerProfile customerProfile, Vector3 counterPoint, Vector3 exit)
         {
             if (portrait != null) portraitRest = portrait.transform.localPosition;
             if (customerProfile != null) profile = customerProfile;
             if (portrait != null && profile != null && profile.portrait != null) portrait.sprite = profile.portrait;
             FitPortrait();
             saveStage = 0;
-            paymentSettings = saleSettings;
             exitPoint = exit;
             StartCoroutine(WalkTo(counterPoint, () => { atCounter = true; saveStage = 1; }));
         }
@@ -71,8 +78,10 @@ namespace WeaponWorkshop
         {
             if (interactor == null || interactor.Player == null) return false;
             WeaponHolder holder = interactor.Player.GetComponent<WeaponHolder>();
-            return SaleConfirmationUI.Instance != null
+            bool accepted = SaleConfirmationUI.Instance != null
                 ? SaleConfirmationUI.Instance.UseCustomer(this, holder) : Use(holder);
+            if (accepted) Interacted?.Invoke(profile);
+            return accepted;
         }
 
         // 처음이면 대화(총 들고 있어도), 대화 후 총을 들고 오면 판매. 빈손이면 다시 대화.
@@ -95,19 +104,22 @@ namespace WeaponWorkshop
             EquipableWeapon weapon = holder.TakeWeapon();
             bool satisfied = CheckWeapon(weapon);
             SaleSatisfied = satisfied;
-            // 만족은 실제 낸 제작비 × (1 + 태그비율 × 요청 태그 수) + 손님 보상(profile.price), 불만족은 제작비의 80%.
+            // 만족은 실제 낸 제작비 × (1 + 태그비율 × 보너스 요청 수) + 손님 보상(Price), 불만족은 제작비 × 불만족 비율.
+            // 비율은 주문 표(CustomerOrderData.sale)에서 읽는다.
             int cost = weapon != null ? weapon.PaidConstructionCost : 0;
-            int tagCount = 0;
-            if (profile.archetypes != null)
-                foreach (GunArchetype archetype in profile.archetypes)
-                    if (archetype != null) tagCount++;
-            float tagRatio = paymentSettings != null ? paymentSettings.tagBonusRatio : 0.5f;
-            int price = satisfied ? Mathf.RoundToInt(cost * (1f + tagRatio * tagCount)) + Mathf.Max(0, profile.price)
-                : cost / 5 * 4;
+            int tagCount = profile.SaleBonusCount();
+            var sale = TableManager.Instance.CustomerOrder.sale;
+            var save = FindFirstObjectByType<GameSaveController>();
+            float bonusRatio = save != null ? save.SaleBonusRatio : sale.tagBonusRatio;
+            int price = satisfied ? Mathf.RoundToInt(cost * (1f + bonusRatio * tagCount)) + Mathf.Max(0, profile.Price)
+                : Mathf.RoundToInt(cost * sale.dissatisfiedRatio);
             Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
+            WeaponSold?.Invoke(profile, weapon, price, satisfied, tagCount);
+            GameLogger.Count("WeaponSold");
+            GameLogger.Measure("SalePrice", price);
             Destroy(weapon.gameObject);
             atCounter = false;
-            SaleAccepted?.Invoke(price);
+            SaleAccepted?.Invoke(price, cost);
             WorkshopSoundEffects.RaiseWeaponSold(transform.position);
             // 조건 만족 여부에 따라 손님별 반응 대사 → 확인 누르면 퇴장.
             ShowSaleReaction(price);
@@ -132,6 +144,7 @@ namespace WeaponWorkshop
             if (!outcomeReported)
             {
                 outcomeReported = true;
+                OrderFinished?.Invoke(profile, SaleSatisfied, false);
                 SaleCompleted?.Invoke(price);
             }
             StartCoroutine(WalkTo(exitPoint, () =>
@@ -140,11 +153,13 @@ namespace WeaponWorkshop
             }));
         }
 
+        /// <summary>보호 피격이면 비명 요청만 전달하고, 실제 사망이면 기존 집계와 사망 처리를 시작한다.</summary>
         public void Kill()
         {
             if (deathStarted) return;
             if (TutorialManager.Instance != null && TutorialManager.Instance.HandleCustomerHit(this))
             {
+                ScreamRequested?.Invoke(profile != null ? profile.ProfileId : null, transform.position);
                 if (hitReaction != null) StopCoroutine(hitReaction);
                 hitReaction = StartCoroutine(ReactToHit(false));
                 return;
@@ -153,6 +168,9 @@ namespace WeaponWorkshop
             bool reportKill = !outcomeReported;
             deathStarted = true;
             outcomeReported = true;
+            DeathConfirmed?.Invoke(profile != null ? profile.ProfileId : null, transform.position);
+            ScreamRequested?.Invoke(profile != null ? profile.ProfileId : null, transform.position);
+            if (reportKill) OrderFinished?.Invoke(profile, false, true);
             atCounter = false;
             StopAllCoroutines();
             if (talking && DialogueUI.Instance != null) DialogueUI.Instance.Hide();
@@ -245,9 +263,9 @@ namespace WeaponWorkshop
         private void ShowLine(int index)
         {
             dialogueIndex = index;
-            bool last = index >= profile.lines.Length - 1;
-            string answer = last && profile.endsClear ? Okay : Huh;
-            DialogueUI.Instance.Show(profile.lines[index], answer, () =>
+            bool last = index >= profile.Lines.Length - 1;
+            string answer = last && profile.EndsClear ? Okay : Huh;
+            DialogueUI.Instance.Show(profile.Lines[index], answer, () =>
             {
                 if (!last) { ShowLine(index + 1); return; }
                 // 튜토리얼은 처음 주문을 들었을 때만.

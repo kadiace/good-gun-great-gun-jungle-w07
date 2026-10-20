@@ -12,15 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_SplitFour
   m_EditorClassIdentifier: 
-  displayName: "\uCFFC\uB4DC\uB77C\uBC30\uB7F4(4\uBC29\uD5A5 \uBD84\uD560)"
-  request: "4\uBC29\uD5A5 \uBD84\uD560(\uCFFC\uB4DC\uB77C\uBC30\uB7F4)"
-  conditions:
-  - measure: 5
-    stat: 0
-    min: 1
-    max: 999
+  tableId: module/split-four/min-1
+  displayName: 
+  request: 
+  conditions: []
   weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 1
-  requiredModules:
-  - {fileID: 11400000, guid: 4793f8d918e54829be0e1db07dc07830, type: 2}
+  unlockDay: 0
+  requiredModules: []

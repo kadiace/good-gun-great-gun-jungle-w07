@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_AssaultRifle
   m_EditorClassIdentifier: 
-  displayName: "\uB3CC\uACA9\uC18C\uCD1D"
-  request: "\uB3CC\uACA9\uC18C\uCD1D \uD0DC\uADF8 (\uAD00\uD1B5 2 \uC774\uC0C1, \uC5F0\uC0AC 3 \uC774\uC0C1, \uBB34\uAC8C 15 \uC774\uC0C1)"
+  tableId: tag/assault-rifle/legacy
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: 9b6639978cc6faf49a0a539f89ad1ffb, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 1
-  requiredModules:
-  - {fileID: 11400000, guid: 9b18b219018266c4a90db0f81b293ced, type: 2}
+  unlockDay: 0
+  requiredModules: []

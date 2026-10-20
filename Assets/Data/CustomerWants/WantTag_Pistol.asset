@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: WantTag_Pistol
   m_EditorClassIdentifier: 
-  displayName: "\uAD8C\uCD1D \uD0DC\uADF8"
-  request: "\uAD8C\uCD1D \uD0DC\uADF8 (\uBB34\uAC8C 20 \uBBF8\uB9CC, \uC2A4\uCF54\uD504 \uBAA8\uB4C8 \uC5C6\uC74C)"
+  tableId: tag/handgun
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: f9e8d0ecf0b963e4aa51f837b5ae8602, type: 2}
-  excludes:
-  - {fileID: 11400000, guid: c8e35a29c16ae91459a744997e871c23, type: 2}
-  - {fileID: 11400000, guid: a0eed031913cef84eab19bafbe2ff4df, type: 2}
-  unlockDay: 1
+  weaponType: {fileID: 0}
+  excludes: []
+  unlockDay: 0
   requiredModules: []

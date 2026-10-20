@@ -6,6 +6,11 @@ namespace WeaponWorkshop
     [CreateAssetMenu(fileName = "ProjectileTuning", menuName = "Weapon Workshop/Projectile Tuning")]
     public sealed class ProjectileTuning : ScriptableObject
     {
+        [Header("Explosion cell damage feedback")]
+        [Min(0.01f)] public float explosionHitFlashDuration = 0.12f;
+        public Color explosionHitFlashColor = Color.white;
+        public Color explosionDamageTint = Color.black;
+        [Range(0f, 1f)] public float explosionDamageTintStrength = 0.45f;
         // 공통
         [Header("Common")]
         [Min(0f)] public float maximumTravelDistance = 1000f;
@@ -15,11 +20,7 @@ namespace WeaponWorkshop
 
         // 산탄
         [Header("Shotgun")]
-        [Min(1), Tooltip("첫 산탄 포인트의 탄 수. 기본 3발.")]
-        public int shotgunBasePellets = 3;
-        [Min(0), Tooltip("첫 산탄 포인트 이후 모듈마다 추가되는 탄 수. 기본 1발.")]
-        public int pelletsPerShotgunPoint = 1;
-        [Min(0f), Tooltip("다각형 배치 원뿔의 지름 각도(도). 탄은 이 절반 각도만큼 벌어진 다각형 꼭짓점에 놓임(2발=가로 일자, 4발=사각형, 6발=육각형). 탄 수와 무관하게 크기 고정.")]
+        [Min(0f), Tooltip("방사 파츠 1개일 때 채워진 원형 탄 배치의 지름 각도(도). 파츠가 늘면 탄 수와 방사 범위도 증가합니다.")]
         public float shotgunSpreadDegrees = 10f;
 
         // 차지: 누르고 있으면 충전, 떼면 발사. 단계 배율을 총구의 거의 모든 수치에 곱함.
@@ -86,6 +87,10 @@ namespace WeaponWorkshop
 
         // 폭발
         [Header("Explosion")]
+        [Min(0f), Tooltip("같은 프레임 같은 무기의 폭발 병합 거리 배율. 두 폭발 중 작은 반경에 곱합니다. 기존 0.5배보다 크게 설정하면 파동 수가 줄어듭니다.")]
+        public float explosionMergeRadiusMultiplier = 1.5f;
+        [Min(0f), Tooltip("표적 분할의 프레임당 시간 예산(ms). 최소 한 표적은 예산을 넘겨도 분할합니다.")]
+        public float subdivisionBudgetMilliseconds = 4f;
         [Min(0f), InspectorName("Explosion Radius Per Point"), Tooltip("폭발력의 세제곱근당 최대 반경 증가량(m). 최대 반경 = 이 값 × ∛폭발력. 기본 폭발력 1→0.5m, 8→1m, 27→1.5m.")] public float explosionRadiusPerPoint = 0.5f;
         [Min(0.01f), InspectorName("Explosion Visual Scale Multiplier"), Tooltip("폭발 이펙트 크기 배율. 폭발 최대 반경에 곱해지며 피해/검색 범위에는 영향이 없습니다. 기본 2배.")]
         public float explosionVisualScaleMultiplier = 2f;
@@ -180,8 +185,8 @@ namespace WeaponWorkshop
         [Min(0f)] public float verticalRecoilDegreesPerPenetration = 0.08f;
         [Min(0f)] public float verticalRecoilDegreesPerExplosion = 0.12f;
         [Min(0f)] public float verticalRecoilDegreesPerShotgunPoint = 0.25f;
-        [Min(0f), Tooltip("Shotgun firing multiplies the full per-round vertical recoil by this value.")]
-        public float verticalRecoilShotgunMultiplier = 2f;
+        [Min(0f), Tooltip("방사 총구의 발사 1회당 전체 수직 반동 배율.")]
+        public float verticalRecoilShotgunMultiplier = 10f;
         [Min(0f), Tooltip("Charged shots multiply recoil by this value in addition to their charge-stage multiplier.")]
         public float verticalRecoilChargeMultiplier = 2f;
         [Min(0f)] public float verticalRecoilReductionPerWeight = 0.06f;

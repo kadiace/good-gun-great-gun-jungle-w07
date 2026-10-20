@@ -25,15 +25,18 @@ namespace WeaponWorkshop
             CurrentHealth = maximumHealth; nextDamageTime = Time.time + invulnerabilitySeconds;
             knockback = Vector3.zero; knockbackRemaining = 0f; Changed?.Invoke();
         }
-        public void ApplyHit(float damage, Vector3 push, Vector3 sourceDirection)
+        public void ApplyHit(float damage, Vector3 push, Vector3 sourceDirection, string enemyId, RaidEnemyType enemyType)
         {
             bool training = TutorialManager.TrainingRaidPending && NightRaidController.Instance != null &&
                 NightRaidController.Instance.IsInRaid;
             if (IsDead || Time.time < nextDamageTime || damage <= 0f) return;
             nextDamageTime = Time.time + invulnerabilitySeconds;
+            float previousHealth = CurrentHealth;
             if (!training) CurrentHealth = Mathf.Max(0f, CurrentHealth - damage);
             // Snap float residue so e.g. 3 - 0.5 x 6 reads as exactly dead.
             if (CurrentHealth < 0.0001f) CurrentHealth = 0f;
+            if (CurrentHealth < previousHealth)
+                NightRaidController.Instance?.RecordPlayerHit(this, enemyId, enemyType, previousHealth - CurrentHealth);
             knockback = push / knockbackDuration; knockbackRemaining = knockbackDuration;
             HitReceived?.Invoke(sourceDirection);
             Changed?.Invoke();

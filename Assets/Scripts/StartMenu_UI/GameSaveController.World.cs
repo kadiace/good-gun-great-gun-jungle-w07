@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Profiling;
 namespace WeaponWorkshop
 {
     [Serializable] public sealed class WorldSaveBinding
@@ -13,6 +14,7 @@ namespace WeaponWorkshop
     }
     public sealed partial class GameSaveController
     {
+        private static readonly ProfilerMarker ResolveWorldSaveIdMarker = new ProfilerMarker("GameSaveController.ResolveWorldSaveId");
         [Header("Save / Load")]
         [SerializeField] private bool restoreOnStart = true;
         [SerializeField] private bool confirmOverwrite = true;
@@ -25,11 +27,15 @@ namespace WeaponWorkshop
         [SerializeField, Min(1)] private int maximumWeapons = 256;
         [SerializeField, HideInInspector] private WorldSaveBinding[] mapObjects = Array.Empty<WorldSaveBinding>();
         private PaintMaterialLibrary paintLibrary;
+        private readonly Dictionary<string, WorldSaveIdentity> worldBindingsById = new Dictionary<string, WorldSaveIdentity>(StringComparer.Ordinal);
+        private readonly Dictionary<string, Material> resolvedPaints = new Dictionary<string, Material>(StringComparer.Ordinal);
+        private readonly HashSet<string> unresolvedPaints = new HashSet<string>(StringComparer.Ordinal);
         private static readonly Vector3Int[] paintFaces = { Vector3Int.right, Vector3Int.left, Vector3Int.up, Vector3Int.down, Vector3Int.forward, Vector3Int.back };
         private void Awake()
         {
             ResolveSceneReferences();
             EnsureWorldBindings();
+            RebuildWorldBindingLookup();
         }
 
         private void ResolveSceneReferences()
@@ -71,13 +77,20 @@ namespace WeaponWorkshop
         }
         private Material ResolvePaint(string key)
         {
+            if (key != null && resolvedPaints.TryGetValue(key, out var cached)) return cached;
+            if (key != null && unresolvedPaints.Contains(key)) return null;
             if (paintLibrary == null) paintLibrary = PaintMaterialLibrary.CreateDefaults();
             var match = paintLibrary.Options.FirstOrDefault(p => p.material != null && p.material.name == key);
-            if (match != null) return match.material;
+            if (match != null) { if (key != null) resolvedPaints[key] = match.material; return match.material; }
             const string custom = "Paint - Custom RGB #";
             if (key != null && key.StartsWith(custom, StringComparison.Ordinal) &&
                 ColorUtility.TryParseHtmlString("#" + key.Substring(custom.Length), out var color))
-                return paintLibrary.GetCustomColorMaterial(color);
+            {
+                var material = paintLibrary.GetCustomColorMaterial(color);
+                if (material != null) resolvedPaints[key] = material;
+                return material;
+            }
+            if (key != null) unresolvedPaints.Add(key);
             return null;
         }
         public bool ConfirmOverwrite => confirmOverwrite;
@@ -85,9 +98,31 @@ namespace WeaponWorkshop
         private T[] InScene<T>() where T : Component => FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None)
             .Where(c => c.gameObject.scene == gameObject.scene).ToArray();
         private string Identity(Component component) => component != null ? component.GetComponent<WorldSaveIdentity>()?.Id : null;
-        private WorldSaveIdentity Resolve(string id) => string.IsNullOrEmpty(id) ? null :
-            mapObjects.FirstOrDefault(b => b.id == id || b.legacyId == id ||
-                (b.alternateIds != null && Array.IndexOf(b.alternateIds, id) >= 0))?.target;
+        private WorldSaveIdentity Resolve(string id)
+        {
+            using (ResolveWorldSaveIdMarker.Auto())
+            {
+            if (string.IsNullOrEmpty(id)) return null;
+            if (worldBindingsById.Count == 0) RebuildWorldBindingLookup();
+            return worldBindingsById.TryGetValue(id, out var target) ? target : null;
+            }
+        }
+        private void RebuildWorldBindingLookup()
+        {
+            worldBindingsById.Clear();
+            foreach (var binding in mapObjects)
+            {
+                if (binding == null) continue;
+                AddBindingKey(binding.id, binding.target);
+                AddBindingKey(binding.legacyId, binding.target);
+                if (binding.alternateIds == null) continue;
+                foreach (var id in binding.alternateIds) AddBindingKey(id, binding.target);
+            }
+        }
+        private void AddBindingKey(string id, WorldSaveIdentity target)
+        {
+            if (!string.IsNullOrEmpty(id) && !worldBindingsById.ContainsKey(id)) worldBindingsById.Add(id, target);
+        }
         private static SaveBlock[] CaptureBlocks(CubeAssembly.LayoutSnapshot layout) => layout.blocks.Select(b => new SaveBlock
         { slot = b.slot, cell = b.cell, output = b.outputDirection, normal = b.orientationNormal,
             paidCost = b.paidPurchaseCost, paidModuleCreditCost = b.paidModuleCreditCost, hasColor = b.hasColor, color = b.color }).ToArray();
@@ -101,6 +136,7 @@ namespace WeaponWorkshop
                 if (t.GetComponentInParent<UnityEngine.Canvas>() != null || t.GetComponentInParent<UnityEngine.EventSystems.EventSystem>() != null ||
                     t.GetComponentInParent<FirstPersonPlayer>() != null || t.GetComponentInParent<EquipableWeapon>() != null ||
                     t.GetComponentInParent<Customer>() != null || t.GetComponent<Camera>() != null ||
+                    t.GetComponentInParent<ShootingTestLayout>() != null ||
                     t.GetComponent<GameSaveController>() != null || t.GetComponent<GameManager>() != null || t.GetComponent<_DayManager>() != null ||
                     t.GetComponentInParent<PoolManager>() != null) continue;
                 var identity = t.GetComponent<WorldSaveIdentity>();
@@ -111,6 +147,7 @@ namespace WeaponWorkshop
                 bindings.Add(new WorldSaveBinding { id = identity.Id, target = identity });
             }
             mapObjects = bindings.ToArray();
+            RebuildWorldBindingLookup();
         }
         private bool CaptureWorld(GameSaveData data, out string error)
         {
@@ -137,7 +174,9 @@ namespace WeaponWorkshop
                     if ((rack != null && string.IsNullOrEmpty(Identity(rack))) || (bench != null && string.IsNullOrEmpty(Identity(bench))))
                     { error = "무기 거치 위치의 저장 ID 연결을 확인하세요."; return false; }
                     bool hasSavedParent = !string.IsNullOrEmpty(Identity(weapon.transform.parent));
-                    states.Add(new WeaponWorldSave { weaponName = weapon.WeaponName, held = weapon.IsEquipped, rackId = Identity(rack), benchId = Identity(bench),
+                    var passedTests = weapon.CapturePassedTests(out var testKey);
+                    states.Add(new WeaponWorldSave { weaponName = weapon.WeaponName, passedTestIds = passedTests, testAssemblyKey = testKey,
+                        held = weapon.IsEquipped, rackId = Identity(rack), benchId = Identity(bench),
                         returnBenchId = Identity(weapon.Workbench), parentId = Identity(weapon.transform.parent), active = weapon.gameObject.activeSelf,
                         position = hasSavedParent ? weapon.transform.localPosition : weapon.transform.position, rotation = hasSavedParent ? weapon.transform.localRotation : weapon.transform.rotation,
                         scale = weapon.IsEquipped ? weapon.UnequippedWorldScale : weapon.transform.localScale,
@@ -166,22 +205,51 @@ namespace WeaponWorkshop
         }
         private bool RestoreWorldSave(GameSaveData data)
         {
+            using (dayManager != null ? dayManager.SuppressShopLogs() : null) return RestoreWorldSaveCore(data);
+        }
+        /// <summary>
+        /// 저장된 월드·플레이어·곡 해금 데이터를 현재 씬에 복원한다.
+        /// data의 저장 오브젝트를 복원하고 성공 여부를 반환한다.
+        /// </summary>
+        private bool RestoreWorldSaveCore(GameSaveData data)
+        {
             EnsureWorldBindings();
             if (data.sceneName != gameObject.scene.name || dayManager == null || !dayManager.CanRestoreSave(data) || player == null || corePrefab == null ||
                 player.GetComponent<PlayerWallet>() == null || player.GetComponent<WeaponHolder>() == null)
             { Debug.LogError("저장된 씬/일차와 저장 관리자 연결을 확인하세요.", this); return false; }
             var template = corePrefab.GetComponentInChildren<CubeAssembly>(true);
-            if (data.savedWeapons && (data.weapons.Length > maximumWeapons || template == null || data.weapons.Count(w => w.held) > 1 ||
-                data.weapons.Any(w => w.blocks.Any(b => template.GetPrefab(b.slot) == null) ||
-                    (w.paint != null && w.paint.Any(p => p == null || ResolvePaint(p.materialKey) == null)) ||
-                    (!string.IsNullOrEmpty(w.rackId) && Resolve(w.rackId)?.GetComponent<GunRack>() == null) ||
-                    (!string.IsNullOrEmpty(w.benchId) && Resolve(w.benchId)?.GetComponent<Workbench>() == null))))
+            bool invalidWeapons = false;
+            if (data.savedWeapons)
+            {
+                if (data.weapons.Length > maximumWeapons || template == null) invalidWeapons = true;
+                int heldWeapons = 0;
+                for (int i = 0; !invalidWeapons && i < data.weapons.Length; i++)
+                {
+                    var saved = data.weapons[i];
+                    if (saved.held && ++heldWeapons > 1) { invalidWeapons = true; break; }
+                    foreach (var block in saved.blocks)
+                        if (template.GetPrefab(block.slot) == null) { invalidWeapons = true; break; }
+                    if (invalidWeapons) break;
+                    if (saved.paint != null)
+                        foreach (var face in saved.paint)
+                            if (face == null || ResolvePaint(face.materialKey) == null) { invalidWeapons = true; break; }
+                    if (invalidWeapons) break;
+                    if (!string.IsNullOrEmpty(saved.rackId) && Resolve(saved.rackId)?.GetComponent<GunRack>() == null) invalidWeapons = true;
+                    if (!string.IsNullOrEmpty(saved.benchId) && Resolve(saved.benchId)?.GetComponent<Workbench>() == null) invalidWeapons = true;
+                }
+            }
+            if (invalidWeapons)
             { Debug.LogError("저장 무기의 모듈 또는 거치 위치를 복원할 수 없습니다.", this); return false; }
-            if (data.savedMap && data.map.Any(m => m.exists && Resolve(m.id) == null))
+            bool invalidMap = false;
+            if (data.savedMap)
+                foreach (var saved in data.map)
+                    if (saved.exists && Resolve(saved.id) == null) { invalidMap = true; break; }
+            if (invalidMap)
             { Debug.LogError("저장된 맵 오브젝트 ID가 현재 씬에 없습니다.", this); return false; }
             var session = player.GetComponent<WorkshopSession>();
             if (data.inWorkshop && (workbenches == null || data.workbench < 0 || data.workbench >= workbenches.Length || workbenches[data.workbench] == null))
             { Debug.LogError("저장된 작업대가 없습니다.", this); return false; }
+            GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
             if (data.savedWeapons)
             {
                 player.GetComponent<WeaponHolder>()?.TakeWeapon();
@@ -210,15 +278,24 @@ namespace WeaponWorkshop
                 weapon.SetWeaponName(state.weaponName);
                 UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(weapon.gameObject, gameObject.scene);
                 var assembly = weapon.GetComponentInChildren<CubeAssembly>(true);
-                var blocks = state.blocks.Select(b => new CubeAssembly.BlockSnapshot { slot = b.slot, prefab = assembly.GetPrefab(b.slot),
-                    cell = b.cell, outputDirection = b.output, orientationNormal = b.normal, paidPurchaseCost = b.paidCost, paidModuleCreditCost = b.paidModuleCreditCost,
-                    hasColor = b.hasColor, color = b.color }).ToArray();
+                var blocks = new CubeAssembly.BlockSnapshot[state.blocks.Length];
+                for (int i = 0; i < blocks.Length; i++)
+                {
+                    var saved = state.blocks[i];
+                    blocks[i] = new CubeAssembly.BlockSnapshot { slot = saved.slot, prefab = assembly.GetPrefab(saved.slot),
+                        cell = saved.cell, outputDirection = saved.output, orientationNormal = saved.normal, paidPurchaseCost = saved.paidCost,
+                        paidModuleCreditCost = saved.paidModuleCreditCost, hasColor = saved.hasColor, color = saved.color };
+                }
+                using (weapon.DeferPlayerCollisionIgnore())
                 if (!assembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks, state.paidCost)))
                 { Destroy(weapon.gameObject); Debug.LogError("저장 무기 조립 복원에 실패했습니다.", this); return false; }
+                weapon.RestorePassedTests(state.passedTestIds, state.testAssemblyKey);
+                var blocksByCell = new Dictionary<Vector3Int, PlacedBlock>();
+                foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>(true))
+                    if (block.transform.parent == assembly.transform && !blocksByCell.ContainsKey(block.Cell)) blocksByCell.Add(block.Cell, block);
                 foreach (var face in state.paint ?? Array.Empty<PaintFaceSave>())
                 {
-                    var block = assembly.GetComponentsInChildren<PlacedBlock>(true).FirstOrDefault(b => b.Cell == face.cell && b.transform.parent == assembly.transform);
-                    if (block == null) continue;
+                    if (!blocksByCell.TryGetValue(face.cell, out var block)) continue;
                     var paint = block.GetComponent<ModuleFacePaint>(); if (paint == null) paint = block.gameObject.AddComponent<ModuleFacePaint>();
                     paint.SetMaterial(face.face, ResolvePaint(face.materialKey));
                 }
@@ -245,10 +322,22 @@ namespace WeaponWorkshop
                 session?.Enter(bench, false);
             }
             player.GetComponent<PlayerWallet>().RestoreBalance(data.balance);
+            FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.RestoreSpins(data.slotMachineSpins);
+            player.GetComponent<PlayerWallet>().RestoreLoans(data.outstandingLoans);
+            player.GetComponent<PlayerWallet>().RestoreLastLoanDay(data.lastLoanDay);
             player.GetComponent<PlayerWallet>().RestoreModuleCredits(data.moduleCredits);
+            player.GetComponent<PlayerWallet>().RestoreSlotTickets(data.slotTickets);
             player.GetComponent<PlayerModuleUnlocks>()?.RestoreUnlockedModules(data.unlockedModules);
             player.GetComponent<WeaponPresets>()?.Restore(data.weaponPresets);
             dayManager.RestoreSavedState(data);
+            FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene)?.RestoreDamage(data.slotMachineDestructions,
+                data.slotMachineDestroyedDay, data.slotMachineDestroyedAtNight);
+            RestoreRaidProgress(data);
+            RestoreTrackUnlocks(data);
+            retired = data.retired;
+            retirementSavedDay = retired ? data.day : -1;
+            endChestOpened = data.endChestOpened;
+            RefreshRetireButton();
             return true;
         }
     }

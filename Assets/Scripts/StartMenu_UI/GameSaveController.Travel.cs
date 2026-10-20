@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 namespace WeaponWorkshop
 {
@@ -11,7 +12,8 @@ namespace WeaponWorkshop
             if(weapon.IsMoving && !allowMoving){error="무기 이동이 끝난 후 귀환하세요.";return false;}
             var assembly=weapon.GetComponentInChildren<CubeAssembly>(true);
             if(assembly==null||!assembly.TryCaptureLayout(out var layout)){error="장착한 무기를 저장할 수 없습니다.";return false;}
-            state=new WeaponWorldSave { weaponName=weapon.WeaponName, held=true,active=true,position=Vector3.zero,rotation=Quaternion.identity,
+            var passedTests = weapon.CapturePassedTests(out var testKey);
+            state=new WeaponWorldSave { weaponName=weapon.WeaponName, passedTestIds=passedTests,testAssemblyKey=testKey,held=true,active=true,position=Vector3.zero,rotation=Quaternion.identity,
                 scale=weapon.UnequippedWorldScale,paidCost=layout.paidConstructionCost,blocks=CaptureBlocks(layout),
                 constructionLocked=weapon.ConstructionLocked,paint=CapturePaint(assembly),
                 hasSelectedScopeCell=weapon.HasSelectedScopeCell,selectedScopeCell=weapon.SelectedScopeCell,
@@ -50,14 +52,19 @@ namespace WeaponWorkshop
             var blocks = state.blocks.Select(b => new CubeAssembly.BlockSnapshot { slot = b.slot,
                 prefab = assembly.GetPrefab(b.slot), cell = b.cell, outputDirection = b.output,
                 orientationNormal = b.normal, paidPurchaseCost = b.paidCost, paidModuleCreditCost = b.paidModuleCreditCost, hasColor = b.hasColor, color = b.color }).ToArray();
-            if (!assembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks, state.paidCost)))
+            bool restoredLayout;
+            using (weapon.DeferPlayerCollisionIgnore())
+                restoredLayout = assembly.RestoreLayout(new CubeAssembly.LayoutSnapshot(blocks, state.paidCost));
+            if (!restoredLayout)
             { Destroy(weapon.gameObject); error = "이동할 무기 조립을 복원할 수 없습니다."; return false; }
+            weapon.RestorePassedTests(state.passedTestIds, state.testAssemblyKey);
+            var blocksByCell = new Dictionary<Vector3Int, PlacedBlock>();
+            foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>(true))
+                if (block.transform.parent == assembly.transform && !blocksByCell.ContainsKey(block.Cell)) blocksByCell.Add(block.Cell, block);
             for (int i = 0; i < materials.Length; i++)
             {
                 var face = state.paint[i];
-                var block = assembly.GetComponentsInChildren<PlacedBlock>(true)
-                    .FirstOrDefault(b => b.Cell == face.cell && b.transform.parent == assembly.transform);
-                if (block == null) continue;
+                if (!blocksByCell.TryGetValue(face.cell, out var block)) continue;
                 var paint = block.GetComponent<ModuleFacePaint>() ?? block.gameObject.AddComponent<ModuleFacePaint>();
                 paint.SetMaterial(face.face, materials[i]);
             }

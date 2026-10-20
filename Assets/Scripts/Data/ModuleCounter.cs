@@ -34,6 +34,10 @@ namespace WeaponWorkshop
             }
         }
 
+        // Shop log name: ModuleKind, else the block kind (Blocker etc.).
+        public static string LogName(PlacedBlock block)
+            => block == null ? "" : TryGetKind(block, out ModuleKind kind) ? kind.ToString() : block.Kind.ToString();
+
         /// <summary>Stat module type from ModuleData.ModuleType (e.g. heat stays heat even with its fire-rate bonus).</summary>
         public static bool TryGetModuleType(PlacedBlock block, out StatType type)
         {

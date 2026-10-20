@@ -10,122 +10,100 @@ namespace WeaponWorkshop
     {
         [Serializable] public sealed class RecipeEntry
         {
-            public WeaponTypeData tag;
+            public string tagId;
             public TMP_Text title;
             public TagPillGraphic badge;
             public TMP_Text conditions;
         }
         [SerializeField] private GameObject panel;
+        [SerializeField] private UIManager uiManager;
         [SerializeField] private Button openButton;
-        [SerializeField] private Button closeButton;
+        [SerializeField] private TMP_Text buttonLabel;
+        [SerializeField] private RectTransform weaponInfo;
         [SerializeField] private ScrollRect scroll;
-        [SerializeField] private ModuleCatalog moduleCatalog;
+        [SerializeField] private LayoutElement inlineLayout;
         [SerializeField] private RecipeEntry[] recipes = new RecipeEntry[0];
+        private readonly Vector3[] canvasCorners = new Vector3[4];
+        private bool layoutDirty;
         public bool IsOpen => panel != null && panel.activeSelf;
-        public RectTransform TutorialButton => (IsOpen ? closeButton : openButton) != null ? (IsOpen ? closeButton : openButton).transform as RectTransform : null;
-        private bool ownsDialogue;
+        public RectTransform TutorialButton => openButton != null ? openButton.transform as RectTransform : null;
+
         private void Awake()
         {
-            panel.SetActive(false);
-            openButton.onClick.AddListener(Open);
-            closeButton.onClick.AddListener(Close);
+            if (panel != null) panel.SetActive(false);
+            if (openButton != null) openButton.gameObject.SetActive(false);
+            SetButtonLabel();
+            if (openButton != null) openButton.onClick.AddListener(Toggle);
         }
         private void OnDisable() => Close();
         private void OnDestroy()
         {
-            if (openButton != null) openButton.onClick.RemoveListener(Open);
-            if (closeButton != null) closeButton.onClick.RemoveListener(Close);
+            if (openButton != null) openButton.onClick.RemoveListener(Toggle);
+        }
+        private void Toggle()
+        {
+            if (IsOpen) Close();
+            else Open();
         }
         public void Open()
         {
-            if (!TutorialManager.ActionAllowed("recipe")) return;
-            if (IsOpen || GameManager.GameplayBlocked) return;
+            if (GameManager.GameplayBlocked || IsOpen ||
+                panel == null || weaponInfo == null || !weaponInfo.gameObject.activeInHierarchy) return;
+            if (!TutorialManager.TryAction("recipe")) return;
+            var table = TableManager.Instance.CustomerRequest;
             foreach (var recipe in recipes)
             {
-                if (recipe.tag == null) continue;
-                recipe.title.text = recipe.tag.DisplayName;
-                recipe.badge.color = recipe.tag.TagColor;
+                var tag = table.FindTag(recipe.tagId);
+                if (tag == null) continue;
+                recipe.title.text = tag.name;
+                recipe.badge.color = tag.color;
                 var text = new StringBuilder();
-                var orderedConditions = new OrderedCondition[recipe.tag.Conditions.Count];
-                for (int i = 0; i < orderedConditions.Length; i++)
-                    orderedConditions[i] = new OrderedCondition(recipe.tag.Conditions[i], i);
-                Array.Sort(orderedConditions, CompareConditions);
-                foreach (var ordered in orderedConditions)
-                {
-                    var condition = ordered.condition;
-                    string source = condition.source == WeaponTypeData.ValueSource.Stat ? "" : " 모듈 개수";
-                    string comparison = condition.comparison == WeaponTypeData.Comparison.AtLeast ? "이상" :
-                        condition.comparison == WeaponTypeData.Comparison.AtMost ? "이하" : "미만";
-                    text.Append("• ").Append(StatName(condition.stat)).Append(source).Append(' ')
-                        .Append(condition.value.ToString("0.##")).Append(' ').Append(comparison).AppendLine();
-                }
+                foreach (var condition in tag.conditions ?? Array.Empty<CustomerRequestData.Condition>())
+                    if (condition != null) text.Append("• ").Append(CustomerRequestInfo.Describe(condition)).AppendLine();
                 recipe.conditions.text = text.Length > 0 ? text.ToString().TrimEnd() : "조건이 설정되지 않았습니다.";
             }
-            ownsDialogue = GameManager.Instance != null;
-            if (ownsDialogue) GameManager.Instance.SetDialogue(true);
             panel.SetActive(true);
-            panel.transform.SetAsLastSibling();
+            SetButtonLabel();
+            layoutDirty = true;
             scroll.StopMovement(); scroll.verticalNormalizedPosition = 1f;
+            // Inline inspection can finish while the recipe stays visible during construction.
+            if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("recipe-inspected");
         }
         public void Close()
         {
-            bool inspected = IsOpen;
             if (panel != null) panel.SetActive(false);
-            if (ownsDialogue && GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
-            ownsDialogue = false;
-            if (inspected && TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("recipe-inspected");
+            SetButtonLabel();
         }
-        private static string StatName(StatType stat)
+        private void SetButtonLabel()
         {
-            switch (stat)
+            if (buttonLabel != null) buttonLabel.text = IsOpen ? "레시피 접기" : "레시피 보기";
+        }
+        private void LateUpdate()
+        {
+            var player = uiManager != null ? uiManager.Player : null;
+            var session = player != null ? player.GetComponent<WorkshopSession>() : null;
+            bool canBrowse = session != null && session.IsEditing;
+            if (openButton != null && openButton.gameObject.activeSelf != canBrowse)
+                openButton.gameObject.SetActive(canBrowse);
+            if (!canBrowse) { Close(); return; }
+            if (!IsOpen) return;
+            if (weaponInfo == null || !weaponInfo.gameObject.activeInHierarchy) { Close(); return; }
+            if (layoutDirty)
             {
-                case StatType.Penetration: return "관통력";
-                case StatType.FireRate: return "연사력";
-                case StatType.Explosion: return "폭발력";
-                case StatType.Ricochet: return "반사 횟수";
-                case StatType.Charge: return "차지";
-                case StatType.Gravity: return "중력";
-                case StatType.Heat: return "발열";
-                case StatType.Spin: return "회전";
-                case StatType.Water: return "물";
-                case StatType.Homing: return "유도";
-                case StatType.Shotgun: return "산탄";
-                case StatType.Weight: return "무게";
-                case StatType.Scope: return "스코프";
-                case StatType.Speed: return "탄속 배율";
-                case StatType.Color: return "컬러";
-                case StatType.Spread: return "탄퍼짐";
-                default: return stat.ToString();
+                // Resolve wrapped content at the sidebar width before measuring its height.
+                LayoutRebuilder.ForceRebuildLayoutImmediate(weaponInfo);
+                LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
+                layoutDirty = false;
             }
-        }
-
-        private int CompareConditions(OrderedCondition a, OrderedCondition b)
-        {
-            int order = ConditionOrder(a.condition.stat).CompareTo(ConditionOrder(b.condition.stat));
-            return order != 0 ? order : a.originalIndex.CompareTo(b.originalIndex);
-        }
-
-        private int ConditionOrder(StatType stat)
-        {
-            if (stat == StatType.Weight) return -1;
-            if (moduleCatalog != null)
-                for (int moduleId = 1; moduleId <= moduleCatalog.Count; moduleId++)
-                    if (moduleCatalog.TryGet(moduleId, out ModuleCatalog.Entry entry) &&
-                        entry.data != null && entry.data.ModuleType == stat)
-                        return moduleId;
-            return int.MaxValue;
-        }
-
-        private readonly struct OrderedCondition
-        {
-            public readonly WeaponTypeData.Condition condition;
-            public readonly int originalIndex;
-
-            public OrderedCondition(WeaponTypeData.Condition condition, int originalIndex)
-            {
-                this.condition = condition;
-                this.originalIndex = originalIndex;
-            }
+            var canvas = weaponInfo.GetComponentInParent<Canvas>().rootCanvas.GetComponent<RectTransform>();
+            canvas.GetWorldCorners(canvasCorners);
+            float bottom = weaponInfo.InverseTransformPoint(canvasCorners[0]).y + 24f;
+            // Exclude the old recipe height when calculating remaining screen space.
+            float headerHeight = weaponInfo.rect.height - ((RectTransform)panel.transform).rect.height;
+            float available = Mathf.Max(0f, weaponInfo.rect.yMax - headerHeight - bottom);
+            float preferred = LayoutUtility.GetPreferredHeight(scroll.content);
+            float height = Mathf.Min(preferred, available);
+            if (!Mathf.Approximately(inlineLayout.preferredHeight, height)) inlineLayout.preferredHeight = height;
         }
     }
 }

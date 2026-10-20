@@ -27,8 +27,7 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
-            // Weapon is excluded from energy hits, but must remain selectable by the player.
-            interactionLayers |= LayerMask.GetMask("Weapon");
+            interactionLayers |= LayerMask.GetMask("Weapon", "DroppedGun");
             view = GetComponent<Camera>();
             if (inputActions == null || player == null) { enabled = false; return; }
             controls = inputActions.FindActionMap("Workshop", true).Clone();
@@ -50,6 +49,8 @@ namespace WeaponWorkshop
             if (GameManager.GameplayBlocked) return false;
             if (player == null || !player.enabled) return false;
             RefreshTarget();
+            // The player-owned mode decides whether this input belongs to a temporary interaction.
+            if (player.GetComponent<PlayerShootingTest>()?.TryRetry(aimedTarget) == true) return true;
             if (aimedTarget != null && TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeInteraction(aimedTarget)) return false;
             bool interacted = CanInteractTarget && aimedTarget.Interact(this);
             if (interacted) RefreshTarget();
@@ -81,6 +82,7 @@ namespace WeaponWorkshop
             Vector2 screenPoint = Cursor.lockState == CursorLockMode.Locked
                 ? view.pixelRect.center : point.ReadValue<Vector2>();
             if (!view.pixelRect.Contains(screenPoint)) return false;
+            DestructionCollisionBatch.Flush();
             int count = Physics.RaycastNonAlloc(view.ScreenPointToRay(screenPoint), hits,
                 maxDistance, includeAllLayers ? Physics.DefaultRaycastLayers : interactionLayers.value, QueryTriggerInteraction.Ignore);
             int nearest = -1;

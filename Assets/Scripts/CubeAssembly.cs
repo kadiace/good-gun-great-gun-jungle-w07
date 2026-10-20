@@ -1,9 +1,15 @@
 using UnityEngine;
+using System.Linq;
 
 namespace WeaponWorkshop
 {
     public sealed class CubeAssembly : MonoBehaviour
     {
+        private bool buildingLayout;
+        public void NotifyStructureChanged()
+        {
+            if (!buildingLayout) GetComponentInParent<EquipableWeapon>()?.NotifyAssemblyChanged();
+        }
         public sealed class LayoutSnapshot
         {
             internal readonly BlockSnapshot[] blocks;
@@ -65,6 +71,7 @@ namespace WeaponWorkshop
                 return false;
             int refund = refundWallet != null ? target.TakePurchaseCost() : 0;
             int creditRefund = refundWallet != null ? target.TakeModuleCreditCost() : 0;
+            string partKind = refundWallet != null ? ModuleCounter.LogName(target) : "";
             RemoveObject(target);
             var cells = new System.Collections.Generic.Dictionary<Vector3Int, PlacedBlock>();
             foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>())
@@ -89,8 +96,11 @@ namespace WeaponWorkshop
                     if (refundWallet != null) creditRefund += entry.Value.TakeModuleCreditCost();
                     RemoveObject(entry.Value);
                 }
-            GetComponentInParent<EquipableWeapon>()?.RefundModulePurchases(refund, refundWallet);
+            int moneyRefund = GetComponentInParent<EquipableWeapon>()?.RefundModulePurchases(refund, refundWallet) ?? 0;
             refundWallet?.CreditModuleCredits(creditRefund);
+            // Disconnected blocks refund with the removed one, so the log names only the removed part.
+            refundWallet?.NotifyPartRefunded(partKind, moneyRefund, creditRefund);
+            NotifyStructureChanged();
             return true;
         }
 
@@ -176,6 +186,12 @@ namespace WeaponWorkshop
             foreach (BlockSnapshot state in snapshot.blocks)
                 if (state.prefab == null || state.slot < 1) return false;
 
+            bool sameStructure = TryCaptureLayout(out var before) &&
+                before.blocks.OrderBy(b => b.cell.x).ThenBy(b => b.cell.y).ThenBy(b => b.cell.z)
+                    .Select(b => (b.prefab, b.slot, b.cell, b.outputDirection, b.orientationNormal))
+                    .SequenceEqual(snapshot.blocks.OrderBy(b => b.cell.x).ThenBy(b => b.cell.y).ThenBy(b => b.cell.z)
+                        .Select(b => (b.prefab, b.slot, b.cell, b.outputDirection, b.orientationNormal)));
+
             foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>(true))
                 if (block != null && block.transform.parent == transform) RemoveObject(block);
 
@@ -189,6 +205,7 @@ namespace WeaponWorkshop
             }
 
             GetComponentInParent<EquipableWeapon>()?.RestoreConstructionPurchaseCost(snapshot.paidConstructionCost);
+            if (!sameStructure) NotifyStructureChanged();
             return true;
         }
 
@@ -256,25 +273,32 @@ namespace WeaponWorkshop
             GameObject prefab = GetPrefab(slot);
             if (prefab == null) return false;
             CreateBlock(prefab, slot, cell, outputDirection, orientationNormal);
+            NotifyStructureChanged();
             return true;
         }
 
         private GameObject CreateBlock(GameObject prefab, int slot, Vector3Int cell,
             Vector3Int outputDirection, Vector3Int orientationNormal)
         {
-            GameObject placed = Instantiate(prefab, transform);
-            placed.GetComponent<ModuleDraw>()?.SetPreview(false);
-            placed.transform.localPosition = cell;
-            placed.transform.localRotation = Quaternion.identity;
-            placed.transform.localScale = Vector3.one;
-            foreach (Transform child in placed.GetComponentsInChildren<Transform>(true)) child.gameObject.layer = gameObject.layer;
-            placed.name = prefab.name;
-            if (IsSingleOutput(slot) || slot == 3) placed.GetComponent<ExtensionModule>()?.SetDirection(outputDirection);
+            bool previousBuilding = buildingLayout;
+            buildingLayout = true;
+            try
+            {
+                GameObject placed = Instantiate(prefab, transform);
+                placed.GetComponent<ModuleDraw>()?.SetPreview(false);
+                placed.transform.localPosition = cell;
+                placed.transform.localRotation = Quaternion.identity;
+                placed.transform.localScale = Vector3.one;
+                foreach (Transform child in placed.GetComponentsInChildren<Transform>(true)) child.gameObject.layer = gameObject.layer;
+                placed.name = prefab.name;
+                if (IsSingleOutput(slot) || slot == 3) placed.GetComponent<ExtensionModule>()?.SetDirection(outputDirection);
 
-            PlacedBlock placedBlock = placed.GetComponent<PlacedBlock>();
-            placedBlock?.SetModuleSource(slot, prefab);
-            placedBlock?.SetOrientation(orientationNormal);
-            return placed;
+                PlacedBlock placedBlock = placed.GetComponent<PlacedBlock>();
+                placedBlock?.SetModuleSource(slot, prefab);
+                placedBlock?.SetOrientation(orientationNormal);
+                return placed;
+            }
+            finally { buildingLayout = previousBuilding; }
         }
 
         public bool AttachAtHit(RaycastHit hit, int slot)

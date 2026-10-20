@@ -5,8 +5,12 @@ using UnityEngine;
 namespace WeaponWorkshop
 {
     [CreateAssetMenu(fileName = "WeaponType", menuName = "Weapon Workshop/Weapon Type")]
+    [Obsolete("레거시 태그 에셋 참조. 태그 정의는 TableManager.CustomerRequest에서 조회하세요.")]
     public sealed class WeaponTypeData : ScriptableObject
     {
+        [SerializeField, HideInInspector] private string tableId;
+        public string TableId => tableId;
+        private CustomerRequestData.Tag Definition => TableManager.Instance.CustomerRequest.FindTag(tableId);
         public enum Comparison { AtLeast, LessThan, AtMost }
         public enum ValueSource { Stat, ModuleCount, PoweredModuleCount }
 
@@ -40,19 +44,37 @@ namespace WeaponWorkshop
 
         [SerializeField] private string displayName;
         [SerializeField] private Color tagColor = new Color(0.16f, 0.32f, 0.42f, 1f);
-        public Color TagColor => tagColor;
+        public Color TagColor => Definition?.color ?? Color.white;
         [SerializeField, Tooltip("모든 조건을 만족하면 태그 부여. 범위는 같은 항목의 이상/미만 조건 두 개로 설정.")]
         private Condition[] conditions = new Condition[0];
         [SerializeField, Min(0f)] private float sellMultiplier = 1f;
-        public string DisplayName => displayName;
-        public float SellMultiplier => sellMultiplier;
-        public System.Collections.Generic.IReadOnlyList<Condition> Conditions => conditions;
+        public string DisplayName => Definition?.name ?? "미등록 태그";
+        public float SellMultiplier => Definition?.sellMultiplier ?? 1f;
+        // Compatibility adapter for recipes/resistance sources; definitions are not serialized twice.
+        public System.Collections.Generic.IReadOnlyList<Condition> Conditions
+        {
+            get
+            {
+                var result = new System.Collections.Generic.List<Condition>();
+                foreach (var condition in Definition?.conditions ?? Array.Empty<CustomerRequestData.Condition>())
+                {
+                    bool modules = condition.Measure == GunMeasure.PathModules;
+                    if (condition.min > 0f) result.Add(new Condition { stat = condition.Stat,
+                        source = modules ? ValueSource.ModuleCount : ValueSource.Stat, comparison = Comparison.AtLeast, value = condition.min });
+                    if (condition.max < float.MaxValue) result.Add(new Condition { stat = condition.Stat,
+                        source = modules ? ValueSource.ModuleCount : ValueSource.Stat,
+                        comparison = condition.maxExclusive ? Comparison.LessThan : Comparison.AtMost, value = condition.max });
+                }
+                return result;
+            }
+        }
 
         public bool Matches(WeaponStats stats, IReadOnlyDictionary<ModuleKind, int> counts = null,
             IReadOnlyDictionary<ModuleKind, int> powered = null)
         {
-            if (conditions == null || conditions.Length == 0) return false;
-            foreach (Condition condition in conditions)
+            var current = Conditions;
+            if (current.Count == 0) return false;
+            foreach (Condition condition in current)
                 if (!condition.IsMet(stats, counts, powered)) return false;
             return true;
         }

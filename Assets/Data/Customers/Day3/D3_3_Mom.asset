@@ -12,18 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D3_3_Mom
   m_EditorClassIdentifier: 
-  lines:
-  - "\uC77C\uBC18\uC0AC\uACA9\uC774 \uC5F0\uBC1C\uC0AC\uACA9\uC5D0 \uC0F7\uAC74\uC0AC\uACA9\uC778
-    \uCD1D\uC744 \uC3D8\uB294 \uC5C4\uB9C8\uB294 \uC88B\uC544\uD558\uC2DC\uB098\uC694?"
-  - "돌격소총 태그와 산탄총 태그를 모두 만족하는 총 주세요."
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: 70d86a3c50472dd47b261b990ddd9210, type: 2}
-  - {fileID: 11400000, guid: a953407380ff6594a942af751bf23efb, type: 2}
+  profileId: e09ace2d9e03a6d4b9c5163bfb793a27
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
-  happyLine: "\uC77C\uBC18\uC0AC\uACA9\uC774 \uC5F0\uBC1C\uC0AC\uACA9\uC5D0 \uC0F7\uAC74\uC0AC\uACA9\uC778
-    \uCD1D\uC744 \uC3D8\uB294 \uC5C4\uB9C8\uB77C.... \uC5B4\uD750"
-  angryLine: "\uC774 \uC81C\uBAA9\uC774 \uC544\uB2C8\uC600\uB098\uBD10\uC694...."
-  price: 500
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: b7116260357cb5b4fb61f4b9233bfe75, type: 3}

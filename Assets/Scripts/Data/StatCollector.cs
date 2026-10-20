@@ -15,6 +15,7 @@ namespace WeaponWorkshop
         [SerializeField] private ProjectileStatsSource statsSource;
 
         private readonly List<ModuleData> modules = new List<ModuleData>();
+        private readonly List<ModuleStats> moduleScan = new List<ModuleStats>();
         private readonly List<WeaponTypeData> matchedTypes = new List<WeaponTypeData>();
         private WeaponStats currentStats;
         private bool dirty = true;
@@ -48,22 +49,25 @@ namespace WeaponWorkshop
             dirty = false;
             currentStats = baseStats != null ? baseStats.Stats : new WeaponStats { fireRate = 1f };
             modules.Clear();
-            foreach (ModuleStats module in GetComponentsInChildren<ModuleStats>())
+            // 배열을 새로 만들지 않도록 스캔 결과를 재사용 목록에 받는다.
+            moduleScan.Clear();
+            GetComponentsInChildren(false, moduleScan);
+            foreach (ModuleStats module in moduleScan)
             {
                 // 삭제 대기 중인 블록은 비활성 상태이므로 GetComponentsInChildren에서 제외된다.
                 if (module.Data == null) continue;
                 modules.Add(module.Data);
-
             }
 
             var assembly = GetComponent<CubeAssembly>();
             currentStats = WeaponAssemblyStats.Calculate(assembly, currentStats);
-            var powered = WeaponAssemblyStats.PoweredCounts(assembly);
-            var counts = powered;
+            // Set the base before reading real muzzle stats; path effects never come from a stale whole-weapon cache.
+            if (statsSource != null && baseStats != null) statsSource.SetWeaponStats(baseStats.Stats);
+            var snapshot = new CustomerRequestInfo.WeaponSnapshot(GetComponent<PowerCore>());
             matchedTypes.Clear();
             if (weaponTypes != null)
                 foreach (WeaponTypeData type in weaponTypes)
-                    if (type != null && type.Matches(currentStats, counts, powered)) matchedTypes.Add(type);
+                    if (type != null && TableManager.Instance.CustomerRequest.MeetsTag(type.TableId, snapshot)) matchedTypes.Add(type);
 
             // Projectiles get only the core base; each muzzle adds the modules on its own route.
             if (statsSource != null && baseStats != null)

@@ -1,0 +1,247 @@
+{
+    "projectId":  "good-gun-great-gun-jungle-w07",
+    "formatVersion":  1,
+    "commonScream":  {
+                         "selection":  "random-one-of-available-clips"
+                     },
+    "fixedGuests":  [
+                        {
+                            "profileId":  "a5308f1435d603f46aea8a8ee70cd591",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "f6afb57651235a649a138ba28b86b8b3",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "8e45417c50eb84d45bc816c2ce4aba9a",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "e3726adb0bb965747ae2a14bdd32852b",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "c2e5e67315c2e684bb468481f9a2bc5b",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "6f6cf35ea746e344a93b1587938c685b",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "1353401e1a4304d4d9e377490fe26882",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "8df14042c9325de4e9e896078ddebfc2",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "25b5381ef8e155343bbafe08fae3af6d",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "f350a20ea1c6a314b9a2ebfd39e192be",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "a660428af7905aa49a0c3400753fd0ae",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "19eb28f21e576bd40bdd9363439fb11a",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "30f765269e0d71446a935b0c88492228",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "a00ebe5381d81494ba1d532eaa55a166",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "d5398f48369de9044b8afcc0e73edc0d",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "54d26364e40dd1b489519863487c0c76",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "d29f7a9b9e4256f449ba2276cf0fa0e4",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "a56c9fc6df6bc184ebb69d9092b8562e",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "a657c8e6daaac0640b26135bf3b0e940",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "e8726eef5e281a241935acf0d3110b60",
+                            "classification":  "individual"
+                        },
+                        {
+                            "profileId":  "6a41b8901ebccb14a9bea905b5e759ab",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "2ba099eab2272d940ae22970ff7731f3",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "d8d88852c4557604ebef499f6d5ceda1",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "e09ace2d9e03a6d4b9c5163bfb793a27",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "e58d71f88d4f876438bf7acace814a9b",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "f2b056418a5de7349942f08879971a6f",
+                            "classification":  "individual"
+                        },
+                        {
+                            "profileId":  "2d9480eb51c562c4c92a1421ea5770da",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "1117dd03e64b32a43b93b4a15b89a4c2",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "0c575dbccf9fbcb40a50aa5bf6e458fb",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "038a4f4f9f79c204a9087f7ce969d7f5",
+                            "classification":  "individual"
+                        },
+                        {
+                            "profileId":  "d22429fd957afa44483eb23d1c989306",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "caed71048059fb84ea75dbd3fa5def6d",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "f88c397ed1f539f4a961604044e93feb",
+                            "classification":  "individual"
+                        },
+                        {
+                            "profileId":  "fd770da102b6f294191f246f9ca975f5",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "d388b03377bb04d4097c8992aa687d9e",
+                            "classification":  "man"
+                        },
+                        {
+                            "profileId":  "d5629a5fb5df7874ebefe9e24bd959af",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "89a6e2464d2d3824c92a161cb4ac7990",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "2d9afc0f00161344c98c8238201fb8ca",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "8ca54d168454a8a4bbf7e11f5964cca1",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "5867799c1021bd247bdc32c3246d757f",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "bb35f40bd3aa17e4f831ca8946978d4b",
+                            "classification":  "individual"
+                        },
+                        {
+                            "profileId":  "f4e6e6c50ca7d574f8fe2e7cd530a4f6",
+                            "classification":  "man"
+                        },
+                        {
+                            "profileId":  "1cd9be92bac19b246923e91f6cf077e7",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "3fe84f1ef3ba7c645b20fad83564cada",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "a0a2b26fb940de64c88d341032fefb96",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "9f6cc4a608cdb4e4bbe4dcd2b1d6167d",
+                            "classification":  "man"
+                        },
+                        {
+                            "profileId":  "0a8af4ee73848804a9693aa05665fb80",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "346ffc96cc977c64a8a3730e146a6ad0",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "c2bdd0ee67e738841a3edca181024144",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "52c56089bff6c5341966c99523742ef5",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "d5a59221e412b7b4bb5188f1953c12d2",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "949c287f545cef84eb20c1f31f8eba01",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "0c5e735d8c860654eb79844236b27b63",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "8f30edea593b9824c88aaa4606b9c50b",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "c13e2f3309d85a942a71852dc0edb95d",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "64bbf60094050bb4492d018a6e417617",
+                            "classification":  "common"
+                        },
+                        {
+                            "profileId":  "4dbebd0100c6bc24db1270af6d2e8600",
+                            "classification":  "individual"
+                        },
+                        {
+                            "profileId":  "78f7371a5c003d44393acb6a85257afb",
+                            "classification":  "man"
+                        }
+                    ],
+    "generatedGuests":  {
+                            "commonScreamEnabled":  true,
+                            "poolIds":  [
+                                            "4ed43104870c3e24f89f81d6ec6fd1bd"
+                                        ]
+                        }
+}

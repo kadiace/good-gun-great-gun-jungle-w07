@@ -2,10 +2,35 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
+    public enum RaidEnemyType { None, Helicopter, Tank }
+
     [RequireComponent(typeof(TargetHealth))]
     public sealed class RaidEnemyCore : MonoBehaviour
     {
+        public static event System.Action<RaidEnemyCore> Spawned;
+        public static event System.Action<RaidEnemyCore> Killed;
+        public string EnemyId { get; private set; }
+        public RaidEnemyType EnemyType { get; private set; }
+        public void AssignIdentity(string id, RaidEnemyType type)
+        {
+            EnemyId = id;
+            EnemyType = type;
+            Spawned?.Invoke(this);
+        }
         [SerializeField] private GameObject enemyRoot;
+        [SerializeField, Min(0)] private int slotTicketReward = 1;
+        [SerializeField] private RaidTicketPickup ticketPickupPrefab;
+        public int SlotTicketReward => IsRaidEnemy ? slotTicketReward : 0;
+        public void ReleaseTicketVisuals(FirstPersonPlayer player)
+        {
+            if (ticketPickupPrefab == null || player == null) return;
+            for (int index = 0; index < SlotTicketReward; index++)
+            {
+                var pickup = Instantiate(ticketPickupPrefab, MarkerPosition + Vector3.up * 0.5f, Quaternion.identity);
+                float angle = index * Mathf.PI * 2f / SlotTicketReward;
+                pickup.Release(player, new Vector3(Mathf.Cos(angle) * 2f, 3f, Mathf.Sin(angle) * 2f));
+            }
+        }
         [SerializeField, Range(0f, 1f), Tooltip("적 전체(enemyRoot 아래 모든 파괴 가능 부위)의 큐브가 이 비율 이상 떨어져 나가면 파괴. 0이면 사용 안 함.")]
         private float destroyAtLostRatio;
         [SerializeField, Tooltip("큐브 손실 임계값으로 파괴되는 순간 적 중앙에서 한 번 터지는 폭발 연출(피해 없음).")]
@@ -92,6 +117,7 @@ namespace WeaponWorkshop
         {
             if (IsDestroyed) return;
             IsDestroyed = true;
+            if (IsRaidEnemy) Killed?.Invoke(this);
             Destroyed?.Invoke();
             if (enemyRoot == null) return;
             foreach (var part in enemyRoot.GetComponentsInChildren<DestructibleTarget>())

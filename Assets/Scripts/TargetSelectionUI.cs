@@ -10,6 +10,8 @@ namespace WeaponWorkshop
         [SerializeField] private UnityEngine.UI.Button closeButton;
         [SerializeField] private GameObject[] targetPrefabs = new GameObject[0];
         [SerializeField] private string[] targetNames = new string[0];
+        [SerializeField] private ShootingTestData[] timedTests = new ShootingTestData[0];
+        private readonly System.Collections.Generic.List<UnityEngine.UI.Button> testButtons = new System.Collections.Generic.List<UnityEngine.UI.Button>();
         private TMPro.TextMeshProUGUI statusText;
         private TargetBell bell;
         private GameManager game;
@@ -49,7 +51,7 @@ namespace WeaponWorkshop
                 var label = new GameObject("Label"+i, typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
                 label.transform.SetParent(root,false);
                 var text = label.GetComponent<TMPro.TextMeshProUGUI>();
-                text.font = font; text.fontSize = 18; text.text = labels[i]; text.color = Color.white;
+                text.font = font; text.fontSize = 22; text.text = labels[i]; text.color = Color.white;
                 text.raycastTarget = false;
                 var r = text.rectTransform; r.anchorMin=r.anchorMax=new Vector2(0f,1f);
                 r.pivot=new Vector2(0f,1f); r.anchoredPosition=new Vector2(24f,-18f-i*38f);
@@ -62,7 +64,7 @@ namespace WeaponWorkshop
                 input.GetComponent<UnityEngine.UI.Image>().color=new Color(0.2f,0.24f,0.3f);
                 var value = new GameObject("Text",typeof(RectTransform),typeof(TMPro.TextMeshProUGUI));
                 value.transform.SetParent(input.transform,false);
-                var vt=value.GetComponent<TMPro.TextMeshProUGUI>(); vt.font=font; vt.fontSize=18;
+                var vt=value.GetComponent<TMPro.TextMeshProUGUI>(); vt.font=font; vt.fontSize=22;
                 vt.color=Color.white; vt.alignment=TMPro.TextAlignmentOptions.MidlineLeft; vt.raycastTarget=false;
                 vt.rectTransform.anchorMin=Vector2.zero; vt.rectTransform.anchorMax=Vector2.one;
                 vt.rectTransform.offsetMin=new Vector2(8f,2f); vt.rectTransform.offsetMax=new Vector2(-8f,-2f);
@@ -123,6 +125,19 @@ namespace WeaponWorkshop
                 SoundManager.RegisterButtonSound(button, "SpawnButtonClick");
                 button.gameObject.SetActive(true);
             }
+            for (int i = 0; i < timedTests.Length; i++)
+            {
+                int index = i;
+                var button = Instantiate(buttonTemplate, grid);
+                button.name = "TimedTest" + i;
+                var data = timedTests[i];
+                button.interactable = data != null && data.IsAvailable;
+                button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = data != null
+                    ? data.DisplayName + " · " + data.TimeLimit.ToString("0") + "초" : "미설정 테스트";
+                button.onClick.AddListener(() => SelectTimedTest(index));
+                SoundManager.RegisterButtonSound(button, "SpawnButtonClick");
+                testButtons.Add(button); button.gameObject.SetActive(true);
+            }
             var cleanup = Instantiate(buttonTemplate, grid.parent);
             cleanup.name = "ClearSpawnedTargets";
             var cleanupRect = (RectTransform)cleanup.transform;
@@ -143,7 +158,7 @@ namespace WeaponWorkshop
             statusText = statusRoot.GetComponent<TMPro.TextMeshProUGUI>();
             var templateText = buttonTemplate.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
             statusText.font = templateText.font;
-            statusText.fontSize = 16;
+            statusText.fontSize = 20;
             statusText.color = new Color(1f,0.35f,0.35f,1f);
             statusText.alignment = TMPro.TextAlignmentOptions.Midline;
             statusText.raycastTarget = false;
@@ -165,6 +180,8 @@ namespace WeaponWorkshop
             game = GameManager.Instance;
             if (game == null) return false;
             bell = source;
+            for (int i = 0; i < testButtons.Count; i++)
+                testButtons[i].interactable = source.TestController != null && timedTests[i] != null && timedTests[i].IsAvailable;
             grid.gameObject.SetActive(true);
             SetCustomVisible(false);
             if (statusText != null) statusText.text = "";
@@ -178,6 +195,17 @@ namespace WeaponWorkshop
             if (bell == null || index < 0 || index >= targetPrefabs.Length) return;
             if (bell.Spawn(targetPrefabs[index])) Close();
             else if (statusText != null) statusText.text = bell.SpawnFailureReason ?? "소환할 수 없습니다.";
+        }
+
+        private void SelectTimedTest(int index)
+        {
+            if (bell == null || index < 0 || index >= timedTests.Length || timedTests[index] == null || !timedTests[index].IsAvailable) return;
+            var source = bell; // Close clears the UI's bell reference.
+            var player = GameManager.Instance != null && GameManager.Instance.UI != null ? GameManager.Instance.UI.Player : null;
+            if (!source.PrepareTest(timedTests[index], player))
+            { if (statusText != null) statusText.text = source.SpawnFailureReason; return; }
+            Close();
+            source.TestController.Begin();
         }
 
         public void Close()

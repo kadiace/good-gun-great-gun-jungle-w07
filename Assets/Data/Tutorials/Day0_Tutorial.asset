@@ -18,6 +18,7 @@ MonoBehaviour:
     description: "\uB2F9\uC2E0\uC740 \uBB34\uAE30 \uACF5\uBC29\uC758 \uC8FC\uC778\uC785\uB2C8\uB2E4.\n\uC154\uD130\uB97C
       \uC5F4\uACE0 \uC601\uC5C5\uC744 \uC2DC\uC791\uD574 \uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -40,15 +41,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: open-shutter
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC154\uD130\uB97C \uC5F4\uACE0 \uC601\uC5C5\uC744 \uC2DC\uC791\uD558\uC138\uC694."
     objective: "\uC154\uD130\uB97C \uC5F4\uC5B4\uC11C \uC601\uC5C5\uC744 \uAC1C\uC2DC\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 1
     targetLabel: "\uC154\uD130 \xB7 \uC601\uC5C5 \uC2DC\uC791"
@@ -71,9 +80,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: shop-opened
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: greet-customer-introduction
@@ -82,6 +98,7 @@ MonoBehaviour:
       \uCC3E\uC544\uC635\uB2C8\uB2E4.\n\uC190\uB2D8\uC774 \uB3C4\uCC29\uD558\uBA74
       F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC \uBC18\uAC11\uAC8C \uB9DE\uC774\uD569\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -104,15 +121,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: greet-customer
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC190\uB2D8\uC5D0\uAC8C \uB2E4\uAC00\uAC00 F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC138\uC694."
     objective: "\uC190\uB2D8\uACFC \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC \uB300\uD654\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 2
     targetLabel: "\uC190\uB2D8"
@@ -135,9 +160,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: customer-greeted
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: main-core-introduction
@@ -147,6 +179,7 @@ MonoBehaviour:
       \uBC14\uAD6C\uB2C8\uC640 \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC \uCF54\uC5B4\uB97C
       \uC9D1\uC5B4 \uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -169,9 +202,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: pick-up-main-core
@@ -179,6 +219,7 @@ MonoBehaviour:
     description: "\uBA54\uC778 \uCF54\uC5B4\uB97C \uD68D\uB4DD\uD558\uC138\uC694."
     objective: "\uBA54\uC778 \uCF54\uC5B4 \uBC14\uAD6C\uB2C8\uC640 \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uBA54\uC778 \uCF54\uC5B4\uB97C \uD68D\uB4DD\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 3
     targetLabel: "\uBA54\uC778 \uCF54\uC5B4 \uBC14\uAD6C\uB2C8"
@@ -201,9 +242,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: core-picked-up
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: shoot-main-core-introduction
@@ -212,6 +260,7 @@ MonoBehaviour:
       6\uBC29\uD5A5\uC73C\uB85C \uBC1C\uC0AC\uD569\uB2C8\uB2E4.\n\uC0AC\uACA9\uC7A5\uC5D0
       \uB098\uC628 \uD45C\uC801\uC744 \uD5A5\uD574 \uD55C \uBC88 \uC3F4 \uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 5
     targetLabel: 
@@ -234,9 +283,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: shoot-main-core-target
@@ -245,6 +301,7 @@ MonoBehaviour:
     objective: "\uBA54\uC778\uCF54\uC5B4\uB97C \uC0AC\uACA9\uD574\uC11C \uCD1D\uC54C\uC774
       \uC5B4\uB5A4 \uC2DD\uC73C\uB85C \uB098\uAC00\uB294\uC9C0 \uD655\uC778\uD574
       \uBCF4\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 5
     targetLabel: "\uC0AC\uACA9\uC7A5 \xB7 \uC2DC\uD5D8 \uBC1C\uC0AC \uD45C\uC801"
@@ -267,9 +324,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: shooting-target-hit
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - fire
   - id: workbench-introduction
@@ -279,6 +343,7 @@ MonoBehaviour:
       \uC0C1\uD638\uC791\uC6A9\uD558\uBA74 \uBB34\uAE30 \uC81C\uC791\uC744 \uC2DC\uC791\uD560
       \uC218 \uC788\uC2B5\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -301,9 +366,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: place-main-core
@@ -311,6 +383,7 @@ MonoBehaviour:
     description: "\uBA54\uC778 \uCF54\uC5B4\uB97C \uC791\uC5C5\uB300\uC5D0 \uC62C\uB9AC\uC138\uC694."
     objective: "\uBA54\uC778 \uCF54\uC5B4\uB97C \uB4E4\uACE0 \uC791\uC5C5\uB300\uC640
       \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC \uC791\uC5C5\uB300\uC5D0 \uC62C\uB9AC\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 4
     targetLabel: "\uC791\uC5C5\uB300 \xB7 \uCF54\uC5B4 \uC62C\uB9AC\uAE30"
@@ -333,9 +406,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: core-placed-on-workbench
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: rotate-introduction
@@ -346,6 +426,7 @@ MonoBehaviour:
       \uBC84\uD2BC\uC744 \uB204\uB978 \uCC44 \uC6C0\uC9C1\uC5EC, \uCD1D\uC758 \uC606\uBA74\uACFC
       \uC717\uBA74\uC744 \uC0B4\uD3B4\uBCF4\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -368,9 +449,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: rotate-inside
@@ -379,6 +467,7 @@ MonoBehaviour:
     objective: "\uC6D0 \uC548\uC5D0\uC11C \uC624\uB978\uCABD \uBC84\uD2BC\uC744 \uB204\uB978
       \uCC44 \uCD1D\uC744 \uCDA9\uBD84\uD788 \uB3CC\uB824 \uC606\uBA74\uC774\uB098
       \uC717\uBA74\uC744 \uC0B4\uD3B4\uBCF4\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 4
     targetLabel: 
@@ -401,9 +490,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: rotate-inside-circle
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - rotate
     - exit
@@ -414,6 +510,7 @@ MonoBehaviour:
       \uB204\uB978 \uCC44 \uC6C0\uC9C1\uC5EC \uBCF4\uC138\uC694.\n\uCD1D\uC774 \uD654\uBA74\uC744
       \uD5A5\uD55C \uCC44 \uC2DC\uACC4 \uBC14\uB298\uCC98\uB7FC \uB3CC\uC544\uAC11\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -436,9 +533,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: rotate-outside
@@ -447,6 +551,7 @@ MonoBehaviour:
     objective: "\uC6D0 \uBC16\uC5D0\uC11C \uC624\uB978\uCABD \uBC84\uD2BC\uC744 \uB204\uB978
       \uCC44 \uC6D0\uC744 \uB530\uB77C \uCD1D\uC744 \uCDA9\uBD84\uD788 \uB3CC\uB824
       \uBCF4\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 4
     targetLabel: 
@@ -469,9 +574,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: rotate-outside-circle
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - rotate
     - exit
@@ -480,6 +592,7 @@ MonoBehaviour:
     description: "R\uC744 \uB204\uB974\uBA74 \uCD1D\uC744 \uCC98\uC74C \uBCF4\uB358
       \uBC29\uD5A5\uC73C\uB85C \uB418\uB3CC\uB9B4 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -502,15 +615,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: reset-rotation
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "R\uC744 \uB20C\uB7EC \uCD1D\uC758 \uBC29\uD5A5\uC744 \uCD08\uAE30\uD654\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 4
     targetLabel: 
@@ -533,9 +654,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: rotation-reset
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - reset-rotation
     - exit
@@ -547,6 +675,7 @@ MonoBehaviour:
       \uB9C9\uC544 \uBD05\uC2DC\uB2E4.\n\uB178\uB780\uC0C9\uC73C\uB85C \uAE5C\uBE61\uC774\uB294
       \uC704\uCE58\uC5D0 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -569,9 +698,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: block-five-core-faces
@@ -580,6 +716,7 @@ MonoBehaviour:
       \uBE14\uB85D\uC73C\uB85C \uB9C9\uC73C\uC138\uC694."
     objective: "\uB178\uB780\uC0C9\uC73C\uB85C \uAE5C\uBE61\uC774\uB294 \uC704\uCE58\uC5D0
       \uAE30\uBCF8 \uBE14\uB85D\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 2
     target: 4
     targetLabel: "\uC791\uC5C5\uB300 \xB7 \uAE30\uBCF8 \uBE14\uB85D \uC124\uCE58"
@@ -602,9 +739,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - rotate
@@ -615,9 +759,12 @@ MonoBehaviour:
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "Tab\uC73C\uB85C \uBAA8\uB4C8 \uBAA9\uB85D\uC744 \uC5F4\uC5B4 \uBCF4\uC138\uC694.\n\uC544\uB798
       \uC2AC\uB86F\uC774\uB098 \uC22B\uC790\uD0A4\uB85C\uB3C4 \uBAA8\uB4C8\uC744
-      \uACE0\uB97C \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC790\uC8FC \uC4F0\uB294 \uBAA8\uB4C8\uC740
-      \uC990\uACA8\uCC3E\uAE30\uC5D0 \uB123\uC5B4 \uB450\uC138\uC694."
+      \uACE0\uB97C \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uC790\uC8FC \uC4F0\uB294 \uBAA8\uB4C8\uC740
+      \uC990\uACA8\uCC3E\uAE30\uC5D0 \uB123\uC5B4 \uB450\uC138\uC694.\n\uBAA9\uB85D\uC744
+      \uC5F0 \uB2E4\uC74C\uC5D0\uB294 \uD035\uC2AC\uB86F\uC758 \uC704\uCE58\uB97C
+      \uBC14\uAFB8\uB294 \uBC29\uBC95\uC744 \uC5F0\uC2B5\uD574 \uBCF4\uACA0\uC2B5\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -640,15 +787,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: open-palette
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "Tab\uC73C\uB85C \uBAA8\uB4C8 \uBAA9\uB85D\uC744 \uC5EC\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 0
     targetLabel: 
@@ -671,12 +826,107 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: palette-opened
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - palette
     - exit
+  - id: quickslot-fire-rate
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uC544\uB798 \uD035\uC2AC\uB86F\uC740 1~9, 0 \uC22B\uC790\uD0A4\uB85C
+      \uC120\uD0DD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uBAA8\uB4C8\uC744 \uB2E4\uB978
+      \uBC88\uD638 \uCE78\uC73C\uB85C \uB4DC\uB798\uADF8\uD558\uBA74 \uB450 \uBAA8\uB4C8\uC758
+      \uC790\uB9AC\uAC00 \uC11C\uB85C \uBC14\uB01D\uB2C8\uB2E4.\n\uBA3C\uC800 \uC5F0\uC0AC
+      \uBAA8\uB4C8\uC744 2\uBC88 \uD035\uC2AC\uB86F\uC73C\uB85C \uC62E\uACA8 \uBCF4\uACA0\uC2B5\uB2C8\uB2E4."
+    objective: "\uBAA8\uB4C8 \uC120\uD0DD\uCC3D\uC5D0\uC11C \uC5F0\uC0AC \uBAA8\uB4C8\uC744
+      2\uBC88 \uD035\uC2AC\uB86F\uC73C\uB85C \uB4DC\uB798\uADF8\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 1
+    completion: 1
+    target: 0
+    targetLabel: 
+    requiresWorkbenchEditing: 1
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 5
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 010000000200000005000000
+    restrictQuickslotChange: 1
+    requiredQuickslotNumber: 2
+    requiredSignal: quickslot-2-module-5
+    strictAllowedActions: 1
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD035\uC2AC\uB86F
+      \uAD50\uCCB4\uB9CC \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions:
+    - quickslot
+  - id: quickslot-restore-extension
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uC774\uC81C \uC22B\uC790\uD0A4 2\uB85C \uC5F0\uC0AC \uBAA8\uB4C8\uC744
+      \uC120\uD0DD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uC774\uBC88\uC5D0\uB294
+      \uC5F0\uC7A5 \uBAA8\uB4C8\uC744 \uB2E4\uC2DC 2\uBC88 \uD035\uC2AC\uB86F\uC73C\uB85C
+      \uC62E\uACA8 \uBCF4\uC138\uC694.\n\uC774\uC5B4\uC11C \uC5F0\uC7A5 \uBAA8\uB4C8\uB85C
+      \uCD1D\uC54C\uC774 \uB098\uAC00\uB294 \uAE38\uC744 \uB9CC\uB4E4\uC5B4 \uBCF4\uACA0\uC2B5\uB2C8\uB2E4."
+    objective: "\uC5F0\uC7A5 \uBAA8\uB4C8\uC744 2\uBC88 \uD035\uC2AC\uB86F\uC73C\uB85C
+      \uB4DC\uB798\uADF8\uD574 \uB418\uB3CC\uB9AC\uC138\uC694."
+    showDescriptionBeforeObjective: 1
+    completion: 1
+    target: 0
+    targetLabel: 
+    requiresWorkbenchEditing: 1
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 2
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 010000000200000005000000
+    restrictQuickslotChange: 1
+    requiredQuickslotNumber: 2
+    requiredSignal: quickslot-2-module-2
+    strictAllowedActions: 1
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD035\uC2AC\uB86F
+      \uAD50\uCCB4\uB9CC \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions:
+    - quickslot
   - id: extension-introduction
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC5F0\uC7A5 \uBAA8\uB4C8\uC740 \uCD1D\uC54C\uC774 \uB098\uAC00\uB294
@@ -687,6 +937,7 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC740 \uC704\uCE58 \uC120\uD0DD\uACFC \uBC29\uD5A5 \uD655\uC815,
       \uC774\uB807\uAC8C \uB450 \uBC88 \uD074\uB9AD\uD569\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -709,9 +960,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: install-extension
@@ -719,6 +977,7 @@ MonoBehaviour:
     description: 
     objective: "\uC5F0\uC7A5 \uBAA8\uB4C8\uC744 \uC124\uCE58\uD558\uACE0 \uC815\uBA74\uC774
       \uC544\uB2CC \uBC29\uD5A5\uC73C\uB85C \uAEBE\uC5B4 \uBCF4\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 3
     target: 4
     targetLabel: 
@@ -742,9 +1001,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: "\uC5F0\uC7A5 \uBE14\uB85D\uC744 \uC124\uCE58\uD574 \uC8FC\uC138\uC694."
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - rotate
@@ -759,6 +1025,7 @@ MonoBehaviour:
       \uCF1C\uACE0 \uBC29\uAE08 \uC124\uCE58\uD55C \uC5F0\uC7A5 \uBAA8\uB4C8\uC744
       \uC9C0\uC6CC \uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -781,15 +1048,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: enable-delete-mode
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "E\uB97C \uB20C\uB7EC \uC0AD\uC81C \uBAA8\uB4DC\uB97C \uCF1C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 0
     targetLabel: 
@@ -812,9 +1087,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: delete-mode-enabled
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - delete
     - exit
@@ -823,6 +1105,7 @@ MonoBehaviour:
     description: 
     objective: "\uC0AD\uC81C \uBAA8\uB4DC\uB85C \uBC29\uAE08 \uC124\uCE58\uD55C \uC5F0\uC7A5
       \uBAA8\uB4C8\uC744 \uC9C0\uC6B0\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 4
     target: 4
     targetLabel: 
@@ -845,9 +1128,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - delete
     - rotate
@@ -860,6 +1150,7 @@ MonoBehaviour:
       \uB048 \uB4A4, \uC774\uBC88\uC5D0\uB294 \uC55E\uCABD\uC73C\uB85C \uBC29\uD5A5\uC744
       \uC815\uD574 \uC124\uCE58\uD558\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -882,15 +1173,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions: []
   - id: disable-delete-mode
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "\uC0AD\uC81C \uBAA8\uB4DC\uB97C \uB044\uACE0 \uC5F0\uC7A5 \uBAA8\uB4C8\uC744
       \uB2E4\uC2DC \uB2EC\uC544\uBCF4\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 0
     targetLabel: 
@@ -913,9 +1212,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: delete-mode-disabled
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - delete
     - exit
@@ -924,6 +1230,7 @@ MonoBehaviour:
     description: 
     objective: "\uC5F0\uC7A5 \uBAA8\uB4C8\uC744 \uC804\uBC29\uC744 \uD5A5\uD558\uAC8C
       \uB2E4\uC2DC \uB2EC\uC544\uBCF4\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 3
     target: 0
     targetLabel: 
@@ -947,9 +1254,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: "\uC5F0\uC7A5 \uBE14\uB85D\uC744 \uC124\uCE58\uD574 \uC8FC\uC138\uC694."
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - palette
@@ -962,6 +1276,7 @@ MonoBehaviour:
       \uAE5C\uBE61\uC774\uB294 \uD504\uB9AC\uC14B 1\uBC88 \uCE78\uC744 \uB20C\uB7EC
       \uC9C0\uAE08 \uB9CC\uB4E0 \uBB34\uAE30\uB97C \uB4F1\uB85D\uD574 \uBCF4\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -984,9 +1299,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: save-preset
@@ -994,6 +1316,7 @@ MonoBehaviour:
     description: 
     objective: "\uD504\uB9AC\uC14B 1\uBC88 \uCE78\uC744 \uB20C\uB7EC \uBB34\uAE30\uB97C
       \uB4F1\uB85D\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 0
     targetLabel: 
@@ -1016,9 +1339,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: preset-saved
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - preset-save
     - exit
@@ -1031,6 +1361,7 @@ MonoBehaviour:
       \uC190\uB2D8\uACFC \uC0C1\uD638\uC791\uC6A9\uD558\uBA74 \uD310\uB9E4\uB97C
       \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1053,15 +1384,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: first-exit
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "F \uB610\uB294 Esc\uB85C \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uAC00\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 6
     target: 4
     targetLabel: 
@@ -1084,9 +1423,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - exit
   - id: first-pick-up
@@ -1094,6 +1440,7 @@ MonoBehaviour:
     description: 
     objective: "\uC791\uC5C5\uB300 \uC704\uC758 \uC644\uC131\uB41C \uBB34\uAE30\uB97C
       F\uB85C \uC9D1\uC73C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 7
     target: 6
     targetLabel: "\uC644\uC131\uB41C \uBB34\uAE30"
@@ -1116,9 +1463,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: first-sell
@@ -1126,6 +1480,7 @@ MonoBehaviour:
     description: 
     objective: "\uBB34\uAE30\uB97C \uB4E0 \uCC44 \uC190\uB2D8\uACFC F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uACE0
       \uD310\uB9E4\uB97C \uD655\uC778\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 9
     target: 2
     targetLabel: "\uC190\uB2D8"
@@ -1148,9 +1503,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: second-introduction
@@ -1159,6 +1521,7 @@ MonoBehaviour:
       \uBD05\uC2DC\uB2E4.\n\uC774\uBC88\uC5D0\uB294 \uD2B9\uC815 \uBAA8\uB4C8\uC744
       \uC6D0\uD558\uB294 \uC190\uB2D8\uC785\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1181,9 +1544,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: greet-second
@@ -1191,6 +1561,7 @@ MonoBehaviour:
     description: 
     objective: "\uB450 \uBC88\uC9F8 \uC190\uB2D8\uACFC F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uC8FC\uBB38\uC744 \uB4E4\uC73C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 2
     targetLabel: "\uC190\uB2D8"
@@ -1213,12 +1584,20 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: customer-greeted
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: second-prepare
+    setBalanceOnStart: 50
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uAD00\uD1B5 \uBAA8\uB4C8\uC744 \uB123\uC5B4 \uB2EC\uB77C\uB294
       \uC8FC\uBB38\uC785\uB2C8\uB2E4.\n\uC774\uBBF8 \uBC30\uC6B4 \uBAB8\uCCB4 \uC870\uB9BD\uC740
@@ -1228,6 +1607,7 @@ MonoBehaviour:
       \uD558\uB294 \uAC83\uC73C\uB85C\uB294 \uBD80\uC871\uD569\uB2C8\uB2E4. \uCF54\uC5B4\uC758
       \uC5D0\uB108\uC9C0\uAC00 \uC9C0\uB098\uAC00\uC57C \uAE30\uB2A5\uD569\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1250,9 +1630,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 1
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: second-workbench
@@ -1260,6 +1647,7 @@ MonoBehaviour:
     description: 
     objective: "\uC900\uBE44\uB41C \uCF54\uC5B4\uAC00 \uC788\uB294 \uC791\uC5C5\uB300\uC640
       F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 4
     targetLabel: 
@@ -1282,16 +1670,62 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: core-placed-on-workbench
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
+  - id: second-loan
+    title: 튜토리얼
+    description:
+    objective: 관통 모듈을 설치해보세요. 돈이 부족해도 괜찮습니다.
+    objectiveWhileChoiceOpen: 대출을 받은 후 관통 모듈 설치를 완료하세요.
+    choiceGuidance: 돈이 부족할 때 모듈을 설치하려고 하면 하루에 한 번 대출을 받을 수 있습니다. 정산은 상점을 닫을 때 하고, 대출을 많이 할수록 이자가 늘어납니다.
+    completion: 1
+    target: 4
+    targetLabel:
+    requiresWorkbenchEditing: 1
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 4
+    showPlacementHints: 1
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells:
+    - {x: 0, y: 0, z: 1}
+    requiredModuleId: 8
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 1
+    blockedPlacementMessage: 안내된 위치에 관통 모듈을 설치해 보세요.
+    wrongModuleMessage:
+    prepareBlockedCore: 0
+    discardHeldWeapon: 0
+    allowedModuleIds: 010000000200000008000000
+    requiredSignal: loan-taken
+    allowedActions:
+    - attach
+    - rotate
+    - reset-rotation
+    - palette
+    - exit
   - id: second-penetration
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "\uC55E\uCABD \uCD1D\uC54C \uAE38\uC5D0 \uAD00\uD1B5 \uBAA8\uB4C8\uC744
       \uC124\uCE58\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
+    restoreWithheldBalanceOnComplete: 1
     completion: 3
     target: 4
     targetLabel: 
@@ -1315,9 +1749,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - rotate
@@ -1328,6 +1769,7 @@ MonoBehaviour:
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "\uC190\uB2D8\uC758 \uAD00\uD1B5 \uBAA8\uB4C8 \uC694\uAD6C\uB97C \uCDA9\uC871\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 5
     target: 4
     targetLabel: 
@@ -1350,9 +1792,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - delete
@@ -1369,6 +1818,7 @@ MonoBehaviour:
       \uC870\uAC74\uC740 \uC11C\uB85C \uB2E4\uB97C \uC218 \uC788\uC73C\uB2C8 \uC8FC\uBB38\uC744
       \uD655\uC778\uD558\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1391,15 +1841,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: second-exit
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "F \uB610\uB294 Esc\uB85C \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uAC00\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 6
     target: 4
     targetLabel: 
@@ -1422,9 +1880,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - exit
   - id: second-pick-up
@@ -1432,6 +1897,7 @@ MonoBehaviour:
     description: 
     objective: "\uC791\uC5C5\uB300 \uC704\uC758 \uC644\uC131\uB41C \uBB34\uAE30\uB97C
       F\uB85C \uC9D1\uC73C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 7
     target: 6
     targetLabel: "\uC644\uC131\uB41C \uBB34\uAE30"
@@ -1454,9 +1920,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: second-sell
@@ -1464,6 +1937,7 @@ MonoBehaviour:
     description: 
     objective: "\uBB34\uAE30\uB97C \uB4E0 \uCC44 \uC190\uB2D8\uACFC F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uACE0
       \uD310\uB9E4\uB97C \uD655\uC778\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 9
     target: 2
     targetLabel: "\uC190\uB2D8"
@@ -1486,9 +1960,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: third-introduction
@@ -1498,6 +1979,7 @@ MonoBehaviour:
       \uB4E3\uACE0 \uB808\uC2DC\uD53C\uC5D0\uC11C \uD0DC\uADF8\uAC00 \uBD99\uB294
       \uC870\uAC74\uC744 \uCC3E\uC544\uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1520,9 +2002,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: greet-third
@@ -1530,6 +2019,7 @@ MonoBehaviour:
     description: 
     objective: "\uC138 \uBC88\uC9F8 \uC190\uB2D8\uACFC F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uC8FC\uBB38\uC744 \uB4E4\uC73C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 2
     targetLabel: "\uC190\uB2D8"
@@ -1552,18 +2042,26 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 010000000200000008000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: customer-greeted
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: third-prepare
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC0C8 \uC8FC\uBB38\uC744 \uB9CC\uB4E4 \uBAB8\uCCB4\uB294 \uC900\uBE44\uD574
       \uB450\uC5C8\uC2B5\uB2C8\uB2E4. \uBA3C\uC800 \uC791\uC5C5\uB300\uB85C \uB4E4\uC5B4\uAC00
-      \uB808\uC2DC\uD53C\uC5D0\uC11C \uC0B0\uD0C4\uCD1D \uC870\uAC74\uC744 \uD655\uC778\uD574
-      \uBD05\uC2DC\uB2E4."
+      \uB808\uC2DC\uD53C\uC5D0\uC11C \uB3CC\uACA9\uC18C\uCD1D \uC870\uAC74\uC744
+      \uD655\uC778\uD574 \uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1586,9 +2084,19 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 1
+    preparedWeaponPrefab: {fileID: 7072533542750884013, guid: dedd8c0e65baf9f4c99cec0e7974b6fc, type: 3}
+    preparedWeaponOpenCells:
+    - {x: 0, y: 0, z: 1}
+    - {x: 0, y: 0, z: 2}
+    - {x: 0, y: 0, z: 3}
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 01000000020000000800000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: third-workbench
@@ -1596,6 +2104,7 @@ MonoBehaviour:
     description: 
     objective: "\uC791\uC5C5\uB300\uC640 F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uC81C\uC791\uC744 \uC2DC\uC791\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 4
     targetLabel: 
@@ -1618,17 +2127,25 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 01000000020000000800000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: core-placed-on-workbench
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: recipe-introduction
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "\uC0B0\uD0C4\uCD1D\uC744 \uBD80\uD0C1\uD55C \uC190\uB2D8\uC785\uB2C8\uB2E4.\n\uBB34\uAE30
+    description: "\uB3CC\uACA9\uC18C\uCD1D\uC744 \uBD80\uD0C1\uD55C \uC190\uB2D8\uC785\uB2C8\uB2E4.\n\uBB34\uAE30
       \uB808\uC2DC\uD53C\uB97C \uD655\uC778\uD558\uACE0, \uB808\uC2DC\uD53C\uC5D0
       \uB9DE\uCDB0 \uCD1D\uC744 \uB9CC\uB4E4\uC5B4 \uBCF4\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1651,16 +2168,25 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 01000000020000000800000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: inspect-recipe
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "\uBB34\uAE30 \uB808\uC2DC\uD53C\uB97C \uD655\uC778\uD558\uACE0, \uB808\uC2DC\uD53C\uC5D0
-      \uB9DE\uCDB0 \uC0B0\uD0C4\uCD1D\uC744 \uB9CC\uB4E4\uC5B4 \uBCF4\uC138\uC694."
+    objective: "\uBB34\uAE30 \uD0DC\uADF8 \uC870\uAC74\uC740 \uB808\uC2DC\uD53C\uC5D0
+      \uC815\uB9AC\uB418\uC5B4\uC788\uC2B5\uB2C8\uB2E4. \uBB34\uAE30 \uB808\uC2DC\uD53C\uB97C
+      \uD655\uC778\uD574\uBCF4\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 0
     targetLabel: 
@@ -1683,17 +2209,25 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 01000000020000000800000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: recipe-inspected
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - recipe
     - exit
-  - id: third-shotgun
-    title: "\uB808\uC2DC\uD53C\uC5D0 \uB9DE\uCDB0 \uC0B0\uD0C4 \uBAA8\uB4C8 \uC124\uCE58"
+  - id: third-fire-rate-one
+    title: "\uB3CC\uACA9\uC18C\uCD1D \uC5F0\uC0AC \uBAA8\uB4C8 \uC124\uCE58"
     description: 
-    objective: "\uB808\uC2DC\uD53C\uC5D0 \uB9DE\uCDB0 \uC0B0\uD0C4 \uBAA8\uB4C8\uC744
-      \uC124\uCE58\uD558\uC138\uC694."
+    objective: "\uCCAB \uBC88\uC9F8 \uBE48 \uCE78\uC5D0 \uC5F0\uC0AC \uBAA8\uB4C8\uC744
+      \uC124\uCE58\uD558\uC138\uC694 (\uD035 \uC2AC\uB86F 5\uBC88)."
+    showDescriptionBeforeObjective: 0
     completion: 3
     target: 4
     targetLabel: 
@@ -1705,7 +2239,7 @@ MonoBehaviour:
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells:
     - {x: 0, y: 0, z: 1}
-    requiredModuleId: 7
+    requiredModuleId: 5
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1717,9 +2251,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 01000000020000000800000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - rotate
@@ -1727,11 +2268,167 @@ MonoBehaviour:
     - palette
     - exit
     - recipe
+  - id: third-fire-rate-two
+    title: "\uB3CC\uACA9\uC18C\uCD1D \uC5F0\uC0AC \uBAA8\uB4C8 \uCD94\uAC00"
+    description: 
+    objective: "\uB2E4\uC74C \uBE48 \uCE78\uC5D0 \uC5F0\uC0AC \uBAA8\uB4C8\uC744
+      \uD558\uB098 \uB354 \uC124\uCE58\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
+    completion: 3
+    target: 4
+    targetLabel: 
+    requiresWorkbenchEditing: 1
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 1
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells:
+    - {x: 0, y: 0, z: 2}
+    requiredModuleId: 5
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 2}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 1
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC5D0 \uC5F0\uC0AC
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 01000000020000000800000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions:
+    - attach
+    - rotate
+    - reset-rotation
+    - palette
+    - exit
+    - recipe
+  - id: third-penetration
+    title: "\uB3CC\uACA9\uC18C\uCD1D \uAD00\uD1B5 \uBAA8\uB4C8 \uC124\uCE58"
+    description: 
+    objective: "\uB9C8\uC9C0\uB9C9 \uBE48 \uCE78\uC5D0 \uAD00\uD1B5 \uBAA8\uB4C8\uC744
+      \uC124\uCE58\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
+    completion: 3
+    target: 4
+    targetLabel: 
+    requiresWorkbenchEditing: 1
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 1
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells:
+    - {x: 0, y: 0, z: 3}
+    requiredModuleId: 8
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 3}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 1
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC5D0 \uAD00\uD1B5
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 01000000020000000800000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions:
+    - attach
+    - rotate
+    - reset-rotation
+    - palette
+    - exit
+    - recipe
+  - id: recipe-stats-guide
+    title: 튜토리얼
+    description: 상세한 총기 수치는 총구에 마우스를 대서 알 수 있습니다.
+    objective:
+    completion: 0
+    target: 0
+    targetLabel:
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: 안내된 위치와 방향에 모듈을 설치해 보세요.
+    wrongModuleMessage:
+    prepareBlockedCore: 0
+    discardHeldWeapon: 0
+    allowedModuleIds: 01000000020000000800000005000000
+    requiredSignal:
+    allowedActions:
+    - none
+  - id: third-muzzle-hover
+    title: 튜토리얼
+    description:
+    objective: 연결 모듈의 총구 끝에 마우스를 올려 상세한 총기 수치를 확인하세요.
+    completion: 1
+    target: 4
+    targetLabel:
+    requiresWorkbenchEditing: 1
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: 안내된 위치와 방향에 모듈을 설치해 보세요.
+    wrongModuleMessage:
+    prepareBlockedCore: 0
+    discardHeldWeapon: 0
+    allowedModuleIds: 01000000020000000800000005000000
+    requiredSignal: muzzle-stats-viewed
+    allowedActions:
+    - rotate
+    - reset-rotation
+    - exit
+    - recipe
   - id: third-order-ready
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uC640 \uC190\uB2D8\uC758 \uC8FC\uBB38
+    objective: "\uB3CC\uACA9\uC18C\uCD1D \uD0DC\uADF8\uC640 \uC190\uB2D8\uC758 \uC8FC\uBB38
       \uC870\uAC74\uC744 \uCDA9\uC871\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 5
     target: 4
     targetLabel: 
@@ -1754,9 +2451,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 01000000020000000800000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - delete
@@ -1768,9 +2472,11 @@ MonoBehaviour:
   - id: tags-confirmation
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uD0DC\uADF8\uB294 \uC870\uB9BD \uACB0\uACFC\uB97C \uC694\uC57D\uD574
-      \uBCF4\uC5EC \uC90D\uB2C8\uB2E4.\n\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uAC00 \uBD99\uC5C8\uB294\uC9C0
-      \uD655\uC778\uD558\uACE0 \uC190\uB2D8\uC5D0\uAC8C \uD310\uB9E4\uD558\uC138\uC694."
+      \uBCF4\uC5EC \uC90D\uB2C8\uB2E4.\n\uB3CC\uACA9\uC18C\uCD1D \uD0DC\uADF8\uAC00
+      \uBD99\uC5C8\uB294\uC9C0 \uD655\uC778\uD558\uACE0 \uC190\uB2D8\uC5D0\uAC8C
+      \uD310\uB9E4\uD558\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1793,15 +2499,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: third-exit
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "F \uB610\uB294 Esc\uB85C \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uAC00\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 6
     target: 4
     targetLabel: 
@@ -1824,9 +2538,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - exit
   - id: third-pick-up
@@ -1834,6 +2555,7 @@ MonoBehaviour:
     description: 
     objective: "\uC791\uC5C5\uB300 \uC704\uC758 \uC644\uC131\uB41C \uBB34\uAE30\uB97C
       F\uB85C \uC9D1\uC73C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 7
     target: 6
     targetLabel: "\uC644\uC131\uB41C \uBB34\uAE30"
@@ -1856,9 +2578,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: third-sell
@@ -1866,6 +2595,7 @@ MonoBehaviour:
     description: 
     objective: "\uBB34\uAE30\uB97C \uB4E0 \uCC44 \uC190\uB2D8\uACFC F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uACE0
       \uD310\uB9E4\uB97C \uD655\uC778\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 9
     target: 2
     targetLabel: "\uC190\uB2D8"
@@ -1888,9 +2618,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: fourth-introduction
@@ -1899,6 +2636,7 @@ MonoBehaviour:
       \uCC3E\uC544\uC654\uC2B5\uB2C8\uB2E4.\n\uB2E4\uAC00\uAC00\uC11C \uC5B4\uB5A4
       \uC774\uC57C\uAE30\uB97C \uD558\uB294\uC9C0 \uB4E4\uC5B4 \uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1921,15 +2659,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions: []
   - id: fourth-greet
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "\uB124 \uBC88\uC9F8 \uC190\uB2D8\uACFC \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uB300\uD654\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 2
     targetLabel: "\uC190\uB2D8"
@@ -1952,9 +2698,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: customer-greeted
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: fourth-core-introduction
@@ -1963,6 +2716,7 @@ MonoBehaviour:
       \uC190\uB2D8\uB3C4 \uC788\uC2B5\uB2C8\uB2E4.\n\uC774\uBC88\uC5D0\uB294 \uBA54\uC778
       \uCF54\uC5B4\uB97C \uC9D1\uC5B4 \uC190\uB2D8\uC744 \uD5A5\uD574 \uC3F4 \uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -1985,15 +2739,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions: []
   - id: fourth-pick-up-core
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "\uBA54\uC778 \uCF54\uC5B4 \uBC14\uAD6C\uB2C8\uC640 \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uBA54\uC778 \uCF54\uC5B4\uB97C \uD68D\uB4DD\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 3
     targetLabel: 
@@ -2016,15 +2778,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: core-picked-up
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: fourth-shoot
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "\uB124 \uBC88\uC9F8 \uC190\uB2D8\uC744 \uD5A5\uD574 \uC0AC\uACA9\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 10
     target: 2
     targetLabel: "\uC190\uB2D8"
@@ -2047,9 +2817,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - fire
   - id: close-and-settle
@@ -2057,6 +2834,7 @@ MonoBehaviour:
     description: 
     objective: "\uC601\uC5C5 \uC815\uC0B0\uC744 \uD655\uC778\uD558\uACE0 \uC815\uC0B0
       \uCC3D\uC744 \uB2EB\uC73C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 8
     target: 0
     targetLabel: "\uC601\uC5C5 \uC885\uB8CC"
@@ -2079,9 +2857,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: customer-variety
@@ -2090,6 +2875,7 @@ MonoBehaviour:
       \uC694\uAD6C\uB97C \uD569\uB2C8\uB2E4.\n\uC0C1\uD669\uC744 \uC0B4\uD53C\uBA70
       \uC720\uC5F0\uD558\uAC8C \uB300\uCC98\uD558\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2112,9 +2898,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 1
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions: []
   - id: settlement-introduction
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
@@ -2124,6 +2917,7 @@ MonoBehaviour:
       \uCC28\uB840\uC785\uB2C8\uB2E4. \uC57C\uAC04 \uC2B5\uACA9\uC744 \uB5A0\uB098\uAC70\uB098
       \uB2E4\uC74C \uB0A0 \uC544\uCE68\uC744 \uC120\uD0DD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2146,9 +2940,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 01000000020000000800000007000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-retry
@@ -2161,6 +2962,7 @@ MonoBehaviour:
       \uBB34\uAE30\uB97C \uC900\uBE44\uD574 \uBD05\uC2DC\uB2E4.\n\uC900\uBE44\uB41C
       \uBAB8\uCCB4\uAC00 \uC788\uB294 \uC791\uC5C5\uB300\uB85C \uB4E4\uC5B4\uAC00\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2183,9 +2985,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 1
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-workbench
@@ -2193,6 +3002,7 @@ MonoBehaviour:
     description: 
     objective: "\uC791\uC5C5\uB300\uC640 F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uC2B5\uACA9\uC6A9 \uBB34\uAE30\uB97C \uB9CC\uB4DC\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 4
     targetLabel: 
@@ -2215,9 +3025,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: core-placed-on-workbench
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-penetration-one
@@ -2225,6 +3042,7 @@ MonoBehaviour:
     description: 
     objective: "\uC55E\uBA74\uC5D0 \uCCAB \uBC88\uC9F8 \uAD00\uD1B5 \uBAA8\uB4C8\uC744
       \uC124\uCE58\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 3
     target: 4
     targetLabel: 
@@ -2248,9 +3066,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - rotate
@@ -2262,6 +3087,7 @@ MonoBehaviour:
     description: 
     objective: "\uCCAB \uAD00\uD1B5 \uBAA8\uB4C8 \uC55E\uC5D0 \uAD00\uD1B5 \uBAA8\uB4C8\uC744
       \uD558\uB098 \uB354 \uC774\uC5B4 \uBD99\uC774\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 3
     target: 4
     targetLabel: 
@@ -2285,9 +3111,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - rotate
@@ -2302,6 +3135,7 @@ MonoBehaviour:
       \uAD00\uD1B5\uACFC \uD3ED\uBC1C\uC774 \uD568\uAED8 \uC788\uC73C\uBA74 \uB6AB\uACE0
       \uC9C0\uB098\uAC00\uB294 \uACF3\uB9C8\uB2E4 \uD3ED\uBC1C\uC774 \uC77C\uC5B4\uB0A9\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2324,9 +3158,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-explosion
@@ -2334,6 +3175,7 @@ MonoBehaviour:
     description: 
     objective: "\uAD00\uD1B5 \uBAA8\uB4C8 \uC55E\uC5D0 \uD3ED\uBC1C \uBAA8\uB4C8\uC744
       \uC774\uC5B4 \uBD99\uC774\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 3
     target: 4
     targetLabel: 
@@ -2357,9 +3199,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - attach
     - rotate
@@ -2375,6 +3224,7 @@ MonoBehaviour:
       \uBB34\uAE30\uB97C \uCC59\uACA8 \uC57C\uAC04 \uC2B5\uACA9\uC744 \uB098\uAC00
       \uBD05\uC2DC\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2397,15 +3247,23 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-exit-workbench
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "F \uB610\uB294 Esc\uB85C \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uAC00\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 6
     target: 4
     targetLabel: 
@@ -2428,9 +3286,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - exit
   - id: raid-pick-up
@@ -2438,6 +3303,7 @@ MonoBehaviour:
     description: 
     objective: "\uC791\uC5C5\uB300 \uC704 \uC2B5\uACA9\uC6A9 \uBB34\uAE30\uB97C F\uB85C
       \uC9D1\uC73C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 7
     target: 6
     targetLabel: "\uC2B5\uACA9\uC6A9 \uBB34\uAE30"
@@ -2460,9 +3326,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-open-map
@@ -2470,6 +3343,7 @@ MonoBehaviour:
     description: 
     objective: "\uC57C\uAC04 \uC2B5\uACA9 \uC785\uAD6C\uC640 F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uC9C0\uB3C4\uB97C \uC5EC\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 8
     targetLabel: "\uC57C\uAC04 \uC2B5\uACA9 \uC785\uAD6C"
@@ -2492,9 +3366,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: raid-map-opened
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-select-house
@@ -2502,6 +3383,7 @@ MonoBehaviour:
     description: 
     objective: "\uC9C0\uB3C4\uC5D0\uC11C \uB178\uB780\uC0C9\uC73C\uB85C \uAE5C\uBE61\uC774\uB294
       \uBAA9\uC870\uC8FC\uD0DD\uC744 \uC120\uD0DD\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 0
     targetLabel: 
@@ -2524,9 +3406,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: raid-entered
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-arrival
@@ -2539,6 +3428,7 @@ MonoBehaviour:
       \uC774\uBC88 \uC5F0\uC2B5\uC5D0\uC11C\uB294 \uD53C\uD574\uB97C \uBC1B\uC9C0
       \uC54A\uC73C\uB2C8 \uCC28\uADFC\uCC28\uADFC \uC9C4\uD589\uD574 \uBCF4\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2561,16 +3451,65 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
+  - id: raid-tank-retry-guidance
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uC8FD\uC5C8\uC744\uB54C\uB294 \uD558\uB8E8\uAC00 \uB118\uC5B4\uAC00\uC9C0
+      \uC54A\uACE0, \uC7AC\uC2DC\uB3C4\uAC00 \uAC00\uB2A5\uD569\uB2C8\uB2E4.\n\uC785\uC7A5\uB8CC\uAC00
+      \uC788\uB294 \uACBD\uC6B0, \uC7AC\uC785\uC7A5\uC744 \uC704\uD574\uC11C\uB294
+      \uBE44\uC6A9\uC744 \uB0B4\uC57C\uB9CC\uD569\uB2C8\uB2E4."
+    objective: 
+    showDescriptionBeforeObjective: 0
+    completion: 13
+    target: 0
+    targetLabel: 
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions: []
   - id: raid-approach-crate
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uBA3C\uC800 \uC548\uB0B4 \uD45C\uC2DC\uB97C \uB530\uB77C \uBAA8\uB4C8
       \uC0C1\uC790 \uAC00\uAE4C\uC774 \uC774\uB3D9\uD574 \uBCF4\uC138\uC694."
     objective: "\uC548\uB0B4\uB41C \uBAA8\uB4C8 \uC0C1\uC790 \uAC00\uAE4C\uC774 \uC774\uB3D9\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 11
     target: 9
     targetLabel: "\uC5F0\uC2B5\uC6A9 \uCC28\uC9C0 \uBAA8\uB4C8 \uC0C1\uC790"
@@ -2593,9 +3532,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - fire
   - id: raid-scan-introduction
@@ -2606,6 +3552,7 @@ MonoBehaviour:
       \uD655\uC778\uD558\uC138\uC694. \uB0B4\uC6A9\uC744 \uD655\uC778\uD55C \uB4A4
       Q\uB97C \uB193\uC73C\uBA74 \uB2E4\uC74C\uC73C\uB85C \uC9C4\uD589\uD569\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: "\uC5F0\uC2B5\uC6A9 \uCC28\uC9C0 \uBAA8\uB4C8 \uC0C1\uC790"
@@ -2628,9 +3575,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - fire
   - id: raid-scan-crate
@@ -2638,6 +3592,7 @@ MonoBehaviour:
     description: 
     objective: "Q\uB97C \uB204\uB978 \uCC44 \uC0C1\uC790\uB97C \uC2A4\uCE94\uD558\uACE0,
       \uC800\uD56D \uC815\uBCF4\uB97C \uD655\uC778\uD55C \uB4A4 Q\uB97C \uB193\uC73C\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 12
     target: 9
     targetLabel: "\uC5F0\uC2B5\uC6A9 \uCC28\uC9C0 \uBAA8\uB4C8 \uC0C1\uC790"
@@ -2660,9 +3615,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - fire
   - id: raid-scan-completed
@@ -2674,6 +3636,7 @@ MonoBehaviour:
       \uBD80\uC218\uACE0, \uB5A8\uC5B4\uC9C4 \uBAA8\uB4C8\uC744 \uD68D\uB4DD\uD55C
       \uB4A4 \uD0C8\uCD9C\uD558\uC138\uC694."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: "\uC5F0\uC2B5\uC6A9 \uCC28\uC9C0 \uBAA8\uB4C8 \uC0C1\uC790"
@@ -2696,9 +3659,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - fire
   - id: raid-collect-module
@@ -2706,6 +3676,7 @@ MonoBehaviour:
     description: 
     objective: "\uBAA8\uB4C8 \uC0C1\uC790\uB97C \uC0AC\uACA9\uC73C\uB85C \uBD80\uC218\uACE0,
       \uB5A8\uC5B4\uC9C4 \uBAA8\uB4C8\uC5D0 \uB2E4\uAC00\uAC00 \uD68D\uB4DD\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 9
     targetLabel: "\uC5F0\uC2B5\uC6A9 \uCC28\uC9C0 \uBAA8\uB4C8 \uC0C1\uC790"
@@ -2728,9 +3699,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: training-module-collected
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - fire
   - id: raid-return-introduction
@@ -2744,6 +3722,7 @@ MonoBehaviour:
       \uBB34\uC0AC\uD788 \uADC0\uD658\uD574\uC57C \uD68D\uB4DD\uD55C \uBAA8\uB4C8\uACFC
       \uC7AC\uB8CC\uB97C \uAC00\uC838\uAC08 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2766,9 +3745,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
   - id: raid-return
@@ -2776,6 +3762,7 @@ MonoBehaviour:
     description: 
     objective: "\uD0C8\uCD9C \uBC1C\uD310 \uC704\uC5D0\uC11C 5\uCD08\uAC04 \uBC84\uD2F0\uACE0,
       \uADC0\uD658 \uC815\uC0B0\uC744 \uD655\uC778\uD558\uC138\uC694."
+    showDescriptionBeforeObjective: 0
     completion: 1
     target: 10
     targetLabel: "\uD0C8\uCD9C \uBC1C\uD310"
@@ -2798,9 +3785,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: home-returned
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - fire
   - id: home-returned
@@ -2812,6 +3806,7 @@ MonoBehaviour:
       \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uC5F0\uC2B5\uC6A9 \uC9C4\uD589\uC744 \uC815\uB9AC\uD558\uACE0
       \uCCAB \uC601\uC5C5\uC744 \uC2DC\uC791\uD558\uACA0\uC2B5\uB2C8\uB2E4."
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2834,15 +3829,106 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
+  - id: gameover-condition
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "\uC601\uC5C5 \uC885\uB8CC\uC2DC \uD604\uC7AC \uBCF4\uC720 \uAE08\uC561\uBCF4\uB2E4
+      \uCD5C\uC885 \uC815\uC0B0\uC561\uC774 \uB354 \uB9CE\uC73C\uBA74 \uAC8C\uC784\uC624\uBC84
+      \uB429\uB2C8\uB2E4."
+    objective: 
+    showDescriptionBeforeObjective: 0
+    completion: 0
+    target: 0
+    targetLabel: 
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions:
+    - none
+    - 
+  - id: retirement-introduction
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description: "언제까지고 총만 만들 순 없겠죠. {은퇴자금} 모으면 은퇴할 수 있습니다."
+    objective: 
+    showDescriptionBeforeObjective: 0
+    completion: 14
+    target: 0
+    targetLabel: 
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions:
+    - none
+    - 
+
   - id: tutorial-finish
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC774\uC81C\uB294 \uB2F9\uC2E0 \uCC28\uB840\uC785\uB2C8\uB2E4"
     objective: 
+    showDescriptionBeforeObjective: 0
     completion: 0
     target: 0
     targetLabel: 
@@ -2865,8 +3951,16 @@ MonoBehaviour:
       \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     wrongModuleMessage: 
     prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
     discardHeldWeapon: 0
     allowedModuleIds: 0100000002000000080000000700000009000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
+    - 

@@ -96,16 +96,24 @@ namespace WeaponWorkshop
             }
             else if (templateAssembly != null)
             {
-                foreach (var block in templateAssembly.GetComponentsInChildren<PlacedBlock>())
+                int shotgunCount = 0;
+                foreach (var block in templateAssembly.GetComponentsInChildren<PlacedBlock>(true))
                 {
-                    if (block.transform.parent != templateAssembly.transform) continue;
-                    GetModulePrice(templateAssembly, block, out int dollars, out int materials);
+                    if (block.transform.parent != templateAssembly.transform || !block.gameObject.activeSelf) continue;
+                    GetModulePrice(templateAssembly, block, ref shotgunCount, out int dollars, out int materials);
                     dollarTotal += dollars;
                     materialTotal += materials;
                 }
             }
             if (dollarTotal > int.MaxValue || materialTotal > int.MaxValue) return false;
+            if (wallet.Balance < dollarTotal)
+            {
+                wallet.CheckPurchaseFunds((int)dollarTotal, false);
+                return false;
+            }
             EquipableWeapon purchasedCore = null;
+            // Preset purchases include their modules, so they are logged apart from a bare core.
+            string partKind = presetPlan != null ? corePrefab.name + "+preset" : corePrefab.name;
             bool purchased = wallet.TryPurchaseModule((int)dollarTotal, (int)materialTotal, () =>
             {
                 EquipableWeapon core = Instantiate(corePrefab, transform.position, transform.rotation);
@@ -120,28 +128,33 @@ namespace WeaponWorkshop
                 if (holder.Equip(core)) return true;
                 Destroy(core.gameObject);
                 return false;
-            });
+            }, partKind);
             if (!purchased) return false;
+            wallet.NotifyPartPurchased(partKind, (int)dollarTotal, (int)materialTotal);
             // RestoreLayout already restores the preset's cost. Record this purchase once, not add it again.
             purchasedCore.RestoreConstructionPurchaseCost((int)dollarTotal);
             var assembly = purchasedCore.GetComponent<CubeAssembly>();
-            if (assembly != null)
-                foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>())
+            if (assembly != null && presetPlan == null)
+            {
+                int shotgunCount = 0;
+                foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>(true))
                 {
-                    if (block.transform.parent != assembly.transform) continue;
-                    GetModulePrice(assembly, block, out int dollars, out int materials);
+                    if (block.transform.parent != assembly.transform || !block.gameObject.activeSelf) continue;
+                    GetModulePrice(assembly, block, ref shotgunCount, out int dollars, out int materials);
                     block.RecordPurchaseCost(dollars);
                     block.RecordModuleCreditCost(materials);
                 }
+            }
             if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("core-picked-up", this);
             return true;
         }
 
-        private static void GetModulePrice(CubeAssembly assembly, PlacedBlock block, out int dollars, out int materials)
+        private static void GetModulePrice(CubeAssembly assembly, PlacedBlock block, ref int shotgunCount, out int dollars, out int materials)
         {
             var data = assembly.GetModuleData(block.ModuleSlot);
             dollars = data != null ? Mathf.Max(0, data.BuyPrice) : WeaponPurchasePrices.Module;
-            materials = data != null ? Mathf.Max(0, data.ModuleCreditCost) : 0;
+            materials = WeaponPurchasePrices.ModuleCredits(data, shotgunCount);
+            if (data != null && data.ModuleType == StatType.Shotgun) shotgunCount++;
         }
     }
 }

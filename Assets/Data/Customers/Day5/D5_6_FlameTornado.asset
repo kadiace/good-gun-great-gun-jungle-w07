@@ -12,17 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D5_6_FlameTornado
   m_EditorClassIdentifier: 
-  lines:
-  - "\uB0B4\uAC8C \uCD95\uAD6C\uB294... \uC0B4\uC778\uC774\uB2E4... \uD30C\uC774\uC5B4
-    \uD1A0\uB124\uC774\uB3C4!!"
-  - "화염방사 태그에 회전 태그까지 부탁해요!"
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: c45e9713dbf2ac3469b4a59283112118, type: 2}
-  - {fileID: 11400000, guid: 60c861d406fb6fd48a48e2649ddcb52b, type: 2}
+  profileId: 0a8af4ee73848804a9693aa05665fb80
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
-  happyLine: "\uD30C\uC774\uC5B4 \uD1A0\uB124\uC774\uB3C4~!!!"
-  angryLine: "\uB05D\uB0AC\uB2E4."
-  price: 700
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: aa11e1dcd5d411d419851116ab57b278, type: 3}

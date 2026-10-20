@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: WantTag_Spin
   m_EditorClassIdentifier: 
-  displayName: "\uD68C\uC804 \uD0DC\uADF8"
-  request: "\uD68C\uC804 \uD0DC\uADF8 (\uD68C\uC804 \uBAA8\uB4C8 1\uAC1C \uC774\uC0C1)"
+  tableId: tag/spin
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: b5d9e450608d02c448b9a7d3bba5ad92, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 6
-  requiredModules:
-  - {fileID: 11400000, guid: 9841ca931bf7a8c4b866da354b808ad7, type: 2}
+  unlockDay: 0
+  requiredModules: []

@@ -12,8 +12,6 @@ namespace WeaponWorkshop
         [SerializeField] private Transform viewPoint;
         [SerializeField, Min(0f)] private float moveSpeed = 3f;
         [SerializeField, Min(0f)] private float sprintSpeed = 10f;
-        [SerializeField, Min(0.05f)] private float walkingSoundInterval = 0.45f;
-        [SerializeField, Min(0.1f)] private float sprintSoundIntervalMultiplier = 2.5f;
         [SerializeField, Min(0f), Tooltip("점프 시작 시 위쪽 속도(m/s). 0이면 점프하지 않습니다.")]
         private float jumpForce = 7f;
         [SerializeField, Min(0f)] private float lookSensitivity = 0.15f;
@@ -29,11 +27,12 @@ namespace WeaponWorkshop
         private float recoilPitchVelocity;
         private float recoilSmoothTime = 0.18f;
         private float verticalSpeed;
-        private float walkingSoundElapsed;
         private bool jumpInProgress;
         public Transform ViewPoint => viewPoint;
         // Scope zoom lowers look speed; 1 = normal.
         public float LookSensitivityScale { get; set; } = 1f;
+        // Benchmark replay sets the pose itself; input look/move is skipped while true.
+        public bool ExternallyDriven { get; set; }
         public void SetViewRotation(Quaternion rotation)
         {
             if(viewPoint==null)return;
@@ -55,7 +54,7 @@ namespace WeaponWorkshop
             ApplyViewRotation();
             verticalSpeed = 0f;
             jumpInProgress = false;
-            walkingSoundElapsed = 0f;
+            WorkshopSoundEffects.RaisePlayerMovementStopped(this);
             if (controller != null) controller.enabled = wasEnabled;
         }
 
@@ -83,7 +82,7 @@ namespace WeaponWorkshop
             recoilPitchVelocity = 0f;
             verticalSpeed = 0f;
             jumpInProgress = false;
-            walkingSoundElapsed = 0f;
+            WorkshopSoundEffects.RaisePlayerMovementStopped(this);
         }
         private void OnDestroy() => controls?.Dispose();
 
@@ -91,7 +90,7 @@ namespace WeaponWorkshop
         {
             if (GameManager.GameplayBlocked || !Application.isFocused)
             {
-                walkingSoundElapsed = 0f;
+                WorkshopSoundEffects.RaisePlayerMovementStopped(this);
                 return;
             }
 
@@ -102,9 +101,10 @@ namespace WeaponWorkshop
         {
             if (!enabled || controls == null)
             {
-                walkingSoundElapsed = 0f;
+                WorkshopSoundEffects.RaisePlayerMovementStopped(this);
                 return;
             }
+            if (ExternallyDriven) return;
             Vector2 delta = look.ReadValue<Vector2>() * LookSensitivityScale * MouseSensitivityUI.Multiplier;
             transform.Rotate(Vector3.up, delta.x * lookSensitivity, Space.World);
             float pitchInput = -delta.y * lookSensitivity;
@@ -125,7 +125,7 @@ namespace WeaponWorkshop
             {
                 verticalSpeed = jumpForce;
                 jumpInProgress = true;
-                WorkshopSoundEffects.RaisePlayerJumped(transform.position);
+                WorkshopSoundEffects.RaisePlayerJumped(this);
             }
 
             float speed = sprint.IsPressed() ? sprintSpeed : moveSpeed;
@@ -142,25 +142,8 @@ namespace WeaponWorkshop
 
             float horizontalDistance = Vector3.ProjectOnPlane(transform.position - previousPosition, Vector3.up).magnitude;
             float horizontalSpeed = deltaTime > 0f ? horizontalDistance / deltaTime : 0f;
-            if (controller.isGrounded && horizontalSpeed > 0.05f)
-            {
-                walkingSoundElapsed += deltaTime;
-                float baseInterval = Mathf.Max(0.05f, walkingSoundInterval);
-                float referenceSpeed = Mathf.Max(0.01f, moveSpeed);
-                float interval = Mathf.Clamp(baseInterval * referenceSpeed / horizontalSpeed,
-                    Mathf.Min(0.12f, baseInterval), baseInterval * 2f);
-                if (sprint.IsPressed())
-                    interval *= Mathf.Max(0.1f, sprintSoundIntervalMultiplier);
-                if (walkingSoundElapsed >= interval)
-                {
-                    walkingSoundElapsed = 0f;
-                    WorkshopSoundEffects.RaiseFootstepPlayed(transform.position);
-                }
-            }
-            else
-            {
-                walkingSoundElapsed = 0f;
-            }
+            WorkshopSoundEffects.RaisePlayerMovementUpdated(this, horizontalSpeed, moveSpeed,
+                controller.isGrounded, sprint.IsPressed(), deltaTime);
         }
 
         public void AddVerticalRecoil(float degrees, float maximumDegrees, float smoothTime)

@@ -26,6 +26,8 @@ namespace WeaponWorkshop
                 return;
             }
             leaving = true;
+            // 타이틀에는 음악이 없고 다음 Main 진입은 세이브 진행도로 다시 계산한다.
+            SoundManager.RestoreBeforeRaidMusic(true);
             NightRaidTransfer.Abandon();
             TutorialManager.AbandonTraining();
             GameSaveFiles.PendingLoad = null;

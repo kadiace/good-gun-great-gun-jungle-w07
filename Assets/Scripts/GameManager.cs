@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using LogKit;
 
 namespace WeaponWorkshop
 {
@@ -15,7 +16,18 @@ namespace WeaponWorkshop
         private Coroutine cursorRestore;
         private readonly System.Collections.Generic.List<GameObject> effects = new System.Collections.Generic.List<GameObject>();
         public static GameManager Instance { get; private set; }
-        public static bool GameplayBlocked => Instance != null && (Instance.IsPaused || Instance.InDialogue || Instance.IsNight || Instance.InTargetSelection || Instance.InManual || (Instance.UI != null && Instance.UI.IsChoiceOpen));
+        // 글자 입력 중에는 F(상호작용)·단축키 등 게임 조작이 입력과 함께 실행되지 않게 막는다.
+        public static bool GameplayBlocked => ModalBlocked || TextInputFocused;
+        // 창·대화·일시정지 등 화면 상태로만 막힌 경우. 입력칸에서 바로 누를 수 있어야 하는 UI 버튼의 활성 판정에 쓴다.
+        public static bool ModalBlocked => Instance != null && (Instance.IsPaused || Instance.InDialogue || Instance.IsNight || Instance.InTargetSelection || Instance.InManual || (Instance.UI != null && Instance.UI.IsChoiceOpen));
+        public static bool TextInputFocused
+        {
+            get
+            {
+                var selected = UnityEngine.EventSystems.EventSystem.current != null ? UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject : null;
+                return selected != null && selected.TryGetComponent<TMPro.TMP_InputField>(out var field) && field.isFocused;
+            }
+        }
         public bool InManual { get; private set; }
         public event System.Action ManualCloseRequested;
         public void SetManual(bool open) { InManual = open; RestoreCursor(); }
@@ -48,7 +60,14 @@ namespace WeaponWorkshop
             controls.FindAction("Pause", true).performed += _ => TogglePause();
         }
         private void OnEnable() => controls?.Enable();
-        private void Start() => uiManager?.Refresh(this);
+        private void Start()
+        {
+            // LogKit 자동 초기화(AfterSceneLoad)가 첫 씬 Awake보다 늦으므로 Start에서 기록한다.
+            PlayerIdentity.LogSessionStart();
+            GameLogger.Data("Info", "System", "씬 시작", new SceneBootLog
+            { scene = gameObject.scene.name, installId = PlayerIdentity.InstallId, saveId = PlayerIdentity.SaveId });
+            uiManager?.Refresh(this);
+        }
         private void OnDisable()
         {
             if (cursorRestore != null) StopCoroutine(cursorRestore);
@@ -63,12 +82,19 @@ namespace WeaponWorkshop
         }
         public void TogglePause()
         {
+            if (uiManager != null && uiManager.GetComponent<RetireUI>()?.IsOpen == true) return;
+            // ESC는 입력칸 선택 중에도 창 닫기·작업대 나가기로 동작하므로 화면 상태(ModalBlocked)만 본다.
+            if (!ModalBlocked && uiManager != null && uiManager.GetComponent<ShootingTestHUD>()?.CloseRetry() == true) return;
             var tutorialSkip = uiManager != null ? uiManager.GetComponent<TutorialSkipUI>() : null;
             if (tutorialSkip != null && tutorialSkip.IsOpen) return;
             var recipe = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponRecipeUI>() : null;
             if (recipe != null && recipe.IsOpen) { recipe.Close(); return; }
             if (InManual) { ManualCloseRequested?.Invoke(); return; }
-            if (uiManager != null && uiManager.IsChoiceOpen) { uiManager.Feedback.Cancel(); return; }
+            if (uiManager != null && uiManager.IsChoiceOpen)
+            {
+                if (!uiManager.Feedback.IsChoiceInputSuspended) uiManager.Feedback.Cancel();
+                return;
+            }
             var presets = uiManager != null ? uiManager.GetComponent<PresetPanelUI>() : null;
             if (presets != null && presets.IsOpen) { presets.Close(); return; }
             var weaponCode = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponCodeUI>() : null;
@@ -76,7 +102,7 @@ namespace WeaponWorkshop
             var weaponName = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponNameUI>() : null;
             if (weaponName != null && weaponName.CancelEditing()) return;
             if (InTargetSelection) { TargetSelectionCloseRequested?.Invoke(); return; }
-            if (!GameplayBlocked)
+            if (!ModalBlocked)
             {
                 var session = workshopSession;
                 if (session == null && uiManager != null && uiManager.Player != null)
@@ -90,6 +116,7 @@ namespace WeaponWorkshop
             if (IsNight) return;
             IsPaused = !IsPaused;
             Time.timeScale = IsPaused ? 0f : 1f;
+            GameLogger.Info("Game", IsPaused ? "일시정지" : "일시정지 해제");
             uiManager?.Refresh(this);
             RestoreCursor();
             if (!IsPaused)
@@ -120,6 +147,7 @@ namespace WeaponWorkshop
         }
         public void Restart()
         {
+            uiManager?.GetComponent<ShootingTestHUD>()?.CancelTest();
             ManualCloseRequested?.Invoke();
             TargetSelectionCloseRequested?.Invoke();
             if (IsNight) return;
@@ -146,6 +174,7 @@ namespace WeaponWorkshop
         }
         public void SetNight(bool night)
         {
+            if (night) uiManager?.GetComponent<ShootingTestHUD>()?.CancelTest();
             if (night) ManualCloseRequested?.Invoke();
             if (night) TargetSelectionCloseRequested?.Invoke();
             IsNight = night;

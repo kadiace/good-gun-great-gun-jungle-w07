@@ -12,13 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D2_7_Ricochet 1
   m_EditorClassIdentifier: 
-  lines:
-  - "\uB09C \uACBD\uAE30\uB3C4 \uC548\uC591\uC758 \uC774\uC900\uC601\uC774\uB2E4!"
-  endsClear: 0
+  profileId: e8726eef5e281a241935acf0d3110b60
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\uB09C \uACBD\uAE30\uB3C4 \uC548\uC591\uC758 \uC774\uC900\uC601\uC774\uB2E4!"
-  angryLine: "\uB09C \uACBD\uAE30\uB3C4 \uC548\uC591\uC758 \uC774\uC900\uC601\uC774\uB2E4!"
-  price: 400
   prefab: {fileID: 0}
   portrait: {fileID: 0}

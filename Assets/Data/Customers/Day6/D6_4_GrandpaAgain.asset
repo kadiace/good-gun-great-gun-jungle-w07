@@ -12,17 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D6_4_GrandpaAgain
   m_EditorClassIdentifier: 
-  lines:
-  - "\uC6CC\uD130\uBC24\uB54C \uC4F8 \uBB3C\uCD1D \uB9CC\uB4E4\uC5B4\uC8FC\uC138\uC694"
-  - "물총 태그랑 유탄 태그를 같이 맞춰주세요!"
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: 48aeae95d13c1f643817498a6dae1573, type: 2}
-  - {fileID: 11400000, guid: 982660b8fcc3c1340adfa1edcdfb1257, type: 2}
+  profileId: 8f30edea593b9824c88aaa4606b9c50b
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
-  happyLine: "\uC0AC\uC7A5\uB2D8\uC774 \uB9DB\uC788\uACE0 \uCD1D\uC774 \uCE5C\uC808\uD574\uC694!"
-  angryLine: "\uC774\uAC78 \uC6CC\uD130\uBC24\uC5D0 \uB4E4\uACE0\uAC00\uBA74 \uB274\uC2A4\uC5D0
-    \uB098\uC624\uACA0\uB294\uB370\uC694..."
-  price: 800
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 8eff29f2eedfad54a965f69c8b75b74c, type: 3}

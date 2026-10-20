@@ -32,13 +32,13 @@ namespace WeaponWorkshop
             bool available = session != null && session.IsEditing && session.ActiveWorkbench.CurrentWeapon != null;
             panel.SetActive(available);
             if (IsOpen && (!available || session.ActiveWorkbench.CurrentWeapon != selectedWeapon)) Close();
-            foreach (var slot in slots) slot.interactable = available && !GameManager.GameplayBlocked;
+            foreach (var slot in slots) slot.interactable = available && !GameManager.ModalBlocked;
         }
         private void Select(int slot)
         {
             if (TutorialManager.Instance != null && TutorialManager.Instance.CurrentStep != null &&
                 TutorialManager.Instance.CurrentStep.requiredSignal == "preset-saved" && slot != 0) return;
-            if (!TutorialManager.ActionAllowed("preset-save")) return;
+            if (!TutorialManager.TryAction("preset-save")) return;
             if (GameManager.GameplayBlocked || Session == null || !Session.IsEditing || Presets == null) return;
             selectedSlot = slot; selectedWeapon = Session.ActiveWorkbench.CurrentWeapon;
             if (selectedWeapon == null) return;
@@ -68,7 +68,7 @@ namespace WeaponWorkshop
         }
         private void Load()
         {
-            if (!TutorialManager.ActionAllowed("preset-load")) return;
+            if (!TutorialManager.TryAction("preset-load")) return;
             try
             {
                 if (!StillEditing || Presets == null) return;
@@ -81,7 +81,7 @@ namespace WeaponWorkshop
                     Mathf.Max(0, old.paidConstructionCost - oldMoney), out int money, out int materials);
                 var wallet = ui.Player.GetComponent<PlayerWallet>();
                 if (!wallet.TryPurchaseModule(Mathf.Max(0, money - oldMoney), Mathf.Max(0, materials - oldMaterials), () => assembly.RestoreLayout(plan))) return;
-                wallet.Credit(Mathf.Max(0, oldMoney - money)); wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
+                wallet.RefundConstruction(Mathf.Max(0, oldMoney - money)); wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
                 selectedWeapon.SetWeaponName(blueprint.name);
                 selectedWeapon.GetComponentInChildren<StatCollector>()?.Recalculate();
                 GetComponent<WeaponNameUI>()?.RefreshName();

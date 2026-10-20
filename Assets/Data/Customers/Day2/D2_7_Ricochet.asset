@@ -12,15 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D2_7_Ricochet
   m_EditorClassIdentifier: 
-  lines:
-  - "\uB2F9\uAD6C \uC88B\uC544\uD558\uC138\uC694?"
-  - "도탄 태그가 붙은 총이요. 벽에 튕겨 맞히는 총이요!"
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: fdd2d5a8251468842be3744e7dba689f, type: 2}
+  profileId: 6a41b8901ebccb14a9bea905b5e759ab
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
-  happyLine: "\uC4F0\uB9AC\uCFE0\uC158 \uAC01 \uB098\uC654\uB2E4!"
-  angryLine: "300\uC774\uD558 \uB9DB\uC138\uC774 \uAE08\uC9C0!"
-  price: 400
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: b58e2e492f89fde48969f7aa1a6ddfe1, type: 3}

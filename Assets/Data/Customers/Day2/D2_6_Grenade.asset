@@ -12,15 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D2_6_Grenade
   m_EditorClassIdentifier: 
-  lines:
-  - "유탄 태그가 붙은 총으로 맞춰주세요."
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: 982660b8fcc3c1340adfa1edcdfb1257, type: 2}
+  profileId: a657c8e6daaac0640b26135bf3b0e940
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
-  happyLine: "\uC608\uC220\uC740 \uD3ED\uBC1C\uC774\uB2E4!!!"
-  angryLine: "\uD639\uC2DC \uB9CC\uB4E4\uB2E4\uAC00 \uC591\uC2EC\uC774 \uAC19\uC774
-    \uD130\uC9C0\uC168\uB098\uC694?"
-  price: 400
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 0cf48b033c2220a4d92482ea054d99dc, type: 3}

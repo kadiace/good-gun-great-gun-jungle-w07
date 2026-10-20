@@ -19,6 +19,7 @@ namespace WeaponWorkshop
         private Quaternion shotRotation;
         private float penetration, explosion;
         private bool exploded;
+        private readonly PenetrationPassages passages = new PenetrationPassages();
 
         public void Initialize(Vector3 travelDirection, float movementSpeed, Transform owner, Transform weapon,
             WeaponStats stats = default)
@@ -26,6 +27,7 @@ namespace WeaponWorkshop
             direction = travelDirection.normalized;
             speed = Mathf.Max(0f, movementSpeed);
             penetration = Mathf.Max(0f, stats.penetration);
+            passages.Clear();
             explosion = Mathf.Max(0f, stats.explosion);
             exploded = false;
             traveledDistance = 0f;
@@ -58,25 +60,31 @@ namespace WeaponWorkshop
         private void Update()
         {
             if (speed <= 0f) { PoolManager.Release(gameObject); return; }
+            DestructionCollisionBatch.Flush();
             float distance = Mathf.Min(speed * Time.deltaTime, MaximumTravelDistance - traveledDistance);
             if (distance <= 0f) return;
             for (int step = 0; step < 128 && distance > 0f; step++)
             {
             float nearest = distance;
             bool hitObstacle = false;
-            RaycastHit nearestHit = default;
-            int layers = (collisionLayers | LayerMask.GetMask("Weapon")) & ~LayerMask.GetMask("Energy");
-            foreach (RaycastHit hit in Physics.BoxCastAll(transform.position, halfExtents, direction,
-                shotRotation, distance, layers, QueryTriggerInteraction.Ignore))
+            CombatPhysicsQueries.Hit nearestHit = default;
+            int layers = (collisionLayers | LayerMask.GetMask("Weapon")) & ~LayerMask.GetMask("Energy", "GunBlock");
+            int hitCount = CombatPhysicsQueries.BoxCast(transform.position, halfExtents, direction,
+                shotRotation, distance, layers, out var hits);
+            for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
             {
+                var hit = hits[hitIndex];
                 Transform hitTransform = hit.collider.transform;
+                var hitTarget = hit.collider.GetComponentInParent<DestructibleTarget>();
                 if (hitTransform.IsChildOf(transform) ||
+                    passages.Ignore(hitTarget) ||
                     (ignoredOwner != null && hitTransform.IsChildOf(ignoredOwner)) ||
                     (ignoredWeapon != null && hitTransform.IsChildOf(ignoredWeapon)) || hit.distance > nearest) continue;
                 nearest = hit.distance;
                 nearestHit = hit;
                 hitObstacle = true;
             }
+            CarvePassedTargets(nearest);
             transform.position += direction * nearest;
             traveledDistance += nearest;
             distance -= nearest;
@@ -87,8 +95,15 @@ namespace WeaponWorkshop
                 if (target != null && TutorialManager.Instance != null) TutorialManager.Instance.NotifyTargetHit(target);
                 if (target != null)
                 {
-                    penetration = target.Penetrate(penetration, transform.position + direction * 0.001f,
-                        shotRotation, halfExtents, out bool passed, out _);
+                    penetration = target.PenetrateAlongLine(penetration, transform.position + direction * 0.001f,
+                        shotRotation, halfExtents, 0f, out bool passed, out float resistanceBeforeHit,
+                        out bool destroyedBlock, allowResistanceReduction: !passages.Contains(target));
+                    bool hitBlock = destroyedBlock || target.PenetrationResistance < resistanceBeforeHit;
+                    if (hitBlock) penetration = Mathf.Max(0f, penetration - 1f);
+                    if (passed && hitBlock)
+                    {
+                        passages.Record(target, destroyedBlock, transform.position + direction * 0.001f, shotRotation, 0f);
+                    }
                     if (!exploded && explosion > 0f)
                     {
                         exploded = true;
@@ -97,11 +112,16 @@ namespace WeaponWorkshop
                     if (passed)
                     {
                         float advance = Mathf.Min(0.001f, distance);
+                        CarvePassedTargets(advance);
                         transform.position += direction * advance;
                         traveledDistance += advance;
                         distance -= advance;
                         continue;
                     }
+                    // A blocked bullet disappears at the armor; it must not reach
+                    // the customer/health handling below that armor.
+                    PoolManager.Release(gameObject);
+                    return;
                 }
                 Customer customer = nearestHit.collider.GetComponentInParent<Customer>();
                 if (customer != null) customer.Kill();
@@ -110,6 +130,11 @@ namespace WeaponWorkshop
             break;
             }
             if (traveledDistance >= MaximumTravelDistance) PoolManager.Release(gameObject);
+        }
+
+        private void CarvePassedTargets(float distance)
+        {
+            passages.Carve(transform.position, shotRotation, halfExtents, distance);
         }
 
         private void ShowImpact(Vector3 point, Vector3 normal)

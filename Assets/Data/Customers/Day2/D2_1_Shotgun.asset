@@ -12,19 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D2_1_Shotgun
   m_EditorClassIdentifier: 
-  lines:
-  - "\uC0F7\uAC74 \uD558\uB098\uC694."
-  - "산탄총 태그가 붙은 걸로요!"
-  - "\uC0B0\uD0C4\uCD1D \uD0DC\uADF8\uAC00 \uBD99\uB3C4\uB85D \uC0B0\uD0C4 \uBAA8\uB4C8\uC5D0
-    \uC804\uB825\uC774 \uC5F0\uACB0\uB418\uAC8C \uD574\uC8FC\uC138\uC694."
-  endsClear: 1
+  profileId: a00ebe5381d81494ba1d532eaa55a166
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
-  archetypes:
-  - {fileID: 11400000, guid: 70d86a3c50472dd47b261b990ddd9210, type: 2}
+  archetypes: []
   conditions: []
-  happyLine: "\uC774\uAC74 \uC81C\uB300\uB85C\uB41C \uC0F7\uAC74\uC774\uB2E4...!"
-  angryLine: "\uD639\uC2DC \uC0F7\uAC74\uC774 \uBB54\uC9C0 \uBAA8\uB974\uC2DC\uB098\uC694?"
-  price: 400
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: f21a531a3dc63c642a584533c8a08d6c, type: 3}

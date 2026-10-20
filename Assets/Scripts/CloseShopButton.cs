@@ -16,7 +16,7 @@ namespace WeaponWorkshop
         public bool Interact(Interaction interactor)
         {
             if (!CanInteract(interactor)) return false;
-            dayManager.CloseShop();
+            dayManager.CloseShop(manual: true);
             return true;
         }
     }

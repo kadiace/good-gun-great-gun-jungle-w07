@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Sniper
   m_EditorClassIdentifier: 
-  displayName: "\uC800\uACA9\uC18C\uCD1D"
-  request: "저격총 태그 (관통 2 이상, 무게 15 이상, 속도 2 이상, 스코프 1 이상)"
+  tableId: tag/sniper-rifle/legacy
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: aaf2e5c321465134bab63de10ee5e54a, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 1
-  requiredModules:
-  - {fileID: 11400000, guid: d402a84ed473853498b702ccf20adc69, type: 2}
+  unlockDay: 0
+  requiredModules: []

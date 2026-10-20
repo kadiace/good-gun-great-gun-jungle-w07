@@ -12,19 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924fe5eb6de08594c93cb93f0269d7bc, type: 3}
   m_Name: Type_AssaultRifle
   m_EditorClassIdentifier: 
-  displayName: "\uB3CC\uACA9\uC18C\uCD1D"
-  tagColor: {r: 0.33333334, g: 0.41960785, b: 0.24705882, a: 1}
-  conditions:
-  - stat: 0
-    comparison: 0
-    value: 2
-    source: 0
-  - stat: 1
-    comparison: 0
-    value: 3
-    source: 0
-  - stat: 11
-    comparison: 0
-    value: 15
-    source: 0
-  sellMultiplier: 1
+  tableId: 9b6639978cc6faf49a0a539f89ad1ffb
+  displayName: 
+  tagColor: {r: 0, g: 0, b: 0, a: 0}
+  conditions: []
+  sellMultiplier: 0

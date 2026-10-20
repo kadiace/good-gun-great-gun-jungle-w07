@@ -15,10 +15,12 @@ namespace WeaponWorkshop
         private const float ProbeLift = 0.05f, ProbeHeight = 0.15f;
         private readonly RaycastHit[] hits = new RaycastHit[16];
         private readonly RaycastHit[] topHits = new RaycastHit[16];
+        internal float LastClimbHeightLimit { get; private set; }
 
         // 앞쪽 낮은 높이에서 처음 닿는 정적 콜라이더(자신·움직이는 물체 제외)
         private bool Probe(Vector3 forward, out RaycastHit hit)
         {
+            DestructionCollisionBatch.Flush();
             Vector3 center = transform.position + forward * (frontOffset - probeDistance * 0.5f)
                 + Vector3.up * (bottomOffset + ProbeLift + ProbeHeight);
             Vector3 half = new Vector3(halfWidth, ProbeHeight, probeDistance * 0.5f);
@@ -43,13 +45,16 @@ namespace WeaponWorkshop
             if (limit <= 0f || !Probe(forward, out var hit)) return 0f;
             // 턱 윗면 높이를 앞쪽 위에서 아래로 쏴서 잰다.
             Vector3 origin = hit.point + forward * 0.15f + Vector3.up * (limit + 0.5f);
+            DestructionCollisionBatch.Flush();
             int down = Physics.RaycastNonAlloc(origin, Vector3.down, topHits, limit + 0.7f,
                 ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore);
             float top = float.NegativeInfinity;
             for (int j = 0; j < down; j++)
                 if (!topHits[j].collider.transform.IsChildOf(transform) && topHits[j].point.y > top) top = topHits[j].point.y;
             float rise = top - (transform.position.y + bottomOffset);
-            return rise > 0.02f && rise <= limit ? climbSpeed : 0f;
+            if (!(rise > 0.02f && rise <= limit)) return 0f;
+            LastClimbHeightLimit = limit;
+            return climbSpeed;
         }
     }
 }

@@ -6,49 +6,49 @@ namespace WeaponWorkshop
     {
         [SerializeField] private UIManager uiManager;
         [SerializeField] private GameObject panel;
-        [SerializeField] private RectTransform grid;
-        [SerializeField] private RectTransform tagTemplate;
         [SerializeField] private WeaponTypeData[] tags = new WeaponTypeData[0];
         [SerializeField] private TMPro.TextMeshProUGUI weightText;
         [SerializeField] private TMPro.TextMeshProUGUI salePriceText;
+        [SerializeField] private TMPro.TextMeshProUGUI tagsText;
+        [SerializeField] private RectTransform tagContainer;
+        [SerializeField] private UnityEngine.UI.Image tagTemplate;
+        [SerializeField] private TMPro.TMP_Text noTagsText;
+        private readonly System.Collections.Generic.List<(UnityEngine.UI.Image image, TMPro.TMP_Text label)> tagBadges =
+            new System.Collections.Generic.List<(UnityEngine.UI.Image, TMPro.TMP_Text)>();
         [SerializeField] private ShopCatalog shopCatalog;
         private readonly System.Collections.Generic.List<WeaponTypeData> matchedTags = new System.Collections.Generic.List<WeaponTypeData>();
-        public RectTransform TagTemplate => tagTemplate;
+        // 스냅샷은 조립이 바뀌면 값이 달라지므로 캐시하지 않고 갱신 주기마다 새로 만들어 태그 판정과 배지에 함께 쓴다.
         public void GetMatchedTags(PowerCore core, System.Collections.Generic.List<WeaponTypeData> result)
         {
             result.Clear();
-            if (core == null) return;
-            var powered = WeaponAssemblyStats.PoweredCounts(core.GetComponent<CubeAssembly>());
-            // Hover uses the current assembly even when a display's behaviours are disabled or a cache is dirty.
-            var collector = core.GetComponent<StatCollector>();
-            var stats = WeaponAssemblyStats.Calculate(core.GetComponent<CubeAssembly>(),
-                collector != null && collector.BaseStats != null ? collector.BaseStats.Stats : default);
-            foreach (var tag in tags)
-                if (tag != null && tag.Matches(stats, powered, powered)) result.Add(tag);
+            if (core == null || tags.Length == 0) return;
+            var snapshot = new CustomerRequestInfo.WeaponSnapshot(core);
+            GetMatchedTags(snapshot, result);
         }
-        private TMPro.TextMeshProUGUI[] labels;
-        private RectTransform[] pills;
+
+        private void GetMatchedTags(CustomerRequestInfo.WeaponSnapshot snapshot, System.Collections.Generic.List<WeaponTypeData> result)
+        {
+            result.Clear();
+            if (!snapshot.HasWeapon) return;
+            foreach (var tag in tags)
+                if (tag != null && TableManager.Instance.CustomerRequest.MeetsTag(tag.TableId, snapshot)) result.Add(tag);
+        }
+        private PowerCore lastCore;
+        private float nextRefresh;
+        private float lastWeight = float.NaN;
+        private int lastPrice = int.MinValue;
+        private readonly System.Collections.Generic.List<CustomerRequestData.Tag> appliedTags = new System.Collections.Generic.List<CustomerRequestData.Tag>();
+        private readonly System.Collections.Generic.List<CustomerRequestData.Tag> badgeTags = new System.Collections.Generic.List<CustomerRequestData.Tag>();
+        private bool badgesDrawn;
 
         private void Awake()
         {
             panel?.SetActive(false);
+            if (tagsText != null) tagsText.text = "활성 태그";
+            if (tagTemplate != null) tagTemplate.gameObject.SetActive(false);
+            if (tagContainer != null) tagContainer.gameObject.SetActive(false);
+            if (noTagsText != null) noTagsText.gameObject.SetActive(false);
             if (uiManager == null) uiManager = GetComponentInParent<UIManager>(true);
-            if (tagTemplate == null || grid == null) return;
-            tagTemplate.gameObject.SetActive(false);
-            labels = new TMPro.TextMeshProUGUI[tags.Length];
-            pills = new RectTransform[tags.Length];
-            for (int i = 0; i < tags.Length; i++)
-            {
-                pills[i] = Instantiate(tagTemplate, grid);
-                pills[i].name = "Tag" + i;
-                labels[i] = pills[i].GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
-                if (tags[i] != null)
-                {
-                    labels[i].text = tags[i].DisplayName;
-                    pills[i].GetComponent<TagPillGraphic>().color = tags[i].TagColor;
-                }
-                pills[i].gameObject.SetActive(false);
-            }
         }
 
         private void OnDisable() => panel?.SetActive(false);
@@ -57,30 +57,63 @@ namespace WeaponWorkshop
         {
             var player = uiManager != null ? uiManager.Player : null;
             var session = player != null ? player.GetComponent<WorkshopSession>() : null;
-            var bench = session != null ? session.ActiveWorkbench : null;
-            var core = bench != null ? bench.CurrentCore : null;
-            bool visible = session != null && session.IsEditing && core != null;
+            var bench = session != null && session.IsEditing ? session.ActiveWorkbench : null;
+            var holder = uiManager != null ? uiManager.PlayerWeaponHolder : null;
+            var weapon = bench != null ? bench.CurrentWeapon : holder != null ? holder.EquippedWeapon : null;
+            var core = weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null;
+            bool visible = core != null;
             if (panel != null && panel.activeSelf != visible) panel.SetActive(visible);
-            if (!visible || labels == null) return;
-            var assembly = core.GetComponent<CubeAssembly>();
-            var stats = core.GetCurrentStats();
-            var powered = WeaponAssemblyStats.PoweredCounts(assembly);
-            var counts = powered;
-            if (weightText != null) weightText.text = $"무게  {stats.weight:0.##}";
-            matchedTags.Clear();
-            for (int i = 0; i < tags.Length; i++)
+            // 패널이 꺼져 있거나 공방 모드가 아니면 0.1초 갱신 자체를 건너뛴다.
+            if (panel == null || !panel.activeSelf || session == null || !session.IsEditing) return;
+            if (!visible)
             {
-                bool matched = tags[i] != null && tags[i].Matches(stats, counts, powered);
-                if (matched) matchedTags.Add(tags[i]);
-                if (pills[i].gameObject.activeSelf != matched)
+                lastCore = null; nextRefresh = 0f;
+                // 마지막 표시 값도 지워 다시 보일 때 현재 값으로 다시 그리도록 한다.
+                lastWeight = float.NaN; lastPrice = int.MinValue;
+                appliedTags.Clear(); badgesDrawn = false;
+                return;
+            }
+            if (lastCore == core && Time.unscaledTime < nextRefresh) return;
+            lastCore = core; nextRefresh = Time.unscaledTime + .1f;
+            var stats = core.GetCurrentStats();
+            if (weightText != null && lastWeight != stats.weight)
+            {
+                lastWeight = stats.weight;
+                weightText.text = $"무게  {stats.weight:0.##}";
+            }
+            GetMatchedTags(core, matchedTags);
+            if (tagContainer != null && tagTemplate != null)
+            {
+                // 태그는 갱신마다 판정하고(조립이 바뀌면 달라진다), 목록이 바뀔 때만 배지를 다시 그린다.
+                var snapshot = new CustomerRequestInfo.WeaponSnapshot(core);
+                var table = TableManager.Instance.CustomerRequest;
+                badgeTags.Clear();
+                foreach (var tag in table.tags)
+                    if (tag != null && table.MeetsTag(tag.id, snapshot)) badgeTags.Add(tag);
+                if (!badgesDrawn || !SameTags(badgeTags, appliedTags))
                 {
-                    pills[i].gameObject.SetActive(matched);
-                    UnityEngine.UI.LayoutRebuilder.MarkLayoutForRebuild(grid);
-                }
-                if (matched)
-                {
-                    labels[i].text = tags[i].DisplayName;
-                    pills[i].GetComponent<TagPillGraphic>().color = tags[i].TagColor;
+                    badgesDrawn = true;
+                    appliedTags.Clear();
+                    foreach (var tag in badgeTags) appliedTags.Add(tag);
+                    int used = 0;
+                    foreach (var tag in badgeTags)
+                    {
+                        if (used == tagBadges.Count)
+                        {
+                            var image = Instantiate(tagTemplate, tagContainer);
+                            tagBadges.Add((image, image.GetComponentInChildren<TMPro.TMP_Text>(true)));
+                        }
+                        var badge = tagBadges[used++];
+                        badge.image.gameObject.SetActive(true);
+                        badge.image.color = tag.color;
+                        badge.label.text = tag.name;
+                        Color linear = tag.color.linear;
+                        float luminance = .2126f * linear.r + .7152f * linear.g + .0722f * linear.b;
+                        badge.label.color = luminance > .179f ? Color.black : Color.white;
+                    }
+                    for (int i = used; i < tagBadges.Count; i++) tagBadges[i].image.gameObject.SetActive(false);
+                    tagContainer.gameObject.SetActive(used > 0);
+                    if (noTagsText != null) noTagsText.gameObject.SetActive(used == 0);
                 }
             }
             if (salePriceText != null)
@@ -88,8 +121,22 @@ namespace WeaponWorkshop
                 var collector = core.GetComponent<StatCollector>();
                 int price = shopCatalog != null && collector != null
                     ? shopCatalog.GetSellPrice(collector.Modules, matchedTags) : 0;
-                salePriceText.text = $"판매 가격  ${price:N0}";
+                if (price != lastPrice)
+                {
+                    lastPrice = price;
+                    salePriceText.text = $"총기 가치  <nobr>${price:N0}</nobr>";
+                }
             }
+        }
+
+        // 마지막에 그린 태그 목록과 비교해 배지 갱신 필요 여부를 판정한다.
+        private static bool SameTags(System.Collections.Generic.List<CustomerRequestData.Tag> current,
+            System.Collections.Generic.List<CustomerRequestData.Tag> applied)
+        {
+            if (current.Count != applied.Count) return false;
+            for (int i = 0; i < current.Count; i++)
+                if (!ReferenceEquals(current[i], applied[i])) return false;
+            return true;
         }
     }
 }

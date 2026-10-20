@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0afb97fa556bdb4a82c539c42fa8577, type: 3}
   m_Name: Want_Grenade
   m_EditorClassIdentifier: 
-  displayName: "\uC720\uD0C4(\uD3ED\uBC1C)"
-  request: "\uC720\uD0C4 \uD0DC\uADF8 (\uD3ED\uBC1C 1 \uC774\uC0C1, 3 \uBBF8\uB9CC)"
+  tableId: tag/grenade-launcher/legacy
+  displayName: 
+  request: 
   conditions: []
-  weaponType: {fileID: 11400000, guid: cb2c1699ceedbb54084051bd0ed7a56b, type: 2}
+  weaponType: {fileID: 0}
   excludes: []
-  unlockDay: 1
-  requiredModules:
-  - {fileID: 11400000, guid: 3819fc250847c48448b1dc45b4ce63a6, type: 2}
+  unlockDay: 0
+  requiredModules: []

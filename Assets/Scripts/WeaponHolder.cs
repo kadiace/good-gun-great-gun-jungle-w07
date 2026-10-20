@@ -27,6 +27,16 @@ namespace WeaponWorkshop
         private InputAction drop;
         [SerializeField, Min(0f), InspectorName("던지는 힘"), Tooltip("총을 던질 때 즉시 적용할 초기 속도(m/s)")] private float throwSpeed = 5f;
         public EquipableWeapon EquippedWeapon { get; private set; }
+        public event System.Action<EquipableWeapon, EquipableWeapon> EquippedWeaponChanged;
+        public event System.Action<EquipableWeapon> AttackInput;
+        public event System.Action<EquipableWeapon> ShotFired;
+        private void SetEquippedWeapon(EquipableWeapon next)
+        {
+            var previous = EquippedWeapon;
+            if (previous == next) return;
+            EquippedWeapon = next;
+            EquippedWeaponChanged?.Invoke(previous, next);
+        }
         public Camera AimCamera => aimCamera;
         public bool CanEquip => isActiveAndEnabled && handPoint != null;
 
@@ -40,7 +50,7 @@ namespace WeaponWorkshop
             if (inputActions == null) return;
             controls = inputActions.FindActionMap("Player", true).Clone();
             attack = controls.FindAction("Attack", true);
-            attack.performed += _ => TryAttack();
+            attack.performed += OnAttackPerformed;
             drop = controls.FindAction("DropWeapon", true);
             drop.performed += _ => TryDropWeapon();
             attack.canceled += _ => ReleaseCharge();
@@ -108,6 +118,7 @@ namespace WeaponWorkshop
             if (aimCamera == null) return false;
             Ray ray = new Ray(AimView.position, AimView.forward);
             float nearest = aimDistance;
+            DestructionCollisionBatch.Flush();
             int count = Physics.RaycastNonAlloc(ray, aimHits, aimDistance, aimLayers | LayerMask.GetMask("EndChest"), QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count; i++)
             {
@@ -119,22 +130,36 @@ namespace WeaponWorkshop
             return result.collider != null;
         }
 
+        // Benchmark replay drives fire through the Input System even when the window is not focused.
+        private static bool HasFocus => Application.isFocused || BenchmarkSession.ReplayActive;
+
         private void TryAttack()
         {
             if (!TutorialManager.ActionAllowed("fire")) return;
             if (GameManager.GameplayBlocked) return;
-            if (!Application.isFocused || player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
+            if (!HasFocus || player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
             UpdateAim();
-            if (EquippedWeapon.TryFire())
+            EquipableWeapon weapon = EquippedWeapon;
+            if (weapon.TryFire())
             {
+                ShotFired?.Invoke(weapon);
                 recoilOffset = recoilDistance;
                 ApplyRecoil();
             }
         }
 
+        private void OnAttackPerformed(InputAction.CallbackContext context)
+        {
+            if (GameManager.GameplayBlocked || !HasFocus ||
+                player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
+            if (!TutorialManager.TryAction("fire")) return;
+            AttackInput?.Invoke(EquippedWeapon);
+            TryAttack();
+        }
+
         public bool TryDropWeapon()
         {
-            if (!TutorialManager.ActionAllowed("drop")) return false;
+            if (!TutorialManager.TryAction("drop")) return false;
             if (GameManager.GameplayBlocked || !Application.isFocused || player == null ||
                 !player.isActiveAndEnabled || EquippedWeapon == null || EquippedWeapon.IsMoving) return false;
             EquipableWeapon weapon = EquippedWeapon;
@@ -147,14 +172,16 @@ namespace WeaponWorkshop
         private void ReleaseCharge()
         {
             if (EquippedWeapon == null || !EquippedWeapon.UsesCharge) return;
-            if (GameManager.GameplayBlocked || !Application.isFocused || player == null || !player.isActiveAndEnabled)
+            if (GameManager.GameplayBlocked || !HasFocus || player == null || !player.isActiveAndEnabled)
             {
                 EquippedWeapon.CancelCharge();
                 return;
             }
             UpdateAim();
-            if (EquippedWeapon.ReleaseCharge())
+            EquipableWeapon weapon = EquippedWeapon;
+            if (weapon.ReleaseCharge())
             {
+                ShotFired?.Invoke(weapon);
                 recoilOffset = recoilDistance;
                 ApplyRecoil();
             }
@@ -188,7 +215,7 @@ namespace WeaponWorkshop
             if (weapon == null || weapon.IsEquipped || handPoint == null) return false;
             ReturnWeapon();
             if (!weapon.Equip(handPoint)) return false;
-            EquippedWeapon = weapon;
+            SetEquippedWeapon(weapon);
             WorkshopSoundEffects.RaiseWeaponEquipped(handPoint.position);
             return true;
         }
@@ -201,7 +228,7 @@ namespace WeaponWorkshop
                 (replacement != null && (replacement.IsEquipped || replacement.IsMoving))) return false;
             TakeWeapon();
             if (replacement == null || Equip(replacement)) return true;
-            EquippedWeapon = incoming;
+            SetEquippedWeapon(incoming);
             return false;
         }
 
@@ -209,7 +236,7 @@ namespace WeaponWorkshop
         {
             EquipableWeapon weapon = EquippedWeapon;
             weapon?.CancelCharge();
-            EquippedWeapon = null;
+            SetEquippedWeapon(null);
             ResetRecoil();
             return weapon;
         }
@@ -218,7 +245,7 @@ namespace WeaponWorkshop
         {
             EquippedWeapon?.CancelCharge();
             if (EquippedWeapon != null) EquippedWeapon.ReturnToWorkbench();
-            EquippedWeapon = null;
+            SetEquippedWeapon(null);
             ResetRecoil();
         }
     }

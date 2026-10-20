@@ -12,16 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D0_4_DifficultCustomer
   m_EditorClassIdentifier: 
-  lines:
-  - "\uB530\uB73B\uD55C \uC544\uC774\uC2A4 \uC544\uBA54\uB9AC\uCE74\uB178 \uD55C
-    \uC794\uC774\uC694."
-  endsClear: 0
+  profileId: 6f6cf35ea746e344a93b1587938c685b
   callTutorialSequence: {fileID: 0}
   orderTutorialSequence: {fileID: 0}
   archetypes: []
   conditions: []
-  happyLine: "\u2026"
-  angryLine: "\u2026"
-  price: 0
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: d9f1ebf4c1d982b4e8b01bb9c21296c1, type: 3}

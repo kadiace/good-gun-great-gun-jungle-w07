@@ -12,16 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f92ec7f9b5d4e4792634b2f8bd5fdb, type: 3}
   m_Name: D5_7_HomingBlast
   m_EditorClassIdentifier: 
-  lines:
-  - "\uC5D0\uB108\uBBF8 \uCCB4\uC774\uC11C~!"
-  - "유도 태그와 유탄 태그를 함께 원해요."
-  endsClear: 1
-  archetypes:
-  - {fileID: 11400000, guid: a577397affb1dba46a5ab05ee475eec6, type: 2}
-  - {fileID: 11400000, guid: 982660b8fcc3c1340adfa1edcdfb1257, type: 2}
+  profileId: 346ffc96cc977c64a8a3730e146a6ad0
+  callTutorialSequence: {fileID: 0}
+  orderTutorialSequence: {fileID: 0}
+  archetypes: []
   conditions: []
-  happyLine: "\uCCA0\uCEE5. \uB561\uD050~!"
-  angryLine: "\uC544\uC73C\uC545!(\uBAA8\uB374\uAD70 \uC8FD\uB294\uC18C\uB9AC)"
-  price: 800
   prefab: {fileID: 0}
   portrait: {fileID: 21300000, guid: 7b1e28feef0e00c4ab692d497c7dd775, type: 3}

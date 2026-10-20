@@ -13,6 +13,8 @@ namespace WeaponWorkshop
 
         public static int Raycast(Vector3 origin, Vector3 direction, float distance, out RaycastHit[] sorted)
         {
+            PoolManager.FlushExplosionFinish();
+            DestructionCollisionBatch.Flush();
             int count;
             while ((count = Physics.RaycastNonAlloc(origin, direction, hits, distance,
                 Mask, QueryTriggerInteraction.Ignore)) == hits.Length) Grow();
@@ -21,6 +23,8 @@ namespace WeaponWorkshop
 
         public static int SphereCast(Vector3 origin, float radius, Vector3 direction, float distance, out RaycastHit[] sorted)
         {
+            PoolManager.FlushExplosionFinish();
+            DestructionCollisionBatch.Flush();
             int count;
             while ((count = Physics.SphereCastNonAlloc(origin, radius, direction, hits, distance,
                 Mask, QueryTriggerInteraction.Ignore)) == hits.Length) Grow();
