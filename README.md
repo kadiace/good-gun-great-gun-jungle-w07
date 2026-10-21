@@ -1,4 +1,5 @@
 # 무기 공방 — 에이전트 메모
+- 작업대에서 모듈을 직접 부착할 때 달러·모듈 재화를 소비하지 않는다. 목록/퀵슬롯 가격은 무료로 표시하며 신규 부착 모듈의 구매 기록·제작비는 늘리지 않는다. 기존 유료 구매 모듈의 삭제 환불, 코어·프리셋 지급 및 공유 코드 적용 비용은 별도 기존 경로를 유지한다. 재화 부족으로 손님 주문을 미루거나 조합 주문을 제한하지 않으며 해금 제한은 유지한다. 0일차 관통 설치 전 강제 잔액 조정·대출 단계는 제거하고 설치 목표로 바로 진행한다.
 - Main의 RespawnZone(-50m 높이 트리거)에 플레이어가 닿으면 FirstPersonPlayer.RestorePose로 월드 원점(0,0,0)으로 이동하고 낙하 속도를 초기화한다. 플레이 확인 미실행.
 - 습격 재화 보상(목조주택·은행·정글 캠퍼스·군사기지, 개선 캠퍼스는 정글 설정 상속): 재료 상자당 모듈 재화 25를 5씩 5개 픽업으로 방출, 회수한 픽업당 $100도 즉시 지갑에 표시(상자 전량 회수 시 $500). 생존 탈출 시에만 보유하며 사망·연습 습격에서는 출발 재화로 복원. 기본 재료 상자 4/10/12/18개 기준 모듈 재화 100/250/300/450, 달러 $2,000/$5,000/$6,000/$9,000. 이미 해금한 모듈 자리의 대체 재료 상자에도 동일 보상 적용. 입장 비용은 별도.
 - 군사기지의 모듈 해금 상자는 전용 ModuleUnlockCrate_MilitaryBase 프리팹 변형을 사용해 본체 관통·폭발 저항 3/3(기존 2/2)으로 생성한다. 다른 스테이지의 공용 상자와 군사기지 재료 상자는 변경하지 않는다.
@@ -72,7 +73,7 @@
 
 - Main의 공방 DeskDocument는 WorkSpace/TableGroup 자식이며 읽기 상호작용 WorkshopManual 컴포넌트도 DeskDocument에 연결한다. 기존 WorkSpace/WorkshopManual 오브젝트에서는 읽기 컴포넌트를 분리해 다른 용도로 남겨 두며 사격장 RangeManual은 유지한다. Player.prefab·PreSet 플레이어에 PlayerManualReader/InputSystem_Actions 연결. F 읽기/내려놓기·Esc 닫기·휠 확대·좌클릭 드래그 이동, 시작 읽기 모드 해제. 책자 글자 크기는 기존 씬 설정0.16 사용.
 - 손님 스코프 요구(Want_Scope)는 총 전체 스탯 scope≥1(WeaponStat)로 판정: 스코프는 에너지를 전달하지 않아 발사 경로 기준(PathModules)으로는 항상0이었음. 달려만 있으면 만족(저격소총 태그 기준과 동일). Preset_Sniper는 Want_Sniper·WantTag_Sniper·Want_Scope 모두 통과(에디터 측정). 손님 대사는 태그 이름만 말하고 태그 기준(스탯 수치·필요 모듈·전력 연결)은 말하지 않음(확정). 태그 외 추가 조건(분할·무게 등)은 대사에 유지. 조합 손님은 태그 요구를 '○○ 태그'로만 말함(CustomerRequestPool).
-- 모듈재화 부족 손님 미루기(0일차 제외): 영업 시작(_DayManager.OpenShop)과 손님 한 명 처리(판매 퇴장·사망, Bell→RefreshRemainingCustomers) 때마다 남은 손님별 필요 모듈재화(CustomerModuleRequirements.CreditCost = 요구 조건·태그 기준의 종류별 최소 모듈 수(요구 중 최댓값)×ModuleData.ModuleCreditCost, 코어 기본 스탯 충족분 제외)를 현재 보유 재화와 비교. 부족하면 deferredCustomers로 미루고 그 자리를 조합 손님으로 대체(Bell.ReplaceRemaining은 이미 나온 손님 수 유지, 저장 인덱스 그대로). 미룬 손님은 재화가 충분해지면 남은 조합 손님 자리로 복귀. 아침 날짜 준비(PrepareDay)는 해금 판정만. 조합 손님(CustomerRequestPool.Create)은 조합 전체 필요 재화가 보유 재화 이내인 요구사항만 고름. 저장 복원은 잠김 판정만. 플레이 미확인.
+- 손님 주문 가능 여부는 모듈 해금·등장 일차로 판단한다. 작업대 모듈 부착이 무료이므로 CustomerModuleRequirements.CreditCost는 0이며 기존 영업 시작/손님 처리 시 재화 부족 미루기와 조합 손님 재화 필터는 적용되지 않는다. 저장 복원은 잠김 판정을 유지한다.
 - 조합 손님 주문 문구: multiRequestTemplates('이거 다 들어간 총 있죠?' 등)는 요구사항 2개 이상일 때만 사용. D4_4 프로 손님은 스코프 2개(WeaponStat scope≥2) 요구.
 - 프리셋 지급기는 CoreDispenser 프리팹 베리언트 Assets/Prefabs/Presets/PresetDispenser_Pistol·AssaultRifle·Sniper(corePrefab·라벨 포함); PreSet 씬의 세 지급기는 이 베리언트 인스턴스. 다른 씬에는 배치하지 않음.
 - PreSet의 기존3개 지급기는 Presets/Preset_Pistol·AssaultRifle·Sniper를 연결하고 이름을 각각 표시. 권총 무게18(<20), 돌격소총 관통2·연사3·무게61, 저격소총 관통4·가속4·스코프1·무게79 구성. 스코프는 조립에 부착되어 있으면 에너지 연결 없이 전체 scope 스탯에 포함하며 에너지를 전달하지 않음. 해당 태그 조건/모듈 SO는 유지. 변경 에셋 개별 임포트 완료, 플레이 테스트 미실행.

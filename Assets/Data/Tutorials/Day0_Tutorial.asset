@@ -1597,7 +1597,6 @@ MonoBehaviour:
     allowedActions:
     - none
   - id: second-prepare
-    setBalanceOnStart: 50
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uAD00\uD1B5 \uBAA8\uB4C8\uC744 \uB123\uC5B4 \uB2EC\uB77C\uB294
       \uC8FC\uBB38\uC785\uB2C8\uB2E4.\n\uC774\uBBF8 \uBC30\uC6B4 \uBAB8\uCCB4 \uC870\uB9BD\uC740
@@ -1682,50 +1681,12 @@ MonoBehaviour:
       \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
-  - id: second-loan
-    title: 튜토리얼
-    description:
-    objective: 관통 모듈을 설치해보세요. 돈이 부족해도 괜찮습니다.
-    objectiveWhileChoiceOpen: 대출을 받은 후 관통 모듈 설치를 완료하세요.
-    choiceGuidance: 돈이 부족할 때 모듈을 설치하려고 하면 하루에 한 번 대출을 받을 수 있습니다. 정산은 상점을 닫을 때 하고, 대출을 많이 할수록 이자가 늘어납니다.
-    completion: 1
-    target: 4
-    targetLabel:
-    requiresWorkbenchEditing: 1
-    requiredRotationDegrees: 45
-    rotationGuide: 0
-    buttonGuide: 4
-    showPlacementHints: 1
-    openCoreFace: {x: 0, y: 0, z: 1}
-    hintCells:
-    - {x: 0, y: 0, z: 1}
-    requiredModuleId: 8
-    requiredCustomerCount: 0
-    requiredTargetDistance: 5
-    requiredCell: {x: 0, y: 0, z: 1}
-    requireOutputDirection: 0
-    excludeRequiredOutputDirection: 0
-    requiredOutputDirection: {x: 0, y: 0, z: 1}
-    restrictPlacement: 1
-    blockedPlacementMessage: 안내된 위치에 관통 모듈을 설치해 보세요.
-    wrongModuleMessage:
-    prepareBlockedCore: 0
-    discardHeldWeapon: 0
-    allowedModuleIds: 010000000200000008000000
-    requiredSignal: loan-taken
-    allowedActions:
-    - attach
-    - rotate
-    - reset-rotation
-    - palette
-    - exit
   - id: second-penetration
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
     objective: "\uC55E\uCABD \uCD1D\uC54C \uAE38\uC5D0 \uAD00\uD1B5 \uBAA8\uB4C8\uC744
       \uC124\uCE58\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
-    restoreWithheldBalanceOnComplete: 1
     completion: 3
     target: 4
     targetLabel: 

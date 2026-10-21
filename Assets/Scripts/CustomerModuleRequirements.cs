@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 
 namespace WeaponWorkshop
 {
@@ -49,49 +47,7 @@ namespace WeaponWorkshop
             }
             return true;
         }
-        public static int CreditCost(CustomerProfile profile, PlayerModuleUnlocks unlocks, WeaponStats core)
-            => profile == null ? 0 : CreditCost(profile.RequestIds, unlocks, core);
-        public static int CreditCost(string[] ids, PlayerModuleUnlocks unlocks, WeaponStats core)
-        {
-            var need = new Dictionary<ModuleKind, int>();
-            var table = TableManager.Instance.CustomerRequest;
-            foreach (string id in ids ?? Array.Empty<string>())
-            {
-                var row = table.FindRequest(id);
-                if (row == null) continue;
-                foreach (var condition in table.Conditions(row))
-                {
-                    if (condition.min <= 0f) continue;
-                    switch (condition.Measure)
-                    {
-                        case GunMeasure.SplitTwoBlocks: Need(ModuleKind.SplitTwo, Mathf.CeilToInt(condition.min), need); break;
-                        case GunMeasure.SplitFourBlocks: Need(ModuleKind.SplitFour, Mathf.CeilToInt(condition.min), need); break;
-                        case GunMeasure.TotalModules: case GunMeasure.Muzzles: break;
-                        default:
-                            if (!ModuleCounter.TryToKind(condition.Stat, out var kind)) break;
-                            float missing = condition.Measure == GunMeasure.PathModules ? condition.min : condition.min - core.Get(condition.Stat);
-                            if (missing <= 0f) break;
-                            var module = unlocks != null ? unlocks.FindModule(kind) : null;
-                            float amount = condition.Measure == GunMeasure.PathModules ? 1f : module != null ? module.GetStats().Get(condition.Stat) : 1f;
-                            Need(kind, Mathf.CeilToInt(missing / Mathf.Max(.0001f, amount)), need);
-                            break;
-                    }
-                }
-            }
-            long total = 0;
-            foreach (var item in need)
-            {
-                var module = unlocks != null ? unlocks.FindModule(item.Key) : null;
-                if (module != null)
-                {
-                    long count = item.Value;
-                    long credits = Mathf.Max(0, module.ModuleCreditCost);
-                    total += item.Key == ModuleKind.Shotgun ? credits * count * (count + 1) / 2 : credits * count;
-                }
-            }
-            return (int)Math.Min(total, int.MaxValue);
-        }
-        private static void Need(ModuleKind kind, int count, Dictionary<ModuleKind, int> need)
-            => need[kind] = Mathf.Max(count, need.TryGetValue(kind, out int current) ? current : 0);
+        public static int CreditCost(CustomerProfile profile, PlayerModuleUnlocks unlocks, WeaponStats core) => 0;
+        public static int CreditCost(string[] ids, PlayerModuleUnlocks unlocks, WeaponStats core) => 0;
     }
 }

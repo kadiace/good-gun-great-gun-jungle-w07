@@ -69,7 +69,6 @@ namespace WeaponWorkshop
         private bool colorPickerOpen;
         private int slotBeforeColorPick = 1;
         private Color moduleColor = Color.white;
-        private const int ModulePrice = WeaponPurchasePrices.Module;
         private readonly List<UndoEntry> undoHistory = new List<UndoEntry>(UndoLimit);
         private readonly RaycastHit[] surfaceHits = new RaycastHit[256];
 
@@ -598,55 +597,20 @@ namespace WeaponWorkshop
                 ShowCustomLimitMessage("트리거 모듈은 1개만 설치할 수 있습니다");
                 return false;
             }
-            ModuleCatalog.Entry entry = default;
-            int dollars = moduleCatalog != null && moduleCatalog.TryGet(slot, out entry)
-                ? Mathf.Max(0, entry.data.BuyPrice) : ModulePrice;
-            int materials = WeaponPurchasePrices.ModuleCredits(entry.data, WeaponPurchasePrices.InstalledShotgunCount(assembly));
-            string partKind = PartLogName(assembly, slot);
-            if (wallet.Balance < dollars)
+            bool attached = assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell);
+            if (attached)
             {
-                if (wallet.CanAffordModuleCredits(materials))
-                {
-                    var feedback = FeedbackUI.For(this);
-                    var dayManager = FindFirstObjectByType<_DayManager>();
-                    if (dayManager != null && wallet.LastLoanDay != dayManager.DayNumber)
-                    {
-                        int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
-                        var tutorial = TutorialManager.Instance;
-                        if (feedback != null && feedback.ShowChoice(this, $"$3,000 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
-                            () => { if (wallet.TryTakeLoan(dayManager.DayNumber))
-                                TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench); },
-                            null, "대출받기", "취소") && tutorial != null &&
-                            tutorial.CurrentStep?.requiredSignal == "loan-taken")
-                            tutorial.ShowLoanGuide(feedback);
-                    }
-                    else if (dayManager != null) feedback?.ShowNotification("대출은 하루에 한 번만 받을 수 있습니다.");
-                }
-                return false;
-            }
-            bool purchased = wallet.TryPurchaseModule(dollars, materials,
-                () => assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell), partKind);
-            if (purchased)
-            {
-                wallet.NotifyPartPurchased(partKind, dollars, materials);
-                assembly.RecordPurchasedModule(cell, dollars);
-                assembly.RecordPurchasedModuleCredits(cell, materials);
                 WorkshopSoundEffects.RaiseBlockInstalled(assembly.transform.TransformPoint(cell));
             }
-            return purchased;
+            return attached;
         }
-        private static string PartLogName(CubeAssembly assembly, int slot)
-            => assembly != null ? ModuleCounter.LogName(assembly.GetPrefab(slot)?.GetComponent<PlacedBlock>()) : "";
         private void TryPlace()
         {
             if (paintingMode || IsPointerOverUI(AimPoint())) return;
             if (wallet == null) wallet = PlayerWallet.ForScene(this);
             if (wallet == null) return;
-            int slotToBuy = preview != null ? pendingSlot : selectedSlot;
-            if (IsModuleLocked(slotToBuy)) { CancelPreview(); return; }
-            int materials = GetNextModuleCreditCost(slotToBuy);
-            if (!wallet.CheckPurchaseFunds(materials, true, PartLogName(pendingAssembly != null ? pendingAssembly :
-                    FindWorkspaceWeapon()?.GetComponentInChildren<CubeAssembly>(true), slotToBuy))) return;
+            int slotToPlace = preview != null ? pendingSlot : selectedSlot;
+            if (IsModuleLocked(slotToPlace)) { CancelPreview(); return; }
             Vector2 pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer)) return;
             if (preview != null)
@@ -722,16 +686,6 @@ namespace WeaponWorkshop
                 renderer.SetPropertyBlock(tint);
             }
             UpdatePreview();
-        }
-
-        public int GetNextModuleCreditCost(int slot)
-        {
-            if (moduleCatalog == null || !moduleCatalog.TryGet(slot, out var entry)) return 0;
-            if (entry.data.ModuleType != StatType.Shotgun) return WeaponPurchasePrices.ModuleCredits(entry.data, 0);
-            var weapon = FindWorkspaceWeapon();
-            var assembly = pendingAssembly != null ? pendingAssembly :
-                weapon != null ? weapon.GetComponentInChildren<CubeAssembly>(true) : null;
-            return WeaponPurchasePrices.ModuleCredits(entry.data, WeaponPurchasePrices.InstalledShotgunCount(assembly));
         }
 
         private static bool IsScope(CubeAssembly assembly, int slot)
