@@ -27,11 +27,9 @@ namespace WeaponWorkshop
             ResultCleared = cleared;
         }
         public static bool HasPendingReturn => Returning || standaloneReturn;
-        // 로그용. 이번 습격에 낸 입장 비용.
-        public static int EntryCost { get; private set; }
         private static int moduleCreditsBeforeLoss;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneSlotTickets = 0; EntryCost = 0; RecordResult(0, null, false); }
+        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneSlotTickets = 0; RecordResult(0, null, false); }
         // 씬을 직접 연 경우에는 공방 스냅샷 없이 결과만 전달한다.
         public static void MarkStandaloneReturn(int slotTickets)
         {
@@ -49,9 +47,9 @@ namespace WeaponWorkshop
         /// 공방 체크포인트를 보관하고 습격 진입 상태를 시작한다.
         /// checkpoint를 저장하고 이전 습격 결과를 초기화한다.
         /// </summary>
-        public static void Begin(GameSaveData checkpoint, int entryCost = 0)
+        public static void Begin(GameSaveData checkpoint)
         {
-            Workshop = checkpoint; Returning = false; enteringRaid = true; moduleCreditsBeforeLoss = 0; EntryCost = entryCost;
+            Workshop = checkpoint; Returning = false; enteringRaid = true; moduleCreditsBeforeLoss = 0;
             RecordResult(0, null, false);
         }
         public static bool TryConsumeEntry(out int balance, out int moduleCredits, out int[] unlockedModules, out WeaponWorldSave weapon)

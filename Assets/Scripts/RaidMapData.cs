@@ -15,7 +15,6 @@ namespace WeaponWorkshop
             public string name;
             public int selectionOrder;
             public string inheritsFrom;
-            public int entryCost;
             public Reward reward;
             public bool helicopters;
             public bool tanks;

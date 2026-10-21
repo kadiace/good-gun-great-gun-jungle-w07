@@ -27,7 +27,7 @@ namespace WeaponWorkshop
                 Array.IndexOf(region.sceneAliases, scene) >= 0);
         }
 
-        /// <summary>표의 상속 행을 따라 실제 보상·비용·출몰 설정을 반환한다.</summary>
+        /// <summary>표의 상속 행을 따라 실제 보상·출몰 설정을 반환한다.</summary>
         public static RaidMapData.Region Settings(this RaidMapData.Region region, RaidMapData table = null)
         {
             table ??= TableManager.Instance.RaidMap;
@@ -44,17 +44,6 @@ namespace WeaponWorkshop
         /// <summary>상속 행에서 진행·음악·기존 보상 해금에 사용할 기준 씬을 반환한다.</summary>
         public static string CanonicalScene(this RaidMapData.Region region, RaidMapData table = null) =>
             region.Settings(table)?.scene;
-
-        /// <summary>입장 비용. 행이 비었거나 값이 음수면 0으로 본다.</summary>
-        public static int EntryCost(this RaidMapData.Region region)
-        {
-            var settings = region.Settings();
-            return settings != null && settings.entryCost > 0 ? settings.entryCost : 0;
-        }
-
-        /// <summary>지갑이 이 구역의 입장 비용을 낼 수 있는지 본다.</summary>
-        public static bool CanAffordEntry(this RaidMapData.Region region, PlayerWallet wallet) =>
-            wallet != null && wallet.CanAfford(region.EntryCost());
 
         /// <summary>보상 모듈 코드 목록. 행이나 보상이 비었으면 빈 배열이다.</summary>
         public static string[] ModuleCodes(this RaidMapData.Region region) =>
@@ -94,8 +83,6 @@ namespace WeaponWorkshop
             if (settings.maximumReinforcedTanks > 0 || region.scene == "NightRaid_Millitary_base") text.AppendLine("• 강화 탱크");
             if (settings.helicopters) text.AppendLine("• 헬기");
             if (!settings.tanks && !settings.helicopters && settings.maximumReinforcedTanks <= 0) text.AppendLine("• 없음");
-            int cost = settings.EntryCost();
-            text.AppendLine().Append("입장 비용  ").AppendLine(cost > 0 ? $"$ {cost:N0}" : "무료");
             return text.AppendLine().Append("지도에서 영역을 눌러 이동하세요.").ToString();
         }
 
@@ -139,7 +126,6 @@ namespace WeaponWorkshop
                 if (string.IsNullOrEmpty(region.name)) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 {region.scene} 항목에 표시 이름이 없습니다.");
                 var settings = region.Settings(table);
                 if (settings == null) { Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 설정 상속 대상을 찾을 수 없습니다."); continue; }
-                if (region.entryCost < 0) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 입장 비용이 음수입니다.");
                 if (settings.reward == null) { Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 보상(reward)이 없습니다."); settings.reward = new RaidMapData.Reward(); }
                 if (settings.reward.moduleCodes == null) settings.reward.moduleCodes = Array.Empty<string>();
                 if (settings.reward.dollarsPerMaterialPickup < 0) Debug.LogWarning($"스테이지 테이블 {resourcePath}의 '{region.name}' 항목에 재화 1회당 달러가 음수입니다.");

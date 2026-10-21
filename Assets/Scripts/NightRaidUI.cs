@@ -100,18 +100,7 @@ namespace WeaponWorkshop
             ClearRegionInfo(hoveredRegion);
             if (show) mapPanel.transform.SetAsLastSibling();
             if(statusText!=null)statusText.gameObject.SetActive(false);
-            WatchWallet(show);
             RefreshRegionButtons();
-        }
-        private PlayerWallet watchedWallet;
-        // 지도가 열려 있는 동안에만 잔액 변화를 구독해 버튼 상태를 다시 계산한다.
-        private void WatchWallet(bool watch)
-        {
-            var wallet = watch ? PlayerWallet.ForScene(this) : null;
-            if (watchedWallet == wallet) return;
-            if (watchedWallet != null) watchedWallet.Changed -= RefreshRegionButtons;
-            watchedWallet = wallet;
-            if (watchedWallet != null) watchedWallet.Changed += RefreshRegionButtons;
         }
         private void RefreshRegionButtons()
         {
@@ -131,21 +120,13 @@ namespace WeaponWorkshop
                         (save == null || !save.HasClearedRaid(region.scene));
                     regionLabels[i].text = originalRegionLabels[i] + (firstClearAvailable ? " <size=65%><color=#F04D4D>●</color></size>" : string.Empty);
                 }
-                regionButtons[i].interactable = show && listed && CanAffordEntry(i) &&
+                regionButtons[i].interactable = show && listed &&
                     (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(i));
             }
         }
-        // 잔액이 입장 비용을 충족하는지. 0일차 안내 습격 중에는 비용 조건을 적용하지 않는다.
-        private bool CanAffordEntry(int index)
-        {
-            if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return true;
-            if (watchedWallet == null || controller == null) return false;
-            var region = TableManager.Instance.RaidMap.Find(controller.RegionScene(index));
-            return region.CanAffordEntry(watchedWallet);
-        }
         private void OnDisable()
         {
-            FeedbackUI.For(this)?.CancelChoice(this); WatchWallet(false);
+            FeedbackUI.For(this)?.CancelChoice(this);
         }
         // 입장 확인은 지도 소유로 띄워 지도를 다시 열거나 닫으면(CancelChoice(this)) 함께 취소되게 한다.
         public void ShowEntryConfirm(string message, System.Action onYes) => FeedbackUI.For(this)?.ShowChoice(this, message, onYes);

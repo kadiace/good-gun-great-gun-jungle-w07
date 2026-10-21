@@ -409,7 +409,6 @@ namespace WeaponWorkshop
         {
             EquipableWeapon weapon = playerWeaponHolder != null ? playerWeaponHolder.EquippedWeapon : null;
             var entry = new RaidStartLog { scene = gameObject.scene.name, day = RaidDay };
-            entry.entryCost = NightRaidTransfer.EntryCost;
             entry.training = TutorialManager.TrainingRaidPending;
             if (crates != null)
             {
@@ -598,38 +597,26 @@ namespace WeaponWorkshop
             if (!Application.CanStreamedLevelBeLoaded(regionScene))
             { ui.ShowError("습격 씬이 빌드 목록에 없습니다."); return; }
             if (player == null) return;
-            // 0일차 안내 습격은 무료다. 그 외에는 표 행의 입장 비용을 확인한다.
             var region = training ? null : TableManager.Instance.RaidMap.Find(regionScene);
             if (!training && region == null)
             { ui.ShowError("습격 지역 데이터가 없습니다."); return; }
-            int cost = training ? 0 : region.EntryCost();
-            // 잔액 검사는 버튼이 이미 꺼져 있어야 하므로 방어용이다.
-            if (cost > 0 && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))
-            { ui.ShowError("입장 비용이 부족합니다."); return; }
-            // 확인 시점에는 지도·잔액 상태가 바뀌었을 수 있으므로 다시 검사한 뒤 진입한다.
             string name = training ? "연습 목조주택" : region.name;
-            string message = cost > 0 ? $"$ {cost:N0}를 내고 {name}에 입장하시겠습니까?" : $"{name}에 입장하시겠습니까?";
-            ui.ShowEntryConfirm(message, () =>
+            ui.ShowEntryConfirm($"{name}에 입장하시겠습니까?", () =>
             {
-                if (!mapOpen || transitioning || player == null || (!training && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))) return;
-                BeginRaid(regionScene, cost, training, tutorial);
+                if (!mapOpen || transitioning || player == null) return;
+                BeginRaid(regionScene, training, tutorial);
             });
         }
-        // 검사(EnterRegion)·확인창 뒤의 확정 단계(차감+이동).
-        private void BeginRaid(string regionScene, int cost, bool training, TutorialManager tutorial)
+        private void BeginRaid(string regionScene, bool training, TutorialManager tutorial)
         {
-            var wallet = player.GetComponent<PlayerWallet>();
             player.GetComponent<WorkshopSession>()?.LeaveImmediately();
-            // 차감은 이동 체크포인트 캡처보다 반드시 앞에 둔다. 캡처가 현재 잔액을 저장하므로 뒤에 빼면 비용이 무효가 된다.
-            wallet?.Debit(cost);
             GameSaveData checkpoint = null; string error = null;
             if (workshopSave == null || !workshopSave.TryCaptureTravel(out checkpoint, out error))
-            { wallet?.Credit(cost); ui.ShowError(workshopSave == null ? "공방 저장 관리자가 연결되지 않았습니다." : error); return; }
+            { ui.ShowError(workshopSave == null ? "공방 저장 관리자가 연결되지 않았습니다." : error); return; }
             checkpoint.settlement = true;
-            if (training && !tutorial.PrepareTrainingRaid()) { wallet?.Credit(cost); return; }
-            // 여기서부터는 실제 진입 확정. 사망·귀환을 포함해 환불하지 않는다.
+            if (training && !tutorial.PrepareTrainingRaid()) return;
             transitioning = true; ui.SetLoading(); PoolManager.ClearActive();
-            NightRaidTransfer.Begin(checkpoint, cost);
+            NightRaidTransfer.Begin(checkpoint);
             SoundManager.CaptureRaidDeparture();
             SceneManager.LoadSceneAsync(regionScene, LoadSceneMode.Single);
         }

@@ -55,8 +55,7 @@ namespace WeaponWorkshop
         // 출발 시 지갑과 획득한 해금 모듈 id(처음부터 열린 모듈 제외).
         public int balance, moduleCredits;
         public int[] unlockedModules;
-        // 입장 비용(balance는 차감 후), 연습 여부, 만들어진 보상 상자. replacedModuleSpots는 이미 해금해 재료 상자로 바뀐 모듈 자리(spawnedMaterialCrates에 포함).
-        public int entryCost;
+        // 연습 여부와 만들어진 보상 상자. replacedModuleSpots는 이미 해금해 재료 상자로 바뀐 모듈 자리(spawnedMaterialCrates에 포함).
         public bool training;
         public int spawnedModuleCrates, spawnedMaterialCrates, replacedModuleSpots, materialPerCrate;
     }
