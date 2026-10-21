@@ -21,7 +21,6 @@ namespace WeaponWorkshop
         [SerializeField] private GameObject brokenVisual;
         private ParticleSystem smokeInstance;
 
-        public const int SpinPrice = 1000;
         private static readonly int[] Prizes = { 500, 1000, 2000, 4000, 50000, 5000 };
         private static readonly string[] Symbols = { "기본", "연장", "연사", "관통", "방사", "폭발" };
         private Material originalMarquee;
@@ -165,7 +164,7 @@ namespace WeaponWorkshop
         {
             PlayerWallet wallet = interactor != null ? PlayerWallet.ForPlayer(interactor.Player) : null;
             return isActiveAndEnabled && !destroyed && !GameManager.GameplayBlocked &&
-                wallet != null && (spinning || wallet.SlotTickets > 0 || wallet.CanAfford(SpinPrice));
+                wallet != null && (spinning || wallet.SlotTickets > 0);
         }
 
         public bool Interact(Interaction interactor)
@@ -178,17 +177,12 @@ namespace WeaponWorkshop
             }
             PlayerWallet wallet = PlayerWallet.ForPlayer(interactor.Player);
             int balanceBefore = wallet.Balance;
-            bool paidWithTicket = wallet.SlotTickets > 0;
-            if (paidWithTicket)
-            {
-                if (!wallet.TrySpendSlotTicket()) return false;
-            }
-            else if (!wallet.TryPurchase(SpinPrice, () => true)) return false;
+            if (!wallet.TrySpendSlotTicket()) return false;
             int[] result = ChooseResult();
             completedSpins = Mathf.Min(3, completedSpins + 1);
             spinning = true;
             skipRequested = false;
-            LogSpin(result, balanceBefore, wallet.Balance, paidWithTicket);
+            LogSpin(result, balanceBefore, wallet.Balance);
             StartCoroutine(Spin(result, wallet));
             return true;
         }
@@ -206,14 +200,12 @@ namespace WeaponWorkshop
             if (spinning) return resistance + "\n회전 중... (F로 건너뛰기)";
             string ticketAmount = wallet == null || wallet.SlotTickets == 0
                 ? "<color=#FF0000>1개</color>" : "1개";
-            string amount = wallet == null || (wallet.SlotTickets == 0 && !wallet.CanAfford(SpinPrice))
-                ? "<color=#FF0000>$1000</color>" : "$1000";
-            return resistance + $"\n슬롯머신 티켓 {ticketAmount} 또는 {amount}을 소모해 당길 수 있습니다.\n" +
-                "슬롯머신 티켓이 있으면 먼저 사용합니다.\n당첨금:\n" +
+            return resistance + $"\n슬롯머신 티켓 {ticketAmount}를 소모해 당길 수 있습니다.\n" +
+                "티켓은 야간 습격에서 탱크와 헬기를 처치해 얻을 수 있습니다.\n당첨금:\n" +
                 "기본 $500\n연장 $1,000\n연사 $2,000\n관통 $4,000\n폭발 $5,000\n방사 $50,000";
         }
 
-        private void LogSpin(int[] result, int balanceBefore, int balanceAfter, bool paidWithTicket)
+        private void LogSpin(int[] result, int balanceBefore, int balanceAfter)
         {
             int symbol = result[0] == result[1] && result[1] == result[2] ? result[0] : -1;
             var entry = new ShopSlotMachineLogEvent
@@ -226,12 +218,12 @@ namespace WeaponWorkshop
                 period = dayManager != null ? dayManager.CurrentPeriod.ToString() : "unknown",
                 isNight = dayManager != null && dayManager.IsNight,
                 oddsPool = "fixed",
-                paidWithTicket = paidWithTicket,
-                paidWithMoney = !paidWithTicket,
+                paidWithTicket = true,
+                paidWithMoney = false,
                 introductorySpinsUsed = completedSpins,
                 balanceBefore = balanceBefore,
                 balanceAfter = balanceAfter,
-                price = paidWithTicket ? 0 : SpinPrice,
+                price = 0,
                 plannedPrize = symbol >= 0 ? Prizes[symbol] : 0,
                 plannedSymbol = symbol >= 0 ? Symbols[symbol] : "none",
                 reelSymbols = result
