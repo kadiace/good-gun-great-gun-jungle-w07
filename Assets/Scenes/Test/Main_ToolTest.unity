@@ -21676,6 +21676,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   overlayShader: {fileID: 4800000, guid: bb03d0db0efd4e1194e5ac06e59e995c, type: 3}
+  controlsRoot: {fileID: 6951644726921892602}
+  fixedXPlane: 1
+  transitionDuration: 0.35
+  remainingPerspective: 0.15
 --- !u!114 &2087899907347993064 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8887868471469864397, guid: adac645aa3e82fe45aa9f3c91519d471, type: 3}

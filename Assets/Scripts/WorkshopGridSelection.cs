@@ -14,6 +14,12 @@ namespace WeaponWorkshop
         public readonly bool IsValid;
         public readonly string FailureReason;
 
+        internal WorkshopGridSelection WithFailure(string reason) => new WorkshopGridSelection(
+            Assembly, Cell, InputDirection, OutputDirection, Axis, ModuleId, false, reason);
+
+        internal WorkshopGridSelection WaitingForDirection() => new WorkshopGridSelection(
+            Assembly, Cell, InputDirection, Vector3Int.zero, Axis, ModuleId, false, "마우스를 원하는 출력 방향으로 움직이세요.");
+
         internal WorkshopGridSelection(CubeAssembly assembly,
             Vector3Int cell, Vector3Int input, Vector3Int output, WorkshopPlanarAxis axis,
             int moduleId, bool valid, string reason)
@@ -45,20 +51,44 @@ namespace WeaponWorkshop
             Vector3Int.forward, Vector3Int.back
         };
 
+        internal static bool RequiresDirectionSelection(int moduleId) => moduleId == 2 || moduleId == 3;
+
         internal static bool TryEvaluate(CubeAssembly assembly, Vector3Int cell,
             CubeBuilder builder, WorkshopPlanarAxis axis, out WorkshopGridSelection selection)
+        {
+            bool found = Evaluate(assembly, cell, builder, axis, null, out selection);
+            if (!found || !RequiresDirectionSelection(builder.SelectedSlot)) return found;
+            var normal = WorkshopPlanarCoordinates.Normal(axis);
+            if (selection.IsValid && Vector3.Dot(normal, selection.OutputDirection) == 0f) return true;
+            // Position selection needs at least one legal in-plane output, including tutorial rules.
+            foreach (var direction in Directions)
+                if (Vector3.Dot(normal, direction) == 0f &&
+                    Evaluate(assembly, cell, builder, axis, direction, out var candidate) && candidate.IsValid)
+                { selection = candidate; return true; }
+            if (selection.IsValid) selection = selection.WithFailure("이 평면에서 선택할 수 있는 출력 방향이 없습니다.");
+            return found;
+        }
+
+        internal static bool TryEvaluateDirection(CubeAssembly assembly, Vector3Int cell,
+            CubeBuilder builder, WorkshopPlanarAxis axis, Vector3Int output, out WorkshopGridSelection selection)
+            => Evaluate(assembly, cell, builder, axis, output, out selection);
+
+        private static bool Evaluate(CubeAssembly assembly, Vector3Int cell,
+            CubeBuilder builder, WorkshopPlanarAxis axis, Vector3Int? requestedOutput, out WorkshopGridSelection selection)
         {
             selection = default;
             if (assembly == null || builder == null) return false;
 
             int slot = builder.SelectedSlot;
-            bool adjacent = TryGetAdjacentDirection(assembly, cell, out var input);
-            Vector3Int output = input;
+            bool fixedXPlane = builder.UsesFixedXPlane;
+            bool adjacent = TryGetAdjacentDirection(assembly, cell, fixedXPlane, out var input);
+            Vector3Int output = requestedOutput ?? input;
             string reason = null;
             var weapon = assembly.GetComponentInParent<EquipableWeapon>();
-            if (weapon == null || weapon.ConstructionLocked || builder.IsCustomMode) reason = "커스텀을 제거한 뒤 조립할 수 있습니다.";
+            if (fixedXPlane && (cell.x != 0 || axis != WorkshopPlanarAxis.X)) reason = "코어 로컬 X=0인 YZ 평면에만 배치할 수 있습니다.";
+            else if (weapon == null || weapon.ConstructionLocked || builder.IsCustomMode) reason = "커스텀을 제거한 뒤 조립할 수 있습니다.";
             else if (builder.PaletteOpen || builder.ColorPickerOpen) reason = "모듈 선택 창을 먼저 닫아 주세요.";
-            else if (builder.DeleteMode) reason = "3D로 돌아가 삭제 모드를 해제해 주세요.";
+            else if (builder.DeleteMode) reason = "E키로 삭제 모드를 해제한 뒤 설치할 수 있습니다.";
             else if (builder.IsModuleLocked(slot)) reason = "잠긴 모듈입니다.";
             else if (!TutorialManager.ActionAllowed("attach")) reason = "현재 튜토리얼 단계에서는 설치할 수 없습니다.";
             else if (!adjacent) reason = "코어 또는 배치된 모듈과 면으로 인접한 셀을 선택하세요.";
@@ -68,19 +98,24 @@ namespace WeaponWorkshop
                 var prefab = assembly.GetPrefab(slot);
                 var block = prefab != null ? prefab.GetComponent<PlacedBlock>() : null;
                 bool followsFeed = slot != 1 && !(block != null && block.IsSight) && !assembly.IsTriggerModuleSlot(slot);
-                if (followsFeed && !assembly.TryGetFeedDirection(cell, out input)) reason = "총구에만 설치할 수 있습니다.";
+                if (followsFeed && !assembly.TryGetFeedDirection(cell, out input, fixedXPlane)) reason = "총구에만 설치할 수 있습니다.";
                 else
                 {
-                    output = input;
-                    bool oriented = assembly.CanOrient(cell, slot, output, input);
-                    if (!oriented && (CubeAssembly.IsSingleOutput(slot) || slot == 3))
+                    output = requestedOutput ?? input;
+                    bool badPlane = requestedOutput.HasValue && (output.sqrMagnitude != 1 || Vector3.Dot(WorkshopPlanarCoordinates.Normal(axis), output) != 0f);
+                    bool reverse = requestedOutput.HasValue && followsFeed && output == -input;
+                    bool oriented = !badPlane && !reverse && assembly.CanOrient(cell, slot, output, input);
+                    if (!oriented && !requestedOutput.HasValue && (CubeAssembly.IsSingleOutput(slot) || slot == 3))
                         foreach (var direction in Directions)
                         {
+                            if (fixedXPlane && direction.x != 0) continue;
                             if (followsFeed && direction == -input) continue;
                             if (!assembly.CanOrient(cell, slot, direction, input)) continue;
                             output = direction; oriented = true; break;
                         }
-                    if (!oriented) reason = "출력 방향이 코어 또는 다른 출력과 충돌합니다.";
+                    if (!oriented) reason = badPlane ? "조립 평면 안에서 출력 방향을 선택하세요."
+                        : reverse ? "에너지가 들어오는 입력면으로 출력할 수 없습니다."
+                        : "출력 방향이 코어 또는 다른 출력과 충돌합니다.";
                     else
                     {
                         // The same read-only restriction as TryAuthorizePlacement, without hover notifications.
@@ -103,12 +138,13 @@ namespace WeaponWorkshop
             return true;
         }
 
-        private static bool TryGetAdjacentDirection(CubeAssembly assembly, Vector3Int cell, out Vector3Int direction)
+        private static bool TryGetAdjacentDirection(CubeAssembly assembly, Vector3Int cell, bool fixedXPlane, out Vector3Int direction)
         {
             direction = Vector3Int.zero;
             var blocks = assembly.GetComponentsInChildren<PlacedBlock>();
             foreach (var candidate in Directions)
             {
+                if (fixedXPlane && candidate.x != 0) continue;
                 Vector3Int neighbor = cell - candidate;
                 if (neighbor == Vector3Int.zero) { direction = candidate; return true; }
                 foreach (var block in blocks)

@@ -99,7 +99,8 @@ namespace WeaponWorkshop
         [SerializeField, Range(0f, 1f)] private float rotationCircleRadius = .5f;
         private WorkshopSession workshopSession;
         public float GetWorkshopRotationRadius(Rect viewport) => Mathf.Min(viewport.width, viewport.height) * rotationCircleRadius;
-        public void SetWorkshopUI(bool editing)
+        public void SetWorkshopUI(bool editing) => SetWorkshopUI(editing, true);
+        public void SetWorkshopUI(bool editing, bool allowRotation)
         {
             if (upMark != null && upGraphics == null)
             {
@@ -108,7 +109,7 @@ namespace WeaponWorkshop
                 for (int i = 0; i < upGraphics.Length; i++) upAlphas[i] = upGraphics[i].color.a;
             }
             if (upMark != null) upMark.gameObject.SetActive(editing);
-            if (rotationCircle != null) rotationCircle.gameObject.SetActive(editing);
+            if (rotationCircle != null) rotationCircle.gameObject.SetActive(editing && allowRotation);
             if (frontMark != null) frontMark.gameObject.SetActive(editing);
             if (!editing) SetFrontOpacity(1f);
         }
@@ -188,12 +189,13 @@ namespace WeaponWorkshop
 
             UpdateWorkshopDirectionUI();
         }
+        internal void RefreshWorkshopDirections() => UpdateWorkshopDirectionUI();
         private void UpdateWorkshopDirectionUI()
         {
             bool editing = workshopSession != null && workshopSession.IsEditing && !workshopSession.IsPlanarView;
             PowerCore core = editing && workshopSession.ActiveWorkbench != null ? workshopSession.ActiveWorkbench.CurrentCore : null;
             Camera view = editing ? workshopSession.WorkshopCamera : null;
-            if (editing && rotationCircle != null)
+            if (editing && !workshopSession.IsPlanarView && rotationCircle != null)
             {
                 Rect viewport = workshopSession.RotationViewport;
                 rotationCircle.SetGeometry(viewport, GetWorkshopRotationRadius(viewport));
@@ -236,10 +238,16 @@ namespace WeaponWorkshop
                     cell = candidate;
             }
             Vector3 facePoint = core.transform.TransformPoint((Vector3)cell + (Vector3)axis * .501f);
+            Vector3 direction = core.transform.TransformDirection((Vector3)axis);
+            if (workshopSession.TryGetDisplayTransform(core.GetComponent<CubeAssembly>(), out var display))
+            {
+                facePoint = display.MultiplyPoint3x4(facePoint);
+                direction = display.MultiplyVector(direction).normalized;
+            }
             Vector3 screenPoint = view.WorldToScreenPoint(facePoint);
             bool visible = screenPoint.z > view.nearClipPlane;
             mark.gameObject.SetActive(visible);
-            float opacity = Vector3.Dot(view.transform.forward, core.transform.TransformDirection((Vector3)axis)) > directionBackThreshold ? .2f : 1f;
+            float opacity = Vector3.Dot(view.transform.forward, direction) > directionBackThreshold ? .2f : 1f;
             if (graphics != null && alphas != null)
                 for (int i = 0; i < graphics.Length; i++)
                 {

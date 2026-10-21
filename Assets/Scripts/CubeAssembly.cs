@@ -339,11 +339,17 @@ namespace WeaponWorkshop
         // Direction energy enters `cell` with, from the most recently placed neighbor that outputs into it.
         // The core outputs on every face and counts as the oldest source. False when nothing feeds the cell.
         public bool TryGetFeedDirection(Vector3Int cell, out Vector3Int direction)
+            => TryGetFeedDirection(cell, out direction, false);
+
+        // Editing-plane filtering does not change existing modules or runtime energy paths.
+        public bool TryGetFeedDirection(Vector3Int cell, out Vector3Int direction, bool restrictToXPlane)
         {
             direction = Vector3Int.zero;
+            if (restrictToXPlane && cell.x != 0) return false;
             int latest = int.MinValue;
             foreach (Vector3Int travel in Neighbors)
             {
+                if (restrictToXPlane && travel.x != 0) continue;
                 Vector3Int source = cell - travel;
                 if (source == Vector3Int.zero)
                 {

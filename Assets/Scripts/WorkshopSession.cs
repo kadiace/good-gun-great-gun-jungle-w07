@@ -13,8 +13,16 @@ namespace WeaponWorkshop
         [SerializeField] private Camera playerCamera;
         private CubeBuilder builder;
         private WorkshopPlanarView planarView;
-        public bool IsPlanarView => planarView != null && planarView.IsPlanar;
-        public void RefreshWorkshopPresentation() => workshopUI?.SetWorkshopUI(IsEditing && !IsPlanarView);
+        public bool UsesFixedXPlane => planarView != null && planarView.FixedXPlane;
+        public bool IsPlanarView => planarView != null && (planarView.IsPlanar || (UsesFixedXPlane && IsInWorkshop));
+        public bool IsPlanarTransitioning => planarView != null && planarView.IsViewTransitioning;
+        public void RefreshWorkshopPresentation() => workshopUI?.SetWorkshopUI(IsEditing && !IsPlanarView, !IsPlanarView);
+        public void RefreshWorkshopIndicators() => workshopUI?.RefreshWorkshopDirections();
+        public bool TryGetDisplayTransform(CubeAssembly source, out Matrix4x4 matrix)
+        {
+            matrix = Matrix4x4.identity;
+            return planarView != null && planarView.TryGetDisplayTransform(source, out matrix);
+        }
         [SerializeField, Min(0f)] private float rotationSensitivity = 0.3f;
         [SerializeField, Min(0f)] private float zoomDegreesPerScroll = 5f;
         [SerializeField, Range(1f, 179f)] private float minWorkshopFieldOfView = 20f;
@@ -159,9 +167,9 @@ namespace WeaponWorkshop
             cameraMove = null;
             if (!workshop) RestoreWorkshopFieldOfView();
             player.enabled = !workshop && !animate;
-            SetEditing(workshop && !animate);
             // The camera always stays under the player's ViewPoint; the workbench view only moves its world pose.
             if (!animate) SnapCamera(workshop);
+            SetEditing(workshop && !animate);
             if (!workshop) activeWorkbench = null;
             for (int i = 0; i < playerRenderers.Length; i++)
                 if (playerRenderers[i] != null)
@@ -210,7 +218,7 @@ namespace WeaponWorkshop
 
         private void SetEditing(bool editing)
         {
-            if (!editing) planarView?.ExitPlanar();
+            if (!editing && planarView != null) planarView.ExitPlanar();
             rotationDrag = false;
             if (builder != null)
             {
@@ -223,7 +231,8 @@ namespace WeaponWorkshop
                     var action = editingControls.FindAction(name, true);
                     if (editing) action.Enable(); else action.Disable();
                 }
-            workshopUI?.SetWorkshopUI(editing && !IsPlanarView);
+            workshopUI?.SetWorkshopUI(editing && !IsPlanarView, !IsPlanarView);
+            if (editing) planarView?.BeginEditingPresentation();
         }
 
         private void BeginRotation()

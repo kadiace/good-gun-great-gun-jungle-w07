@@ -44,6 +44,7 @@ namespace WeaponWorkshop
         private Camera view;
         private WorkshopSession workshopSession;
         private bool WorldInputSuspended => workshopSession != null && workshopSession.IsPlanarView;
+        public bool UsesFixedXPlane => workshopSession != null && workshopSession.UsesFixedXPlane;
         public void ClearWorldPreview()
         {
             CancelPreview();
@@ -357,7 +358,7 @@ namespace WeaponWorkshop
             };
             controls.FindAction("ToggleDelete", true).performed += _ =>
             {
-                if (WorldInputSuspended) return;
+                if (WorldInputSuspended && (!Application.isFocused || workshopSession.IsPlanarTransitioning)) return;
                 if (GameManager.GameplayBlocked || paintingMode) return;
                 // 기존 단계에서는 켜진 삭제 모드를 끌 수 있지만, 엄격 제한 단계는 이 예외도 적용하지 않는다.
                 if (!TutorialManager.ActionAllowed("delete") &&
@@ -585,11 +586,16 @@ namespace WeaponWorkshop
 
         public bool TryPlaceGrid(WorkshopGridSelection selection)
         {
+            if (UsesFixedXPlane && (selection.Axis != WorkshopPlanarAxis.X || selection.Depth != 0 || selection.Cell.x != 0)) return false;
             if (!isActiveAndEnabled || !WorldInputSuspended || GameManager.GameplayBlocked ||
+                (workshopSession != null && workshopSession.IsPlanarTransitioning) ||
                 !Application.isFocused || !selection.IsValid || selectedSlot != selection.ModuleId ||
                 !CanEdit(selection.Assembly)) return false;
-            if (!WorkshopGridPicker.TryEvaluate(selection.Assembly, selection.Cell, this, selection.Axis, out var current) ||
-                !current.IsValid) return false;
+            WorkshopGridSelection current;
+            bool evaluated = WorkshopGridPicker.RequiresDirectionSelection(selection.ModuleId)
+                ? WorkshopGridPicker.TryEvaluateDirection(selection.Assembly, selection.Cell, this, selection.Axis, selection.OutputDirection, out current)
+                : WorkshopGridPicker.TryEvaluate(selection.Assembly, selection.Cell, this, selection.Axis, out current);
+            if (!evaluated || !current.IsValid || current.InputDirection != selection.InputDirection) return false;
             if (wallet == null) wallet = PlayerWallet.ForScene(this);
             if (wallet == null) return false;
             return ExecuteUndoableEdit(current.Assembly, () => TryPurchaseAttach(current.Assembly, current.Cell,
@@ -603,19 +609,38 @@ namespace WeaponWorkshop
             if (!view.pixelRect.Contains(pointer)) return;
             if (!TryGetSurfaceHit(pointer, out RaycastHit hit)) return;
             PlacedBlock block = hit.collider.GetComponentInParent<PlacedBlock>();
-            if (block == null) return;
-            if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeRemoval(block)) return;
+            TryRemoveBlock(block);
+        }
+
+        public bool TryRemovePlanarBlock(CubeAssembly expectedAssembly, PlacedBlock block)
+        {
+            if (!isActiveAndEnabled || !WorldInputSuspended || !deleteMode || paintingMode ||
+                GameManager.GameplayBlocked || !Application.isFocused || workshopSession.IsPlanarTransitioning ||
+                paletteOpen || colorPickerOpen || expectedAssembly == null || block == null ||
+                !block.gameObject.activeInHierarchy || block.transform.parent != expectedAssembly.transform) return false;
+            return TryRemoveBlock(block);
+        }
+
+        private bool TryRemoveBlock(PlacedBlock block)
+        {
+            if (block == null) return false;
+            if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeRemoval(block)) return false;
             CubeAssembly assembly = block.GetComponentInParent<CubeAssembly>();
             if (wallet == null) wallet = PlayerWallet.ForScene(this);
             Vector3 soundPosition = block.transform.position;
             if (CanEdit(assembly) && wallet != null &&
                 ExecuteUndoableEdit(assembly, () => assembly.RemoveBlock(block, wallet)))
+            {
                 WorkshopSoundEffects.RaiseBlockRemoved(soundPosition);
+                return true;
+            }
+            return false;
         }
 
         private bool TryPurchaseAttach(CubeAssembly assembly, Vector3Int cell, int slot,
             Vector3Int direction, Vector3Int normal)
         {
+            if (UsesFixedXPlane && cell.x != 0) return false;
             if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizePlacement(assembly, cell, slot, direction)) return false;
             EquipableWeapon weapon = assembly.GetComponentInParent<EquipableWeapon>();
             if (weapon == null || weapon.ConstructionLocked || wallet == null || IsModuleLocked(slot)) return false;
@@ -792,6 +817,7 @@ namespace WeaponWorkshop
 
         private void UndoLastEdit()
         {
+            if (workshopSession != null && workshopSession.IsPlanarTransitioning) return;
             if (!TutorialManager.TryAction("undo")) return;
             if (GameManager.GameplayBlocked) return;
             if (paintingMode)
