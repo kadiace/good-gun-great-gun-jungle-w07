@@ -42,6 +42,13 @@ namespace WeaponWorkshop
         }
         private InputActionMap controls;
         private Camera view;
+        private WorkshopSession workshopSession;
+        private bool WorldInputSuspended => workshopSession != null && workshopSession.IsPlanarView;
+        public void ClearWorldPreview()
+        {
+            CancelPreview();
+            paintPointerHeld = false;
+        }
         private CubeAssembly pendingAssembly;
         private Vector3Int pendingCell;
         private Vector3Int pendingDirection;
@@ -114,7 +121,7 @@ namespace WeaponWorkshop
             {
                 EquipableWeapon weapon = FindWorkspaceWeapon();
                 return isActiveAndEnabled && workspace != null && !paintingMode && weapon != null &&
-                    !weapon.ConstructionLocked && weapon.GetComponentInChildren<CubeAssembly>(true) != null;
+                    !WorldInputSuspended && !weapon.ConstructionLocked && weapon.GetComponentInChildren<CubeAssembly>(true) != null;
             }
         }
         public string StickerBrushLabel => stickerBrush != null ? stickerBrush.name : "PNG 스티커를 선택하세요";
@@ -286,6 +293,7 @@ namespace WeaponWorkshop
             paintFillMode = false;
             if (eraseModeUI != null) eraseModeUI.SetActive(false);
             view = GetComponent<Camera>();
+            workshopSession = GetComponentInParent<WorkshopSession>();
             if (inputActions == null) { enabled = false; return; }
             controls = inputActions.FindActionMap("Build", true).Clone();
             for (int i = 1; i <= 10; i++)
@@ -304,6 +312,7 @@ namespace WeaponWorkshop
             InputAction attach = controls.FindAction("Attach", true);
             attach.started += _ =>
             {
+                if (WorldInputSuspended) return;
                 paintPointerHeld = false;
                 bool canUseSurface = paintingMode && !GameManager.GameplayBlocked &&
                     !controls.FindAction("Rotate", true).IsPressed() && !IsPointerOverUI(AimPoint());
@@ -331,6 +340,7 @@ namespace WeaponWorkshop
             attach.canceled += _ => paintPointerHeld = false;
             attach.performed += _ =>
             {
+                if (WorldInputSuspended) return;
                 if (GameManager.GameplayBlocked || favoriteDragActive ||
                     IsPointerOverUI(AimPoint())) return;
                 if (!paintingMode && (paletteOpen || colorPickerOpen))
@@ -347,6 +357,7 @@ namespace WeaponWorkshop
             };
             controls.FindAction("ToggleDelete", true).performed += _ =>
             {
+                if (WorldInputSuspended) return;
                 if (GameManager.GameplayBlocked || paintingMode) return;
                 // 기존 단계에서는 켜진 삭제 모드를 끌 수 있지만, 엄격 제한 단계는 이 예외도 적용하지 않는다.
                 if (!TutorialManager.ActionAllowed("delete") &&
@@ -421,6 +432,7 @@ namespace WeaponWorkshop
 
         private void Update()
         {
+            if (WorldInputSuspended) return;
             UpdateHoverPreview();
             if (GameManager.GameplayBlocked)
             {
@@ -446,6 +458,7 @@ namespace WeaponWorkshop
         private void UpdateHoverPreview()
         {
             if (hoverPreview != null) hoverPreview.SetActive(false);
+            if (WorldInputSuspended) return;
             if (paintingMode || paletteOpen || colorPickerOpen || favoriteDragActive || preview != null ||
                 GameManager.GameplayBlocked || view == null || controls == null ||
                 controls.FindAction("Rotate", true).IsPressed() || IsPointerOverUI(AimPoint())) return;
@@ -568,6 +581,19 @@ namespace WeaponWorkshop
             preview = null;
             pendingAssembly = null;
             pendingAttachmentDirection = Vector3Int.zero;
+        }
+
+        public bool TryPlaceGrid(WorkshopGridSelection selection)
+        {
+            if (!isActiveAndEnabled || !WorldInputSuspended || GameManager.GameplayBlocked ||
+                !Application.isFocused || !selection.IsValid || selectedSlot != selection.ModuleId ||
+                !CanEdit(selection.Assembly)) return false;
+            if (!WorkshopGridPicker.TryEvaluate(selection.Assembly, selection.Cell, this, selection.Axis, out var current) ||
+                !current.IsValid) return false;
+            if (wallet == null) wallet = PlayerWallet.ForScene(this);
+            if (wallet == null) return false;
+            return ExecuteUndoableEdit(current.Assembly, () => TryPurchaseAttach(current.Assembly, current.Cell,
+                current.ModuleId, current.OutputDirection, current.InputDirection));
         }
 
         private void TryRemove()
@@ -1109,6 +1135,7 @@ namespace WeaponWorkshop
         public bool TryGetHoveredModule(out RaycastHit hit)
         {
             hit = default;
+            if (WorldInputSuspended) return false;
             if (!isActiveAndEnabled || controls == null || view == null || GameManager.GameplayBlocked) return false;
             Vector2 pointer = AimPoint();
             return view.pixelRect.Contains(pointer) && !IsPointerOverUI(pointer) && TryGetSurfaceHit(pointer, out hit);

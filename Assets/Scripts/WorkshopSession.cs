@@ -12,6 +12,9 @@ namespace WeaponWorkshop
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField] private Camera playerCamera;
         private CubeBuilder builder;
+        private WorkshopPlanarView planarView;
+        public bool IsPlanarView => planarView != null && planarView.IsPlanar;
+        public void RefreshWorkshopPresentation() => workshopUI?.SetWorkshopUI(IsEditing && !IsPlanarView);
         [SerializeField, Min(0f)] private float rotationSensitivity = 0.3f;
         [SerializeField, Min(0f)] private float zoomDegreesPerScroll = 5f;
         [SerializeField, Range(1f, 179f)] private float minWorkshopFieldOfView = 20f;
@@ -51,6 +54,7 @@ namespace WeaponWorkshop
         private void Awake()
         {
             player = GetComponent<FirstPersonPlayer>();
+            planarView = GetComponent<WorkshopPlanarView>();
             weaponHolder = GetComponent<WeaponHolder>();
             builder = playerCamera != null ? playerCamera.GetComponent<CubeBuilder>() : null;
             if (builder != null) builder.enabled = false;
@@ -70,7 +74,7 @@ namespace WeaponWorkshop
             rotate.canceled += _ => EndRotation();
             editingControls.FindAction("ResetRotation", true).performed += _ =>
             {
-                if (!IsEditing || GameManager.GameplayBlocked) return;
+                if (!IsEditing || IsPlanarView || GameManager.GameplayBlocked) return;
                 if (!TutorialManager.TryAction("reset-rotation")) return;
                 rotationDrag = false;
                 activeWorkbench.ResetRotation();
@@ -206,6 +210,7 @@ namespace WeaponWorkshop
 
         private void SetEditing(bool editing)
         {
+            if (!editing) planarView?.ExitPlanar();
             rotationDrag = false;
             if (builder != null)
             {
@@ -218,13 +223,13 @@ namespace WeaponWorkshop
                     var action = editingControls.FindAction(name, true);
                     if (editing) action.Enable(); else action.Disable();
                 }
-            workshopUI?.SetWorkshopUI(editing);
+            workshopUI?.SetWorkshopUI(editing && !IsPlanarView);
         }
 
         private void BeginRotation()
         {
             rotationDragDegrees = 0f;
-            if (!IsEditing || GameManager.GameplayBlocked) return;
+            if (!IsEditing || IsPlanarView || GameManager.GameplayBlocked) return;
             if (!TutorialManager.TryAction("rotate")) return;
             Vector2 pointer = point.ReadValue<Vector2>();
             rotationDrag = RotationViewport.Contains(pointer);
@@ -249,6 +254,7 @@ namespace WeaponWorkshop
             }
             if (!IsEditing || GameManager.GameplayBlocked || !Application.isFocused)
             { rotationDrag = false; return; }
+            if (IsPlanarView) { rotationDrag = false; return; }
             ApplyWorkshopZoom();
             if (!TutorialManager.ActionAllowed("rotate")) { rotationDrag = false; return; }
             if (!rotationDrag || !rotate.IsPressed()) return;

@@ -190,7 +190,7 @@ namespace WeaponWorkshop
         }
         private void UpdateWorkshopDirectionUI()
         {
-            bool editing = workshopSession != null && workshopSession.IsEditing;
+            bool editing = workshopSession != null && workshopSession.IsEditing && !workshopSession.IsPlanarView;
             PowerCore core = editing && workshopSession.ActiveWorkbench != null ? workshopSession.ActiveWorkbench.CurrentCore : null;
             Camera view = editing ? workshopSession.WorkshopCamera : null;
             if (editing && rotationCircle != null)
