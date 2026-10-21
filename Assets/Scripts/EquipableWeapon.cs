@@ -521,6 +521,36 @@ namespace WeaponWorkshop
             return true;
         }
 
+        /// <summary>
+        /// 작업대 파괴 시 거치되어 있던 무기를 월드 바닥으로 떨어뜨려 물리 및 습득 가능 상태로 전환합니다.
+        /// </summary>
+        /// <returns>낙하 처리가 성공하면 true, 이미 장착 중이면 false를 반환합니다.</returns>
+        public bool DropFromWorkbench()
+        {
+            if (IsEquipped) return false;
+            if (movement != null)
+            {
+                StopCoroutine(movement);
+                movement = null;
+            }
+            IsMoving = false;
+            workbench = null;
+            equippedGripPoint = null;
+            dropped = true;
+            transform.SetParent(null, true);
+            transform.localScale = originalWorldScale;
+            RestorePhysics();
+            SetDroppedCollisionLayer(true);
+            Rigidbody body = GetComponent<Rigidbody>();
+            if (body == null) body = gameObject.AddComponent<Rigidbody>();
+            body.isKinematic = false;
+            body.useGravity = true;
+            body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            body.linearVelocity = Vector3.down * 0.2f;
+            body.angularVelocity = Vector3.zero;
+            return true;
+        }
+
         private void SetDroppedCollisionLayer(bool isDropped)
         {
             if (!isDropped)

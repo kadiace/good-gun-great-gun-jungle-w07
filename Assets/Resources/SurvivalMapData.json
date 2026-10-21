@@ -1,0 +1,71 @@
+{
+  "mapWidth": 360.0,
+  "mapLength": 360.0,
+  "mapMinX": 0.0,
+  "mapMaxX": 360.0,
+  "mapMinZ": -600.0,
+  "mapMaxZ": -240.0,
+  "playerSpawnX": 180.0,
+  "playerSpawnY": 1.0,
+  "playerSpawnZ": -420.0,
+  "workshopCenterX": 68.5,
+  "workshopCenterY": 0.0,
+  "workshopCenterZ": -438.5,
+  "lootCrateTargetCount": 90,
+  "zones": [
+    {
+      "name": "MilitaryBase",
+      "minX": 10.0,
+      "maxX": 206.0,
+      "minZ": -408.0,
+      "maxZ": -250.0,
+      "centerX": 108.0,
+      "centerZ": -329.0
+    },
+    {
+      "name": "JungleCampus",
+      "minX": 240.0,
+      "maxX": 292.0,
+      "minZ": -312.0,
+      "maxZ": -260.0,
+      "centerX": 266.0,
+      "centerZ": -286.0
+    },
+    {
+      "name": "WoodenHouse",
+      "minX": 10.0,
+      "maxX": 35.0,
+      "minZ": -446.0,
+      "maxZ": -430.0,
+      "centerX": 22.5,
+      "centerZ": -438.0
+    },
+    {
+      "name": "Workshop",
+      "minX": 65.0,
+      "maxX": 72.0,
+      "minZ": -442.0,
+      "maxZ": -435.0,
+      "centerX": 68.5,
+      "centerZ": -438.5
+    },
+    {
+      "name": "Bank",
+      "minX": 10.0,
+      "maxX": 84.0,
+      "minZ": -534.0,
+      "maxZ": -466.0,
+      "centerX": 47.0,
+      "centerZ": -500.0
+    },
+    {
+      "name": "Airport",
+      "minX": 220.0,
+      "maxX": 354.0,
+      "minZ": -580.0,
+      "maxZ": -374.0,
+      "centerX": 287.0,
+      "centerZ": -477.0
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Linq;
 
 namespace WeaponWorkshop
@@ -65,13 +65,25 @@ namespace WeaponWorkshop
                 { block.RecordModuleCreditCost(amount); return; }
         }
 
-        public bool RemoveBlock(PlacedBlock target, PlayerWallet refundWallet = null)
+        public bool RemoveBlock(PlacedBlock target, PlayerWallet refundWallet = null, PlayerInventory returnInventory = null)
         {
             if (IsConstructionLocked || target == null || target.transform.parent != transform || !target.gameObject.activeSelf)
                 return false;
-            int refund = refundWallet != null ? target.TakePurchaseCost() : 0;
-            int creditRefund = refundWallet != null ? target.TakeModuleCreditCost() : 0;
+
+            if (SurvivalSession.IsActive && returnInventory == null)
+            {
+                returnInventory = PlayerInventory.Instance != null ? PlayerInventory.Instance : FindFirstObjectByType<PlayerInventory>();
+            }
+
+            int refund = refundWallet != null && !SurvivalSession.IsActive ? target.TakePurchaseCost() : 0;
+            int creditRefund = refundWallet != null && !SurvivalSession.IsActive ? target.TakeModuleCreditCost() : 0;
             string partKind = refundWallet != null ? ModuleCounter.LogName(target) : "";
+
+            if (SurvivalSession.IsActive && returnInventory != null)
+            {
+                returnInventory.Add(target.ModuleSlot, 1);
+            }
+
             RemoveObject(target);
             var cells = new System.Collections.Generic.Dictionary<Vector3Int, PlacedBlock>();
             foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>())
@@ -92,14 +104,21 @@ namespace WeaponWorkshop
             foreach (var entry in cells)
                 if (!connected.Contains(entry.Key))
                 {
-                    if (refundWallet != null) refund += entry.Value.TakePurchaseCost();
-                    if (refundWallet != null) creditRefund += entry.Value.TakeModuleCreditCost();
+                    if (SurvivalSession.IsActive && returnInventory != null)
+                    {
+                        returnInventory.Add(entry.Value.ModuleSlot, 1);
+                    }
+                    if (refundWallet != null && !SurvivalSession.IsActive) refund += entry.Value.TakePurchaseCost();
+                    if (refundWallet != null && !SurvivalSession.IsActive) creditRefund += entry.Value.TakeModuleCreditCost();
                     RemoveObject(entry.Value);
                 }
-            int moneyRefund = GetComponentInParent<EquipableWeapon>()?.RefundModulePurchases(refund, refundWallet) ?? 0;
-            refundWallet?.CreditModuleCredits(creditRefund);
-            // Disconnected blocks refund with the removed one, so the log names only the removed part.
-            refundWallet?.NotifyPartRefunded(partKind, moneyRefund, creditRefund);
+            if (!SurvivalSession.IsActive)
+            {
+                int moneyRefund = GetComponentInParent<EquipableWeapon>()?.RefundModulePurchases(refund, refundWallet) ?? 0;
+                refundWallet?.CreditModuleCredits(creditRefund);
+                // Disconnected blocks refund with the removed one, so the log names only the removed part.
+                refundWallet?.NotifyPartRefunded(partKind, moneyRefund, creditRefund);
+            }
             NotifyStructureChanged();
             return true;
         }

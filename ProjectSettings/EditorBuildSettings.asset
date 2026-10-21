@@ -32,6 +32,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/NightRaid/NightRaid_JungleCampus_improve.unity
     guid: 611ad354b5a60e04ca1c188e79a2d9be
+  - enabled: 1
+    path: Assets/Scenes/survival/Survival.unity
+    guid: a111111111111111111111111111110b
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

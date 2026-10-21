@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -46,7 +46,7 @@ namespace WeaponWorkshop
 
         public bool TryInteract()
         {
-            if (GameManager.GameplayBlocked) return false;
+            if (GameManager.GameplayBlocked || SurvivalInventoryUI.IsOpen) return false;
             if (player == null || !player.enabled) return false;
             RefreshTarget();
             // The player-owned mode decides whether this input belongs to a temporary interaction.
@@ -78,7 +78,7 @@ namespace WeaponWorkshop
         public bool TryGetViewedHit(float maxDistance, out RaycastHit hit, bool includeAllLayers = false)
         {
             hit = default;
-            if (!isActiveAndEnabled || !Application.isFocused || GameManager.GameplayBlocked || view == null || player == null || !player.isActiveAndEnabled || point == null) return false;
+            if (!isActiveAndEnabled || !Application.isFocused || GameManager.GameplayBlocked || SurvivalInventoryUI.IsOpen || view == null || player == null || !player.isActiveAndEnabled || point == null) return false;
             Vector2 screenPoint = Cursor.lockState == CursorLockMode.Locked
                 ? view.pixelRect.center : point.ReadValue<Vector2>();
             if (!view.pixelRect.Contains(screenPoint)) return false;

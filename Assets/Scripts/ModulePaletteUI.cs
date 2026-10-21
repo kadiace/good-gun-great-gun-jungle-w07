@@ -398,10 +398,15 @@ namespace WeaponWorkshop
         {
             int state = builder.DeleteMode ? -1 : builder.SelectedSlot;
             for (int i = 0; i < builder.FavoriteCount; i++) state = state * 31 + builder.GetFavorite(i);
+            var inv = SurvivalSession.IsActive ? (PlayerInventory.Instance != null ? PlayerInventory.Instance : FindFirstObjectByType<PlayerInventory>()) : null;
             for (int id = 1; id <= builder.Catalog.Count; id++)
             {
                 state = state * 31 + (builder.IsModuleLocked(id) ? 1 : 0);
                 state = state * 31 + builder.GetNextModuleCreditCost(id);
+                if (inv != null)
+                {
+                    state = state * 31 + inv.GetCount(id);
+                }
             }
             return state;
         }
@@ -410,17 +415,41 @@ namespace WeaponWorkshop
         {
             ModuleCatalog catalog = builder.Catalog;
             int selected = builder.DeleteMode ? 0 : builder.SelectedSlot;
+            var inv = SurvivalSession.IsActive ? (PlayerInventory.Instance != null ? PlayerInventory.Instance : FindFirstObjectByType<PlayerInventory>()) : null;
+
             for (int i = 0; i < hotbarSlots.Count; i++)
             {
                 int id = builder.GetFavorite(i);
                 catalog.TryGet(id, out ModuleCatalog.Entry entry);
-                hotbarSlots[i].Show(id, entry.displayName, entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}");
+                string priceText;
+                if (SurvivalSession.IsActive)
+                {
+                    int count = inv != null ? inv.GetCount(id) : 0;
+                    float weight = SurvivalLootWeightInfo.GetWeightKg(id);
+                    priceText = $"보유 {count}개 · {weight:0.0}kg";
+                }
+                else
+                {
+                    priceText = $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}";
+                }
+                hotbarSlots[i].Show(id, entry.displayName, entry.color, id == selected, builder.IsModuleLocked(id), priceText);
             }
             for (int i = 0; i < paletteSlots.Count; i++)
             {
                 int id = i + 1;
                 catalog.TryGet(id, out ModuleCatalog.Entry entry);
-                paletteSlots[i].Show(id, entry.displayName, entry.color, id == selected, builder.IsModuleLocked(id), $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}");
+                string priceText;
+                if (SurvivalSession.IsActive)
+                {
+                    int count = inv != null ? inv.GetCount(id) : 0;
+                    float weight = SurvivalLootWeightInfo.GetWeightKg(id);
+                    priceText = $"보유 {count}개 · {weight:0.0}kg";
+                }
+                else
+                {
+                    priceText = $"${entry.data.BuyPrice} · 재료{builder.GetNextModuleCreditCost(id)}";
+                }
+                paletteSlots[i].Show(id, entry.displayName, entry.color, id == selected, builder.IsModuleLocked(id), priceText);
             }
             UpdateDragGuide();
         }

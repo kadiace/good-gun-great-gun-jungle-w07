@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -26,7 +26,7 @@ namespace WeaponWorkshop
         private void LateUpdate()
         {
             var session = Session;
-            bool available = session != null && session.IsEditing;
+            bool available = session != null && session.IsEditing && !SurvivalSession.IsActive;
             openButton.gameObject.SetActive(available);
             if (IsOpen && (!available || weapon == null || session.ActiveWorkbench.CurrentWeapon != weapon)) Close();
         }

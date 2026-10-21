@@ -9,6 +9,7 @@ namespace WeaponWorkshop
         private const float JumpMoveSpeedMultiplier = 0.75f;
 
         [SerializeField] private InputActionAsset inputActions;
+        public InputActionAsset InputActions => inputActions;
         [SerializeField] private Transform viewPoint;
         [SerializeField, Min(0f)] private float moveSpeed = 3f;
         [SerializeField, Min(0f)] private float sprintSpeed = 10f;
@@ -28,6 +29,7 @@ namespace WeaponWorkshop
         private float recoilSmoothTime = 0.18f;
         private float verticalSpeed;
         private bool jumpInProgress;
+        private PlayerInventory _inventory;
         public Transform ViewPoint => viewPoint;
         // Scope zoom lowers look speed; 1 = normal.
         public float LookSensitivityScale { get; set; } = 1f;
@@ -105,6 +107,11 @@ namespace WeaponWorkshop
                 return;
             }
             if (ExternallyDriven) return;
+            if (SurvivalInventoryUI.IsOpen)
+            {
+                WorkshopSoundEffects.RaisePlayerMovementStopped(this);
+                return;
+            }
             Vector2 delta = look.ReadValue<Vector2>() * LookSensitivityScale * MouseSensitivityUI.Multiplier;
             transform.Rotate(Vector3.up, delta.x * lookSensitivity, Space.World);
             float pitchInput = -delta.y * lookSensitivity;
@@ -120,7 +127,7 @@ namespace WeaponWorkshop
                 verticalSpeed = -2f;
                 jumpInProgress = false;
             }
-            bool canJump = NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid;
+            bool canJump = (NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid) || SurvivalSession.IsActive;
             if (canJump && controller.isGrounded && jump.WasPressedThisFrame() && jumpForce > 0f)
             {
                 verticalSpeed = jumpForce;
@@ -129,6 +136,35 @@ namespace WeaponWorkshop
             }
 
             float speed = sprint.IsPressed() ? sprintSpeed : moveSpeed;
+            if (SurvivalSession.IsActive)
+            {
+                if (_inventory == null) _inventory = GetComponent<PlayerInventory>();
+                float weight = _inventory != null ? _inventory.CurrentCarryWeightKg : 0f;
+                var table = TableManager.Instance.SurvivalLootWeight;
+                float immobilizeThreshold = table != null ? table.immobilizeThresholdKg : 60f;
+                float sprintBlockThreshold = table != null ? table.sprintBlockThresholdKg : 40f;
+                float slowdownThreshold = table != null ? table.slowdownThresholdKg : 30f;
+                float slowdownPerKg = table != null ? table.slowdownPerKg : 0.033f;
+
+                if (weight >= immobilizeThreshold)
+                {
+                    speed = 0f;
+                }
+                else
+                {
+                    if (weight >= sprintBlockThreshold)
+                    {
+                        speed = moveSpeed;
+                    }
+
+                    if (weight > slowdownThreshold)
+                    {
+                        float excess = weight - slowdownThreshold;
+                        float multiplier = Mathf.Max(0f, 1f - excess * slowdownPerKg);
+                        speed *= multiplier;
+                    }
+                }
+            }
             if (jumpInProgress) speed *= JumpMoveSpeedMultiplier;
             Vector3 motion = (transform.right * input.x + transform.forward * input.y) * speed;
             Vector3 previousPosition = transform.position;

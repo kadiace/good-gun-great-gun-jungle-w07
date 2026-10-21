@@ -1,4 +1,4 @@
-{
+﻿{
     "version": 1,
     "name": "InputSystem_Actions",
     "maps": [
@@ -136,6 +136,15 @@
                     "name": "Scan",
                     "type": "Button",
                     "id": "ff6dd1d6-8a44-43ab-8f66-1220c74b7b9e",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleInventory",
+                    "type": "Button",
+                    "id": "e4b52c38-89c7-43cf-bc01-8b438b971a11",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -602,6 +611,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Scan",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f5c63d49-90d8-44d0-9d12-9c549ca82b22",
+                    "path": "<Keyboard>/i",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "ToggleInventory",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Unity.Profiling;
 using LogKit;
@@ -373,6 +373,16 @@ namespace WeaponWorkshop
                 // block, then stops when it reaches this next wall.
                 if (penetrationPower <= 1f)
                 {
+                    if (!water && (effects == null || structure.AllowsImpact(effects.Stats)))
+                    {
+                        var lootCrate = structure.GetComponent<SurvivalLootCrate>();
+                        if (lootCrate != null && lootCrate.isActiveAndEnabled && !lootCrate.IsClaimed)
+                        {
+                            Quaternion crateRotation = RotationForDirection(incomingDirection);
+                            float crateLineDistance = Mathf.Min(structure.PenetrationStepDistance, Mathf.Min(remaining, structureSweepLimit));
+                            lootCrate.TakeBasicBulletHit(transform.position, crateRotation, halfExtents, crateLineDistance);
+                        }
+                    }
                     StopAtImpact(hit.point, incomingDirection, target);
                     return;
                 }

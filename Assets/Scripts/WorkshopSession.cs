@@ -277,7 +277,7 @@ namespace WeaponWorkshop
 
         private void SetCursor()
         {
-            if (GameManager.GameplayBlocked)
+            if (GameManager.GameplayBlocked || SurvivalInventoryUI.IsOpen)
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
@@ -313,7 +313,7 @@ namespace WeaponWorkshop
             if (controls == null) return;
             // Hold the workbench view while editing (the camera is not parented to the workbench).
             if (IsInWorkshop && cameraMove == null) SnapCamera(true);
-            Cursor.visible = IsInWorkshop;
+            Cursor.visible = IsInWorkshop || SurvivalInventoryUI.IsOpen;
             if (Application.isFocused) SetCursor();
         }
         private void OnApplicationFocus(bool focused) { rotationDrag = false; if (focused && controls != null) SetCursor(); }

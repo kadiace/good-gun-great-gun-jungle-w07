@@ -1,0 +1,129 @@
+{
+  "baseCarryCapacityKg": 30.0,
+  "equippedWeightRatio": 0.5,
+  "slowdownThresholdKg": 30.0,
+  "slowdownPerKg": 0.033,
+  "sprintBlockThresholdKg": 40.0,
+  "immobilizeThresholdKg": 60.0,
+  "structureDropCount": 2,
+  "functionDropCount": 1,
+  "normalFunctionProbability": 0.75,
+  "heavyFunctionProbability": 0.25,
+  "coreWeightKg": 0.0,
+  "modules": [
+    {
+      "codeId": "6289f0e60b334b04b823408ae1ae2e36",
+      "moduleId": 1,
+      "category": "Structure",
+      "weightKg": 0.5
+    },
+    {
+      "codeId": "bf1f0c3b718a48f9a19debdebc5da1a4",
+      "moduleId": 2,
+      "category": "Structure",
+      "weightKg": 0.5
+    },
+    {
+      "codeId": "be1aadfb48ae4f55ac16cb1d8d5429c8",
+      "moduleId": 3,
+      "category": "Structure",
+      "weightKg": 0.5
+    },
+    {
+      "codeId": "4793f8d918e54829be0e1db07dc07830",
+      "moduleId": 4,
+      "category": "Structure",
+      "weightKg": 0.5
+    },
+    {
+      "codeId": "9b18b219018266c4a90db0f81b293ced",
+      "moduleId": 5,
+      "category": "Normal",
+      "weightKg": 1.5
+    },
+    {
+      "codeId": "d5834196fd7a14146bee8605f3766655",
+      "moduleId": 6,
+      "category": "Normal",
+      "weightKg": 1.5
+    },
+    {
+      "codeId": "ac721da9683bfcc46b24fdba51a5b278",
+      "moduleId": 7,
+      "category": "Heavy",
+      "weightKg": 3.0
+    },
+    {
+      "codeId": "d402a84ed473853498b702ccf20adc69",
+      "moduleId": 8,
+      "category": "Heavy",
+      "weightKg": 3.0
+    },
+    {
+      "codeId": "3819fc250847c48448b1dc45b4ce63a6",
+      "moduleId": 9,
+      "category": "Heavy",
+      "weightKg": 3.0
+    },
+    {
+      "codeId": "bf4a63288b8e9694787904964ba8acd4",
+      "moduleId": 10,
+      "category": "Heavy",
+      "weightKg": 3.0
+    },
+    {
+      "codeId": "8185707d079aa3d4eba1d33833009eb2",
+      "moduleId": 11,
+      "category": "Normal",
+      "weightKg": 1.5
+    },
+    {
+      "codeId": "8d0c0ddd9cf586745abb86717c7cc6b6",
+      "moduleId": 12,
+      "category": "Normal",
+      "weightKg": 1.5
+    },
+    {
+      "codeId": "cf32abdb412c6124cabcbdd85c103cb5",
+      "moduleId": 13,
+      "category": "Normal",
+      "weightKg": 1.5
+    },
+    {
+      "codeId": "9841ca931bf7a8c4b866da354b808ad7",
+      "moduleId": 14,
+      "category": "Normal",
+      "weightKg": 1.5
+    },
+    {
+      "codeId": "0277d45126374004b802798d93561da2",
+      "moduleId": 15,
+      "category": "Normal",
+      "weightKg": 1.5
+    },
+    {
+      "codeId": "36f778d16d639104b90e807dc937aaaa",
+      "moduleId": 16,
+      "category": "Heavy",
+      "weightKg": 3.0
+    },
+    {
+      "codeId": "cc30a6f07cbd432428e9db5a6f3315ae",
+      "moduleId": 17,
+      "category": "Normal",
+      "weightKg": 1.5
+    },
+    {
+      "codeId": "5508fb3f89d14ebd9747c598276197c6",
+      "moduleId": 18,
+      "category": "Structure",
+      "weightKg": 0.5
+    },
+    {
+      "codeId": "d557014a75723774da9948844f570e45",
+      "moduleId": 19,
+      "category": "Disabled",
+      "weightKg": 0.0
+    }
+  ]
+}

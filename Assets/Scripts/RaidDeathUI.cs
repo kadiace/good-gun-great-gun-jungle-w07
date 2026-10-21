@@ -25,6 +25,16 @@ namespace WeaponWorkshop
 
         private void BindHealth()
         {
+            if (SurvivalSession.IsActive)
+            {
+                if (health != null)
+                {
+                    health.Died -= Show;
+                    health = null;
+                }
+                return;
+            }
+
             var player = uiManager != null ? uiManager.Player : null;
             var nextHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
             if (health != nextHealth)
@@ -37,6 +47,8 @@ namespace WeaponWorkshop
         }
         private void Show()
         {
+            if (SurvivalSession.IsActive) return;
+
             if (NightRaidController.Instance != null)
             {
                 if (panel != null) panel.SetActive(false);

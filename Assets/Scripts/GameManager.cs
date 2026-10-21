@@ -82,6 +82,12 @@ namespace WeaponWorkshop
         }
         public void TogglePause()
         {
+            if (SurvivalInventoryUI.IsOpen)
+            {
+                SurvivalInventoryUI.Instance?.Close();
+                return;
+            }
+            if (SurvivalInventoryUI.ClosedThisFrame) return;
             if (uiManager != null && uiManager.GetComponent<RetireUI>()?.IsOpen == true) return;
             // ESC는 입력칸 선택 중에도 창 닫기·작업대 나가기로 동작하므로 화면 상태(ModalBlocked)만 본다.
             if (!ModalBlocked && uiManager != null && uiManager.GetComponent<ShootingTestHUD>()?.CloseRetry() == true) return;

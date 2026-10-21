@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using UnityEngine;
 
@@ -29,7 +29,7 @@ namespace WeaponWorkshop
         private void LateUpdate()
         {
             var session = Session;
-            bool available = session != null && session.IsEditing && session.ActiveWorkbench.CurrentWeapon != null;
+            bool available = session != null && session.IsEditing && session.ActiveWorkbench.CurrentWeapon != null && !SurvivalSession.IsActive;
             panel.SetActive(available);
             if (IsOpen && (!available || session.ActiveWorkbench.CurrentWeapon != selectedWeapon)) Close();
             foreach (var slot in slots) slot.interactable = available && !GameManager.ModalBlocked;

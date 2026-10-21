@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace WeaponWorkshop
@@ -66,7 +66,7 @@ namespace WeaponWorkshop
         private void OnDestroy() => controls?.Dispose();
         private void Update()
         {
-            if (GameManager.GameplayBlocked) return;
+            if (GameManager.GameplayBlocked || SurvivalInventoryUI.IsOpen) return;
             recoilOffset = Mathf.MoveTowards(recoilOffset, 0f, recoilReturnSpeed * Time.deltaTime);
             ApplyRecoil();
             UpdateAim();
@@ -136,7 +136,7 @@ namespace WeaponWorkshop
         private void TryAttack()
         {
             if (!TutorialManager.ActionAllowed("fire")) return;
-            if (GameManager.GameplayBlocked) return;
+            if (GameManager.GameplayBlocked || SurvivalInventoryUI.IsOpen) return;
             if (!HasFocus || player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
             UpdateAim();
             EquipableWeapon weapon = EquippedWeapon;
@@ -150,7 +150,7 @@ namespace WeaponWorkshop
 
         private void OnAttackPerformed(InputAction.CallbackContext context)
         {
-            if (GameManager.GameplayBlocked || !HasFocus ||
+            if (GameManager.GameplayBlocked || SurvivalInventoryUI.IsOpen || !HasFocus ||
                 player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
             if (!TutorialManager.TryAction("fire")) return;
             AttackInput?.Invoke(EquippedWeapon);
@@ -172,7 +172,7 @@ namespace WeaponWorkshop
         private void ReleaseCharge()
         {
             if (EquippedWeapon == null || !EquippedWeapon.UsesCharge) return;
-            if (GameManager.GameplayBlocked || !HasFocus || player == null || !player.isActiveAndEnabled)
+            if (GameManager.GameplayBlocked || SurvivalInventoryUI.IsOpen || !HasFocus || player == null || !player.isActiveAndEnabled)
             {
                 EquippedWeapon.CancelCharge();
                 return;

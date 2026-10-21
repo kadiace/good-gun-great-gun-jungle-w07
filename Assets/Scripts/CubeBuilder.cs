@@ -112,6 +112,7 @@ namespace WeaponWorkshop
         {
             get
             {
+                if (SurvivalSession.IsActive) return false;
                 EquipableWeapon weapon = FindWorkspaceWeapon();
                 return isActiveAndEnabled && workspace != null && !paintingMode && weapon != null &&
                     !weapon.ConstructionLocked && weapon.GetComponentInChildren<CubeAssembly>(true) != null;
@@ -162,6 +163,12 @@ namespace WeaponWorkshop
         public Vector2 PointerPosition => controls != null ? AimPoint() : Vector2.zero;
         public bool IsModuleLocked(int moduleId)
         {
+            if (SurvivalSession.IsActive)
+            {
+                if (SurvivalLootWeightInfo.IsDisabledInSurvival(moduleId)) return true;
+                var inv = PlayerInventory.Instance != null ? PlayerInventory.Instance : FindFirstObjectByType<PlayerInventory>();
+                return inv != null && inv.GetCount(moduleId) <= 0;
+            }
             if (TutorialManager.Instance != null && !TutorialManager.Instance.AllowsModule(moduleId)) return true;
             if (moduleCatalog == null || !moduleCatalog.TryGet(moduleId, out var entry)) return true;
             if (!entry.initiallyLocked) return false;
@@ -592,7 +599,30 @@ namespace WeaponWorkshop
         {
             if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizePlacement(assembly, cell, slot, direction)) return false;
             EquipableWeapon weapon = assembly.GetComponentInParent<EquipableWeapon>();
-            if (weapon == null || weapon.ConstructionLocked || wallet == null || IsModuleLocked(slot)) return false;
+            if (weapon == null || weapon.ConstructionLocked || IsModuleLocked(slot)) return false;
+            if (SurvivalSession.IsActive)
+            {
+                if (assembly.IsTriggerModuleSlot(slot) && assembly.HasTriggerModule)
+                {
+                    ShowCustomLimitMessage("트리거 모듈은 1개만 설치할 수 있습니다");
+                    return false;
+                }
+                var inventory = PlayerInventory.Instance != null ? PlayerInventory.Instance : FindFirstObjectByType<PlayerInventory>();
+                if (inventory == null || inventory.GetCount(slot) < 1)
+                {
+                    FeedbackUI.For(this)?.ShowNotification("가방에 블록이 부족합니다.");
+                    return false;
+                }
+                bool attached = assembly.TryAttach(cell, slot, direction, normal) && PaintPlacedColor(assembly, cell);
+                if (attached)
+                {
+                    inventory.TryConsume(slot, 1);
+                    WorkshopSoundEffects.RaiseBlockInstalled(assembly.transform.TransformPoint(cell));
+                    return true;
+                }
+                return false;
+            }
+            if (wallet == null) return false;
             if (assembly.IsTriggerModuleSlot(slot) && assembly.HasTriggerModule)
             {
                 ShowCustomLimitMessage("트리거 모듈은 1개만 설치할 수 있습니다");
@@ -640,13 +670,19 @@ namespace WeaponWorkshop
         private void TryPlace()
         {
             if (paintingMode || IsPointerOverUI(AimPoint())) return;
-            if (wallet == null) wallet = PlayerWallet.ForScene(this);
-            if (wallet == null) return;
+            if (!SurvivalSession.IsActive)
+            {
+                if (wallet == null) wallet = PlayerWallet.ForScene(this);
+                if (wallet == null) return;
+            }
             int slotToBuy = preview != null ? pendingSlot : selectedSlot;
             if (IsModuleLocked(slotToBuy)) { CancelPreview(); return; }
-            int materials = GetNextModuleCreditCost(slotToBuy);
-            if (!wallet.CheckPurchaseFunds(materials, true, PartLogName(pendingAssembly != null ? pendingAssembly :
-                    FindWorkspaceWeapon()?.GetComponentInChildren<CubeAssembly>(true), slotToBuy))) return;
+            if (!SurvivalSession.IsActive)
+            {
+                int materials = GetNextModuleCreditCost(slotToBuy);
+                if (!wallet.CheckPurchaseFunds(materials, true, PartLogName(pendingAssembly != null ? pendingAssembly :
+                        FindWorkspaceWeapon()?.GetComponentInChildren<CubeAssembly>(true), slotToBuy))) return;
+            }
             Vector2 pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer)) return;
             if (preview != null)
@@ -785,6 +821,70 @@ namespace WeaponWorkshop
             }
 
             CancelPreview();
+            if (SurvivalSession.IsActive)
+            {
+                var inv = PlayerInventory.Instance != null ? PlayerInventory.Instance : FindFirstObjectByType<PlayerInventory>();
+                if (inv == null) return;
+
+                var beforeCounts = new System.Collections.Generic.Dictionary<int, int>();
+                var currentBlocks = entry.assembly.GetComponentsInChildren<PlacedBlock>(true);
+                for (int i = 0; i < currentBlocks.Length; i++)
+                {
+                    var b = currentBlocks[i];
+                    if (b != null && b.transform.parent == entry.assembly.transform)
+                    {
+                        beforeCounts[b.ModuleSlot] = beforeCounts.TryGetValue(b.ModuleSlot, out int c) ? c + 1 : 1;
+                    }
+                }
+
+                var afterCounts = new System.Collections.Generic.Dictionary<int, int>();
+                if (entry.snapshot.blocks != null)
+                {
+                    for (int i = 0; i < entry.snapshot.blocks.Length; i++)
+                    {
+                        int slot = entry.snapshot.blocks[i].slot;
+                        afterCounts[slot] = afterCounts.TryGetValue(slot, out int c) ? c + 1 : 1;
+                    }
+                }
+
+                foreach (var kvp in afterCounts)
+                {
+                    int slot = kvp.Key;
+                    int afterCount = kvp.Value;
+                    int beforeCount = beforeCounts.TryGetValue(slot, out int bc) ? bc : 0;
+                    int diff = afterCount - beforeCount;
+                    if (diff > 0 && inv.GetCount(slot) < diff)
+                    {
+                        FeedbackUI.For(this)?.ShowNotification("가방에 되돌릴 블록이 부족합니다.");
+                        return;
+                    }
+                }
+
+                // RestoreLayout을 먼저 시도하여 성공한 경우에만 가방 수량과 이력을 원자적으로 반영
+                if (!entry.assembly.RestoreLayout(entry.snapshot)) return;
+
+                foreach (var kvp in afterCounts)
+                {
+                    int slot = kvp.Key;
+                    int afterCount = kvp.Value;
+                    int beforeCount = beforeCounts.TryGetValue(slot, out int bc) ? bc : 0;
+                    int diff = afterCount - beforeCount;
+                    if (diff > 0) inv.TryConsume(slot, diff);
+                }
+
+                foreach (var kvp in beforeCounts)
+                {
+                    int slot = kvp.Key;
+                    int beforeCount = kvp.Value;
+                    int afterCount = afterCounts.TryGetValue(slot, out int ac) ? ac : 0;
+                    int diff = beforeCount - afterCount;
+                    if (diff > 0) inv.Add(slot, diff);
+                }
+
+                undoHistory.RemoveAt(last);
+                return;
+            }
+
             if (!entry.assembly.RestoreLayout(entry.snapshot)) return;
             if (entry.wallet != null)
                 entry.wallet.RestoreBalance((int)System.Math.Min(int.MaxValue,
