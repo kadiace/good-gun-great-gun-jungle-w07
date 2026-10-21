@@ -33,8 +33,8 @@ namespace WeaponWorkshop
         private int destroyedDay = -1;
         private bool destroyedAtNight;
         private bool destroyed;
-        private float penetrationResistance = 1f;
-        private float explosionResistance = 1f;
+        private float penetrationResistance;
+        private float explosionResistance;
 
         public Transform OutlineRoot => transform;
         public int CompletedSpins => completedSpins;
@@ -51,7 +51,7 @@ namespace WeaponWorkshop
             destroyedDay = day;
             destroyedAtNight = atNight;
             destroyed = day >= 0;
-            penetrationResistance = explosionResistance = 1f + 2f * Mathf.Max(0, destructionCount - (destroyed ? 1 : 0));
+            penetrationResistance = explosionResistance = 2f * Mathf.Max(0, destructionCount - (destroyed ? 1 : 0));
             RefreshDamageState();
         }
 
@@ -102,7 +102,7 @@ namespace WeaponWorkshop
             {
                 destroyed = false;
                 destroyedDay = -1;
-                penetrationResistance = explosionResistance = 1f + 2f * destructionCount;
+                penetrationResistance = explosionResistance = 2f * destructionCount;
             }
             if (intactVisual != null) intactVisual.SetActive(!destroyed);
             if (brokenVisual != null) brokenVisual.SetActive(destroyed);
