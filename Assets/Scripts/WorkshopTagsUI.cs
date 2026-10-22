@@ -9,6 +9,8 @@ namespace WeaponWorkshop
         {
             public int moduleId;
             public UnityEngine.Sprite sprite;
+            public bool tint;
+            public Color tintColor;
         }
 
         [SerializeField] private UIManager uiManager;
@@ -196,10 +198,16 @@ namespace WeaponWorkshop
                 if (!visible) continue;
                 int moduleId = raid.RaidEarnedModules[i];
                 UnityEngine.Sprite sprite = null;
+                Color tint = Color.white;
                 foreach (var mapping in raidModuleIcons)
-                    if (mapping.moduleId == moduleId) { sprite = mapping.sprite; break; }
+                    if (mapping.moduleId == moduleId)
+                    {
+                        sprite = mapping.sprite;
+                        if (mapping.tint) tint = mapping.tintColor;
+                        break;
+                    }
                 icon.sprite = sprite != null ? sprite : raidFallbackIcon;
-                icon.color = sprite != null ? Color.white : Color.HSVToRGB(Mathf.Repeat(moduleId * .618034f, 1f), .48f, .96f);
+                icon.color = sprite != null ? tint : Color.HSVToRGB(Mathf.Repeat(moduleId * .618034f, 1f), .48f, .96f);
                 icon.preserveAspect = true;
             }
             tagContainer.gameObject.SetActive(count > 0);

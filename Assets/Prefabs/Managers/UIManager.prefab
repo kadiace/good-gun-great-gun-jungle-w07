@@ -41855,46 +41855,46 @@ MonoBehaviour:
   tagTemplate: {fileID: 7802000000000000014}
   noTagsText: {fileID: 7802000000000000010}
   shopCatalog: {fileID: 11400000, guid: 0b977ae65543a5547960a0342bb0c3a8, type: 2}
-  raidFallbackIcon: {fileID: 21300000, guid: 777ac12145e55c24798fc6afbba36a44, type: 3}
+  raidFallbackIcon: {fileID: 21300000, guid: b8468970bbf45b7469e1130e9075520d, type: 3}
   raidModuleIcons:
   - moduleId: 1
-    sprite: {fileID: 21300000, guid: 777ac12145e55c24798fc6afbba36a44, type: 3}
+    sprite: {fileID: 21300000, guid: b8468970bbf45b7469e1130e9075520d, type: 3}
   - moduleId: 2
-    sprite: {fileID: 21300000, guid: f1c58d5a8a458dc40a5795f3e279c139, type: 3}
+    sprite: {fileID: 21300000, guid: 50bec58744690514489d96c1bf48278c, type: 3}
   - moduleId: 3
-    sprite: {fileID: 21300000, guid: f1c58d5a8a458dc40a5795f3e279c139, type: 3}
+    sprite: {fileID: 21300000, guid: 2c1c53a21f24b1b478a3dc9399b2e809, type: 3}
   - moduleId: 4
-    sprite: {fileID: 21300000, guid: f1c58d5a8a458dc40a5795f3e279c139, type: 3}
+    sprite: {fileID: 21300000, guid: 2ec8a6a7c2b8eb74ab3a2f6f82f97775, type: 3}
   - moduleId: 5
-    sprite: {fileID: 21300000, guid: 9b2b3cf29a1433846aa27a3c72b257be, type: 3}
+    sprite: {fileID: 21300000, guid: c291a7d2ae9aae6439bff05b841f565d, type: 3}
   - moduleId: 6
-    sprite: {fileID: 21300000, guid: 9b2b3cf29a1433846aa27a3c72b257be, type: 3}
+    sprite: {fileID: 21300000, guid: 9cd44ae36b3003d40b5550bbeb6c178f, type: 3}
   - moduleId: 7
-    sprite: {fileID: 21300000, guid: f06ada97949063644bd0087283d1ca9c, type: 3}
+    sprite: {fileID: 21300000, guid: 1beb1ff2c70115446af7604cfe1fe942, type: 3}
   - moduleId: 8
-    sprite: {fileID: 21300000, guid: 337e4ddcd1ad2624d9173c25e52f0b92, type: 3}
+    sprite: {fileID: 21300000, guid: fcd0b56b48844bc4a88892c18e351923, type: 3}
   - moduleId: 9
-    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+    sprite: {fileID: 21300000, guid: be9370df818ca03499e88c1a86c846b6, type: 3}
   - moduleId: 10
-    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+    sprite: {fileID: 21300000, guid: a2f3b25e7c7083d429ffc9d30cde76ef, type: 3}
   - moduleId: 11
-    sprite: {fileID: 21300000, guid: 337e4ddcd1ad2624d9173c25e52f0b92, type: 3}
+    sprite: {fileID: 21300000, guid: dd69c85bd74120b4eae4de3d2d4078a4, type: 3}
   - moduleId: 12
-    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+    sprite: {fileID: 21300000, guid: 53722a9a44d4c11428954695a1247edc, type: 3}
   - moduleId: 13
-    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+    sprite: {fileID: 21300000, guid: 0113cd7cff705b24f99905c221bd9c2c, type: 3}
   - moduleId: 14
-    sprite: {fileID: 21300000, guid: 9b2b3cf29a1433846aa27a3c72b257be, type: 3}
+    sprite: {fileID: 21300000, guid: 32a263953b06c744482e997f7ba06645, type: 3}
   - moduleId: 15
-    sprite: {fileID: 21300000, guid: 337e4ddcd1ad2624d9173c25e52f0b92, type: 3}
+    sprite: {fileID: 21300000, guid: c8f9034d403d5f0479153229dcec744a, type: 3}
   - moduleId: 16
-    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+    sprite: {fileID: 21300000, guid: f7d2cb4ca9e020540bdba9992e4e3f23, type: 3}
   - moduleId: 17
-    sprite: {fileID: 21300000, guid: 337e4ddcd1ad2624d9173c25e52f0b92, type: 3}
+    sprite: {fileID: 21300000, guid: 2f2860429601fd64e8334eeb4d8dda4e, type: 3}
   - moduleId: 18
-    sprite: {fileID: 21300000, guid: 9b2b3cf29a1433846aa27a3c72b257be, type: 3}
+    sprite: {fileID: 21300000, guid: 2be2fab4bac36c74aa0cdfd688458ded, type: 3}
   - moduleId: 19
-    sprite: {fileID: 21300000, guid: 777ac12145e55c24798fc6afbba36a44, type: 3}
+    sprite: {fileID: 21300000, guid: 967b2d6c1686f2448a667b130a85c6cf, type: 3}
 --- !u!114 &5732737746366232318
 MonoBehaviour:
   m_ObjectHideFlags: 0
