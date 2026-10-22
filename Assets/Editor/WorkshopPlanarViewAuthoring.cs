@@ -105,6 +105,12 @@ namespace WeaponWorkshop.Editor
                     ConfigureOrientation(existing, font);
                     uiChanged = true;
                 }
+                existingData.Update();
+                if (existingData.FindProperty("extentUI").objectReferenceValue == null)
+                {
+                    ConfigureExtentUI(ui.transform, existing, font);
+                    uiChanged = true;
+                }
                 if (uiChanged && PrefabUtility.SaveAsPrefabAsset(ui, UIPath) == null)
                     throw new IOException("UI prefab save failed.");
             }
@@ -113,6 +119,46 @@ namespace WeaponWorkshop.Editor
             if (uiChanged) AssetDatabase.ImportAsset(UIPath);
             File.WriteAllText("Library/WorkshopPlanarView.completed.txt", "2D workshop controls authored. Player changed: " +
                 playerChanged + "; UI changed: " + uiChanged + ". No scene, play or test execution.");
+        }
+
+        private static void ConfigureExtentUI(Transform ui, WorkshopViewUI presenter, TMP_FontAsset font)
+        {
+            var root = MakeRect("WorkshopPlanarExtentOverlay", ui, Vector2.zero, Vector2.one);
+            root.SetSiblingIndex(1); // 그리드 위, 기존 패널·컨트롤 아래에 표시한다.
+            var group = root.gameObject.AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false; group.interactable = false;
+            var extent = root.gameObject.AddComponent<WorkshopPlanarExtentUI>();
+            var data = new SerializedObject(extent);
+            var labels = data.FindProperty("labels");
+            var markers = data.FindProperty("markers");
+            var connectors = data.FindProperty("connectors");
+            labels.arraySize = markers.arraySize = connectors.arraySize = 4;
+            for (int i = 0; i < 4; i++)
+            {
+                var connectorRoot = MakeRect("DirectionConnector" + i, root, Vector2.one * .5f, Vector2.one * .5f);
+                var connector = connectorRoot.gameObject.AddComponent<Image>();
+                connector.raycastTarget = false;
+                var markerRoot = MakeRect("SurfaceMarker" + i, root, Vector2.one * .5f, Vector2.one * .5f);
+                var marker = markerRoot.gameObject.AddComponent<Image>();
+                marker.raycastTarget = false;
+                var labelRoot = MakeRect("DirectionLabel" + i, root, Vector2.one * .5f, Vector2.one * .5f);
+                var label = labelRoot.gameObject.AddComponent<TextMeshProUGUI>();
+                label.font = font; label.fontSharedMaterial = font.material;
+                label.enableAutoSizing = false;
+                label.alignment = TextAlignmentOptions.Center;
+                label.raycastTarget = false;
+                label.text = "";
+                labels.GetArrayElementAtIndex(i).objectReferenceValue = label;
+                markers.GetArrayElementAtIndex(i).objectReferenceValue = marker;
+                connectors.GetArrayElementAtIndex(i).objectReferenceValue = connector;
+                labelRoot.gameObject.SetActive(false);
+                markerRoot.gameObject.SetActive(false);
+                connectorRoot.gameObject.SetActive(false);
+            }
+            data.ApplyModifiedPropertiesWithoutUndo();
+            var presenterData = new SerializedObject(presenter);
+            Assign(presenterData, "extentUI", extent);
+            presenterData.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void ConfigureOrientation(WorkshopViewUI presenter, TMP_FontAsset font)
