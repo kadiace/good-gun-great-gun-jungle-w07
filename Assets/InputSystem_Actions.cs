@@ -1239,6 +1239,16 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             ""id"": ""7e59ee25-1998-4bb1-b2f1-37d56261425f"",
             ""actions"": [
                 {
+                    ""name"": ""LayerModifier"",
+                    ""type"": ""Button"",
+                    ""id"": ""6880834f-d99c-4ce1-98bf-933ee37c2154"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true,
+                    ""priority"": 0
+                },
+                {
                     ""name"": ""Select1"",
                     ""type"": ""Button"",
                     ""id"": ""3181c127-d7e2-42b7-9868-ae769b6d8a97"",
@@ -1430,6 +1440,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                 }
             ],
             ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""b9ff3539-7815-4b49-a527-fc37978a750d"",
+                    ""path"": ""<Keyboard>/ctrl"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""LayerModifier"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
                 {
                     ""name"": """",
                     ""id"": ""5d8ffcee-3a67-492c-b9f2-9a28127689a3"",
@@ -1994,6 +2015,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_UI_TrackedDeviceOrientation = m_UI.FindAction("TrackedDeviceOrientation", throwIfNotFound: true);
         // Build
         m_Build = asset.FindActionMap("Build", throwIfNotFound: true);
+        m_Build_LayerModifier = m_Build.FindAction("LayerModifier", throwIfNotFound: true);
         m_Build_Select1 = m_Build.FindAction("Select1", throwIfNotFound: true);
         m_Build_Select2 = m_Build.FindAction("Select2", throwIfNotFound: true);
         m_Build_Select3 = m_Build.FindAction("Select3", throwIfNotFound: true);
@@ -2557,6 +2579,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     // Build
     private readonly InputActionMap m_Build;
     private List<IBuildActions> m_BuildActionsCallbackInterfaces = new List<IBuildActions>();
+    private readonly InputAction m_Build_LayerModifier;
     private readonly InputAction m_Build_Select1;
     private readonly InputAction m_Build_Select2;
     private readonly InputAction m_Build_Select3;
@@ -2587,6 +2610,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Construct a new instance of the input action map wrapper class.
         /// </summary>
         public BuildActions(@InputSystem_Actions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Build/LayerModifier".
+        /// </summary>
+        public InputAction @LayerModifier => m_Wrapper.m_Build_LayerModifier;
         /// <summary>
         /// Provides access to the underlying input action "Build/Select1".
         /// </summary>
@@ -2689,6 +2716,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         {
             if (instance == null || m_Wrapper.m_BuildActionsCallbackInterfaces.Contains(instance)) return;
             m_Wrapper.m_BuildActionsCallbackInterfaces.Add(instance);
+            @LayerModifier.started += instance.OnLayerModifier;
+            @LayerModifier.performed += instance.OnLayerModifier;
+            @LayerModifier.canceled += instance.OnLayerModifier;
             @Select1.started += instance.OnSelect1;
             @Select1.performed += instance.OnSelect1;
             @Select1.canceled += instance.OnSelect1;
@@ -2757,6 +2787,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="BuildActions" />
         private void UnregisterCallbacks(IBuildActions instance)
         {
+            @LayerModifier.started -= instance.OnLayerModifier;
+            @LayerModifier.performed -= instance.OnLayerModifier;
+            @LayerModifier.canceled -= instance.OnLayerModifier;
             @Select1.started -= instance.OnSelect1;
             @Select1.performed -= instance.OnSelect1;
             @Select1.canceled -= instance.OnSelect1;
@@ -3453,6 +3486,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     /// <seealso cref="BuildActions.RemoveCallbacks(IBuildActions)" />
     public interface IBuildActions
     {
+        /// <summary>
+        /// Method invoked when associated input action "LayerModifier" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLayerModifier(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Select1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

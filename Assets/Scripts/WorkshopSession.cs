@@ -17,7 +17,7 @@ namespace WeaponWorkshop
         [SerializeField, Range(1f, 179f)] private float minWorkshopFieldOfView = 20f;
         [SerializeField, Range(1f, 179f)] private float maxWorkshopFieldOfView = 80f;
         private InputActionMap editingControls;
-        private InputAction rotate, look, point, zoom, pan;
+        private InputAction rotate, look, point, zoom, pan, layerModifier;
         public WorkshopPlanarView PlanarView { get; private set; }
         private bool rotationDrag, rollDrag;
         private float rotationDragDegrees;
@@ -72,6 +72,7 @@ namespace WeaponWorkshop
             look = editingControls.FindAction("Look", true);
             point = editingControls.FindAction("Point", true);
             pan = editingControls.FindAction("Pan", true);
+            layerModifier = editingControls.FindAction("LayerModifier", true);
             rotate.performed += _ => BeginRotation();
             rotate.canceled += _ => EndRotation();
             editingControls.FindAction("ResetRotation", true).performed += _ =>
@@ -222,7 +223,7 @@ namespace WeaponWorkshop
                 builder.enabled = editing;
             }
             if (editingControls != null)
-                foreach (string name in new[] { "Rotate", "Look", "Point", "ResetRotation", "Pan" })
+                foreach (string name in new[] { "Rotate", "Look", "Point", "ResetRotation", "Pan", "LayerModifier" })
                 {
                     var action = editingControls.FindAction(name, true);
                     if (editing) action.Enable(); else action.Disable();
@@ -266,7 +267,7 @@ namespace WeaponWorkshop
             if (PlanarView.Is2D)
             {
                 rotationDrag = false;
-                PlanarView.UpdateInput(pan, point, zoom);
+                PlanarView.UpdateInput(pan, point, zoom, layerModifier);
                 return;
             }
             ApplyWorkshopZoom();

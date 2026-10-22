@@ -96,9 +96,19 @@ namespace WeaponWorkshop
         {
             if (IsConstructionLocked || target == null || target.transform.parent != transform || !target.gameObject.activeSelf)
                 return false;
+            return RemoveBlocks(new[] { target.Cell }, refundWallet);
+        }
+
+        // 요청 셀을 모두 제외한 뒤 연결성을 한 번 계산한다. 순차 삭제의 중간 상태를 노출하지 않는다.
+        public bool RemoveBlocks(System.Collections.Generic.IReadOnlyList<Vector3Int> targets, PlayerWallet refundWallet = null)
+        {
+            if (IsConstructionLocked || targets == null) return false;
+            var removal = GetRemovalBlocks(targets);
+            if (removal.Count == 0) return false;
             int refund = 0, creditRefund = 0;
-            string partKind = refundWallet != null ? ModuleCounter.LogName(target) : "";
-            foreach (var block in GetRemovalBlocks(target.Cell))
+            var primary = targets.Count == 1 ? removal.Find(block => block.Cell == targets[0]) : removal[0];
+            string partKind = refundWallet != null ? ModuleCounter.LogName(primary) : "";
+            foreach (var block in removal)
             {
                 if (refundWallet != null) refund += block.TakePurchaseCost();
                 if (refundWallet != null) creditRefund += block.TakeModuleCreditCost();
@@ -114,18 +124,25 @@ namespace WeaponWorkshop
 
         // 호버와 실제 삭제가 같은 연결 끊김 범위를 사용한다. 다른 층까지 제거될 수 있다.
         public void CollectRemovalCells(Vector3Int target, System.Collections.Generic.List<Vector3Int> result)
+            => CollectRemovalCells(new[] { target }, result);
+
+        public void CollectRemovalCells(System.Collections.Generic.IReadOnlyList<Vector3Int> targets,
+            System.Collections.Generic.List<Vector3Int> result)
         {
             result.Clear();
-            foreach (var block in GetRemovalBlocks(target)) result.Add(block.Cell);
+            foreach (var block in GetRemovalBlocks(targets)) result.Add(block.Cell);
         }
-        private System.Collections.Generic.List<PlacedBlock> GetRemovalBlocks(Vector3Int target)
+        private System.Collections.Generic.List<PlacedBlock> GetRemovalBlocks(System.Collections.Generic.IReadOnlyList<Vector3Int> targets)
         {
             var result = new System.Collections.Generic.List<PlacedBlock>();
-            if (target == Vector3Int.zero) return result;
+            if (targets == null) return result;
             var cells = new System.Collections.Generic.Dictionary<Vector3Int, PlacedBlock>();
             foreach (var block in GetComponentsInChildren<PlacedBlock>())
                 if (block.transform.parent == transform) cells[block.Cell] = block;
-            if (!cells.ContainsKey(target)) return result;
+            var excluded = new System.Collections.Generic.HashSet<Vector3Int>();
+            foreach (var target in targets)
+                if (target != Vector3Int.zero && cells.ContainsKey(target)) excluded.Add(target);
+            if (excluded.Count == 0) return result;
             var connected = new System.Collections.Generic.HashSet<Vector3Int> { Vector3Int.zero };
             var pending = new System.Collections.Generic.Queue<Vector3Int>();
             pending.Enqueue(Vector3Int.zero);
@@ -135,7 +152,7 @@ namespace WeaponWorkshop
                 foreach (var offset in Neighbors)
                 {
                     var neighbor = cell + offset;
-                    if (neighbor != target && cells.ContainsKey(neighbor) && connected.Add(neighbor)) pending.Enqueue(neighbor);
+                    if (!excluded.Contains(neighbor) && cells.ContainsKey(neighbor) && connected.Add(neighbor)) pending.Enqueue(neighbor);
                 }
             }
             foreach (var pair in cells) if (!connected.Contains(pair.Key)) result.Add(pair.Value);

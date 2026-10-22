@@ -52,7 +52,7 @@ namespace WeaponWorkshop
                 layers[i].image.color = depth == view.SelectedDepth ? new Color(.15f, .48f, .55f, 1f) : new Color(.1f, .13f, .15f, .95f);
             }
             hint.text = builder != null && builder.HasPlanarStroke ? builder.PlanarStrokeCaption :
-                "선택 층 편집 · 삭제 시 빨간 윤곽 전체 제거\n청록 윤곽: +방향 층 / 주황 윤곽: −방향 층";
+                "Ctrl+휠: 층 이동 · 좌클릭 드래그: 설치/삭제\n청록: +방향 층 / 주황: −방향 층 · 빨강: 삭제 범위";
         }
         private void OnDisable() { if (panel != null) panel.SetActive(false); }
     }

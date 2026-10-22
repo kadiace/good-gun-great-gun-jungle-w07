@@ -57,6 +57,15 @@ namespace WeaponWorkshop
                 }
             if (builder != null && builder.HasPlanarStroke)
             {
+                if (builder.IsPlanarDeleteStroke)
+                {
+                    foreach (var erasedCell in builder.PlanarStrokeCells)
+                        Border(mesh, Project(root.TransformPoint(erasedCell)), stepX, stepY, width * .25f,
+                            new Color(.8f, .85f, .9f, .3f));
+                    foreach (var removedCell in builder.PlanarStrokeRemovalCells)
+                        Border(mesh, Project(root.TransformPoint(removedCell)), stepX, stepY, width * .6f, invalidColor);
+                    return;
+                }
                 foreach (var strokeCell in builder.PlanarStrokeCells)
                 {
                     Vector2 strokeCenter = Project(root.TransformPoint(strokeCell));

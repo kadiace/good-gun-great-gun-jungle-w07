@@ -1128,6 +1128,15 @@
             "id": "7e59ee25-1998-4bb1-b2f1-37d56261425f",
             "actions": [
                 {
+                    "name": "LayerModifier",
+                    "type": "Button",
+                    "id": "6880834f-d99c-4ce1-98bf-933ee37c2154",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
                     "name": "Select1",
                     "type": "Button",
                     "id": "3181c127-d7e2-42b7-9868-ae769b6d8a97",
@@ -1300,6 +1309,17 @@
                 }
             ],
             "bindings": [
+                {
+                    "name": "",
+                    "id": "b9ff3539-7815-4b49-a527-fc37978a750d",
+                    "path": "<Keyboard>/ctrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "LayerModifier",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
                 {
                     "name": "",
                     "id": "5d8ffcee-3a67-492c-b9f2-9a28127689a3",

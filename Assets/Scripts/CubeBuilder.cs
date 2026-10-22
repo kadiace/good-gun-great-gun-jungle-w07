@@ -6,7 +6,8 @@ using System.Collections.Generic;
 
 namespace WeaponWorkshop
 {
-    [RequireComponent(typeof(Camera))]
+    // Session(25)의 층/팬 입력을 먼저 처리해 같은 프레임의 버튼 해제가 이전 층에 확정되지 않게 한다.
+    [RequireComponent(typeof(Camera)), DefaultExecutionOrder(50)]
     public sealed partial class CubeBuilder : MonoBehaviour
     {
         private const int UndoLimit = 3;

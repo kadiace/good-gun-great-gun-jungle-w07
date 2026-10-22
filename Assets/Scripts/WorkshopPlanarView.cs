@@ -165,7 +165,7 @@ namespace WeaponWorkshop
             ApplyDisplayPose();
         }
 
-        public void UpdateInput(InputAction pan, InputAction pointer, InputAction zoom)
+        public void UpdateInput(InputAction pan, InputAction pointer, InputAction zoom, InputAction layerModifier)
         {
             if (!Is2D) return;
             if (!CanChangeView || !Application.isFocused) { StopPan(); return; }
@@ -187,6 +187,18 @@ namespace WeaponWorkshop
                 previousPointer = position;
             }
             Vector2 scroll = zoom.ReadValue<Vector2>();
+            // Ctrl은 입력 에셋의 LayerModifier 액션으로만 읽는다. 같은 휠 입력을 줌에 중복 사용하지 않는다.
+            if (layerModifier.IsPressed())
+            {
+                if (!panDragging && !overUI && view.pixelRect.Contains(position) && Mathf.Abs(scroll.y) > .01f &&
+                    TutorialManager.TryAction("view-mode"))
+                {
+                    int step = scroll.y > 0f ? 1 : -1;
+                    if ((step > 0 && SelectedDepth < int.MaxValue) || (step < 0 && SelectedDepth > int.MinValue))
+                        SetSelectedDepth(SelectedDepth + step);
+                }
+                return;
+            }
             if (!panDragging && !overUI && view.pixelRect.Contains(position) && Mathf.Abs(scroll.y) > .01f &&
                 TutorialManager.TryAction("zoom"))
                 view.orthographicSize = Mathf.Clamp(view.orthographicSize * Mathf.Exp(-Mathf.Clamp(scroll.y, -1f, 1f) * zoomSpeed),

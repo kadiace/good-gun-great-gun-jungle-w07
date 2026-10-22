@@ -7,19 +7,27 @@ namespace WeaponWorkshop
     {
         private const int MaximumStrokeCells = 256;
         private readonly List<Vector3Int> strokeCells = new();
+        private readonly List<Vector3Int> strokeRemovalCells = new();
         private readonly WorkshopPlacementPlan strokePlan = new();
         private CubeAssembly strokeAssembly;
         private EquipableWeapon strokeWeapon;
         private int strokeSlot, strokeDepth, strokeBalance, strokeCredits;
         private WorkshopViewAxis strokeAxis;
-        private bool strokeActive, strokeReleased, strokeMoved, strokeDirty;
+        private bool strokeActive, strokeReleased, strokeMoved, strokeDirty, strokeDelete;
+        private Vector3Int strokeLastCell;
         public bool HasPlanarStroke => strokeActive;
+        public bool IsPlanarDeleteStroke => strokeActive && strokeDelete;
         public IReadOnlyList<Vector3Int> PlanarStrokeCells => strokeCells;
-        public bool PlanarStrokeValid => strokePlan.Valid;
-        public string PlanarStrokeCaption => !strokeMoved ? "드래그: 연속 설치 / 클릭: 기존 단일 설치" :
+        public IReadOnlyList<Vector3Int> PlanarStrokeRemovalCells => strokeRemovalCells;
+        public bool PlanarStrokeValid => strokeDelete
+            ? strokeRemovalCells.Count > 0 && TutorialManager.ActionAllowed("delete") : strokePlan.Valid;
+        public string PlanarStrokeCaption => strokeDelete
+            ? $"삭제 예정 {strokeRemovalCells.Count}개 (연결 끊김 포함)\n놓으면 일괄 삭제 · 우클릭 또는 Ctrl+휠로 취소"
+            : !strokeMoved ? "드래그: 연속 설치 / 클릭: 기존 단일 설치" :
             strokePlan.Valid ? $"{strokePlan.Parts.Count}개 (꺾임 연장 {strokePlan.CornerExtensions}개) · ${strokePlan.Dollars:N0} · 재료 {strokePlan.Credits:N0}\n버튼을 놓으면 일괄 설치 · 우클릭 또는 층/축 변경 시 취소" : strokePlan.Error;
         public bool TryGetStrokeDirection(Vector3Int cell, out Vector3Int direction, out int slot)
         {
+            if (strokeDelete) { direction = default; slot = 0; return false; }
             foreach (var part in strokePlan.Parts)
                 if (part.cell == cell) { direction = part.direction; slot = part.slot; return true; }
             direction = default; slot = 0; return false;
@@ -28,16 +36,22 @@ namespace WeaponWorkshop
 
         private bool TryBeginPlanarStroke()
         {
-            if (!UsingPlanarView || paintingMode || deleteMode || preview != null || paletteOpen || colorPickerOpen ||
+            if (!UsingPlanarView || paintingMode || preview != null || paletteOpen || colorPickerOpen ||
                 favoriteDragActive || GameManager.GameplayBlocked || planarView.IsPanning || !Application.isFocused ||
                 (controls.FindAction("Pan", true).IsPressed() || controls.FindAction("Rotate", true).IsPressed()) || IsPointerOverUI(AimPoint()) ||
-                !planarView.TryGetCell(AimPoint(), out var cell) || !CanEdit(planarView.Assembly) || IsModuleLocked(selectedSlot)) return false;
-            if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeAttachAction()) return false;
+                !planarView.TryGetCell(AimPoint(), out var cell) || !CanEdit(planarView.Assembly) ||
+                (!deleteMode && IsModuleLocked(selectedSlot))) return false;
+            if (deleteMode)
+            {
+                if (!TutorialManager.TryAction("delete")) return false;
+            }
+            else if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeAttachAction()) return false;
             if (wallet == null) wallet = PlayerWallet.ForScene(this);
             if (wallet == null) return false;
             strokeAssembly = planarView.Assembly;
             strokeSlot = selectedSlot; strokeDepth = planarView.SelectedDepth; strokeAxis = planarView.Axis;
             strokeCells.Clear(); strokeCells.Add(cell);
+            strokeDelete = deleteMode; strokeLastCell = cell;
             strokeActive = strokeDirty = true; strokeReleased = strokeMoved = false;
             strokeWeapon = strokeAssembly.GetComponentInParent<EquipableWeapon>();
             if (strokeWeapon != null) strokeWeapon.AssemblyChanged += MarkStrokeDirty;
@@ -49,23 +63,31 @@ namespace WeaponWorkshop
             if (!ReferenceEquals(strokeWeapon, null)) strokeWeapon.AssemblyChanged -= MarkStrokeDirty;
             strokeWeapon = null; strokeAssembly = null;
             strokeActive = strokeReleased = strokeMoved = strokeDirty = false;
-            strokeCells.Clear();
+            strokeDelete = false;
+            strokeCells.Clear(); strokeRemovalCells.Clear();
         }
         private void UpdatePlanarStroke()
         {
             if (!strokeActive) return;
             if (!UsingPlanarView || planarView.Assembly != strokeAssembly || !CanEdit(strokeAssembly) ||
                 planarView.Axis != strokeAxis || planarView.SelectedDepth != strokeDepth || selectedSlot != strokeSlot ||
-                paintingMode || deleteMode || paletteOpen || colorPickerOpen || favoriteDragActive ||
+                paintingMode || deleteMode != strokeDelete || paletteOpen || colorPickerOpen || favoriteDragActive ||
                 GameManager.GameplayBlocked || !Application.isFocused || planarView.IsPanning ||
                 (controls.FindAction("Pan", true).IsPressed() || controls.FindAction("Rotate", true).IsPressed()) || IsPointerOverUI(AimPoint()) ||
                 !planarView.TryGetCell(AimPoint(), out var cell))
             { CancelStroke(); return; }
             ExtendStroke(cell);
             if (!strokeActive) return;
-            if (strokeDirty || wallet.Balance != strokeBalance || wallet.ModuleCredits != strokeCredits) RebuildStrokePlan();
+            if (strokeDirty || (!strokeDelete && (wallet.Balance != strokeBalance || wallet.ModuleCredits != strokeCredits))) RebuildStrokePlan();
             // 액션 비활성화도 canceled를 발생시킨다. Update에서 유효한 편집 상태를 재확인한 후에만 확정한다.
             if (!strokeReleased) return;
+            if (strokeDelete)
+            {
+                RebuildStrokePlan();
+                try { CommitDeleteStroke(); }
+                finally { CancelStroke(); }
+                return;
+            }
             if (!strokeMoved) { CancelStroke(); TryPlace(); return; }
             RebuildStrokePlan();
             if (!strokePlan.Valid)
@@ -75,7 +97,7 @@ namespace WeaponWorkshop
         }
         private void ExtendStroke(Vector3Int target)
         {
-            Vector3Int start = strokeCells[strokeCells.Count - 1];
+            Vector3Int start = strokeLastCell;
             if (start == target) return;
             strokeMoved = true;
             int dx = CubePlacementState.Dot(target - start, planarView.Horizontal);
@@ -89,7 +111,11 @@ namespace WeaponWorkshop
                 { cell += planarView.Horizontal * (dx > 0 ? 1 : -1); ix++; }
                 else { cell += planarView.Vertical * (dy > 0 ? 1 : -1); iy++; }
                 int existing = strokeCells.IndexOf(cell);
-                if (existing >= 0) strokeCells.RemoveRange(existing + 1, strokeCells.Count - existing - 1);
+                if (existing >= 0)
+                {
+                    // 삭제 브러시는 지나간 셀을 유지한다. 설치 경로만 되짚기로 줄인다.
+                    if (!strokeDelete) strokeCells.RemoveRange(existing + 1, strokeCells.Count - existing - 1);
+                }
                 else
                 {
                     if (strokeCells.Count >= MaximumStrokeCells)
@@ -100,12 +126,36 @@ namespace WeaponWorkshop
                     strokeCells.Add(cell);
                 }
             }
+            strokeLastCell = target;
             strokeDirty = true;
         }
         private void RebuildStrokePlan()
         {
+            if (strokeDelete)
+            {
+                strokeAssembly.CollectRemovalCells(strokeCells, strokeRemovalCells);
+                strokeDirty = false;
+                return;
+            }
             strokePlan.Build(strokeAssembly, strokeCells, strokeSlot, planarView.Normal, planarView.Horizontal, wallet, IsModuleLocked);
             strokeBalance = wallet.Balance; strokeCredits = wallet.ModuleCredits; strokeDirty = false;
+        }
+        private void CommitDeleteStroke()
+        {
+            if (!PlanarStrokeValid || wallet == null || !CanEdit(strokeAssembly)) return;
+            // 튜토리얼의 직접 삭제 대상 제한을 우회하지 않는다. 연결 끊김 제거는 기존 규칙을 따른다.
+            foreach (var cell in strokeCells)
+            {
+                var block = GetBlockAt(strokeAssembly, cell);
+                if (block != null && TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeRemoval(block)) return;
+            }
+            var assembly = strokeAssembly;
+            Vector3 soundPosition = assembly.transform.TransformPoint(strokeRemovalCells[0]);
+            bool removed;
+            assembly.BeginPlacementBatch();
+            try { removed = ExecuteUndoableEdit(assembly, () => assembly.RemoveBlocks(strokeCells, wallet)); }
+            finally { assembly.EndPlacementBatch(); }
+            if (removed) WorkshopSoundEffects.RaiseBlockRemoved(soundPosition);
         }
         private void CommitStroke()
         {
