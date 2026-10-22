@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 namespace WeaponWorkshop
 {
-    public enum WorkshopViewAxis { Front, Up, Right }
+    public enum WorkshopViewAxis { Front, Up, Right, Back, Down, Left }
 
     // 카메라 자세는 작업대에 고정하고 ObjRotate로 총 전체의 표시 자세만 바꾼다.
     [DisallowMultipleComponent]
@@ -30,11 +30,22 @@ namespace WeaponWorkshop
         public WorkshopViewAxis Axis { get; private set; }
         public CubeAssembly Assembly => assembly;
         public Camera Camera => view;
-        public Vector3Int Normal => Axis == WorkshopViewAxis.Front ? Vector3Int.forward :
-            Axis == WorkshopViewAxis.Up ? Vector3Int.up : Vector3Int.right;
-        public Vector3Int Horizontal => Axis == WorkshopViewAxis.Front ? Vector3Int.left :
-            Axis == WorkshopViewAxis.Right ? Vector3Int.forward : Vector3Int.right;
-        public Vector3Int Vertical => Axis == WorkshopViewAxis.Up ? Vector3Int.forward : Vector3Int.up;
+        public Vector3Int Normal => NormalFor(Axis);
+        public static Vector3Int NormalFor(WorkshopViewAxis axis) => axis switch
+        {
+            WorkshopViewAxis.Front => Vector3Int.forward,
+            WorkshopViewAxis.Back => Vector3Int.back,
+            WorkshopViewAxis.Up => Vector3Int.up,
+            WorkshopViewAxis.Down => Vector3Int.down,
+            WorkshopViewAxis.Left => Vector3Int.left,
+            _ => Vector3Int.right
+        };
+        public Vector3Int Vertical => VerticalFor(Axis);
+        public static Vector3Int VerticalFor(WorkshopViewAxis axis) => axis == WorkshopViewAxis.Up || axis == WorkshopViewAxis.Down
+            ? Vector3Int.forward : Vector3Int.up;
+        public static Quaternion CoreRotationInView(WorkshopViewAxis axis) =>
+            Quaternion.Inverse(Quaternion.LookRotation(-(Vector3)NormalFor(axis), VerticalFor(axis)));
+        public Vector3Int Horizontal => Vector3Int.RoundToInt(Vector3.Cross(Vertical, -(Vector3)Normal));
         public bool CanChangeView => session != null && session.IsEditing && !GameManager.GameplayBlocked &&
             builder != null && !builder.IsCustomMode;
 
@@ -76,12 +87,30 @@ namespace WeaponWorkshop
 
         public void SelectAxis(WorkshopViewAxis axis)
         {
-            if (!CanChangeView || !Is2D || Axis == axis || !TutorialManager.TryAction("view-mode")) return;
+            if (!CanChangeView || !TutorialManager.TryAction("view-mode")) return;
+            if (!Is2D && !TutorialManager.TryAction("rotate")) return;
+            var core = session.ActiveWorkbench.CurrentCore;
+            var target = session.ActiveWorkbench.RotationTarget;
+            if (core == null || target == null) return;
+            session.CancelRotationDrag();
             builder.CancelPlacementPreview();
-            Axis = axis;
-            panOffset = Vector3.zero;
-            panDragging = false;
-            ApplyDisplayPose();
+            if (Is2D)
+            {
+                Axis = axis;
+                panOffset = Vector3.zero;
+                panDragging = false;
+                ApplyDisplayPose();
+            }
+            else AlignCore(target, core.transform, view.transform.rotation, axis, core.transform.position);
+        }
+
+        // 3D/2Dとも同じ姿勢計算を使う。回転の中心はコアで、モジュールのローカル座標は触らない。
+        private static void AlignCore(Transform target, Transform core, Quaternion cameraRotation,
+            WorkshopViewAxis axis, Vector3 center)
+        {
+            Quaternion desired = cameraRotation * CoreRotationInView(axis);
+            target.rotation = desired * Quaternion.Inverse(core.rotation) * target.rotation;
+            target.position += center - core.position;
         }
 
         public void Restore3D()
@@ -159,13 +188,9 @@ namespace WeaponWorkshop
             }
             if (assembly == null) { Restore3D(); return; }
             if (displayRoot == null) { Restore3D(); return; }
-            Transform coreTransform = assembly.transform;
-            Quaternion localView = Quaternion.LookRotation(-((Vector3)Normal), Vertical);
-            Quaternion desiredCoreRotation = view.transform.rotation * Quaternion.Inverse(localView);
-            displayRoot.rotation = desiredCoreRotation * Quaternion.Inverse(coreTransform.rotation) * displayRoot.rotation;
             Vector3 center = displayRoot.parent != null
                 ? displayRoot.parent.TransformPoint(centeredCorePosition) : centeredCorePosition;
-            displayRoot.position += center + panOffset - coreTransform.position;
+            AlignCore(displayRoot, assembly.transform, view.transform.rotation, Axis, center + panOffset);
         }
 
         // 깊이는 항상 코어 좌표 0. 다른 깊이의 모듈은 이 선택에 끼어들지 않는다.

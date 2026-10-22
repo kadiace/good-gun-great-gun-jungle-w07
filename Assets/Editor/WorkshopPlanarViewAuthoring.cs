@@ -90,15 +90,86 @@ namespace WeaponWorkshop.Editor
                     Assign(data, "grid", grid);
                     data.ApplyModifiedPropertiesWithoutUndo();
                     controls.gameObject.SetActive(false);
-                    if (PrefabUtility.SaveAsPrefabAsset(ui, UIPath) == null) throw new IOException("UI prefab save failed.");
                     uiChanged = true;
                 }
+                var existing = ui.GetComponentInChildren<WorkshopViewUI>(true);
+                var existingData = new SerializedObject(existing);
+                if (existingData.FindProperty("backButton").objectReferenceValue == null)
+                {
+                    ConfigureSixAxes(existing, font);
+                    uiChanged = true;
+                }
+                existingData.Update();
+                if (existingData.FindProperty("axesGraphic").objectReferenceValue == null)
+                {
+                    ConfigureOrientation(existing, font);
+                    uiChanged = true;
+                }
+                if (uiChanged && PrefabUtility.SaveAsPrefabAsset(ui, UIPath) == null)
+                    throw new IOException("UI prefab save failed.");
             }
             finally { PrefabUtility.UnloadPrefabContents(ui); }
             if (playerChanged) AssetDatabase.ImportAsset(PlayerPath);
             if (uiChanged) AssetDatabase.ImportAsset(UIPath);
             File.WriteAllText("Library/WorkshopPlanarView.completed.txt", "2D workshop controls authored. Player changed: " +
                 playerChanged + "; UI changed: " + uiChanged + ". No scene, play or test execution.");
+        }
+
+        private static void ConfigureOrientation(WorkshopViewUI presenter, TMP_FontAsset font)
+        {
+            var data = new SerializedObject(presenter);
+            var front = (Button)data.FindProperty("frontButton").objectReferenceValue;
+            var axes = front.GetComponentInParent<WorkshopAxesGraphic>(true);
+            if (axes == null) throw new InvalidOperationException("Orientation graphic missing.");
+            var controls = ((GameObject)data.FindProperty("controlsRoot").objectReferenceValue).transform;
+            var menuToggle = MakeButton("AxisMenuToggle", axes.transform,
+                new Vector2(.15f, -.18f), new Vector2(.85f, -.02f), "축 선택", font, Color.white);
+            var menu = MakeRect("AxisSelectionMenu", controls, new Vector2(.767f, .65f), new Vector2(.835f, .785f));
+            menu.gameObject.AddComponent<Image>().color = new Color(.04f, .05f, .06f, .97f);
+            var list = data.FindProperty("axisMenuButtons");
+            list.arraySize = 6;
+            string[] names = { "Front", "Up", "Right", "Back", "Down", "Left" };
+            string[] captions = { "+FRONT", "+UP", "+RIGHT", "-FRONT", "-UP", "-RIGHT" };
+            for (int i = 0; i < 6; i++)
+            {
+                float x = i < 3 ? 0f : .5f;
+                float y = 1f - (i % 3 + 1) / 3f;
+                var button = MakeButton(names[i], menu, new Vector2(x, y), new Vector2(x + .5f, y + 1f / 3f),
+                    captions[i], font, WorkshopAxesGraphic.AxisColor((WorkshopViewAxis)i));
+                list.GetArrayElementAtIndex(i).objectReferenceValue = button;
+            }
+            Assign(data, "axesGraphic", axes); Assign(data, "axisMenuButton", menuToggle);
+            Assign(data, "axisMenuRoot", menu.gameObject);
+            data.ApplyModifiedPropertiesWithoutUndo();
+            menu.gameObject.SetActive(false);
+            axes.gameObject.SetActive(false);
+        }
+
+        private static void ConfigureSixAxes(WorkshopViewUI presenter, TMP_FontAsset font)
+        {
+            var data = new SerializedObject(presenter);
+            var front = (Button)data.FindProperty("frontButton").objectReferenceValue;
+            Transform axes = front.transform.parent;
+            ConfigureAxis(data, axes, "Front", "front", "+FRONT", new Vector2(.72f, .43f), new Vector2(1f, .57f), font);
+            ConfigureAxis(data, axes, "Back", "back", "-FRONT", new Vector2(0f, .43f), new Vector2(.28f, .57f), font);
+            ConfigureAxis(data, axes, "Up", "up", "+UP", new Vector2(.33f, .86f), new Vector2(.67f, 1f), font);
+            ConfigureAxis(data, axes, "Down", "down", "-UP", new Vector2(.33f, 0f), new Vector2(.67f, .14f), font);
+            ConfigureAxis(data, axes, "Right", "right", "+RIGHT", new Vector2(0f, .12f), new Vector2(.38f, .26f), font);
+            ConfigureAxis(data, axes, "Left", "left", "-RIGHT", new Vector2(.62f, .74f), new Vector2(1f, .88f), font);
+            data.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void ConfigureAxis(SerializedObject data, Transform axes, string objectName,
+            string field, string caption, Vector2 min, Vector2 max, TMP_FontAsset font)
+        {
+            var button = data.FindProperty(field + "Button").objectReferenceValue as Button;
+            if (button == null) button = MakeButton(objectName, axes, min, max, caption, font, Color.white);
+            var rect = (RectTransform)button.transform;
+            rect.anchorMin = min; rect.anchorMax = max;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            var label = button.GetComponentInChildren<TMP_Text>(true);
+            label.text = caption;
+            Assign(data, field + "Button", button); Assign(data, field + "Label", label);
         }
 
         private static void Assign(SerializedObject data, string name, UnityEngine.Object value)

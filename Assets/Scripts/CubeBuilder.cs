@@ -515,7 +515,7 @@ namespace WeaponWorkshop
                 return;
             }
             bool singleOutput = CubeAssembly.IsSingleOutput(pendingSlot);
-            if (singleOutput && Vector3.Dot(pendingDirection, pendingAttachmentDirection) != 0f)
+            if (!UsingPlanarView && singleOutput && Vector3.Dot(pendingDirection, pendingAttachmentDirection) != 0f)
                 foreach (Vector3Int direction in OutputDirections)
                     if (CanSelectDirection(direction) && Vector3.Dot(direction, pendingAttachmentDirection) == 0f)
                     { pendingDirection = direction; break; }
@@ -527,7 +527,7 @@ namespace WeaponWorkshop
                 {
                     if (!CanSelectDirection(direction)) continue;
                     // Straight axial directions require an exact face hit for extensions.
-                    if (singleOutput && Vector3.Dot(direction, pendingAttachmentDirection) != 0f) continue;
+                    if (!UsingPlanarView && singleOutput && Vector3.Dot(direction, pendingAttachmentDirection) != 0f) continue;
                     Vector3 end = view.WorldToScreenPoint(pendingAssembly.transform.TransformPoint((Vector3)pendingCell + (Vector3)direction));
                     Vector2 projected = new Vector2(end.x - center.x, end.y - center.y);
                     if (end.z <= 0f || projected.sqrMagnitude < 1f) continue;
@@ -541,8 +541,9 @@ namespace WeaponWorkshop
 
         private bool CanSelectDirection(Vector3Int direction)
         {
-            return (!UsingPlanarView || planarView.ContainsCell(direction)) && pendingAssembly != null &&
-                pendingAssembly.CanOrient(pendingCell, pendingSlot, direction, -pendingAttachmentDirection);
+            return pendingAssembly != null && (UsingPlanarView
+                ? CanOrientPlanar(pendingAssembly, pendingCell, pendingSlot, direction, -pendingAttachmentDirection)
+                : pendingAssembly.CanOrient(pendingCell, pendingSlot, direction, -pendingAttachmentDirection));
         }
 
         private bool TryGetPreviewFace(out Vector3Int face)
@@ -684,7 +685,7 @@ namespace WeaponWorkshop
             if (UsingPlanarView)
             {
                 assembly = planarView.Assembly;
-                if (!planarView.TryGetCell(pointer, out cell) || !TryGetPlanarNeighbor(assembly, cell, out face)) return;
+                if (!planarView.TryGetCell(pointer, out cell) || !TryGetPlanarPlacement(assembly, cell, out cell, out face)) return;
                 if (!CanEdit(assembly) || !assembly.CanAttach(cell, selectedSlot)) return;
             }
             else
@@ -1224,6 +1225,48 @@ namespace WeaponWorkshop
             return null;
         }
 
+        // 화면의 한 칸에 투영된 열을 찾고, 점유된 열은 축의 양의 방향으로 쌓는다.
+        private bool TryGetPlanarPlacement(CubeAssembly assembly, Vector3Int planeCell,
+            out Vector3Int cell, out Vector3Int face)
+        {
+            cell = planeCell;
+            face = Vector3Int.zero;
+            if (assembly == null) return false;
+            Vector3Int axis = planarView.Normal;
+            bool occupied = planeCell == Vector3Int.zero; // 코어도 깊이 0의 점유 셀이다.
+            int maximum = occupied ? 0 : int.MinValue;
+            for (int i = 0; i < assembly.transform.childCount; i++)
+            {
+                Transform child = assembly.transform.GetChild(i);
+                if (!child.gameObject.activeInHierarchy || !child.TryGetComponent(out PlacedBlock block)) continue;
+                int depth = block.Cell.x * axis.x + block.Cell.y * axis.y + block.Cell.z * axis.z;
+                if (block.Cell - axis * depth != planeCell) continue;
+                occupied = true;
+                maximum = Mathf.Max(maximum, depth);
+            }
+            if (occupied)
+            {
+                cell = planeCell + axis * (maximum + 1);
+                face = axis;
+                return true;
+            }
+            return TryGetPlanarNeighbor(assembly, cell, out face);
+        }
+
+        private bool CanOrientPlanar(CubeAssembly assembly, Vector3Int cell, int slot,
+            Vector3Int direction, Vector3Int feed)
+        {
+            if (!assembly.CanOrient(cell, slot, direction, feed)) return false;
+            bool choosesDirection = slot == 2 || slot == 3 || IsScope(assembly, slot);
+            if (choosesDirection && !planarView.ContainsCell(direction)) return false;
+            if (slot != 2 && slot != 3) return true;
+            // 2방향 분할은 양쪽 출력 모두 빈 셀을 향해야 한다.
+            Vector3Int output = cell + direction;
+            if (output == Vector3Int.zero || GetBlockAt(assembly, output) != null) return false;
+            output = cell - direction;
+            return slot != 3 || (output != Vector3Int.zero && GetBlockAt(assembly, output) == null);
+        }
+
         private bool TryGetPlanarNeighbor(CubeAssembly assembly, Vector3Int cell, out Vector3Int face)
         {
             face = Vector3Int.zero;
@@ -1255,16 +1298,23 @@ namespace WeaponWorkshop
                 valid = TutorialManager.ActionAllowed("delete") && GetBlockAt(assembly, cell) != null;
                 return true;
             }
-            if (preview != null) cell = pendingCell;
+            Vector3Int face;
+            if (preview != null)
+            {
+                cell = pendingCell;
+                face = -pendingAttachmentDirection;
+            }
+            else if (!TryGetPlanarPlacement(assembly, cell, out cell, out face)) return true;
             if (IsModuleLocked(selectedSlot) || !TutorialManager.ActionAllowed("attach") ||
-                !assembly.CanAttach(cell, selectedSlot) || !TryGetPlanarNeighbor(assembly, cell, out Vector3Int face)) return true;
+                !assembly.CanAttach(cell, selectedSlot)) return true;
             bool followsFeed = selectedSlot != 1 && !IsScope(assembly, selectedSlot) && !assembly.IsTriggerModuleSlot(selectedSlot);
             Vector3Int feed = face;
             if (followsFeed && !assembly.TryGetFeedDirection(cell, out feed)) return true;
             bool canOrient = false;
             foreach (var direction in OutputDirections)
             {
-                if (!planarView.ContainsCell(direction) || !assembly.CanOrient(cell, selectedSlot, direction, feed)) continue;
+                if (preview != null && direction != pendingDirection) continue;
+                if (!CanOrientPlanar(assembly, cell, selectedSlot, direction, feed)) continue;
                 if (TutorialManager.Instance != null && !TutorialManager.Instance.AllowsPlacement(assembly, cell, selectedSlot, direction))
                     continue;
                 canOrient = true;

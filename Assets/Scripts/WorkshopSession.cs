@@ -230,12 +230,15 @@ namespace WeaponWorkshop
             workshopUI?.SetWorkshopUI(editing);
         }
 
+        public void CancelRotationDrag() => rotationDrag = false;
+
         private void BeginRotation()
         {
             rotationDragDegrees = 0f;
             if (!IsEditing || GameManager.GameplayBlocked || PlanarView.Is2D) return;
             if (!TutorialManager.TryAction("rotate")) return;
             Vector2 pointer = point.ReadValue<Vector2>();
+            if (builder != null && builder.IsPointerOverInterface(pointer)) return;
             rotationDrag = RotationViewport.Contains(pointer);
             previousRollOffset = pointer - RotationViewport.center;
             rollDrag = previousRollOffset.sqrMagnitude > RotationRadius * RotationRadius;
