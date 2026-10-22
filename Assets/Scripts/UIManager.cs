@@ -202,44 +202,24 @@ namespace WeaponWorkshop
                 Rect viewport = workshopSession.RotationViewport;
                 rotationCircle.SetGeometry(viewport, GetWorkshopRotationRadius(viewport));
             }
-            if (core == null || view == null)
+            if (core == null || view == null || planar)
             {
                 if (frontMark != null) frontMark.gameObject.SetActive(false);
                 if (upMark != null) upMark.gameObject.SetActive(false);
                 return;
             }
-            // Follow the connected blocks on the core's local forward axis, independent of their output direction.
+            // 2D와 같은 최외곽 면을 사용한다. 모듈의 출력 방향과는 무관하다.
             var assembly = core.GetComponent<CubeAssembly>();
-            var occupied = new System.Collections.Generic.HashSet<Vector3Int>();
-            if (assembly != null)
-                foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>())
-                    if (block.transform.parent == assembly.transform) occupied.Add(block.Cell);
-            UpdateDirectionMark(frontMark, Vector3Int.forward, core, view, occupied, frontGraphics, frontAlphas);
-            UpdateDirectionMark(upMark, Vector3Int.up, core, view, occupied, upGraphics, upAlphas);
+            UpdateDirectionMark(frontMark, Vector3Int.forward, core, view, assembly, frontGraphics, frontAlphas);
+            UpdateDirectionMark(upMark, Vector3Int.up, core, view, assembly, upGraphics, upAlphas);
         }
         private void UpdateDirectionMark(RectTransform mark, Vector3Int axis, PowerCore core, Camera view,
-            System.Collections.Generic.HashSet<Vector3Int> occupied, UnityEngine.UI.Graphic[] graphics, float[] alphas)
+            CubeAssembly assembly, UnityEngine.UI.Graphic[] graphics, float[] alphas)
         {
             if (mark == null) return;
-            Vector3Int cell = Vector3Int.zero;
-            int furthest = 0;
-            int closestToCoreAxis = 0;
-            foreach (var candidate in occupied)
-            {
-                int depth = (candidate.x * axis.x + candidate.y * axis.y + candidate.z * axis.z);
-                int axisDistance = candidate.sqrMagnitude - depth * depth;
-                if (depth > furthest || (depth == furthest && axisDistance < closestToCoreAxis))
-                {
-                    cell = candidate;
-                    furthest = depth;
-                    closestToCoreAxis = axisDistance;
-                }
-                else if (depth == furthest && axisDistance == closestToCoreAxis &&
-                    (candidate.x < cell.x || (candidate.x == cell.x &&
-                    (candidate.y < cell.y || (candidate.y == cell.y && candidate.z < cell.z)))))
-                    cell = candidate;
-            }
-            Vector3 facePoint = core.transform.TransformPoint((Vector3)cell + (Vector3)axis * .501f);
+            Vector3 localFace = assembly != null ? assembly.GetOutermostFace(axis) : (Vector3)axis * .501f;
+            Transform space = assembly != null ? assembly.transform : core.transform;
+            Vector3 facePoint = space.TransformPoint(localFace);
             Vector3 screenPoint = view.WorldToScreenPoint(facePoint);
             bool visible = screenPoint.z > view.nearClipPlane;
             mark.gameObject.SetActive(visible);

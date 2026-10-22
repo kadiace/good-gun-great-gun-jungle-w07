@@ -10,6 +10,33 @@ namespace WeaponWorkshop
         {
             if (!buildingLayout) GetComponentInParent<EquipableWeapon>()?.NotifyAssemblyChanged();
         }
+
+        // 코어를 포함한 확정 셀 중 축 방향 최외곽 면. 동률은 중심축 거리와 좌표 순으로 고정한다.
+        public Vector3 GetOutermostFace(Vector3Int axis)
+        {
+            Vector3Int cell = Vector3Int.zero;
+            int furthest = 0, closestToCoreAxis = 0;
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i);
+                if (!child.gameObject.activeInHierarchy || !child.TryGetComponent(out PlacedBlock block)) continue;
+                Vector3Int candidate = block.Cell;
+                int depth = candidate.x * axis.x + candidate.y * axis.y + candidate.z * axis.z;
+                int axisDistance = candidate.sqrMagnitude - depth * depth;
+                if (depth > furthest || (depth == furthest && axisDistance < closestToCoreAxis))
+                {
+                    cell = candidate;
+                    furthest = depth;
+                    closestToCoreAxis = axisDistance;
+                }
+                else if (depth == furthest && axisDistance == closestToCoreAxis &&
+                    (candidate.x < cell.x || (candidate.x == cell.x &&
+                    (candidate.y < cell.y || (candidate.y == cell.y && candidate.z < cell.z)))))
+                    cell = candidate;
+            }
+            return (Vector3)cell + (Vector3)axis * .501f;
+        }
+
         public sealed class LayoutSnapshot
         {
             internal readonly BlockSnapshot[] blocks;

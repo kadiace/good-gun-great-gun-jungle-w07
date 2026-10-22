@@ -9,6 +9,7 @@ namespace WeaponWorkshop
     [DisallowMultipleComponent]
     public sealed class WorkshopPlanarView : MonoBehaviour
     {
+        private const WorkshopViewAxis Initial2DAxis = WorkshopViewAxis.Right;
         [SerializeField, Min(.01f)] private float initialSize = 1f;
         [SerializeField, Min(.01f)] private float minimumSize = .2f;
         [SerializeField, Min(.01f)] private float maximumSize = 8f;
@@ -27,7 +28,7 @@ namespace WeaponWorkshop
         private Vector2 previousPointer;
         public bool Is2D { get; private set; }
         public bool IsPanning => Is2D && panDragging;
-        public WorkshopViewAxis Axis { get; private set; }
+        public WorkshopViewAxis Axis { get; private set; } = Initial2DAxis;
         public CubeAssembly Assembly => assembly;
         public Camera Camera => view;
         public Vector3Int Normal => NormalFor(Axis);
@@ -55,7 +56,7 @@ namespace WeaponWorkshop
             view = camera;
             builder = cubeBuilder;
             Is2D = panDragging = false;
-            Axis = WorkshopViewAxis.Front;
+            Axis = Initial2DAxis;
             if (view != null) view.orthographic = false;
         }
 
@@ -75,7 +76,7 @@ namespace WeaponWorkshop
             savedOrthographic = view.orthographic;
             savedSize = view.orthographicSize;
             savedFieldOfView = view.fieldOfView;
-            Axis = WorkshopViewAxis.Front;
+            Axis = Initial2DAxis;
             panOffset = Vector3.zero;
             panDragging = false;
             builder.CancelPlacementPreview();
@@ -132,7 +133,7 @@ namespace WeaponWorkshop
             Is2D = panDragging = false;
             panOffset = Vector3.zero;
             assembly = null;
-            Axis = WorkshopViewAxis.Front;
+            Axis = Initial2DAxis;
         }
 
         public void StopPan() => panDragging = false;

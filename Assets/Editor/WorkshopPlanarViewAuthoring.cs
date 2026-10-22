@@ -151,7 +151,7 @@ namespace WeaponWorkshop.Editor
             label.fontSize = 24f; label.enableAutoSizing = true;
             label.fontSizeMin = 12f; label.fontSizeMax = 24f;
             label.textWrappingMode = TextWrappingModes.NoWrap;
-            label.alignment = TextAlignmentOptions.Center;
+            label.alignment = TextAlignmentOptions.Left;
             label.color = Color.white; label.raycastTarget = false;
             root.gameObject.SetActive(false);
             var data = new SerializedObject(directions);

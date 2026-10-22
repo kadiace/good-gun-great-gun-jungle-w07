@@ -13,6 +13,8 @@ namespace WeaponWorkshop
         [SerializeField] private Color muzzleColor = Color.red;
         [SerializeField] private Color forwardColor = Color.white;
         [SerializeField] private TMP_Text forwardLabel;
+        [SerializeField, Range(.001f, .025f), Tooltip("정면 다이아몬드 대각선 크기 / 화면의 짧은 변")]
+        private float forwardDiamondSizeRatio = .006f;
         private struct Marker
         {
             public Vector3 origin;
@@ -29,6 +31,10 @@ namespace WeaponWorkshop
         private EquipableWeapon subscribedWeapon;
         private WorkshopViewAxis cachedAxis;
         private bool visible, structureDirty;
+        private Vector3 forwardFace;
+        private bool IsSideView => view != null && view.Normal.z == 0;
+        private Vector3 ForwardMarkerWorld => assembly.transform.TransformPoint(IsSideView ? forwardFace : Vector3.zero);
+        private float DiamondPixels => Mathf.Min(view.Camera.pixelWidth, view.Camera.pixelHeight) * forwardDiamondSizeRatio;
         // Seven-segment digits keep overlap counts in the same batched UI mesh.
         private static readonly byte[] Digits = { 0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f };
 
@@ -97,6 +103,7 @@ namespace WeaponWorkshop
         {
             markers.Clear();
             projectedMuzzles.Clear();
+            forwardFace = assembly.GetOutermostFace(Vector3Int.forward);
             foreach (var muzzle in assembly.GetProjectilePaths())
             {
                 // 최종 발사 방향이 아니라 코어 +Forward 면에서 시작한 경로를 선택한다.
@@ -134,23 +141,18 @@ namespace WeaponWorkshop
 
         private void UpdateForwardLabel()
         {
-            if (forwardLabel == null || canvas == null || !IsOnScreen(assembly.transform.position))
+            if (forwardLabel == null || canvas == null || !IsOnScreen(ForwardMarkerWorld))
             { HideForwardLabel(); return; }
-            Transform root = assembly.transform;
-            Vector2 core = Project(root.position);
-            Vector2 cellSize = new Vector2(
-                Vector2.Distance(core, Project(root.TransformPoint(view.Horizontal))),
-                Vector2.Distance(core, Project(root.TransformPoint(view.Vertical))));
-            Vector2 direction = new Vector2(Vector3.Dot(Vector3.forward, view.Horizontal),
-                Vector3.Dot(Vector3.forward, view.Vertical));
-            // 정면·후면 보기에서는 글자를 옆에 배치해 깊이 방향 화살표를 덮지 않는다.
-            if (direction.sqrMagnitude < .5f) direction = Vector2.right;
-            Vector2 gap = ScreenSizeInLocal(new Vector2(view.Camera.pixelHeight * .008f, view.Camera.pixelHeight * .008f));
+            Vector2 point = Project(ForwardMarkerWorld);
+            // 3D FrontMark처럼 지점의 오른쪽에 텍스트를 둔다. 간격도 화면 비율로 환산한다.
+            float gapPixels = DiamondPixels * .5f + Mathf.Min(view.Camera.pixelWidth, view.Camera.pixelHeight) * .004f;
+            Vector2 gap = ScreenSizeInLocal(new Vector2(gapPixels, 0f));
+            if (!IsSideView)
+                gap.x += Vector2.Distance(point, Project(assembly.transform.TransformPoint(view.Horizontal))) * .6f;
             RectTransform labelRect = forwardLabel.rectTransform;
-            labelRect.pivot = Mathf.Abs(direction.x) > .5f
-                ? new Vector2(direction.x > 0f ? 0f : 1f, .5f)
-                : new Vector2(.5f, direction.y > 0f ? 0f : 1f);
-            Vector2 local = core + Vector2.Scale(direction, cellSize * .6f + gap);
+            labelRect.pivot = new Vector2(0f, .5f);
+            forwardLabel.alignment = TextAlignmentOptions.Left;
+            Vector2 local = point + gap;
             labelRect.localPosition = new Vector3(local.x, local.y, 0f);
             labelRect.sizeDelta = ScreenSizeInLocal(new Vector2(view.Camera.pixelWidth * .14f, view.Camera.pixelHeight * .03f));
             if (!forwardLabel.gameObject.activeSelf) forwardLabel.gameObject.SetActive(true);
@@ -174,50 +176,33 @@ namespace WeaponWorkshop
             float cellHeight = Vector2.Distance(core, Project(root.TransformPoint(view.Vertical)));
             if (cellWidth <= .001f || cellHeight <= .001f) return;
 
-            // 흰 화살표는 코어 안, 붉은 화살표는 출력면 바깥에 두고 각각 폭 1셀 미만을 유지한다.
-            if (IsOnScreen(root.position))
-                DrawDirection(mesh, core, Vector3Int.forward, cellWidth, cellHeight, forwardColor, true, null);
-            foreach (Marker marker in markers)
+            // +Forward 보기에서는 총구 자체가 보이므로 화살표와 겹침 개수를 함께 숨긴다.
+            if (view.Axis != WorkshopViewAxis.Front)
             {
-                Vector3 world = root.TransformPoint(marker.origin);
-                if (!IsOnScreen(world)) continue;
-                DrawDirection(mesh, Project(world), marker.direction, cellWidth, cellHeight,
-                    muzzleColor, false, marker.countLabel);
+                foreach (Marker marker in markers)
+                {
+                    Vector3 world = root.TransformPoint(marker.origin);
+                    if (!IsOnScreen(world)) continue;
+                    DrawDirection(mesh, Project(world), marker.direction, cellWidth, cellHeight,
+                        muzzleColor, marker.countLabel);
+                }
             }
+            // 정면 지점은 총구 화살표와 겹쳐도 읽을 수 있게 마지막에 그린다.
+            if (IsSideView && IsOnScreen(ForwardMarkerWorld))
+                Diamond(mesh, Project(ForwardMarkerWorld), ScreenSizeInLocal(Vector2.one * DiamondPixels), forwardColor);
         }
 
         private void DrawDirection(VertexHelper mesh, Vector2 origin, Vector3Int direction, float cellWidth,
-            float cellHeight, Color tint, bool coreForward, string count)
+            float cellHeight, Color tint, string count)
         {
             Vector2 planar = new Vector2(Vector3.Dot(direction, view.Horizontal), Vector3.Dot(direction, view.Vertical));
-            if (planar.sqrMagnitude > .5f)
-            {
-                Vector2 unit = planar.normalized;
-                float length = (Mathf.Abs(unit.x) > .5f ? cellWidth : cellHeight) * (coreForward ? .46f : .85f);
-                float width = (Mathf.Abs(unit.x) > .5f ? cellHeight : cellWidth) * (coreForward ? .32f : .4f);
-                Arrow(mesh, origin, unit, length, width, tint);
-                if (count != null) Count(mesh, count, origin, unit, cellWidth, cellHeight, tint);
-                return;
-            }
-
-            // 화면 법선 방향은 위/아래 화살표에 꼬리의 점(관찰자 쪽)/X(화면 안쪽)를 더한다.
-            // 두 깊이 방향은 좌우로 나누고 흰 전방은 중앙에 둬 같은 위치에서도 함께 읽힌다.
-            bool towardViewer = Vector3.Dot(direction, view.Normal) > 0f;
-            Vector2 depthUnit = towardViewer ? Vector2.up : Vector2.down;
-            Vector2 center = origin + Vector2.right * (coreForward ? 0f : towardViewer ? -.29f : .29f) * cellWidth;
-            Vector2 start = center - depthUnit * cellHeight * .23f;
-            Arrow(mesh, start, depthUnit, cellHeight * .64f, cellWidth * .22f, tint);
-            Vector2 tail = start - depthUnit * cellHeight * .09f;
-            if (towardViewer)
-                Quad(mesh, tail, new Vector2(cellWidth * .045f, cellHeight * .045f), tint);
-            else
-            {
-                Vector2 half = new Vector2(cellWidth * .035f, cellHeight * .035f);
-                Line(mesh, tail - half, tail + half, Mathf.Min(cellWidth, cellHeight) * .024f, tint);
-                half.x = -half.x;
-                Line(mesh, tail - half, tail + half, Mathf.Min(cellWidth, cellHeight) * .024f, tint);
-            }
-            if (count != null) Count(mesh, count, start, depthUnit, cellWidth * .55f, cellHeight, tint);
+            // 화면 앞·뒤 방향에는 대체 화살표나 겹침 개수를 그리지 않는다.
+            if (planar.sqrMagnitude <= .5f) return;
+            Vector2 unit = planar.normalized;
+            float length = (Mathf.Abs(unit.x) > .5f ? cellWidth : cellHeight) * .85f;
+            float width = (Mathf.Abs(unit.x) > .5f ? cellHeight : cellWidth) * .4f;
+            Arrow(mesh, origin, unit, length, width, tint);
+            if (count != null) Count(mesh, count, origin, unit, cellWidth, cellHeight, tint);
         }
 
         private static void Arrow(VertexHelper mesh, Vector2 start, Vector2 direction, float length, float width, Color tint)
@@ -269,8 +254,16 @@ namespace WeaponWorkshop
             }
         }
 
-        private static void Quad(VertexHelper mesh, Vector2 center, Vector2 size, Color tint)
-            => Line(mesh, center - Vector2.right * size.x * .5f, center + Vector2.right * size.x * .5f, size.y, tint);
+        private static void Diamond(VertexHelper mesh, Vector2 center, Vector2 size, Color tint)
+        {
+            int i = mesh.currentVertCount;
+            mesh.AddVert(center + Vector2.up * size.y * .5f, tint, Vector2.zero);
+            mesh.AddVert(center + Vector2.right * size.x * .5f, tint, Vector2.zero);
+            mesh.AddVert(center - Vector2.up * size.y * .5f, tint, Vector2.zero);
+            mesh.AddVert(center - Vector2.right * size.x * .5f, tint, Vector2.zero);
+            mesh.AddTriangle(i, i + 1, i + 2);
+            mesh.AddTriangle(i, i + 2, i + 3);
+        }
 
         private static void Line(VertexHelper mesh, Vector2 a, Vector2 b, float width, Color tint)
             => WorkshopPlanarGridGraphic.AddLine(mesh, a, b, width, tint);
