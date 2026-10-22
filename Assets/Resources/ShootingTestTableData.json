@@ -2,6 +2,7 @@
     "tests": [
         {
             "id": "around-cover",
+            "requiredModules": [{"kind": "Ricochet", "count": 1}],
             "name": "엄폐 뒤 표적 테스트",
             "instructions": "엄폐 뒤 초록 표적 2개를 파괴하세요. 밝은 벽에서 반사하거나 범위 공격을 활용하세요.",
             "failureHint": "엄폐물은 파괴할 수 없습니다. 반사각과 폭발 범위를 조절하고 붉은 상자를 피해 보세요.",
@@ -11,6 +12,7 @@
         },
         {
             "id": "behind-barrier",
+            "requiredModules": [{"kind": "Ricochet", "count": 1}],
             "name": "장애물 뒤 표적 테스트",
             "instructions": "저항판 뒤 초록 표적 3개를 파괴하세요. 붉은 상자는 보호 대상입니다.",
             "failureHint": "앞 저항판의 관통 저항은 2입니다. 관통·차지와 뒤쪽 폭발 범위를 조절해 보세요.",
@@ -20,6 +22,7 @@
         },
         {
             "id": "wide-targets",
+            "requiredModules": [{"kind": "Ricochet", "count": 1}],
             "name": "넓게 흩어진 표적 테스트",
             "instructions": "좌우 초록 표적 3개를 파괴하세요. 총열 배치·분기·산탄·회전을 활용해 보세요.",
             "failureHint": "표적 사이 간격이 넓습니다. 총구 위치·분기·산탄 범위를 조절하거나 불필요한 파츠를 줄여 보세요.",

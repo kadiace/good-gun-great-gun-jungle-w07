@@ -19,7 +19,13 @@ namespace WeaponWorkshop
             {
                 var row = table.FindRequest(id);
                 foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
-                    if (!TableManager.Instance.ShootingTestTable.IsAvailable(testId)) return false;
+                {
+                    var tests = TableManager.Instance.ShootingTestTable;
+                    if (!tests.IsAvailable(testId)) return false;
+                    foreach (var requirement in tests.Find(testId).requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
+                        if (!ShootingTestInfo.TryGetModuleKind(requirement, out var kind) ||
+                            unlocks == null || !unlocks.IsUnlocked(kind) || unlocks.FindModule(kind) == null) return false;
+                }
                 foreach (var condition in table.Conditions(row))
                 {
                     if (condition.min <= 0f) continue;
@@ -67,6 +73,13 @@ namespace WeaponWorkshop
             {
                 var row = table.FindRequest(id);
                 if (row == null) continue;
+                foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
+                {
+                    var test = TableManager.Instance.ShootingTestTable.Find(testId);
+                    if (test == null) continue;
+                    foreach (var requirement in test.requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
+                        if (ShootingTestInfo.TryGetModuleKind(requirement, out var kind)) Need(kind, requirement.count, need);
+                }
                 foreach (var condition in table.Conditions(row))
                 {
                     if (condition.min <= 0f) continue;

@@ -488,10 +488,19 @@ namespace WeaponWorkshop
                 string.Equals(step.requiredSignal, signal, StringComparison.Ordinal) &&
                 (step.target == TutorialTarget.None || (source != null && source == CurrentInteractionTarget))) Advance();
         }
-        public bool AllowsInteraction(IInteractable target) => !IsTutorialActive ||
-            (CurrentStep != null && (CurrentStep.completion == TutorialCompletion.RaidTankSpawned ||
-                (CurrentStep.completion != TutorialCompletion.CustomerKilled &&
-                    target is Component component && component != null && component == CurrentInteractionTarget)));
+        public bool AllowsInteraction(IInteractable target)
+        {
+            if (!IsTutorialActive) return true;
+            var step = CurrentStep;
+            if (step == null) return false;
+            if (step.completion == TutorialCompletion.RaidTankSpawned) return true;
+            if (step.completion == TutorialCompletion.CustomerKilled || !(target is Component component) || component == null)
+                return false;
+            var current = CurrentInteractionTarget;
+            // 습격 픽업 목표는 상자 파괴 뒤 Transform으로 바뀌므로 컴포넌트 동일성만으로 비교하지 않는다.
+            return component == current ||
+                current is Component currentComponent && currentComponent != null && component.transform == currentComponent.transform;
+        }
         public bool TryAuthorizeInteraction(IInteractable target)
         {
             if (AllowsInteraction(target)) return true;
