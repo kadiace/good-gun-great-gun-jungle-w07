@@ -106,9 +106,16 @@ namespace WeaponWorkshop.Editor
                     uiChanged = true;
                 }
                 existingData.Update();
-                if (existingData.FindProperty("extentUI").objectReferenceValue == null)
+                if (existingData.FindProperty("directionsGraphic").objectReferenceValue == null)
                 {
-                    ConfigureExtentUI(ui.transform, existing, font);
+                    ConfigureDirectionsUI(ui.transform, existing, font);
+                    uiChanged = true;
+                }
+                existingData.Update();
+                var directions = (WorkshopPlanarDirectionsGraphic)existingData.FindProperty("directionsGraphic").objectReferenceValue;
+                if (new SerializedObject(directions).FindProperty("forwardLabel").objectReferenceValue == null)
+                {
+                    ConfigureForwardLabel(directions, font);
                     uiChanged = true;
                 }
                 if (uiChanged && PrefabUtility.SaveAsPrefabAsset(ui, UIPath) == null)
@@ -121,44 +128,35 @@ namespace WeaponWorkshop.Editor
                 playerChanged + "; UI changed: " + uiChanged + ". No scene, play or test execution.");
         }
 
-        private static void ConfigureExtentUI(Transform ui, WorkshopViewUI presenter, TMP_FontAsset font)
+        private static void ConfigureDirectionsUI(Transform ui, WorkshopViewUI presenter, TMP_FontAsset font)
         {
-            var root = MakeRect("WorkshopPlanarExtentOverlay", ui, Vector2.zero, Vector2.one);
+            var root = MakeRect("WorkshopPlanarDirectionsOverlay", ui, Vector2.zero, Vector2.one);
             root.SetSiblingIndex(1); // 그리드 위, 기존 패널·컨트롤 아래에 표시한다.
             var group = root.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false; group.interactable = false;
-            var extent = root.gameObject.AddComponent<WorkshopPlanarExtentUI>();
-            var data = new SerializedObject(extent);
-            var labels = data.FindProperty("labels");
-            var markers = data.FindProperty("markers");
-            var connectors = data.FindProperty("connectors");
-            labels.arraySize = markers.arraySize = connectors.arraySize = 4;
-            for (int i = 0; i < 4; i++)
-            {
-                var connectorRoot = MakeRect("DirectionConnector" + i, root, Vector2.one * .5f, Vector2.one * .5f);
-                var connector = connectorRoot.gameObject.AddComponent<Image>();
-                connector.raycastTarget = false;
-                var markerRoot = MakeRect("SurfaceMarker" + i, root, Vector2.one * .5f, Vector2.one * .5f);
-                var marker = markerRoot.gameObject.AddComponent<Image>();
-                marker.raycastTarget = false;
-                var labelRoot = MakeRect("DirectionLabel" + i, root, Vector2.one * .5f, Vector2.one * .5f);
-                var label = labelRoot.gameObject.AddComponent<TextMeshProUGUI>();
-                label.font = font; label.fontSharedMaterial = font.material;
-                label.enableAutoSizing = false;
-                label.alignment = TextAlignmentOptions.Center;
-                label.raycastTarget = false;
-                label.text = "";
-                labels.GetArrayElementAtIndex(i).objectReferenceValue = label;
-                markers.GetArrayElementAtIndex(i).objectReferenceValue = marker;
-                connectors.GetArrayElementAtIndex(i).objectReferenceValue = connector;
-                labelRoot.gameObject.SetActive(false);
-                markerRoot.gameObject.SetActive(false);
-                connectorRoot.gameObject.SetActive(false);
-            }
-            data.ApplyModifiedPropertiesWithoutUndo();
+            var directions = root.gameObject.AddComponent<WorkshopPlanarDirectionsGraphic>();
+            directions.raycastTarget = false;
+            ConfigureForwardLabel(directions, font);
             var presenterData = new SerializedObject(presenter);
-            Assign(presenterData, "extentUI", extent);
+            Assign(presenterData, "directionsGraphic", directions);
             presenterData.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void ConfigureForwardLabel(WorkshopPlanarDirectionsGraphic directions, TMP_FontAsset font)
+        {
+            var root = MakeRect("EquippedForwardLabel", directions.transform, Vector2.one * .5f, Vector2.one * .5f);
+            var label = root.gameObject.AddComponent<TextMeshProUGUI>();
+            label.font = font; label.fontSharedMaterial = font.material;
+            label.text = "장착 전방 (+Forward)";
+            label.fontSize = 24f; label.enableAutoSizing = true;
+            label.fontSizeMin = 12f; label.fontSizeMax = 24f;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = Color.white; label.raycastTarget = false;
+            root.gameObject.SetActive(false);
+            var data = new SerializedObject(directions);
+            Assign(data, "forwardLabel", label);
+            data.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void ConfigureOrientation(WorkshopViewUI presenter, TMP_FontAsset font)

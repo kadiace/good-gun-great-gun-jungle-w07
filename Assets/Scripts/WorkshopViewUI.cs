@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace WeaponWorkshop
@@ -17,7 +18,8 @@ namespace WeaponWorkshop
         [SerializeField] private TMP_Text frontLabel, upLabel, rightLabel;
         [SerializeField] private TMP_Text backLabel, downLabel, leftLabel;
         [SerializeField] private WorkshopPlanarGridGraphic grid;
-        [SerializeField] private WorkshopPlanarExtentUI extentUI;
+        [FormerlySerializedAs("extentUI")]
+        [SerializeField] private WorkshopPlanarDirectionsGraphic directionsGraphic;
         [SerializeField] private WorkshopAxesGraphic axesGraphic;
         [SerializeField] private Button axisMenuButton;
         [SerializeField] private GameObject axisMenuRoot;
@@ -36,7 +38,7 @@ namespace WeaponWorkshop
             controlsRoot.SetActive(false);
             grid.gameObject.SetActive(false);
             axisMenuRoot.SetActive(false);
-            extentUI.Bind(null, false);
+            directionsGraphic.Bind(null, false);
             axesGraphic.ClearOrientation();
             modeLabel.text = "2D 모드";
             buttons = new[] { frontButton, upButton, rightButton, backButton, downButton, leftButton };
@@ -77,7 +79,7 @@ namespace WeaponWorkshop
             bool visible = session != null && session.IsEditing && builder != null && !builder.IsCustomMode;
             if (controlsRoot.activeSelf != visible) controlsRoot.SetActive(visible);
             bool planar = visible && view != null && view.Is2D;
-            extentUI.Bind(view, planar);
+            directionsGraphic.Bind(view, planar);
             if (grid.gameObject.activeSelf != planar) grid.gameObject.SetActive(planar);
             if (!visible) { HideOrientation(); return; }
             grid.Bind(view, builder);
@@ -143,7 +145,7 @@ namespace WeaponWorkshop
         }
         private void OnDisable()
         {
-            if (extentUI != null) extentUI.Bind(null, false);
+            if (directionsGraphic != null) directionsGraphic.Bind(null, false);
             if (controlsRoot != null) controlsRoot.SetActive(false);
             if (grid != null) grid.gameObject.SetActive(false);
             HideOrientation();
