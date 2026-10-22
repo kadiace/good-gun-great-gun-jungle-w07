@@ -67,7 +67,7 @@ namespace WeaponWorkshop
             {
                 var objective = objectives[i];
                 bool pending = (TutorialManager.TrainingRaidPending || !unlocks.IsUnlocked(objective.ModuleId)) &&
-                    !NightRaidController.Instance.HasTrainingModule(objective.ModuleId);
+                    !NightRaidController.Instance.HasEarnedModule(objective.ModuleId);
                 if (pending) remaining++;
                 bool visible = pending && objective.Target != null && objective.Target.gameObject.activeInHierarchy;
                 markers[i].gameObject.SetActive(visible);
@@ -94,7 +94,7 @@ namespace WeaponWorkshop
                             remainingCrates += spawner.RemainingMaterialCrateCount;
                 string objectiveStatus = remaining > 0 ? $"남은 모듈 {remaining}개" :
                     objectives.Count > 0 ? "모듈 획득 완료 · 가까운 탈출구로 이동하세요" : "남은 모듈 없음 · 가까운 탈출구로 이동하세요";
-                status.text = $"남은 재료 상자 {remainingCrates}개\n{objectiveStatus}";
+                status.text = $"남은 부품 상자 {remainingCrates}개\n{objectiveStatus}";
             }
             bool showExit = remaining == 0 && nearestExit != null && !NightRaidController.Instance.IsExtracting;
             exitMarker.gameObject.SetActive(showExit);

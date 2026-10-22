@@ -99,7 +99,7 @@ namespace WeaponWorkshop
             // 이미 해금한 모듈 자리에는 재료 상자가 대신 나온다(RaidCrateSpawner).
             int materialCrates = (settings.reward != null ? Mathf.Max(0, settings.reward.materialCrates) : 0) + acquiredCount;
             text.AppendLine().Append("모듈 상자  ").Append(remaining).AppendLine("개")
-                .Append("재료 상자  ").Append(materialCrates).AppendLine("개").AppendLine().AppendLine("출몰 적");
+                .Append("부품 상자  ").Append(materialCrates).AppendLine("개").AppendLine().AppendLine("출몰 적");
             if (settings.tanks) text.AppendLine("• 탱크");
             if (settings.maximumReinforcedTanks > 0 || region.scene == "NightRaid_Millitary_base") text.AppendLine("• 강화 탱크");
             if (settings.helicopters) text.AppendLine("• 헬기");

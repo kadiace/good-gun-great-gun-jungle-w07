@@ -15,6 +15,7 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
+            gameObject.AddComponent<PickupOutline>();
             availableAt = Time.time + pickupDelay;
             magnet.Initialize(GetComponent<Rigidbody>());
             canCollect = player => player == recipient && Time.time >= availableAt;

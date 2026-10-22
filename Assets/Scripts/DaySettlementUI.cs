@@ -157,7 +157,7 @@ public sealed class DaySettlementUI : MonoBehaviour
 
     private void ShowInsufficientFunds(bool useModuleCredits)
     {
-        WeaponWorkshop.FeedbackUI.For(this)?.ShowNotification(useModuleCredits ? "모듈 재료가 부족합니다." : "돈이 부족합니다.");
+        WeaponWorkshop.FeedbackUI.For(this)?.ShowNotification(useModuleCredits ? "부품이 부족합니다." : "돈이 부족합니다.");
         (useModuleCredits ? moduleCreditCounter : moneyCounter).PulseInsufficientFunds(
             insufficientFundsDuration, insufficientFundsPulses, insufficientFundsScale);
     }
