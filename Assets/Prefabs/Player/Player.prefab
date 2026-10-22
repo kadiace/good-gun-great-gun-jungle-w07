@@ -675,5 +675,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.WorkshopPlanarView
   initialSize: 1
   minimumSize: 0.2
-  maximumSize: 8
-  zoomSpeed: 0.15
+  maximumSize: 3
+  zoomSpeed: 0.1
