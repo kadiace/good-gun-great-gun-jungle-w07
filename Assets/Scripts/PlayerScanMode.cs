@@ -65,6 +65,9 @@ namespace WeaponWorkshop
             if (!IsScanning || interaction == null || !interaction.TryGetViewedHit(scanDistance, out var hit, true))
             { hoverElapsed = 0f; return; }
             var target = hit.collider.GetComponentInParent<DestructibleTarget>();
+            var moduleCrate = hit.collider.GetComponentInParent<ModuleUnlockCrate>();
+            if (moduleCrate != null)
+                target = moduleCrate.GetComponent<DestructibleTarget>();
             if (target != null && target.isActiveAndEnabled)
             {
                 Target = target;

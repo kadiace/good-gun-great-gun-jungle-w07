@@ -102,6 +102,9 @@ namespace WeaponWorkshop
             var weaponName = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponNameUI>() : null;
             if (weaponName != null && weaponName.CancelEditing()) return;
             if (InTargetSelection) { TargetSelectionCloseRequested?.Invoke(); return; }
+            var builder = uiManager != null && uiManager.Player != null
+                ? uiManager.Player.GetComponentInChildren<CubeBuilder>(true) : null;
+            if (builder != null && builder.PaletteOpen) { builder.ClosePalette(); return; }
             if (!ModalBlocked)
             {
                 var session = workshopSession;
