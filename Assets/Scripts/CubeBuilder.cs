@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace WeaponWorkshop
 {
     [RequireComponent(typeof(Camera))]
-    public sealed class CubeBuilder : MonoBehaviour
+    public sealed partial class CubeBuilder : MonoBehaviour
     {
         private const int UndoLimit = 3;
 
@@ -309,6 +309,7 @@ namespace WeaponWorkshop
             InputAction attach = controls.FindAction("Attach", true);
             attach.started += _ =>
             {
+                if (TryBeginPlanarStroke()) return;
                 paintPointerHeld = false;
                 bool canUseSurface = paintingMode && !GameManager.GameplayBlocked &&
                     !controls.FindAction("Rotate", true).IsPressed() && !IsPointerOverUI(AimPoint());
@@ -333,9 +334,14 @@ namespace WeaponWorkshop
                 }
                 else paintPointerHeld = TrySelectPaintFace();
             };
-            attach.canceled += _ => paintPointerHeld = false;
+            attach.canceled += _ =>
+            {
+                paintPointerHeld = false;
+                if (strokeActive) strokeReleased = true;
+            };
             attach.performed += _ =>
             {
+                if (strokeActive) return;
                 if (GameManager.GameplayBlocked || favoriteDragActive ||
                     (UsingPlanarView && (planarView.IsPanning || controls.FindAction("Pan", true).IsPressed())) ||
                     IsPointerOverUI(AimPoint())) return;
@@ -428,6 +434,8 @@ namespace WeaponWorkshop
         private void Update()
         {
             UpdateHoverPreview();
+            UpdatePlanarStroke();
+            if (strokeActive) return;
             if (GameManager.GameplayBlocked)
             {
                 paintPointerHeld = false;
@@ -572,6 +580,7 @@ namespace WeaponWorkshop
 
         private void CancelPreview()
         {
+            CancelStroke();
             if (hoverPreview != null) hoverPreview.SetActive(false);
             if (preview != null) { preview.SetActive(false); Destroy(preview); }
             preview = null;
@@ -802,6 +811,7 @@ namespace WeaponWorkshop
 
         private void UndoLastEdit()
         {
+            if (strokeActive) { CancelStroke(); return; }
             if (!TutorialManager.TryAction("undo")) return;
             if (GameManager.GameplayBlocked) return;
             if (paintingMode)
@@ -1225,31 +1235,12 @@ namespace WeaponWorkshop
             return null;
         }
 
-        // 화면의 한 칸에 투영된 열을 찾고, 점유된 열은 축의 양의 방향으로 쌓는다.
+        // 선택 층의 정확한 셀만 설치 대상으로 사용한다. 점유된 열의 바깥으로 자동 이동하지 않는다.
         private bool TryGetPlanarPlacement(CubeAssembly assembly, Vector3Int planeCell,
             out Vector3Int cell, out Vector3Int face)
         {
-            cell = planeCell;
-            face = Vector3Int.zero;
-            if (assembly == null) return false;
-            Vector3Int axis = planarView.Normal;
-            bool occupied = planeCell == Vector3Int.zero; // 코어도 깊이 0의 점유 셀이다.
-            int maximum = occupied ? 0 : int.MinValue;
-            for (int i = 0; i < assembly.transform.childCount; i++)
-            {
-                Transform child = assembly.transform.GetChild(i);
-                if (!child.gameObject.activeInHierarchy || !child.TryGetComponent(out PlacedBlock block)) continue;
-                int depth = block.Cell.x * axis.x + block.Cell.y * axis.y + block.Cell.z * axis.z;
-                if (block.Cell - axis * depth != planeCell) continue;
-                occupied = true;
-                maximum = Mathf.Max(maximum, depth);
-            }
-            if (occupied)
-            {
-                cell = planeCell + axis * (maximum + 1);
-                face = axis;
-                return true;
-            }
+            cell = planeCell; face = Vector3Int.zero;
+            if (assembly == null || cell == Vector3Int.zero || GetBlockAt(assembly, cell) != null) return false;
             return TryGetPlanarNeighbor(assembly, cell, out face);
         }
 
@@ -1258,7 +1249,7 @@ namespace WeaponWorkshop
         {
             if (!assembly.CanOrient(cell, slot, direction, feed)) return false;
             bool choosesDirection = slot == 2 || slot == 3 || IsScope(assembly, slot);
-            if (choosesDirection && !planarView.ContainsCell(direction)) return false;
+            if (choosesDirection && !planarView.IsDirectionInViewPlane(direction)) return false;
             if (slot != 2 && slot != 3) return true;
             // 2방향 분할은 양쪽 출력 모두 빈 셀을 향해야 한다.
             Vector3Int output = cell + direction;
@@ -1273,7 +1264,6 @@ namespace WeaponWorkshop
             if (assembly == null || !planarView.ContainsCell(cell)) return false;
             foreach (var direction in OutputDirections)
             {
-                if (!planarView.ContainsCell(direction)) continue;
                 Vector3Int source = cell - direction;
                 if (source != Vector3Int.zero && GetBlockAt(assembly, source) == null) continue;
                 face = direction;

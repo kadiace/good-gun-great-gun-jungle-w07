@@ -96,39 +96,50 @@ namespace WeaponWorkshop
         {
             if (IsConstructionLocked || target == null || target.transform.parent != transform || !target.gameObject.activeSelf)
                 return false;
-            int refund = refundWallet != null ? target.TakePurchaseCost() : 0;
-            int creditRefund = refundWallet != null ? target.TakeModuleCreditCost() : 0;
+            int refund = 0, creditRefund = 0;
             string partKind = refundWallet != null ? ModuleCounter.LogName(target) : "";
-            RemoveObject(target);
-            var cells = new System.Collections.Generic.Dictionary<Vector3Int, PlacedBlock>();
-            foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>())
-                cells[block.Cell] = block;
-            var connected = new System.Collections.Generic.HashSet<Vector3Int> { Vector3Int.zero };
-            var pending = new System.Collections.Generic.Queue<Vector3Int>();
-            pending.Enqueue(Vector3Int.zero);
-            while (pending.Count > 0)
+            foreach (var block in GetRemovalBlocks(target.Cell))
             {
-                Vector3Int cell = pending.Dequeue();
-                foreach (Vector3Int offset in Neighbors)
-                {
-                    Vector3Int neighbor = cell + offset;
-                    if (cells.ContainsKey(neighbor) && connected.Add(neighbor))
-                        pending.Enqueue(neighbor);
-                }
+                if (refundWallet != null) refund += block.TakePurchaseCost();
+                if (refundWallet != null) creditRefund += block.TakeModuleCreditCost();
+                RemoveObject(block);
             }
-            foreach (var entry in cells)
-                if (!connected.Contains(entry.Key))
-                {
-                    if (refundWallet != null) refund += entry.Value.TakePurchaseCost();
-                    if (refundWallet != null) creditRefund += entry.Value.TakeModuleCreditCost();
-                    RemoveObject(entry.Value);
-                }
             int moneyRefund = GetComponentInParent<EquipableWeapon>()?.RefundModulePurchases(refund, refundWallet) ?? 0;
             refundWallet?.CreditModuleCredits(creditRefund);
             // Disconnected blocks refund with the removed one, so the log names only the removed part.
             refundWallet?.NotifyPartRefunded(partKind, moneyRefund, creditRefund);
             NotifyStructureChanged();
             return true;
+        }
+
+        // 호버와 실제 삭제가 같은 연결 끊김 범위를 사용한다. 다른 층까지 제거될 수 있다.
+        public void CollectRemovalCells(Vector3Int target, System.Collections.Generic.List<Vector3Int> result)
+        {
+            result.Clear();
+            foreach (var block in GetRemovalBlocks(target)) result.Add(block.Cell);
+        }
+        private System.Collections.Generic.List<PlacedBlock> GetRemovalBlocks(Vector3Int target)
+        {
+            var result = new System.Collections.Generic.List<PlacedBlock>();
+            if (target == Vector3Int.zero) return result;
+            var cells = new System.Collections.Generic.Dictionary<Vector3Int, PlacedBlock>();
+            foreach (var block in GetComponentsInChildren<PlacedBlock>())
+                if (block.transform.parent == transform) cells[block.Cell] = block;
+            if (!cells.ContainsKey(target)) return result;
+            var connected = new System.Collections.Generic.HashSet<Vector3Int> { Vector3Int.zero };
+            var pending = new System.Collections.Generic.Queue<Vector3Int>();
+            pending.Enqueue(Vector3Int.zero);
+            while (pending.Count > 0)
+            {
+                var cell = pending.Dequeue();
+                foreach (var offset in Neighbors)
+                {
+                    var neighbor = cell + offset;
+                    if (neighbor != target && cells.ContainsKey(neighbor) && connected.Add(neighbor)) pending.Enqueue(neighbor);
+                }
+            }
+            foreach (var pair in cells) if (!connected.Contains(pair.Key)) result.Add(pair.Value);
+            return result;
         }
 
         private static void RemoveObject(PlacedBlock block)
@@ -363,8 +374,7 @@ namespace WeaponWorkshop
             return true;
         }
 
-        // Direction energy enters `cell` with, from the most recently placed neighbor that outputs into it.
-        // The core outputs on every face and counts as the oldest source. False when nothing feeds the cell.
+        // 코어와 실제 배치된 모듈의 출력에서 최근 설치된 공급원을 선택한다. 기존 단일 배치 규칙을 유지한다.
         public bool TryGetFeedDirection(Vector3Int cell, out Vector3Int direction)
         {
             direction = Vector3Int.zero;
@@ -386,6 +396,15 @@ namespace WeaponWorkshop
                 }
             }
             return latest != int.MinValue;
+        }
+
+        // 드래그 확정 중에는 중간 조립 상태를 외부에 알리지 않는다.
+        // 종료 후 한 번만 에너지 경로와 UI를 갱신한다.
+        internal void BeginPlacementBatch() => buildingLayout = true;
+        internal void EndPlacementBatch()
+        {
+            buildingLayout = false;
+            NotifyStructureChanged();
         }
 
         public bool HasStructuralFailure()

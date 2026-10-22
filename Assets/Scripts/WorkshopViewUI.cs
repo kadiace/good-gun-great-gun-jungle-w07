@@ -18,6 +18,8 @@ namespace WeaponWorkshop
         [SerializeField] private TMP_Text frontLabel, upLabel, rightLabel;
         [SerializeField] private TMP_Text backLabel, downLabel, leftLabel;
         [SerializeField] private WorkshopPlanarGridGraphic grid;
+        [SerializeField] private WorkshopPlanarLayerUI layerUI;
+        [SerializeField] private WorkshopPlanarLayerPresentation layerPresentation;
         [FormerlySerializedAs("extentUI")]
         [SerializeField] private WorkshopPlanarDirectionsGraphic directionsGraphic;
         [SerializeField] private WorkshopAxesGraphic axesGraphic;
@@ -80,9 +82,11 @@ namespace WeaponWorkshop
             if (controlsRoot.activeSelf != visible) controlsRoot.SetActive(visible);
             bool planar = visible && view != null && view.Is2D;
             directionsGraphic.Bind(view, planar);
+            if (layerPresentation != null) layerPresentation.Bind(view, planar);
+            if (layerUI != null) layerUI.Bind(view, builder, layerPresentation, planar);
             if (grid.gameObject.activeSelf != planar) grid.gameObject.SetActive(planar);
             if (!visible) { HideOrientation(); return; }
-            grid.Bind(view, builder);
+            grid.Bind(view, builder, layerPresentation);
             string caption = planar ? "3D 모드" : "2D 모드";
             if (modeLabel.text != caption) modeLabel.text = caption;
             modeButton.interactable = view != null && view.CanChangeView;
@@ -145,6 +149,8 @@ namespace WeaponWorkshop
         }
         private void OnDisable()
         {
+            if (layerPresentation != null) layerPresentation.Bind(null, false);
+            if (layerUI != null) layerUI.Bind(null, null, null, false);
             if (directionsGraphic != null) directionsGraphic.Bind(null, false);
             if (controlsRoot != null) controlsRoot.SetActive(false);
             if (grid != null) grid.gameObject.SetActive(false);

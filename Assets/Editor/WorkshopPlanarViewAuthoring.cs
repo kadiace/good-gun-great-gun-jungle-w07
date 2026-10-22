@@ -118,6 +118,12 @@ namespace WeaponWorkshop.Editor
                     ConfigureForwardLabel(directions, font);
                     uiChanged = true;
                 }
+                existingData.Update();
+                if (existingData.FindProperty("layerUI").objectReferenceValue == null)
+                {
+                    ConfigureLayerControls(existing, font);
+                    uiChanged = true;
+                }
                 if (uiChanged && PrefabUtility.SaveAsPrefabAsset(ui, UIPath) == null)
                     throw new IOException("UI prefab save failed.");
             }
@@ -126,6 +132,42 @@ namespace WeaponWorkshop.Editor
             if (uiChanged) AssetDatabase.ImportAsset(UIPath);
             File.WriteAllText("Library/WorkshopPlanarView.completed.txt", "2D workshop controls authored. Player changed: " +
                 playerChanged + "; UI changed: " + uiChanged + ". No scene, play or test execution.");
+        }
+
+        private static void ConfigureLayerControls(WorkshopViewUI presenter, TMP_FontAsset font)
+        {
+            var display = presenter.gameObject.AddComponent<WorkshopPlanarLayerPresentation>();
+            var controller = presenter.gameObject.AddComponent<WorkshopPlanarLayerUI>();
+            var panel = MakeRect("LayerControls", presenter.transform, new Vector2(.02f, .76f), new Vector2(.34f, .97f));
+            panel.gameObject.AddComponent<Image>().color = new Color(.025f, .04f, .05f, .94f);
+            var title = LayerText("CurrentLayer", panel, new Vector2(.02f, .78f), new Vector2(.98f, .98f), font, "0층 편집");
+            var previous = MakeButton("PreviousLayer", panel, new Vector2(.02f, .53f), new Vector2(.3f, .75f), "−1층", font, Color.white);
+            var core = MakeButton("CoreLayer", panel, new Vector2(.34f, .53f), new Vector2(.66f, .75f), "코어층 (0)", font, Color.white);
+            var next = MakeButton("NextLayer", panel, new Vector2(.7f, .53f), new Vector2(.98f, .75f), "+1층", font, Color.white);
+            var data = new SerializedObject(controller);
+            Assign(data, "panel", panel.gameObject); Assign(data, "title", title);
+            Assign(data, "previous", previous); Assign(data, "next", next); Assign(data, "core", core);
+            var buttons = data.FindProperty("layers"); buttons.arraySize = 5;
+            for (int i = 0; i < 5; i++)
+                buttons.GetArrayElementAtIndex(i).objectReferenceValue = MakeButton("Layer" + i, panel,
+                    new Vector2(.02f + i * .194f, .24f), new Vector2(.19f + i * .194f, .5f), "층", font, Color.white);
+            var hint = LayerText("LayerHint", panel, new Vector2(.02f, .02f), new Vector2(.98f, .22f), font, "좌클릭 드래그로 연속 설치");
+            Assign(data, "hint", hint); data.ApplyModifiedPropertiesWithoutUndo();
+            var owner = new SerializedObject(presenter);
+            Assign(owner, "layerUI", controller); Assign(owner, "layerPresentation", display);
+            owner.ApplyModifiedPropertiesWithoutUndo();
+            panel.gameObject.SetActive(false);
+        }
+
+        private static TMP_Text LayerText(string name, Transform parent, Vector2 min, Vector2 max, TMP_FontAsset font, string caption)
+        {
+            var root = MakeRect(name, parent, min, max);
+            var label = root.gameObject.AddComponent<TextMeshProUGUI>();
+            label.font = font; label.fontSharedMaterial = font.material;
+            label.enableAutoSizing = true; label.fontSizeMin = 10; label.fontSizeMax = 24;
+            label.alignment = TextAlignmentOptions.Center; label.color = Color.white;
+            label.raycastTarget = false; label.text = caption;
+            return label;
         }
 
         private static void ConfigureDirectionsUI(Transform ui, WorkshopViewUI presenter, TMP_FontAsset font)

@@ -31,6 +31,18 @@ namespace WeaponWorkshop
         public WorkshopViewAxis Axis { get; private set; } = Initial2DAxis;
         public CubeAssembly Assembly => assembly;
         public Camera Camera => view;
+        public int SelectedDepth { get; private set; }
+        public event System.Action LayerChanged;
+        public int DepthOf(Vector3Int cell) => CubePlacementState.Dot(cell, Normal);
+        public Vector3 LayerOrigin => assembly != null
+            ? assembly.transform.TransformPoint((Vector3)Normal * SelectedDepth) : Vector3.zero;
+        public void SetSelectedDepth(int depth)
+        {
+            if (!Is2D || !CanChangeView || SelectedDepth == depth) return;
+            builder?.CancelPlacementPreview();
+            SelectedDepth = depth;
+            LayerChanged?.Invoke();
+        }
         public Vector3Int Normal => NormalFor(Axis);
         public static Vector3Int NormalFor(WorkshopViewAxis axis) => axis switch
         {
@@ -57,6 +69,7 @@ namespace WeaponWorkshop
             builder = cubeBuilder;
             Is2D = panDragging = false;
             Axis = Initial2DAxis;
+            SelectedDepth = 0;
             if (view != null) view.orthographic = false;
         }
 
@@ -77,6 +90,7 @@ namespace WeaponWorkshop
             savedSize = view.orthographicSize;
             savedFieldOfView = view.fieldOfView;
             Axis = Initial2DAxis;
+            SelectedDepth = 0;
             panOffset = Vector3.zero;
             panDragging = false;
             builder.CancelPlacementPreview();
@@ -98,6 +112,8 @@ namespace WeaponWorkshop
             if (Is2D)
             {
                 Axis = axis;
+                SelectedDepth = 0;
+                LayerChanged?.Invoke();
                 panOffset = Vector3.zero;
                 panDragging = false;
                 ApplyDisplayPose();
@@ -134,6 +150,7 @@ namespace WeaponWorkshop
             panOffset = Vector3.zero;
             assembly = null;
             Axis = Initial2DAxis;
+            SelectedDepth = 0;
         }
 
         public void StopPan() => panDragging = false;
@@ -185,6 +202,8 @@ namespace WeaponWorkshop
             {
                 builder?.CancelPlacementPreview();
                 assembly = current;
+                SelectedDepth = 0;
+                LayerChanged?.Invoke();
                 panOffset = Vector3.zero;
             }
             if (assembly == null) { Restore3D(); return; }
@@ -194,23 +213,24 @@ namespace WeaponWorkshop
             AlignCore(displayRoot, assembly.transform, view.transform.rotation, Axis, center + panOffset);
         }
 
-        // 깊이는 항상 코어 좌표 0. 다른 깊이의 모듈은 이 선택에 끼어들지 않는다.
+        // 포인터를 선택한 층의 평면과 교차시킨다. 설치·호버·삭제가 이 좌표를 공유한다.
         public bool TryGetCell(Vector2 pointer, out Vector3Int cell)
         {
             cell = default;
             if (!Is2D || assembly == null || view == null || !view.pixelRect.Contains(pointer)) return false;
-            var plane = new Plane(assembly.transform.TransformDirection(Normal), assembly.transform.position);
+            var plane = new Plane(assembly.transform.TransformDirection(Normal), LayerOrigin);
             Ray ray = view.ScreenPointToRay(pointer);
             if (!plane.Raycast(ray, out float distanceToPlane)) return false;
             Vector3 local = assembly.transform.InverseTransformPoint(ray.GetPoint(distanceToPlane));
             cell = Vector3Int.RoundToInt(local);
-            if (Normal.x != 0) cell.x = 0;
-            if (Normal.y != 0) cell.y = 0;
-            if (Normal.z != 0) cell.z = 0;
+            if (Normal.x != 0) cell.x = Normal.x * SelectedDepth;
+            if (Normal.y != 0) cell.y = Normal.y * SelectedDepth;
+            if (Normal.z != 0) cell.z = Normal.z * SelectedDepth;
             return true;
         }
 
-        public bool ContainsCell(Vector3Int cell) => cell.x * Normal.x + cell.y * Normal.y + cell.z * Normal.z == 0;
+        public bool ContainsCell(Vector3Int cell) => DepthOf(cell) == SelectedDepth;
+        public bool IsDirectionInViewPlane(Vector3Int direction) => CubePlacementState.Dot(direction, Normal) == 0;
 
         private void OnDisable() => Restore3D();
     }
