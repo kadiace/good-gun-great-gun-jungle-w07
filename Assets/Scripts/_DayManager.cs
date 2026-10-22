@@ -84,6 +84,8 @@ public class _DayManager : MonoBehaviour
     private bool returningToStart;
     private bool bankruptcyResultOpen;
     private bool startedDayInDebt;
+    public bool NightWorkshop => gameObject.scene.name == "Main" && DayNumber > 0;
+    public bool HasNightOrder => customerBell != null && customerBell.Current != null && customerBell.Current.HasActiveOrder;
 
     private void Awake()
     {
@@ -135,6 +137,15 @@ public class _DayManager : MonoBehaviour
             else BeginFirstBusinessDay();
             return;
         }
+        if (NightWorkshop)
+        {
+            if (endlessRequests == null) { Debug.LogError("야간 주문용 손님 풀이 연결되지 않았습니다.", this); return; }
+            if (!PrepareNightCustomer()) return;
+            ApplyNightLighting();
+            gameManager.SetNight(false);
+            Changed?.Invoke();
+            return;
+        }
         if (!ApplyCustomerDay(PrepareDay(DayNumber))) return;
         gameManager.SetNight(false);
         ApplyMorning();
@@ -180,6 +191,12 @@ public class _DayManager : MonoBehaviour
         int income = Mathf.Max(0, payment);
         TodayIncome += income;
         wallet?.Credit(income);
+        if (NightWorkshop)
+        {
+            if (CompletedGuests >= dailyGuestCount) BeginNextNightOrder();
+            else Changed?.Invoke();
+            return;
+        }
         if (dailyGuestCount > 0 && CompletedGuests >= dailyGuestCount) { CloseShop(); return; }
         UpdatePeriod();
         if (!IsNight) Changed?.Invoke();
@@ -193,8 +210,49 @@ public class _DayManager : MonoBehaviour
         if (morning != null) timerController.SetImmediately(morning);
         else Debug.LogWarning("DaySettings에 morning 시간대를 추가하세요.", this);
     }
+    private void ApplyNightLighting()
+    {
+        dayNightStartedAt = Time.time;
+        CurrentPeriod = setTimer.night;
+        hasCurrentPeriod = true;
+        var night = settings.timing?.Find(t => t != null && t.period == setTimer.night);
+        if (night != null) timerController.SetImmediately(night);
+    }
+    private bool PrepareNightCustomer()
+    {
+        if (endlessRequests == null) return false;
+        var night = ScriptableObject.CreateInstance<CustomerDay>();
+        night.day = DayNumber;
+        night.customers = new[] { endlessRequests.Create(DayNumber, 2, 2, ModuleUnlocks, ModuleCredits, tagsOnly: true) };
+        if (night.customers[0].RequestIds.Length < 2)
+        {
+            Debug.LogError("현재 해금된 모듈로 충족 가능한 야간 태그 주문 두 개를 만들 수 없습니다.", this);
+            return false;
+        }
+        if (!ApplyCustomerDay(night)) return false;
+        var mission = TableManager.Instance.CustomerOrder.FindPool(endlessRequests.PoolId);
+        var order = night.customers[0].OrderState;
+        if (mission != null && order != null)
+        {
+            order.raidEscapeSeconds = mission.raidEscapeSeconds;
+            order.raidModuleCrate = mission.raidModuleCrate;
+            order.raidHelicopterKills = mission.raidHelicopterKills;
+            order.raidTankKills = mission.raidTankKills;
+        }
+        return true;
+    }
+    private void BeginNextNightOrder()
+    {
+        DayNumber++;
+        CompletedGuests = DissatisfiedGuests = KilledGuests = 0;
+        if (!PrepareNightCustomer()) return;
+        ApplyNightLighting();
+        Changed?.Invoke();
+        DayAdvanced?.Invoke(DayNumber);
+    }
     private void UpdatePeriod()
     {
+        if (NightWorkshop) return;
         SetTimerData timing = FindTiming(CompletedGuests);
         if (timing == null || (hasCurrentPeriod && CurrentPeriod == timing.period)) return;
         CurrentPeriod = timing.period;
@@ -219,6 +277,7 @@ public class _DayManager : MonoBehaviour
     public void CloseShop() => CloseShop(false);
     public void CloseShop(bool manual)
     {
+        if (NightWorkshop) return;
         if (IsNight || IsAwaitingOpening || isSettled || !HasRequiredReferences()) return;
         if (manual) ManualCloseRequested?.Invoke(DayNumber, Money);
         ShopClosing?.Invoke(manual);
@@ -325,7 +384,7 @@ public class _DayManager : MonoBehaviour
     {
         if (!IsAwaitingOpening || GameManager.GameplayBlocked || !HasRequiredReferences()) return false;
         // 모듈재화 판정은 영업 시작 시점 기준. 대기열을 다시 넣는 것이라 종 시작 전에 해야 함.
-        if (DayNumber != 0 && CurrentCustomerDay != null && CurrentCustomerDay.customers != null)
+        if (!NightWorkshop && DayNumber != 0 && CurrentCustomerDay != null && CurrentCustomerDay.customers != null)
         {
             ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday);
             if (!ApplyCustomerDay(CurrentCustomerDay)) return false;
@@ -353,6 +412,7 @@ public class _DayManager : MonoBehaviour
 
     public void StartNextDay(bool skippedNightRaid = false)
     {
+        if (NightWorkshop) return;
         if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return;
         if (returningToStart || !IsNight || !CanStartNextDay || !HasRequiredReferences()) return;
         if (wallet != null && startedDayInDebt && Money < 0)
@@ -452,6 +512,8 @@ public class _DayManager : MonoBehaviour
 #endif
     public void CaptureSave(GameSaveData data)
     {
+        if (NightWorkshop && customerBell != null && customerBell.Current != null)
+            _ = customerBell.Current.Profile?.RaidMissionMet;
         data.completed = CompletedGuests; data.dissatisfied = DissatisfiedGuests; data.killed = KilledGuests;
         data.income = TodayIncome; data.constructionCost = wallet != null ? wallet.TodayConstructionCost : 0;
         data.soldConstructionCost = TodaySoldConstructionCost;
@@ -558,8 +620,9 @@ public class _DayManager : MonoBehaviour
         TodayLoanInterest = IsNight ? data.todayLoanInterest : 0;
         TodayLoanIncome = data.todayLoanIncome;
         CanStartNextDay = IsNight && HasNextDay;
-        timerController.RestoreSave(data.timer);
-        gameManager.SetNight(data.night && data.settlement);
+        if (NightWorkshop) { isSettled = IsNight = IsSettlementOpen = CanStartNextDay = false; ApplyNightLighting(); }
+        else timerController.RestoreSave(data.timer);
+        gameManager.SetNight(!NightWorkshop && data.night && data.settlement);
         customerBell.RestoreSave(data);
         if (data.confirmation && customerBell.Current != null && SaleConfirmationUI.Instance != null)
             SaleConfirmationUI.Instance.UseCustomer(customerBell.Current, wallet.GetComponent<WeaponHolder>());

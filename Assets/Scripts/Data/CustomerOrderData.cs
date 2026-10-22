@@ -24,6 +24,9 @@ namespace WeaponWorkshop
         {
             public string id;
             public int minRequests = 1, maxRequests = 3;
+            public float raidEscapeSeconds;
+            public bool raidModuleCrate;
+            public int raidHelicopterKills, raidTankKills;
             public int basePrice, pricePerRequest;
             public PoolRequest[] requests = Array.Empty<PoolRequest>();
             public string[] orderTemplates = Array.Empty<string>();

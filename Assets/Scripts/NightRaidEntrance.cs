@@ -8,7 +8,7 @@ namespace WeaponWorkshop
         [SerializeField] private NightRaidController nightRaid;
         [SerializeField] private Light readyLight;
         [SerializeField] private GameObject readyIndicator;
-        private bool Ready => isActiveAndEnabled && dayManager != null && dayManager.IsNight &&
+        private bool Ready => isActiveAndEnabled && dayManager != null && (dayManager.IsNight || (dayManager.NightWorkshop && dayManager.HasNightOrder)) &&
             !dayManager.IsSettlementOpen && nightRaid != null && !nightRaid.IsBusy;
         public Transform OutlineRoot => transform;
         private void Awake()
@@ -25,7 +25,7 @@ namespace WeaponWorkshop
             if (readyIndicator != null && readyIndicator.activeSelf != on) readyIndicator.SetActive(on);
         }
         public bool CanInteract(Interaction interactor) => isActiveAndEnabled &&
-            !GameManager.GameplayBlocked && dayManager != null && dayManager.IsNight &&
+            !GameManager.GameplayBlocked && dayManager != null && (dayManager.IsNight || (dayManager.NightWorkshop && dayManager.HasNightOrder)) &&
             nightRaid != null && !nightRaid.IsBusy && interactor != null && interactor.Player != null;
         public bool Interact(Interaction interactor)
         {

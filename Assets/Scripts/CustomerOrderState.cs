@@ -11,6 +11,10 @@ namespace WeaponWorkshop
         // 같은 주문을 다시 보내도 eventId가 orderId/order_restored로 고정이라 서버에서 중복을 거를 수 있다.
         [NonSerialized] public bool creationLogged;
         public bool completionLogged;
+        public float raidEscapeSeconds;
+        public bool raidModuleCrate;
+        public int raidHelicopterKills, raidTankKills;
+        public RaidMissionResult raidResult;
         [NonSerialized] public bool restored;
 
         public static CustomerOrderState Create(bool restored = false) => new CustomerOrderState
@@ -19,6 +23,8 @@ namespace WeaponWorkshop
         public CustomerOrderState Copy(bool fromSave = false) => new CustomerOrderState
         {
             orderId = orderId, creationLogged = creationLogged, completionLogged = completionLogged,
+            raidEscapeSeconds = raidEscapeSeconds, raidModuleCrate = raidModuleCrate,
+            raidHelicopterKills = raidHelicopterKills, raidTankKills = raidTankKills, raidResult = raidResult,
             restored = fromSave || restored
         };
     }

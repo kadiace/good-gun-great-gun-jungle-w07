@@ -80,7 +80,7 @@ namespace WeaponWorkshop
                 if (spot == null) { Debug.LogWarning($"{RewardScene}에 모듈 {code}의 상자 지점이 없습니다.", this); continue; }
                 int id = FindModuleId(code);
                 if (id == 0) { Debug.LogWarning($"모듈 카탈로그에 {code} 모듈이 없습니다.", this); continue; }
-                if (!spawnUnlockedRewards && unlocks != null && unlocks.IsUnlocked(id))
+                if (!spawnUnlockedRewards && string.IsNullOrEmpty(NightRaidTransfer.MissionOrderId) && unlocks != null && unlocks.IsUnlocked(id))
                 {
                     SpawnMaterialCrate(spot.transform, reward.materialPerCrate);
                     ReplacedModuleSpots++;

@@ -244,6 +244,9 @@ namespace WeaponWorkshop
                 }
                 if(RestoreWorldSave(workshop))
                 {
+                    if (dayManager != null && dayManager.NightWorkshop && dayManager.CurrentCustomerDay != null)
+                        foreach (var order in dayManager.CurrentCustomerDay.customers)
+                            if (order != null) _ = order.RaidMissionMet;
                     if (TutorialManager.TrainingReturnPending && TutorialManager.Instance != null &&
                         TutorialManager.Instance.ResumeTrainingHome(dayManager)) return;
                     pendingClearedRaid = cleared ? resultRaid : 0;
@@ -303,6 +306,7 @@ namespace WeaponWorkshop
                 SoundManager.CompleteRaidReturn(raidClearProgress, rewardTrackId, _unlockedMainTrackIds.ToArray());
                 QueueAutoSave(dayManager.DayNumber, false);
             }
+            if (dayManager.NightWorkshop) return;
             if (!dayManager.CanStartNextDay) { dayManager.ShowSettlement(); return; }
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
             var transition = ui != null ? ui.GetComponent<DayTransitionUI>() : null;

@@ -99,6 +99,9 @@ namespace WeaponWorkshop
         public bool Sell(WeaponHolder holder)
         {
             if (!atCounter || talking || profile == null || holder == null || holder.EquippedWeapon == null) return false;
+            var day = FindFirstObjectByType<_DayManager>();
+            if (day != null && day.NightWorkshop && (!CheckWeapon(holder.EquippedWeapon) || !profile.RaidMissionMet))
+            { FeedbackUI.For(this)?.ShowNotification("태그와 야간 습격 주문 조건을 모두 달성해야 판매할 수 있습니다."); return false; }
             if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero && !CheckWeapon(holder.EquippedWeapon))
             { FeedbackUI.For(this)?.ShowNotification("손님이 요청한 조건에 맞춰 무기를 완성하세요."); return false; }
             EquipableWeapon weapon = holder.TakeWeapon();
@@ -263,9 +266,17 @@ namespace WeaponWorkshop
         private void ShowLine(int index)
         {
             dialogueIndex = index;
-            bool last = index >= profile.Lines.Length - 1;
+            var mission = profile.OrderState;
+            bool nightTrial = mission != null && mission.raidEscapeSeconds > 0f &&
+                FindFirstObjectByType<_DayManager>()?.NightWorkshop == true;
+            bool last = index >= profile.Lines.Length - (nightTrial ? 0 : 1);
             string answer = last && profile.EndsClear ? Okay : Huh;
-            DialogueUI.Instance.Show(profile.Lines[index], answer, () =>
+            string line = nightTrial && index >= profile.Lines.Length
+                ? $"총기의 임상 실험도 부탁드립니다. 야간 습격에서 {mission.raidEscapeSeconds / 60f:0.#}분 안에 탈출하고" +
+                  (mission.raidModuleCrate ? " 모듈 상자를 회수한 뒤" : "") +
+                  $" 헬기 {mission.raidHelicopterKills}대와 탱크 {mission.raidTankKills}대를 처치해 주세요. 모두 완료하면 사겠습니다."
+                : profile.Lines[index];
+            DialogueUI.Instance.Show(line, answer, () =>
             {
                 if (!last) { ShowLine(index + 1); return; }
                 // 튜토리얼은 처음 주문을 들었을 때만.

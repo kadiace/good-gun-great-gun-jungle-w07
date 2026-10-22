@@ -70,6 +70,19 @@ namespace WeaponWorkshop
                     Row((test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, grouped ? 1 : 0);
                 }
             }
+            var order = customer.Profile != null ? customer.Profile.OrderState : null;
+            if (order != null && FindFirstObjectByType<_DayManager>()?.NightWorkshop == true)
+            {
+                bool met = customer.Profile.RaidMissionMet;
+                var result = order.raidResult;
+                if (!met && NightRaidTransfer.TryGetMissionResult(order.orderId, out var lastRaid)) result = lastRaid;
+                bool escaped = result != null && result.escaped && !result.training;
+                Row("야간 습격 (같은 출격에서 모두 달성)", met, 0);
+                Row($"{order.raidEscapeSeconds / 60f:0.#}분 안에 생존 탈출", escaped && result.elapsedSeconds <= order.raidEscapeSeconds, 1);
+                if (order.raidModuleCrate) Row("모듈 상자 획득 후 귀환", escaped && result.collectedModuleIds != null && result.collectedModuleIds.Length > 0, 1);
+                if (order.raidHelicopterKills > 0) Row($"헬기 {order.raidHelicopterKills}대 처치", escaped && result.helicopterKills >= order.raidHelicopterKills, 1);
+                if (order.raidTankKills > 0) Row($"탱크 {order.raidTankKills}대 처치", escaped && result.tankKills >= order.raidTankKills, 1);
+            }
             for (int i = used; i < rows.Count; i++)
                 if (rows[i].rect.gameObject.activeSelf)
                 {

@@ -125,7 +125,7 @@ namespace WeaponWorkshop
         }
         public bool CanInteract(Interaction interactor) => isActiveAndEnabled &&
             !GameManager.GameplayBlocked && dayManager != null &&
-            !dayManager.IsSettlementOpen && (dayManager.IsAwaitingOpening || (dayManager.IsNight && dayManager.CanStartNextDay)) &&
+            !dayManager.IsSettlementOpen && (dayManager.IsAwaitingOpening || (!dayManager.NightWorkshop && dayManager.IsNight && dayManager.CanStartNextDay)) &&
             interactor != null && interactor.Player != null;
         public bool Interact(Interaction interactor)
         {

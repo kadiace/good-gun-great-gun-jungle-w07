@@ -134,5 +134,20 @@ namespace WeaponWorkshop
         {
             return TableManager.Instance.CustomerRequest.MeetsOrder(RequestIds, weapon);
         }
+        public bool RaidMissionMet
+        {
+            get
+            {
+                var state = OrderState;
+                if (state == null) return false;
+                if (NightRaidTransfer.TryGetMissionResult(state.orderId, out var result) &&
+                    result.MeetsRequirements(state.raidEscapeSeconds, state.raidModuleCrate,
+                        state.raidHelicopterKills, state.raidTankKills))
+                    state.raidResult = result;
+                return state.raidResult != null && state.raidResult.orderId == state.orderId &&
+                    state.raidResult.MeetsRequirements(state.raidEscapeSeconds, state.raidModuleCrate,
+                        state.raidHelicopterKills, state.raidTankKills);
+            }
+        }
     }
 }

@@ -48,6 +48,32 @@ namespace WeaponWorkshop
         private int raidStartingBalance;
         private int[] raidStartingModules;
         private float raidStartedAt;
+        private string missionRaidId, missionOrderId;
+        private bool missionTraining, missionEscaped;
+        private float missionFinishedElapsed = -1f;
+        private int missionHelicopterKills, missionTankKills;
+        private readonly System.Collections.Generic.SortedSet<int> missionModules = new System.Collections.Generic.SortedSet<int>();
+        public RaidMissionResult CaptureMissionProgress()
+        {
+            if (!inRaid || entryRestoreFailed || string.IsNullOrEmpty(missionRaidId)) return null;
+            int[] modules = new int[missionModules.Count];
+            missionModules.CopyTo(modules);
+            return new RaidMissionResult
+            {
+                raidId = missionRaidId, orderId = missionOrderId, raidScene = gameObject.scene.name,
+                escaped = missionEscaped,
+                training = missionTraining,
+                elapsedSeconds = missionFinishedElapsed >= 0f ? missionFinishedElapsed : Mathf.Max(0f, Time.timeSinceLevelLoad - raidStartedAt),
+                helicopterKills = missionHelicopterKills, tankKills = missionTankKills,
+                collectedModuleIds = modules
+            };
+        }
+        private void FinishMission(bool escaped)
+        {
+            missionEscaped = escaped;
+            if (missionFinishedElapsed < 0f) missionFinishedElapsed = Mathf.Max(0f, Time.timeSinceLevelLoad - raidStartedAt);
+            NightRaidTransfer.RecordMissionResult(CaptureMissionProgress());
+        }
         private int enemyKills, materialCrateCredits;
         private int earnedSlotTickets, collectedSlotTickets;
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
@@ -108,6 +134,7 @@ namespace WeaponWorkshop
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             bool isClear = IsRaidClear(died);
             returningAfterDeath = died;
+            FinishMission(!died);
             if (isClear && !TutorialManager.TrainingRaidPending)
                 player.GetComponent<PlayerWallet>()?.CreditSlotTickets(earnedSlotTickets - collectedSlotTickets);
             // 재료 달러는 획득 즉시 지급된다(OnMaterialCollected). 결과 로그에는 이번 습격에서 지급된 액수만 남긴다.
@@ -270,6 +297,8 @@ namespace WeaponWorkshop
             if (!inRaid || resultOpen || transitioning || entryRestoreFailed || core.gameObject.scene != gameObject.scene ||
                 (playerHealth != null && playerHealth.IsDead)) return;
             enemyKills++;
+            if (core.EnemyType == RaidEnemyType.Helicopter) missionHelicopterKills++;
+            else if (core.EnemyType == RaidEnemyType.Tank) missionTankKills++;
             earnedSlotTickets += core.SlotTicketReward;
             core.ReleaseTicketVisuals(player);
             GameLogger.Data("Info", "NightRaid", "적 처치", new RaidEnemyLog { time = Time.timeSinceLevelLoad, enemyId = core.EnemyId });
@@ -309,6 +338,8 @@ namespace WeaponWorkshop
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
             if (inRaid && collector == player && moduleId > 0) pendingModuleCollects.Add(moduleId);
+            if (inRaid && !resultOpen && !transitioning && !entryRestoreFailed && collector == player && moduleId > 0 &&
+                (playerHealth == null || !playerHealth.IsDead)) missionModules.Add(moduleId);
         }
         // 엔드 상자 지표. 상자는 습격 씬에 하나라 습격당 한 번씩만 남긴다.
         private bool endChestScanned, endChestOpened;
@@ -354,6 +385,7 @@ namespace WeaponWorkshop
         {
             if (!inRaid || resultOpen) return;
             resultOpen = true;
+            FinishMission(false);
             FlushCellLogs();
             int credits = 0;
             foreach (int v in pendingMaterialPickups) credits += v;
@@ -553,6 +585,13 @@ namespace WeaponWorkshop
             raidStartingBalance = player.GetComponent<PlayerWallet>().Balance;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
+            missionRaidId = System.Guid.NewGuid().ToString("N");
+            missionOrderId = NightRaidTransfer.MissionOrderId;
+            missionTraining = TutorialManager.TrainingRaidPending;
+            missionEscaped = false;
+            missionFinishedElapsed = -1f;
+            missionHelicopterKills = missionTankKills = 0;
+            missionModules.Clear();
             enemyKills = materialCrateCredits = 0;
             earnedSlotTickets = collectedSlotTickets = 0;
             pendingModuleCollects.Clear(); discoveredEnemies.Clear();
@@ -567,7 +606,7 @@ namespace WeaponWorkshop
         }
         public void OpenMap()
         {
-            if (IsBusy || dayManager == null || !dayManager.IsNight || dayManager.IsBankrupt) return;
+            if (IsBusy || dayManager == null || (!dayManager.IsNight && !dayManager.NightWorkshop) || dayManager.IsBankrupt) return;
             openedFromPreparation = !dayManager.IsSettlementOpen;
             mapOpen = true; dayManager.HideSettlementForRaid();
             gameManager.SetNight(true); ui.ResetBackButton(); ui.ShowMap(true);
@@ -613,10 +652,12 @@ namespace WeaponWorkshop
             GameSaveData checkpoint = null; string error = null;
             if (workshopSave == null || !workshopSave.TryCaptureTravel(out checkpoint, out error))
             { ui.ShowError(workshopSave == null ? "공방 저장 관리자가 연결되지 않았습니다." : error); return; }
-            checkpoint.settlement = true;
+            checkpoint.settlement = !dayManager.NightWorkshop;
             if (training && !tutorial.PrepareTrainingRaid()) return;
             transitioning = true; ui.SetLoading(); PoolManager.ClearActive();
             NightRaidTransfer.Begin(checkpoint);
+            NightRaidTransfer.SetMissionOrder(dayManager.NightWorkshop
+                ? FindFirstObjectByType<Bell>()?.Current?.Profile?.OrderState?.orderId : null);
             SoundManager.CaptureRaidDeparture();
             SceneManager.LoadSceneAsync(regionScene, LoadSceneMode.Single);
         }
@@ -661,7 +702,9 @@ namespace WeaponWorkshop
                 int raidNumber = NightRaidTransfer.ResultRaidNumber;
                 string raidScene = NightRaidTransfer.ResultRaidScene;
                 bool cleared = NightRaidTransfer.ResultCleared;
+                var missionResult = NightRaidTransfer.MissionResult;
                 NightRaidTransfer.Abandon();
+                NightRaidTransfer.RecordMissionResult(missionResult);
                 NightRaidTransfer.RecordResult(raidNumber, raidScene, cleared);
                 NightRaidTransfer.MarkStandaloneReturn(cleared && !TutorialManager.TrainingRaidPending ? earnedSlotTickets : 0);
             }
@@ -679,6 +722,7 @@ namespace WeaponWorkshop
             if (!inRaid || transitioning) return;
             CancelExtraction();
             returningAfterDeath = true;
+            FinishMission(false);
             // 기존 사망 UI가 직접 호출하는 경로에서도 성공 결과가 남지 않게 한다.
             if (!SoundManager.IsTutorialMusicContext)
                 NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, false);

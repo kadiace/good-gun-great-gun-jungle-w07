@@ -2,9 +2,44 @@ using System.Linq;
 using UnityEngine;
 namespace WeaponWorkshop
 {
+    [System.Serializable]
+    public sealed class RaidMissionResult
+    {
+        public string raidId;
+        public string orderId;
+        public string raidScene;
+        public bool escaped;
+        public bool training;
+        public float elapsedSeconds;
+        public int helicopterKills;
+        public int tankKills;
+        public int[] collectedModuleIds = System.Array.Empty<int>();
+
+        public bool MeetsRequirements(float maxEscapeSeconds = 0f, bool requireModulePickup = false,
+            int requiredHelicopterKills = 0, int requiredTankKills = 0, int requiredModuleId = 0)
+        {
+            if (!escaped || training) return false;
+            if (maxEscapeSeconds > 0f && elapsedSeconds > maxEscapeSeconds) return false;
+            if (helicopterKills < requiredHelicopterKills || tankKills < requiredTankKills) return false;
+            if (requireModulePickup && (collectedModuleIds == null || collectedModuleIds.Length == 0)) return false;
+            return requiredModuleId <= 0 || (collectedModuleIds != null && System.Array.IndexOf(collectedModuleIds, requiredModuleId) >= 0);
+        }
+    }
+
     // Only data survives scene changes. Every scene owns its player and services.
     public static class NightRaidTransfer
     {
+        public static string MissionOrderId { get; private set; }
+        public static RaidMissionResult MissionResult { get; private set; }
+        public static void SetMissionOrder(string orderId) => MissionOrderId = orderId;
+        internal static void RecordMissionResult(RaidMissionResult result) => MissionResult = result;
+        public static bool TryGetMissionResult(string orderId, out RaidMissionResult result)
+        {
+            result = MissionResult;
+            if (string.IsNullOrEmpty(orderId) || result == null || result.orderId != orderId)
+            { result = null; return false; }
+            return true;
+        }
         public static GameSaveData Workshop { get; private set; }
         public static bool Returning { get; private set; }
         public static bool ReturnDayFadePending;
@@ -29,7 +64,8 @@ namespace WeaponWorkshop
         public static bool HasPendingReturn => Returning || standaloneReturn;
         private static int moduleCreditsBeforeLoss;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneSlotTickets = 0; RecordResult(0, null, false); }
+        private static void Reset() { ResetTransfer(); MissionOrderId = null; MissionResult = null; }
+        private static void ResetTransfer() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneSlotTickets = 0; RecordResult(0, null, false); }
         // 씬을 직접 연 경우에는 공방 스냅샷 없이 결과만 전달한다.
         public static void MarkStandaloneReturn(int slotTickets)
         {
@@ -40,7 +76,7 @@ namespace WeaponWorkshop
         {
             bool pending = standaloneReturn;
             slotTickets = pending ? standaloneSlotTickets : 0;
-            if (pending) Reset();
+            if (pending) ResetTransfer();
             return pending;
         }
         /// <summary>
@@ -50,6 +86,7 @@ namespace WeaponWorkshop
         public static void Begin(GameSaveData checkpoint)
         {
             Workshop = checkpoint; Returning = false; enteringRaid = true; moduleCreditsBeforeLoss = 0;
+            MissionResult = null;
             RecordResult(0, null, false);
         }
         public static bool TryConsumeEntry(out int balance, out int moduleCredits, out int[] unlockedModules, out WeaponWorldSave weapon)
@@ -93,7 +130,8 @@ namespace WeaponWorkshop
                 Workshop.slotTickets = player.GetComponent<PlayerWallet>().SlotTickets;
                 Workshop.unlockedModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             }
-            Workshop.inWorkshop = false; Workshop.confirmation = false; Workshop.settlement = !died;
+            Workshop.inWorkshop = false; Workshop.confirmation = false;
+            Workshop.settlement = Workshop.night && !died;
             Returning = true; return true;
         }
         public static bool TryConsumeReturn(out GameSaveData checkpoint, out int creditsBeforeLoss)
@@ -101,7 +139,7 @@ namespace WeaponWorkshop
             checkpoint = null; creditsBeforeLoss = 0;
             if (!Returning || Workshop == null) return false;
             creditsBeforeLoss = moduleCreditsBeforeLoss;
-            checkpoint = Workshop; Reset(); return true;
+            checkpoint = Workshop; ResetTransfer(); return true;
         }
         public static void Abandon() => Reset();
         // 사망 귀환도 출발 스냅샷을 쓰므로 스냅샷에 직접 기록한다.

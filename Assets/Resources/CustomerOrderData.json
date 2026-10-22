@@ -8,6 +8,10 @@
       "id": "4ed43104870c3e24f89f81d6ec6fd1bd",
       "minRequests": 1,
       "maxRequests": 3,
+      "raidEscapeSeconds": 240,
+      "raidModuleCrate": true,
+      "raidHelicopterKills": 1,
+      "raidTankKills": 1,
       "basePrice": 200,
       "pricePerRequest": 200,
       "requests": [

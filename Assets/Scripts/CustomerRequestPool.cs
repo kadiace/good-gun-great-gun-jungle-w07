@@ -25,7 +25,7 @@ namespace WeaponWorkshop
 
         // day 일차에 등장할 수 있는 요구사항만 min~max개 조합.
         // moduleCredits: 보유 모듈 재화. 조합 전체의 필요 재화가 이 안에 들도록 고름.
-        public CustomerProfile Create(int day, int min, int max, PlayerModuleUnlocks unlocks = null, int moduleCredits = int.MaxValue)
+        public CustomerProfile Create(int day, int min, int max, PlayerModuleUnlocks unlocks = null, int moduleCredits = int.MaxValue, bool tagsOnly = false)
         {
             var table = TableManager.Instance.CustomerRequest;
             var pool = Row;
@@ -33,14 +33,20 @@ namespace WeaponWorkshop
             var candidates = new List<string>();
             foreach (var entry in pool.requests ?? System.Array.Empty<CustomerOrderData.PoolRequest>())
             {
-                string id = table.FindRequest(entry?.id)?.id;
+                var request = table.FindRequest(entry?.id);
+                string id = request?.id;
                 if (id == null || entry.unlockDay > day || candidates.Contains(id)) continue;
+                if (tagsOnly && table.FindTag(request.tagId) == null) continue;
                 if (CustomerModuleRequirements.Allows(new[] { id }, unlocks, CoreStats) &&
                     CustomerModuleRequirements.CreditCost(new[] { id }, unlocks, CoreStats) <= moduleCredits) candidates.Add(id);
             }
             int count = Mathf.Min(Random.Range(min, Mathf.Max(min, max) + 1), candidates.Count);
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
+                if (tagsOnly && picked.Count == 0 && count >= 2)
+                    candidates.RemoveAll(candidate => !candidates.Exists(other => other != candidate &&
+                        !pool.Conflicts(candidate, other) && CreditCost(new List<string> { candidate }, other, unlocks) <= moduleCredits));
+                if (candidates.Count == 0) break;
                 int index = Random.Range(0, candidates.Count);
                 string next = candidates[index];
                 picked.Add(next);
