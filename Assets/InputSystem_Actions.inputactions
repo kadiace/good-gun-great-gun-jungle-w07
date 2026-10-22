@@ -1182,6 +1182,15 @@
                     "initialStateCheck": true
                 },
                 {
+                    "name": "Pan",
+                    "type": "Button",
+                    "id": "789db78c-dbbd-4ae1-9d32-1a4858f24f8b",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Rotate",
                     "type": "Button",
                     "id": "615753d2-5e0c-4c21-928e-3e888ca35f75",
@@ -1354,6 +1363,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Point",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "58859764-1512-4894-a241-d54188b4e969",
+                    "path": "<Mouse>/middleButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Pan",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

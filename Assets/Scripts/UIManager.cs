@@ -108,7 +108,8 @@ namespace WeaponWorkshop
                 for (int i = 0; i < upGraphics.Length; i++) upAlphas[i] = upGraphics[i].color.a;
             }
             if (upMark != null) upMark.gameObject.SetActive(editing);
-            if (rotationCircle != null) rotationCircle.gameObject.SetActive(editing);
+            if (rotationCircle != null) rotationCircle.gameObject.SetActive(editing &&
+                (workshopSession == null || workshopSession.PlanarView == null || !workshopSession.PlanarView.Is2D));
             if (frontMark != null) frontMark.gameObject.SetActive(editing);
             if (!editing) SetFrontOpacity(1f);
         }
@@ -193,7 +194,10 @@ namespace WeaponWorkshop
             bool editing = workshopSession != null && workshopSession.IsEditing;
             PowerCore core = editing && workshopSession.ActiveWorkbench != null ? workshopSession.ActiveWorkbench.CurrentCore : null;
             Camera view = editing ? workshopSession.WorkshopCamera : null;
-            if (editing && rotationCircle != null)
+            bool planar = editing && workshopSession.PlanarView != null && workshopSession.PlanarView.Is2D;
+            if (rotationCircle != null && rotationCircle.gameObject.activeSelf != (editing && !planar))
+                rotationCircle.gameObject.SetActive(editing && !planar);
+            if (editing && !planar && rotationCircle != null)
             {
                 Rect viewport = workshopSession.RotationViewport;
                 rotationCircle.SetGeometry(viewport, GetWorkshopRotationRadius(viewport));

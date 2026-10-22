@@ -136,13 +136,8 @@ namespace WeaponWorkshop
             if (step == null) return true;
             if (!TryAuthorizeAttachAction()) return false;
             if (step.completion != TutorialCompletion.FiveCoreFacesBlocked && !step.restrictPlacement) return true;
-            var weapon = workbench != null ? workbench.CurrentWeapon : null;
-            var expected = weapon != null ? weapon.GetComponentInChildren<CubeAssembly>() : null;
             bool fiveFaces = step.completion == TutorialCompletion.FiveCoreFacesBlocked;
-            bool allowed = expected != null && assembly == expected && (fiveFaces
-                ? moduleId == 1 && cell != step.openCoreFace && Mathf.Abs(cell.x) + Mathf.Abs(cell.y) + Mathf.Abs(cell.z) == 1
-                : moduleId == step.requiredModuleId && cell == step.requiredCell &&
-                    step.MatchesOutputDirection(direction));
+            bool allowed = AllowsPlacement(assembly, cell, moduleId, direction);
             if (!allowed)
             {
                 string message = !fiveFaces && moduleId != step.requiredModuleId && !string.IsNullOrEmpty(step.wrongModuleMessage)
@@ -150,6 +145,21 @@ namespace WeaponWorkshop
                 FeedbackUI.For(this)?.ShowNotification(fiveFaces ? "지금은 사출구를 한 개로 만들어 봅시다." : message);
             }
             return allowed;
+        }
+
+        // 그리드 호버 표시용. 거부 메시지나 입력 부작용 없이 같은 배치 조건을 조회한다.
+        public bool AllowsPlacement(CubeAssembly assembly, Vector3Int cell, int moduleId, Vector3Int direction)
+        {
+            var step = CurrentStep;
+            if (step == null) return true;
+            if (!AllowsAction("attach") || (step.completion == TutorialCompletion.Signal && step.requiredSignal == "recipe-inspected"))
+                return false;
+            if (step.completion != TutorialCompletion.FiveCoreFacesBlocked && !step.restrictPlacement) return true;
+            var weapon = workbench != null ? workbench.CurrentWeapon : null;
+            var expected = weapon != null ? weapon.GetComponentInChildren<CubeAssembly>() : null;
+            return expected != null && assembly == expected && (step.completion == TutorialCompletion.FiveCoreFacesBlocked
+                ? moduleId == 1 && cell != step.openCoreFace && Mathf.Abs(cell.x) + Mathf.Abs(cell.y) + Mathf.Abs(cell.z) == 1
+                : moduleId == step.requiredModuleId && cell == step.requiredCell && step.MatchesOutputDirection(direction));
         }
         private bool ownsDialogue;
         private bool stepIntroductionOpen;

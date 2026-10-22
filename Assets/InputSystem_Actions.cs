@@ -1299,6 +1299,16 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""priority"": 0
                 },
                 {
+                    ""name"": ""Pan"",
+                    ""type"": ""Button"",
+                    ""id"": ""789db78c-dbbd-4ae1-9d32-1a4858f24f8b"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
+                },
+                {
                     ""name"": ""Rotate"",
                     ""type"": ""Button"",
                     ""id"": ""615753d2-5e0c-4c21-928e-3e888ca35f75"",
@@ -1483,6 +1493,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Point"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""58859764-1512-4894-a241-d54188b4e969"",
+                    ""path"": ""<Mouse>/middleButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Pan"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1914,6 +1935,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Build_Select4 = m_Build.FindAction("Select4", throwIfNotFound: true);
         m_Build_Attach = m_Build.FindAction("Attach", throwIfNotFound: true);
         m_Build_Point = m_Build.FindAction("Point", throwIfNotFound: true);
+        m_Build_Pan = m_Build.FindAction("Pan", throwIfNotFound: true);
         m_Build_Rotate = m_Build.FindAction("Rotate", throwIfNotFound: true);
         m_Build_ToggleDelete = m_Build.FindAction("ToggleDelete", throwIfNotFound: true);
         m_Build_Look = m_Build.FindAction("Look", throwIfNotFound: true);
@@ -2475,6 +2497,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Build_Select4;
     private readonly InputAction m_Build_Attach;
     private readonly InputAction m_Build_Point;
+    private readonly InputAction m_Build_Pan;
     private readonly InputAction m_Build_Rotate;
     private readonly InputAction m_Build_ToggleDelete;
     private readonly InputAction m_Build_Look;
@@ -2522,6 +2545,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Build/Point".
         /// </summary>
         public InputAction @Point => m_Wrapper.m_Build_Point;
+        /// <summary>
+        /// Provides access to the underlying input action "Build/Pan".
+        /// </summary>
+        public InputAction @Pan => m_Wrapper.m_Build_Pan;
         /// <summary>
         /// Provides access to the underlying input action "Build/Rotate".
         /// </summary>
@@ -2614,6 +2641,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Point.started += instance.OnPoint;
             @Point.performed += instance.OnPoint;
             @Point.canceled += instance.OnPoint;
+            @Pan.started += instance.OnPan;
+            @Pan.performed += instance.OnPan;
+            @Pan.canceled += instance.OnPan;
             @Rotate.started += instance.OnRotate;
             @Rotate.performed += instance.OnRotate;
             @Rotate.canceled += instance.OnRotate;
@@ -2679,6 +2709,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Point.started -= instance.OnPoint;
             @Point.performed -= instance.OnPoint;
             @Point.canceled -= instance.OnPoint;
+            @Pan.started -= instance.OnPan;
+            @Pan.performed -= instance.OnPan;
+            @Pan.canceled -= instance.OnPan;
             @Rotate.started -= instance.OnRotate;
             @Rotate.performed -= instance.OnRotate;
             @Rotate.canceled -= instance.OnRotate;
@@ -3385,6 +3418,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPoint(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Pan" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPan(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Rotate" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

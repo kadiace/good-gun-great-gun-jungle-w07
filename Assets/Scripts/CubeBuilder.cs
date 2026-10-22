@@ -52,6 +52,11 @@ namespace WeaponWorkshop
         [SerializeField] private Material erasePreviewMaterial;
         private GameObject hoverPreview;
         private Transform workspace;
+        private WorkshopPlanarView planarView;
+        public void SetPlanarView(WorkshopPlanarView value) => planarView = value;
+        public void CancelPlacementPreview() { CancelPreview(); paintPointerHeld = false; }
+        public bool IsPointerOverInterface(Vector2 pointer) => IsPointerOverUI(pointer);
+        private bool UsingPlanarView => planarView != null && planarView.Is2D;
         private PlayerWallet wallet;
         private bool paintingMode;
         private bool stickerToolActive;
@@ -332,10 +337,11 @@ namespace WeaponWorkshop
             attach.performed += _ =>
             {
                 if (GameManager.GameplayBlocked || favoriteDragActive ||
+                    (UsingPlanarView && (planarView.IsPanning || controls.FindAction("Pan", true).IsPressed())) ||
                     IsPointerOverUI(AimPoint())) return;
                 if (!paintingMode && (paletteOpen || colorPickerOpen))
                 { TutorialManager.Instance?.NotifyBlockedAction(); return; }
-                if (controls.FindAction("Rotate", true).IsPressed()) return;
+                if (!UsingPlanarView && controls.FindAction("Rotate", true).IsPressed()) return;
                 if (!paintingMode && !deleteMode && TutorialManager.Instance != null &&
                     !TutorialManager.Instance.TryAuthorizeAttachAction()) return;
                 if (paintingMode)
@@ -446,6 +452,7 @@ namespace WeaponWorkshop
         private void UpdateHoverPreview()
         {
             if (hoverPreview != null) hoverPreview.SetActive(false);
+            if (UsingPlanarView) return;
             if (paintingMode || paletteOpen || colorPickerOpen || favoriteDragActive || preview != null ||
                 GameManager.GameplayBlocked || view == null || controls == null ||
                 controls.FindAction("Rotate", true).IsPressed() || IsPointerOverUI(AimPoint())) return;
@@ -501,7 +508,7 @@ namespace WeaponWorkshop
                 foreach (Vector3Int direction in OutputDirections)
                     if (CanSelectDirection(direction)) { pendingDirection = direction; break; }
 
-            if (TryGetPreviewFace(out Vector3Int face) && CanSelectDirection(face))
+            if (!UsingPlanarView && TryGetPreviewFace(out Vector3Int face) && CanSelectDirection(face))
             {
                 pendingDirection = face;
                 preview.GetComponent<ExtensionModule>()?.SetDirection(pendingDirection);
@@ -534,7 +541,8 @@ namespace WeaponWorkshop
 
         private bool CanSelectDirection(Vector3Int direction)
         {
-            return pendingAssembly != null && pendingAssembly.CanOrient(pendingCell, pendingSlot, direction, -pendingAttachmentDirection);
+            return (!UsingPlanarView || planarView.ContainsCell(direction)) && pendingAssembly != null &&
+                pendingAssembly.CanOrient(pendingCell, pendingSlot, direction, -pendingAttachmentDirection);
         }
 
         private bool TryGetPreviewFace(out Vector3Int face)
@@ -575,8 +583,17 @@ namespace WeaponWorkshop
             if (paintingMode || IsPointerOverUI(AimPoint())) return;
             Vector2 pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer)) return;
-            if (!TryGetSurfaceHit(pointer, out RaycastHit hit)) return;
-            PlacedBlock block = hit.collider.GetComponentInParent<PlacedBlock>();
+            PlacedBlock block;
+            if (UsingPlanarView)
+            {
+                if (!planarView.TryGetCell(pointer, out Vector3Int cell)) return;
+                block = GetBlockAt(planarView.Assembly, cell);
+            }
+            else
+            {
+                if (!TryGetSurfaceHit(pointer, out RaycastHit hit)) return;
+                block = hit.collider.GetComponentInParent<PlacedBlock>();
+            }
             if (block == null) return;
             if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeRemoval(block)) return;
             CubeAssembly assembly = block.GetComponentInParent<CubeAssembly>();
@@ -654,6 +671,7 @@ namespace WeaponWorkshop
                 if (pendingAssembly != null)
                 {
                     UpdatePreview();
+                    if (UsingPlanarView && !CanSelectDirection(pendingDirection)) return;
                     if (!ExecuteUndoableEdit(pendingAssembly,
                             () => TryPurchaseAttach(pendingAssembly, pendingCell, pendingSlot,
                                 pendingDirection, -pendingAttachmentDirection))) return;
@@ -661,8 +679,26 @@ namespace WeaponWorkshop
                 CancelPreview();
                 return;
             }
-            if (!TryGetSurfaceHit(pointer, out RaycastHit hit)) return;
-            CubeAssembly assembly = hit.collider.GetComponentInParent<CubeAssembly>();
+            CubeAssembly assembly;
+            Vector3Int cell, face;
+            if (UsingPlanarView)
+            {
+                assembly = planarView.Assembly;
+                if (!planarView.TryGetCell(pointer, out cell) || !TryGetPlanarNeighbor(assembly, cell, out face)) return;
+                if (!CanEdit(assembly) || !assembly.CanAttach(cell, selectedSlot)) return;
+            }
+            else
+            {
+                if (!TryGetSurfaceHit(pointer, out RaycastHit hit)) return;
+                assembly = hit.collider.GetComponentInParent<CubeAssembly>();
+                if (assembly == null || !assembly.TryGetAttachCell(hit, out cell, out face)) return;
+            }
+            PlaceAtCell(assembly, cell, face);
+        }
+
+        // 3D 표면 선택과 2D 그리드 선택은 같은 설치·결제·되돌리기 경로를 사용한다.
+        private void PlaceAtCell(CubeAssembly assembly, Vector3Int cell, Vector3Int face)
+        {
             if (!CanEdit(assembly)) return;
             if (assembly.IsTriggerModuleSlot(selectedSlot) && assembly.HasTriggerModule)
             {
@@ -670,7 +706,6 @@ namespace WeaponWorkshop
                 return;
             }
             bool singleOutput = CubeAssembly.IsSingleOutput(selectedSlot);
-            if (!assembly.TryGetAttachCell(hit, out Vector3Int cell, out Vector3Int face)) return;
             // Energy modules enter through the face energy comes from: they follow the most recently placed
             // neighbor that outputs into the cell, and are not placed when nothing feeds it.
             // Blockers, scopes and triggers keep the clicked face.
@@ -1136,6 +1171,12 @@ namespace WeaponWorkshop
                 if (hit.collider == null || hit.collider.GetComponentInParent<StickerOverlay>() != null ||
                     hit.collider.GetComponentInParent<WeaponKeyring>() != null ||
                     hit.distance >= closestDistance) continue;
+                if (UsingPlanarView)
+                {
+                    if (hit.collider.GetComponentInParent<CubeAssembly>() != planarView.Assembly) continue;
+                    var block = hit.collider.GetComponentInParent<PlacedBlock>();
+                    if (block != null && !planarView.ContainsCell(block.Cell)) continue;
+                }
                 closestHit = hit;
                 closestDistance = hit.distance;
                 found = true;
@@ -1170,6 +1211,71 @@ namespace WeaponWorkshop
 
         private EquipableWeapon FindWorkspaceWeapon()
             => workspace != null ? workspace.GetComponentInChildren<EquipableWeapon>(true) : null;
+
+        private static PlacedBlock GetBlockAt(CubeAssembly assembly, Vector3Int cell)
+        {
+            if (assembly == null) return null;
+            for (int i = 0; i < assembly.transform.childCount; i++)
+            {
+                var child = assembly.transform.GetChild(i);
+                if (child.gameObject.activeInHierarchy && child.TryGetComponent(out PlacedBlock block) && block.Cell == cell)
+                    return block;
+            }
+            return null;
+        }
+
+        private bool TryGetPlanarNeighbor(CubeAssembly assembly, Vector3Int cell, out Vector3Int face)
+        {
+            face = Vector3Int.zero;
+            if (assembly == null || !planarView.ContainsCell(cell)) return false;
+            foreach (var direction in OutputDirections)
+            {
+                if (!planarView.ContainsCell(direction)) continue;
+                Vector3Int source = cell - direction;
+                if (source != Vector3Int.zero && GetBlockAt(assembly, source) == null) continue;
+                face = direction;
+                return true;
+            }
+            return false;
+        }
+
+        // 색 판정은 구매·알림 없이 조회만 하며, 실제 클릭은 기존 편집 처리로 넘긴다.
+        public bool TryGetPlanarHover(out Vector3Int cell, out bool valid)
+        {
+            cell = default;
+            valid = false;
+            if (!UsingPlanarView || !isActiveAndEnabled || paintingMode || paletteOpen || colorPickerOpen ||
+                favoriteDragActive || GameManager.GameplayBlocked || !Application.isFocused || planarView.IsPanning ||
+                controls.FindAction("Pan", true).IsPressed() || IsPointerOverUI(AimPoint()) ||
+                !planarView.TryGetCell(AimPoint(), out cell)) return false;
+            var assembly = planarView.Assembly;
+            if (!CanEdit(assembly)) return true;
+            if (deleteMode)
+            {
+                valid = TutorialManager.ActionAllowed("delete") && GetBlockAt(assembly, cell) != null;
+                return true;
+            }
+            if (preview != null) cell = pendingCell;
+            if (IsModuleLocked(selectedSlot) || !TutorialManager.ActionAllowed("attach") ||
+                !assembly.CanAttach(cell, selectedSlot) || !TryGetPlanarNeighbor(assembly, cell, out Vector3Int face)) return true;
+            bool followsFeed = selectedSlot != 1 && !IsScope(assembly, selectedSlot) && !assembly.IsTriggerModuleSlot(selectedSlot);
+            Vector3Int feed = face;
+            if (followsFeed && !assembly.TryGetFeedDirection(cell, out feed)) return true;
+            bool canOrient = false;
+            foreach (var direction in OutputDirections)
+            {
+                if (!planarView.ContainsCell(direction) || !assembly.CanOrient(cell, selectedSlot, direction, feed)) continue;
+                if (TutorialManager.Instance != null && !TutorialManager.Instance.AllowsPlacement(assembly, cell, selectedSlot, direction))
+                    continue;
+                canOrient = true;
+                break;
+            }
+            if (!canOrient) return true;
+            if (wallet == null) wallet = PlayerWallet.ForScene(this);
+            valid = wallet != null && moduleCatalog != null && moduleCatalog.TryGet(selectedSlot, out var entry) &&
+                wallet.CanAfford(Mathf.Max(0, entry.data.BuyPrice)) && wallet.CanAffordModuleCredits(GetNextModuleCreditCost(selectedSlot));
+            return true;
+        }
 
         private static string FaceLabel(Vector3Int face)
         {
