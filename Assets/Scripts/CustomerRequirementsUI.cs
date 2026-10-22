@@ -94,14 +94,16 @@ namespace WeaponWorkshop
             }
             var row = rows[used++];
             var layout = row.rect.GetComponent<HorizontalLayoutGroup>();
+            string status = heading ? string.Empty : met ? "[O]" : "[ ]";
             bool changed = !row.rect.gameObject.activeSelf || row.description.text != text ||
+                row.status.text != status ||
                 row.status.gameObject.activeSelf == heading ||
                 row.description.fontStyle != (heading ? FontStyles.Bold : FontStyles.Normal) ||
                 layout.padding.left != depth * 14;
             row.rect.gameObject.SetActive(true);
             layout.padding.left = depth * 14;
             Color color = heading ? Color.white : met ? new Color(.5f, .88f, .65f) : new Color(1f, .63f, .56f);
-            row.status.text = heading ? string.Empty : met ? "[O]" : "[ ]";
+            row.status.text = status;
             row.status.gameObject.SetActive(!heading);
             row.status.color = row.description.color = color;
             row.description.text = text;
