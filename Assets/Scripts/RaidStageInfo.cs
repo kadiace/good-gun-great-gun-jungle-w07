@@ -60,6 +60,16 @@ namespace WeaponWorkshop
         public static string[] ModuleCodes(this RaidMapData.Region region) =>
             region.Settings()?.reward?.moduleCodes ?? Array.Empty<string>();
 
+        /// <summary>습격 보상으로 지정된 모듈만 초기 잠금 대상이다. 그 외 모듈은 기본 해금한다.</summary>
+        public static bool RequiresUnlock(this RaidMapData table, string moduleCode)
+        {
+            if (table?.regions == null || string.IsNullOrEmpty(moduleCode)) return false;
+            foreach (var region in table.regions)
+                if (region?.reward?.moduleCodes != null && Array.IndexOf(region.reward.moduleCodes, moduleCode) >= 0)
+                    return true;
+            return false;
+        }
+
         // 상속 행은 자기 reward가 없어 0이다. 클리어 기록이 실제 씬별로 남으므로 상속하면 보너스가 중복된다.
         public static float FirstClearSaleBonus(this RaidMapData.Region region) =>
             region?.reward != null ? Mathf.Max(0f, region.reward.firstClearSaleBonus) : 0f;

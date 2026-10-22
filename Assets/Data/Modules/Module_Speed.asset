@@ -18,7 +18,6 @@ MonoBehaviour:
     \uC774\uB3D9 \uC18D\uB3C4\uB97C \uB192\uC774\uB294 \uBAA8\uB4C8\uC785\uB2C8\uB2E4."
   color: {r: 0.4, g: 0.85, b: 1, a: 1}
   useModuleCredits: 0
-  initiallyLocked: 0
   moduleCreditCost: 0
   moduleType: 13
   buyPrice: 100

@@ -19,7 +19,6 @@ MonoBehaviour:
     \uB6AB\uACE0 \uB098\uC544\uAC11\uB2C8\uB2E4."
   color: {r: 0.92, g: 0.92, b: 0.92, a: 1}
   useModuleCredits: 0
-  initiallyLocked: 0
   moduleCreditCost: 0
   moduleType: 0
   buyPrice: 500
