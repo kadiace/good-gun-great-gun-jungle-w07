@@ -161,6 +161,11 @@ namespace WeaponWorkshop
         public int SelectedSlot => selectedSlot;
         public bool DeleteMode => deleteMode;
         public bool PaletteOpen => paletteOpen && isActiveAndEnabled;
+        public void ClosePalette()
+        {
+            paletteOpen = false;
+            hoveredPaletteModule = 0;
+        }
         public bool ColorPickerOpen => colorPickerOpen && isActiveAndEnabled;
         public Color ModuleColor => moduleColor;
         public ModuleCatalog Catalog => moduleCatalog;

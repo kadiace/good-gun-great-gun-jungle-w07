@@ -254,11 +254,27 @@ namespace WeaponWorkshop
             }
         }
         private void OnDisable() { feedback?.Cancel(); SetWorkshopUI(false); }
+        /// <summary>
+        /// 게임 일시정지 상태에 맞춰 일시정지 패널 표시와 캔버스 우선순위를 갱신합니다.
+        /// game 상태를 확인하여 일시정지 메뉴를 최상위(sortingOrder 200)로 올리거나 하위 창을 닫습니다.
+        /// </summary>
         public void Refresh(GameManager game)
         {
             bool pauseChanged = pausePanel != null && pausePanel.activeSelf != game.IsPaused;
             // 일시정지를 닫으면 하위 설정 화면도 닫아 다음 열기에서 메뉴가 겹치지 않게 한다.
             if (pauseChanged && !game.IsPaused) GetComponent<SoundSettingsUI>()?.Close();
+            if (game.IsPaused && pausePanel != null)
+            {
+                pausePanel.transform.SetAsLastSibling();
+                var pauseCanvas = pausePanel.GetComponent<Canvas>();
+                if (pauseCanvas == null)
+                {
+                    pauseCanvas = pausePanel.AddComponent<Canvas>();
+                    pausePanel.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                }
+                pauseCanvas.overrideSorting = true;
+                pauseCanvas.sortingOrder = 200;
+            }
             pausePanel?.SetActive(game.IsPaused);
             if (pauseChanged && UnityEngine.EventSystems.EventSystem.current != null)
                 UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);

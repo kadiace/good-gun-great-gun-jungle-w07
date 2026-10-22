@@ -25,6 +25,7 @@ namespace WeaponWorkshop
         private InputActionMap controls;
         private InputAction attack;
         private InputAction drop;
+        private bool _attackStartedWhileBlocked;
         [SerializeField, Min(0f), InspectorName("던지는 힘"), Tooltip("총을 던질 때 즉시 적용할 초기 속도(m/s)")] private float throwSpeed = 5f;
         public EquipableWeapon EquippedWeapon { get; private set; }
         public event System.Action<EquipableWeapon, EquipableWeapon> EquippedWeaponChanged;
@@ -60,13 +61,23 @@ namespace WeaponWorkshop
         {
             attack?.Disable();
             drop?.Disable();
+            _attackStartedWhileBlocked = false;
             EquippedWeapon?.CancelCharge();
             ResetRecoil();
         }
         private void OnDestroy() => controls?.Dispose();
         private void Update()
         {
-            if (GameManager.GameplayBlocked) return;
+            if (GameManager.GameplayBlocked)
+            {
+                if (attack != null && attack.IsPressed()) _attackStartedWhileBlocked = true;
+                return;
+            }
+            if (_attackStartedWhileBlocked)
+            {
+                if (attack != null && attack.IsPressed()) return;
+                _attackStartedWhileBlocked = false;
+            }
             recoilOffset = Mathf.MoveTowards(recoilOffset, 0f, recoilReturnSpeed * Time.deltaTime);
             ApplyRecoil();
             UpdateAim();
@@ -148,10 +159,19 @@ namespace WeaponWorkshop
             }
         }
 
+        /// <summary>
+        /// 사격 입력 액션 수행 시 조준 및 게임 차단 상태를 점검하고 사격을 시도합니다.
+        /// context 정보를 확인하여 차단 상태이면 누름 상태를 기록하고 반환합니다.
+        /// </summary>
         private void OnAttackPerformed(InputAction.CallbackContext context)
         {
             if (GameManager.GameplayBlocked || !HasFocus ||
-                player == null || !player.isActiveAndEnabled || EquippedWeapon == null) return;
+                player == null || !player.isActiveAndEnabled || EquippedWeapon == null)
+            {
+                _attackStartedWhileBlocked = true;
+                return;
+            }
+            if (_attackStartedWhileBlocked) return;
             if (!TutorialManager.TryAction("fire")) return;
             AttackInput?.Invoke(EquippedWeapon);
             TryAttack();
