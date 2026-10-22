@@ -9,6 +9,7 @@ namespace WeaponWorkshop
     [DefaultExecutionOrder(70)]
     public class SlotMachineReels : MonoBehaviour, IInteractable
     {
+        [SerializeField] private bool featureEnabled = false;
         [SerializeField] private Transform[] reels;
         [SerializeField] private Transform lever;
         [SerializeField] private Renderer marquee;
@@ -58,6 +59,12 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
+            if (!featureEnabled)
+            {
+                if (costPanel != null) costPanel.SetActive(false);
+                gameObject.SetActive(false);
+                return;
+            }
             if (dayManager == null) dayManager = FindFirstObjectByType<_DayManager>();
             destroyed = false;
             if (costPanel != null) costPanel.SetActive(false);
@@ -77,6 +84,11 @@ namespace WeaponWorkshop
 
         private void OnEnable()
         {
+            if (!featureEnabled)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
             if (dayManager == null) dayManager = FindFirstObjectByType<_DayManager>();
             if (dayManager != null) dayManager.Changed += RefreshDamageState;
             RefreshDamageState();
@@ -91,13 +103,14 @@ namespace WeaponWorkshop
             SlotMachineSound.StopRotation();
             if (costPanel != null) costPanel.SetActive(false);
             if (payoutBills != null) payoutBills.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            if (marquee != null) marquee.sharedMaterial = originalMarquee;
+            if (marquee != null && originalMarquee != null) marquee.sharedMaterial = originalMarquee;
             if (lever != null) lever.localRotation = restingLever;
             if (smokeInstance != null) smokeInstance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
         private void RefreshDamageState()
         {
+            if (!featureEnabled || !isActiveAndEnabled) return;
             if (destroyed && dayManager != null && dayManager.DayNumber > destroyedDay &&
                 dayManager.IsNight == destroyedAtNight)
             {
@@ -124,6 +137,7 @@ namespace WeaponWorkshop
         /// </summary>
         public void ReceiveAttack(float penetration, float explosion, bool explosionHit)
         {
+            if (!featureEnabled || !isActiveAndEnabled) return;
             if (destroyed || (explosionHit ? explosion < explosionResistance : penetration < penetrationResistance)) return;
             float requiredPenetration = penetrationResistance;
             float requiredExplosion = explosionResistance;
@@ -164,7 +178,7 @@ namespace WeaponWorkshop
         public bool CanInteract(Interaction interactor)
         {
             PlayerWallet wallet = interactor != null ? PlayerWallet.ForPlayer(interactor.Player) : null;
-            return isActiveAndEnabled && !destroyed && !GameManager.GameplayBlocked &&
+            return featureEnabled && isActiveAndEnabled && !destroyed && !GameManager.GameplayBlocked &&
                 wallet != null && (spinning || wallet.SlotTickets > 0 || wallet.CanAfford(SpinPrice));
         }
 

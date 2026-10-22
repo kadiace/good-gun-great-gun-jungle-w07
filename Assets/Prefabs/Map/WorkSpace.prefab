@@ -9938,7 +9938,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4472670860570255237
 Transform:
   m_ObjectHideFlags: 0
@@ -9968,6 +9968,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6aabf45d19b5b94f97fa7e448ce563f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.SlotMachineReels
+  featureEnabled: 0
   reels:
   - {fileID: 871192762985661625}
   - {fileID: 7118117270838348012}
