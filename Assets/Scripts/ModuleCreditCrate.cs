@@ -22,6 +22,7 @@ namespace WeaponWorkshop
         private int reward;
         private bool claimed;
         public bool IsClaimed => claimed;
+        public int CreditsPerPickup => Mathf.Max(1, creditsPerPickup);
         public Transform OutlineRoot => transform;
 
         private void Awake()
@@ -48,7 +49,7 @@ namespace WeaponWorkshop
                 Debug.LogError("상자에 ModuleCreditPickup 프리팹을 연결해주세요.", this);
                 return;
             }
-            int count = Mathf.Clamp(Mathf.CeilToInt(reward / (float)creditsPerPickup), 1, reward);
+            int count = Mathf.Clamp(Mathf.CeilToInt(reward / (float)CreditsPerPickup), 1, reward);
             var spawner = GetComponentInParent<RaidCrateSpawner>();
             string rewardScene = spawner != null ? spawner.RewardScene : gameObject.scene.name;
             var stageReward = TableManager.Instance.RaidMap.Find(rewardScene)?.Settings()?.reward;

@@ -68,6 +68,7 @@ namespace WeaponWorkshop
             MaterialPerCrate = settings.reward.materialPerCrate;
             SpawnModuleCrates(settings.reward, unlocks);
             SpawnMaterialCrates(settings.reward);
+            DistributeMaterialRewards();
         }
 
         // 표의 모듈마다 지정된 지점에 모듈 상자를 놓는다. 이미 해금한 모듈이면 같은 자리에 재료 상자를 놓는다.
@@ -124,6 +125,39 @@ namespace WeaponWorkshop
             var crate = Instantiate(materialCratePrefab, point.position, point.rotation, transform);
             crate.Configure(amount);
             materialCrates.Add(crate);
+        }
+
+        private void DistributeMaterialRewards()
+        {
+            int count = materialCrates.Count;
+            if (count < 2 || materialCratePrefab == null) return;
+            int creditsPerPickup = materialCratePrefab.CreditsPerPickup;
+            if (MaterialPerCrate < creditsPerPickup || MaterialPerCrate % creditsPerPickup != 0) return;
+
+            int basePickups = MaterialPerCrate / creditsPerPickup;
+            if (basePickups < 2) return;
+            var pickups = new int[count];
+            for (int i = 0; i < count; i++) pickups[i] = basePickups;
+            for (int i = 0; i < count * 2; i++)
+            {
+                int from = Random.Range(0, count);
+                int to = Random.Range(0, count - 1);
+                if (to >= from) to++;
+                if (pickups[from] <= 1 || pickups[to] >= basePickups * 2 - 1) continue;
+                pickups[from]--;
+                pickups[to]++;
+            }
+            bool varied = false;
+            for (int i = 0; i < count; i++)
+                if (pickups[i] != basePickups) { varied = true; break; }
+            if (!varied)
+            {
+                int from = Random.Range(0, count);
+                int to = (from + Random.Range(1, count)) % count;
+                pickups[from]--;
+                pickups[to]++;
+            }
+            for (int i = 0; i < count; i++) materialCrates[i].Configure(pickups[i] * creditsPerPickup);
         }
 
         private RaidModuleCrateSpot FindSpot(string code)
