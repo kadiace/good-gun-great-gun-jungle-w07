@@ -106,6 +106,8 @@ namespace WeaponWorkshop
                     case TutorialTarget.RaidEntrance: return raidEntrance;
                     case TutorialTarget.RaidLoot: return RaidLootTarget();
                     case TutorialTarget.RaidExit: return RaidExitTarget();
+                    case TutorialTarget.RaidMaterialCrate: return RaidMaterialCrateTarget();
+                    case TutorialTarget.RaidTank: return RaidTankTarget();
                     default: return null;
                 }
             }
