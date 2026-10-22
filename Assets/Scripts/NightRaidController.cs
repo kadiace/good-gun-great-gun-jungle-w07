@@ -45,12 +45,13 @@ namespace WeaponWorkshop
         public bool IsExtracting => extractionExit != null || resultOpen;
         private float extractionElapsed;
         private const float ExtractionDuration = 5f;
-        private int raidStartingBalance;
         private int[] raidStartingModules;
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
-        private int collectedDollars;
+        private int raidEarnedDollars;
         private int earnedSlotTickets, collectedSlotTickets;
+        private int raidEarnedParts, raidEarnedTickets;
+        private readonly System.Collections.Generic.List<int> raidEarnedModules = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.List<int> pendingMaterialPickups = new System.Collections.Generic.List<int>();
         // 스테이지 중 획득한 모듈도 완료 정산 때 반영.
@@ -58,7 +59,13 @@ namespace WeaponWorkshop
         private readonly System.Collections.Generic.HashSet<string> discoveredEnemies = new System.Collections.Generic.HashSet<string>();
         private readonly System.Collections.Generic.HashSet<string> loggedRaidWeaponAssemblies = new System.Collections.Generic.HashSet<string>();
         private bool resultOpen;
+        private bool rewardsCommitted;
         private readonly System.Collections.Generic.SortedSet<int> trainingModules = new System.Collections.Generic.SortedSet<int>();
+        public int RaidEarnedDollars => raidEarnedDollars;
+        public int RaidEarnedParts => raidEarnedParts;
+        public int RaidEarnedTickets => raidEarnedTickets;
+        public System.Collections.Generic.IReadOnlyList<int> RaidEarnedModules => raidEarnedModules;
+        public bool HasEarnedModule(int moduleId) => raidEarnedModules.Contains(moduleId) || trainingModules.Contains(moduleId);
         public bool HasTrainingModule(int moduleId) => trainingModules.Contains(moduleId);
         public bool TryCollectTrainingModule(int moduleId)
         {
@@ -69,7 +76,6 @@ namespace WeaponWorkshop
         }
         private string RaidRewards()
         {
-            var wallet = player.GetComponent<PlayerWallet>();
             var unlocks = player.GetComponent<PlayerModuleUnlocks>();
             // 튜토리얼 습격은 복귀 때 출발 상태로 되돌린다(NightRaidTransfer.PrepareReturn). 획득량을 실제 보상처럼 보이지 않게 표시한다.
             bool training = TutorialManager.TrainingRaidPending;
@@ -78,14 +84,17 @@ namespace WeaponWorkshop
             // 지갑 차이는 디버그 재화·무기 환급까지 섞이므로 상자에서 실제로 주운 재료만 보여준다.
             text.Append("부품  +").Append(materialCrateCredits).AppendLine();
             text.Append("슬롯머신 티켓  +").Append(earnedSlotTickets).AppendLine();
-            int money = Mathf.Max(0, wallet.Balance - raidStartingBalance);
+            int money = raidEarnedDollars;
             if (money > 0) text.Append("돈  +").Append(money).AppendLine();
             int count = 0;
             foreach (int id in unlocks.CaptureUnlockedModules())
                 if (System.Array.IndexOf(raidStartingModules, id) < 0)
                 { text.Append("• ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
+            foreach (int id in raidEarnedModules)
+            { text.Append("• ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
             foreach (int id in trainingModules)
-            { text.Append("• 튜토리얼 모듈: ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
+                if (!raidEarnedModules.Contains(id))
+                { text.Append("• 튜토리얼 모듈: ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
             if (count == 0) text.AppendLine("획득한 신규 모듈 없음");
             return text.ToString();
         }
@@ -109,10 +118,9 @@ namespace WeaponWorkshop
             else { extractionExit = null; ui.SetExtraction(true, 1f, 0f); }
             bool isClear = IsRaidClear(died);
             returningAfterDeath = died;
-            if (isClear && !TutorialManager.TrainingRaidPending)
-                player.GetComponent<PlayerWallet>()?.CreditSlotTickets(earnedSlotTickets - collectedSlotTickets);
+            if (isClear) raidEarnedTickets = TutorialManager.TrainingRaidPending ? collectedSlotTickets : earnedSlotTickets;
             int materialPickups = pendingMaterialPickups.Count;
-            int dollarReward = collectedDollars;
+            int dollarReward = raidEarnedDollars;
             materialCrateCredits = 0;
             foreach (int v in pendingMaterialPickups) materialCrateCredits += v;
             moduleCrateRewards.AddRange(pendingModuleCollects);
@@ -190,9 +198,6 @@ namespace WeaponWorkshop
             DestructibleTarget.CellDestroyed += OnCellDestroyed;
             RaidEnemyCore.Spawned += OnEnemySpawned;
             RaidEnemyCore.Killed += OnEnemyKilled;
-            ModuleCreditPickup.CreditCollected += OnMaterialCollected;
-            DollarPickup.DollarCollected += OnDollarCollected;
-            ModuleUnlockPickup.RewardCollected += OnModuleCollected;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             Application.quitting += OnApplicationQuitting;
             if (inRaid) SubscribeWeaponEvents();
@@ -203,9 +208,6 @@ namespace WeaponWorkshop
             DestructibleTarget.CellDestroyed -= OnCellDestroyed;
             RaidEnemyCore.Spawned -= OnEnemySpawned;
             RaidEnemyCore.Killed -= OnEnemyKilled;
-            ModuleCreditPickup.CreditCollected -= OnMaterialCollected;
-            DollarPickup.DollarCollected -= OnDollarCollected;
-            ModuleUnlockPickup.RewardCollected -= OnModuleCollected;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             Application.quitting -= OnApplicationQuitting;
             UnsubscribeWeaponEvents();
@@ -281,9 +283,38 @@ namespace WeaponWorkshop
             var wallet = player.GetComponent<PlayerWallet>();
             if (wallet == null) return false;
             collectedSlotTickets++;
-            wallet.CreditSlotTickets(1);
+            raidEarnedTickets = collectedSlotTickets;
             return true;
         }
+
+        public bool TryCollectDollar(FirstPersonPlayer collector, int amount)
+        {
+            if (!CanCollectRaidReward(collector, amount)) return false;
+            raidEarnedDollars = (int)System.Math.Min(int.MaxValue, (long)raidEarnedDollars + amount);
+            return true;
+        }
+
+        public bool TryCollectMaterial(FirstPersonPlayer collector, int amount)
+        {
+            if (!CanCollectRaidReward(collector, amount)) return false;
+            raidEarnedParts = (int)System.Math.Min(int.MaxValue, (long)raidEarnedParts + amount);
+            pendingMaterialPickups.Add(amount);
+            return true;
+        }
+
+        public bool TryCollectModule(FirstPersonPlayer collector, int moduleId)
+        {
+            if (!inRaid || resultOpen || transitioning || collector != player || moduleId <= 0 ||
+                (playerHealth != null && playerHealth.IsDead)) return false;
+            if (TutorialManager.TrainingRaidPending && !TryCollectTrainingModule(moduleId)) return false;
+            if (!raidEarnedModules.Contains(moduleId)) raidEarnedModules.Add(moduleId);
+            if (!pendingModuleCollects.Contains(moduleId)) pendingModuleCollects.Add(moduleId);
+            return true;
+        }
+
+        private bool CanCollectRaidReward(FirstPersonPlayer collector, int amount) =>
+            inRaid && !resultOpen && !transitioning && collector == player && amount > 0 &&
+            (playerHealth == null || !playerHealth.IsDead);
         public void RecordPlayerHit(RaidPlayerHealth health, string enemyId, RaidEnemyType enemyType, float damage)
         {
             if (!inRaid || health == null || health != playerHealth || health.gameObject.scene != gameObject.scene || damage <= 0f) return;
@@ -297,22 +328,6 @@ namespace WeaponWorkshop
                 });
             }
             catch (System.Exception exception) { Debug.LogWarning("습격 피격 로그 기록 실패: " + exception.Message); }
-        }
-        private void OnMaterialCollected(FirstPersonPlayer collector, int amount)
-        {
-            if (!inRaid || resultOpen || transitioning || collector != player || amount <= 0 ||
-                (playerHealth != null && playerHealth.IsDead)) return;
-            pendingMaterialPickups.Add(amount);
-        }
-        private void OnDollarCollected(FirstPersonPlayer collector, int amount)
-        {
-            if (!inRaid || resultOpen || transitioning || collector != player || amount <= 0 ||
-                (playerHealth != null && playerHealth.IsDead)) return;
-            collectedDollars += amount;
-        }
-        private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
-        {
-            if (inRaid && collector == player && moduleId > 0) pendingModuleCollects.Add(moduleId);
         }
         // 엔드 상자 지표. 상자는 습격 씬에 하나라 습격당 한 번씩만 남긴다.
         private bool endChestScanned, endChestOpened;
@@ -371,7 +386,7 @@ namespace WeaponWorkshop
                 health = playerHealth != null ? playerHealth.CurrentHealth : 0f,
                 exitReason = "ending_quit", endChestOpened = endChestOpened,
                 day = RaidDay, training = TutorialManager.TrainingRaidPending,
-                materialPickups = pendingMaterialPickups.Count, dollarReward = collectedDollars, rewardsApplied = false
+                materialPickups = pendingMaterialPickups.Count, dollarReward = raidEarnedDollars, rewardsApplied = false
             });
         }
         private static string CaptureAssemblyId(EquipableWeapon weapon, out string status)
@@ -555,13 +570,15 @@ namespace WeaponWorkshop
                 }
             }
             inRaid = true;
-            raidStartingBalance = player.GetComponent<PlayerWallet>().Balance;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
-            enemyKills = materialCrateCredits = collectedDollars = 0;
+            enemyKills = materialCrateCredits = raidEarnedDollars = 0;
+            raidEarnedParts = raidEarnedTickets = 0;
             pendingMaterialPickups.Clear();
+            raidEarnedModules.Clear();
             earnedSlotTickets = collectedSlotTickets = 0;
             pendingModuleCollects.Clear(); discoveredEnemies.Clear();
+            rewardsCommitted = false;
             loggedRaidWeaponAssemblies.Clear();
             // 보상 상자는 입장 상태(해금 모듈)를 복원한 뒤 한 번에 만든다. 이미 해금한 모듈 자리는 재료 상자가 된다.
             var crateSpawner = Object.FindFirstObjectByType<RaidCrateSpawner>();
@@ -672,6 +689,7 @@ namespace WeaponWorkshop
                     NightRaidTransfer.MarkReturning();
                 }
                 else if (!NightRaidTransfer.PrepareReturn(player, returningAfterDeath, out var error)) { ui.ShowError(error); return; }
+                else if (CanCommitRaidRewards()) CommitRewardsToWorkshop();
             }
             else
             {
@@ -681,12 +699,29 @@ namespace WeaponWorkshop
                 bool cleared = NightRaidTransfer.ResultCleared;
                 NightRaidTransfer.Abandon();
                 NightRaidTransfer.RecordResult(raidNumber, raidScene, cleared);
-                NightRaidTransfer.MarkStandaloneReturn(cleared && !TutorialManager.TrainingRaidPending ? earnedSlotTickets : 0);
+                NightRaidTransfer.MarkStandaloneReturn(
+                    CanCommitRaidRewards() ? raidEarnedDollars : 0,
+                    CanCommitRaidRewards() ? raidEarnedParts : 0,
+                    CanCommitRaidRewards() ? earnedSlotTickets : 0,
+                    CanCommitRaidRewards() ? raidEarnedModules.ToArray() : System.Array.Empty<int>());
+                if (CanCommitRaidRewards()) rewardsCommitted = true;
             }
             transitioning = true; gameManager.SetNight(true); ui.ShowReturn(false);
             // 무기 복원 실패로 즉시 돌아온 경우에는 클리어/다음날 처리를 하지 않는다.
             NightRaidTransfer.ReturnDayFadePending = !returningAfterDeath && (!entryRestoreFailed || TutorialManager.TrainingRaidPending);
             NightRaidReturnOverlay.BeginReturn(homeScene);
+        }
+
+        private bool CanCommitRaidRewards() => !rewardsCommitted && !returningAfterDeath && !entryRestoreFailed &&
+            resultOpen && !TutorialManager.TrainingRaidPending && NightRaidTransfer.ResultCleared;
+
+        private bool CommitRewardsToWorkshop()
+        {
+            if (!CanCommitRaidRewards()) return false;
+            NightRaidTransfer.AddRaidRewardsToWorkshop(raidEarnedDollars, raidEarnedParts, earnedSlotTickets,
+                raidEarnedModules.ToArray());
+            rewardsCommitted = true;
+            return true;
         }
         /// <summary>
         /// 사망 복귀를 클리어 실패로 기록하고 공방으로 이동한다.

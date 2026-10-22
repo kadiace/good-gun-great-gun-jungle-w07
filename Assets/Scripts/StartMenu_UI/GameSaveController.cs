@@ -255,9 +255,17 @@ namespace WeaponWorkshop
                 else NightRaidTransfer.KeepRecovery(workshop);
                 return;
             }
-            if (NightRaidTransfer.TryConsumeStandaloneReturn(out int slotTickets))
+            if (NightRaidTransfer.TryConsumeStandaloneReturn(out int dollars, out int parts, out int slotTickets, out int[] modules))
             {
-                if (cleared) player.GetComponent<PlayerWallet>().CreditSlotTickets(slotTickets);
+                if (cleared)
+                {
+                    var wallet = player.GetComponent<PlayerWallet>();
+                    wallet.Credit(dollars);
+                    wallet.CreditModuleCredits(parts);
+                    wallet.CreditSlotTickets(slotTickets);
+                    var unlocks = player.GetComponent<PlayerModuleUnlocks>();
+                    if (modules != null && unlocks != null) foreach (int module in modules) unlocks.UnlockModule(module);
+                }
                 pendingClearedRaid = cleared ? resultRaid : 0;
                 _pendingClearedRaidScene = cleared ? resultRaidScene : null;
                 unsuccessfulRaidReturn = !cleared;

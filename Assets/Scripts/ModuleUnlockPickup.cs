@@ -61,9 +61,13 @@ namespace WeaponWorkshop
             if (!CanInteract(interactor)) return false;
             var player = interactor.Player;
             var unlocks = player.GetComponent<PlayerModuleUnlocks>();
+            var raid = NightRaidController.Instance;
+            if (raid != null && raid.IsInRaid)
+            {
+                if (!raid.TryCollectModule(player, moduleId)) return false;
+            }
+            else unlocks.UnlockModule(moduleId);
             collected = true;
-            if (NightRaidController.Instance == null || !NightRaidController.Instance.TryCollectTrainingModule(moduleId))
-                unlocks.UnlockModule(moduleId);
             RewardCollected?.Invoke(player, moduleId);
             if (TutorialManager.Instance != null) TutorialManager.Instance.NotifyTrainingLoot(moduleId);
             gameObject.SetActive(false);

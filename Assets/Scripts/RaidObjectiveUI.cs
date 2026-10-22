@@ -67,7 +67,7 @@ namespace WeaponWorkshop
             {
                 var objective = objectives[i];
                 bool pending = (TutorialManager.TrainingRaidPending || !unlocks.IsUnlocked(objective.ModuleId)) &&
-                    !NightRaidController.Instance.HasTrainingModule(objective.ModuleId);
+                    !NightRaidController.Instance.HasEarnedModule(objective.ModuleId);
                 if (pending) remaining++;
                 bool visible = pending && objective.Target != null && objective.Target.gameObject.activeInHierarchy;
                 markers[i].gameObject.SetActive(visible);

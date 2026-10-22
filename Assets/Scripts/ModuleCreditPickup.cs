@@ -48,9 +48,13 @@ namespace WeaponWorkshop
             if (collected || GameManager.GameplayBlocked) return;
             var player = magnet.Tick(canCollect);
             if (player == null) return;
-            var wallet = PlayerWallet.ForPlayer(player);
+            var raid = NightRaidController.Instance;
+            if (raid != null && raid.IsInRaid)
+            {
+                if (!raid.TryCollectMaterial(player, amount)) return;
+            }
+            else PlayerWallet.ForPlayer(player)?.CreditModuleCredits(amount);
             collected = true;
-            wallet.CreditModuleCredits(amount);
             if (materialCrateReward) CreditCollected?.Invoke(player, amount);
             Collected?.Invoke();
             gameObject.SetActive(false);

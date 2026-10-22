@@ -41855,6 +41855,46 @@ MonoBehaviour:
   tagTemplate: {fileID: 7802000000000000014}
   noTagsText: {fileID: 7802000000000000010}
   shopCatalog: {fileID: 11400000, guid: 0b977ae65543a5547960a0342bb0c3a8, type: 2}
+  raidFallbackIcon: {fileID: 21300000, guid: 777ac12145e55c24798fc6afbba36a44, type: 3}
+  raidModuleIcons:
+  - moduleId: 1
+    sprite: {fileID: 21300000, guid: 777ac12145e55c24798fc6afbba36a44, type: 3}
+  - moduleId: 2
+    sprite: {fileID: 21300000, guid: f1c58d5a8a458dc40a5795f3e279c139, type: 3}
+  - moduleId: 3
+    sprite: {fileID: 21300000, guid: f1c58d5a8a458dc40a5795f3e279c139, type: 3}
+  - moduleId: 4
+    sprite: {fileID: 21300000, guid: f1c58d5a8a458dc40a5795f3e279c139, type: 3}
+  - moduleId: 5
+    sprite: {fileID: 21300000, guid: 9b2b3cf29a1433846aa27a3c72b257be, type: 3}
+  - moduleId: 6
+    sprite: {fileID: 21300000, guid: 9b2b3cf29a1433846aa27a3c72b257be, type: 3}
+  - moduleId: 7
+    sprite: {fileID: 21300000, guid: f06ada97949063644bd0087283d1ca9c, type: 3}
+  - moduleId: 8
+    sprite: {fileID: 21300000, guid: 337e4ddcd1ad2624d9173c25e52f0b92, type: 3}
+  - moduleId: 9
+    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+  - moduleId: 10
+    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+  - moduleId: 11
+    sprite: {fileID: 21300000, guid: 337e4ddcd1ad2624d9173c25e52f0b92, type: 3}
+  - moduleId: 12
+    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+  - moduleId: 13
+    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+  - moduleId: 14
+    sprite: {fileID: 21300000, guid: 9b2b3cf29a1433846aa27a3c72b257be, type: 3}
+  - moduleId: 15
+    sprite: {fileID: 21300000, guid: 337e4ddcd1ad2624d9173c25e52f0b92, type: 3}
+  - moduleId: 16
+    sprite: {fileID: 21300000, guid: 9441dcff0df555448a38093ab6781419, type: 3}
+  - moduleId: 17
+    sprite: {fileID: 21300000, guid: 337e4ddcd1ad2624d9173c25e52f0b92, type: 3}
+  - moduleId: 18
+    sprite: {fileID: 21300000, guid: 9b2b3cf29a1433846aa27a3c72b257be, type: 3}
+  - moduleId: 19
+    sprite: {fileID: 21300000, guid: 777ac12145e55c24798fc6afbba36a44, type: 3}
 --- !u!114 &5732737746366232318
 MonoBehaviour:
   m_ObjectHideFlags: 0
