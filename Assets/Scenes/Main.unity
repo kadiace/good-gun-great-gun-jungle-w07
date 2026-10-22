@@ -21705,6 +21705,10 @@ PrefabInstance:
       value: ShootingRange
       objectReference: {fileID: 0}
     - target: {fileID: 7708408792354316905, guid: 6816cf8f0cf2a8a418ffbf51bdb71178, type: 3}
+      propertyPath: customerBell
+      value: 
+      objectReference: {fileID: 66214490}
+    - target: {fileID: 7708408792354316905, guid: 6816cf8f0cf2a8a418ffbf51bdb71178, type: 3}
       propertyPath: selectionUI
       value: 
       objectReference: {fileID: 6951644726921892601}
@@ -22580,10 +22584,58 @@ MonoBehaviour:
   lobbyButton: {fileID: 1398663293}
   continueButton: {fileID: 143824232}
   dayManager: {fileID: 366749157}
+--- !u!1 &763211900
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 763211901}
+  - component: {fileID: 763211902}
+  m_Layer: 0
+  m_Name: OrderShapeGuide
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &763211901
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 763211900}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &763211902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 763211900}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 029839fa2a0d40bf94cc6dcebb530cdd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.OrderShapeGuide
+  session: {fileID: 988761845}
+  customerBell: {fileID: 66214490}
+  previewMaterial: {fileID: 2100000, guid: 2244735490d61c14c8f8442ee35a6429, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 763211901}
   - {fileID: 6087138688911525613}
   - {fileID: 6951644726921892600}
   - {fileID: 1224121731}

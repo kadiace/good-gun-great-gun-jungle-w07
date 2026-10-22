@@ -11,6 +11,9 @@
       "basePrice": 200,
       "pricePerRequest": 200,
       "requests": [
+        {"id": "construction/cost-1500", "unlockDay": 2},
+        {"id": "shape/cat", "unlockDay": 2},
+        {"id": "color/crimson-3", "unlockDay": 2},
         {
           "id": "module/scope/min-1",
           "unlockDay": 1
@@ -86,6 +89,18 @@
         {
           "id": "tag/water-gun",
           "unlockDay": 3
+        },
+        {
+          "id": "shooting-test/around-cover",
+          "unlockDay": 4
+        },
+        {
+          "id": "shooting-test/behind-barrier",
+          "unlockDay": 5
+        },
+        {
+          "id": "shooting-test/wide-targets",
+          "unlockDay": 6
         }
       ],
       "orderTemplates": [

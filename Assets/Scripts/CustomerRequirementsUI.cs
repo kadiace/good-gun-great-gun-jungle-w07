@@ -79,6 +79,7 @@ namespace WeaponWorkshop
         }
         private static string Describe(CustomerRequestData.Condition condition, float current)
         {
+            if (condition.Measure == GunMeasure.Shape) return CustomerRequestInfo.Describe(condition, current);
             // Keep the current value together below the requirement in this narrow HUD column.
             return CustomerRequestInfo.Describe(condition, includePathScope: false) + "\n<nobr>현재 " + current.ToString("0.##") + "</nobr>";
         }

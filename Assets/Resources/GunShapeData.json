@@ -1,0 +1,22 @@
+{
+  "shapes": [
+    {
+      "id": "cat",
+      "name": "고양이 영역",
+      "mode": "silhouette",
+      "plane": "zy",
+      "rows": [
+        ".#...#.",
+        ".##.##.",
+        ".#####.",
+        ".#####.",
+        "..###.."
+      ],
+      "anchorColumn": 3,
+      "anchorRow": 4,
+      "allowMirrorZ": true,
+      "toleranceCells": 0,
+      "toleranceRatio": 0.0
+    }
+  ]
+}
