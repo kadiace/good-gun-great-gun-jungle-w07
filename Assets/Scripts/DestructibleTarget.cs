@@ -97,7 +97,7 @@ namespace WeaponWorkshop
             heatResistance = Mathf.Max(0f, heat);
             waterResistance = Mathf.Max(0f, water);
             if (targetMesh == null) targetMesh = GetComponentInChildren<MeshFilter>(true);
-            intactGridReady = false;
+            InvalidateOccupancyTemplate();
             targetMesh.transform.localScale = size;
             targetMesh.transform.localPosition = new Vector3(0f, size.y * 0.5f, 0f);
             MarkDebrisIndexDirty();
@@ -279,6 +279,7 @@ namespace WeaponWorkshop
         private bool[] dirtyColumnFlags;
         private readonly List<int> dirtyColumns = new List<int>();
         private bool allColumnsDirty = true;
+        private int collisionColumnCursor;
         private readonly List<int> impactCells = new List<int>();
         // Reused snapshots for the per-hit removal loops so repeated hits do not allocate a list each call.
         private readonly List<int> absorbedCells = new List<int>();
@@ -915,6 +916,8 @@ namespace WeaponWorkshop
             foreach (var target in targets)
                 if (target != null)
                 {
+                    // Leave the rest queued; ProcessLateUpdate re-queues targets still collision-dirty.
+                    if (DestructionFrameBudget.IsExhausted) break;
                     changed |= target.UpdateCollisionRunsCore();
                     if (!hasScene) { scene = target.gameObject.scene; hasScene = true; }
                 }
@@ -1254,29 +1257,17 @@ namespace WeaponWorkshop
         private void Subdivide(bool createCollisions = true)
         {
             if (subdivided) return;
-            long start = System.Diagnostics.Stopwatch.GetTimestamp();
-            try { using (subdivideMarker.Auto()) SubdivideCore(createCollisions); }
-            finally { RecordSubdivisionTime(System.Diagnostics.Stopwatch.GetTimestamp() - start); }
+            using (subdivideMarker.Auto()) SubdivideCore(createCollisions);
         }
         private void SubdivideCore(bool createCollisions)
         {
+            // Occupancy is normally built during load; this only covers runtime-configured targets.
+            if (!occupancyPrepared) PrepareOccupancyTemplate();
             subdivided = true;
             Material material = originalRenderer.sharedMaterial;
             instancedMaterial = new Material(material) { enableInstancing = true };
             // Retain the original broad-phase shape until the deferred collision rebuild.
             originalRenderer.enabled = false;
-            Bounds bounds = targetMesh.sharedMesh.bounds;
-            Vector3 axisScale = new Vector3(CellRoot.TransformVector(Vector3.right).magnitude,
-                CellRoot.TransformVector(Vector3.up).magnitude, CellRoot.TransformVector(Vector3.forward).magnitude);
-            float size = Mathf.Max(0.01f, partSize);
-            Vector3 step = new Vector3(size / Mathf.Max(axisScale.x, 0.00001f),
-                size / Mathf.Max(axisScale.y, 0.00001f), size / Mathf.Max(axisScale.z, 0.00001f));
-            gridOrigin = bounds.min;
-            gridStep = step;
-            divisions = new Vector3Int(Mathf.Max(1, Mathf.CeilToInt(bounds.size.x / step.x - 0.00001f)),
-                Mathf.Max(1, Mathf.CeilToInt(bounds.size.y / step.y - 0.00001f)),
-                Mathf.Max(1, Mathf.CeilToInt(bounds.size.z / step.z - 0.00001f)));
-            totalCellCount = divisions.x * divisions.y * divisions.z;
             cells.Clear();
             cells.Capacity = Mathf.Max(cells.Capacity, totalCellCount);
             impactCells.Clear();
@@ -1285,8 +1276,12 @@ namespace WeaponWorkshop
             fallingCells.Capacity = Mathf.Max(fallingCells.Capacity, Mathf.Min(totalCellCount, 256));
             boxBreakCells.Capacity = Mathf.Max(boxBreakCells.Capacity, Mathf.Min(totalCellCount, 256));
             dirtyColumns.Capacity = Mathf.Max(dirtyColumns.Capacity, divisions.x * divisions.y);
-            preparedCells = new Cell[totalCellCount];
+            // Take ownership of the prebuilt table instead of walking the grid again.
+            preparedCells = occupancyCells;
+            occupancyCells = System.Array.Empty<Cell>();
+            occupancyPrepared = false;
             grid = new bool[totalCellCount];
+            for (int index = 0; index < totalCellCount; index++) grid[index] = true;
             if (cellMesh == null)
             {
                 var primitive = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -1294,27 +1289,15 @@ namespace WeaponWorkshop
                 cellMesh = primitive.GetComponent<MeshFilter>().sharedMesh;
                 Destroy(primitive);
             }
-            for (int x = 0; x < divisions.x; x++)
-                for (int y = 0; y < divisions.y; y++)
-                    for (int z = 0; z < divisions.z; z++)
-                    {
-                        Vector3 offset = new Vector3(x * step.x, y * step.y, z * step.z);
-                        Vector3 cellSize = Vector3.Min(step, bounds.size - offset);
-                        var coordinate = new Vector3Int(x, y, z);
-                        int index = CellIndex(coordinate);
-                        Vector3 localPosition = bounds.min + offset + cellSize * 0.5f;
-                        Cell cell = new Cell
-                        {
-                            root = CellRoot, slot = cells.Count, coordinate = coordinate,
-                            explosionHealth = 1d, explosionHitTime = -1000f,
-                            localPosition = localPosition, localScale = cellSize
-                        };
-                        if (intactDamage.TryGetValue(index, out var damage))
-                        { cell.explosionHealth = damage.explosionHealth; cell.explosionHitTime = damage.explosionHitTime; }
-                        preparedCells[index] = cell;
-                        cells.Add(index);
-                        grid[index] = true;
-                    }
+            for (int index = 0; index < totalCellCount; index++)
+            {
+                Cell cell = preparedCells[index];
+                if (intactDamage.TryGetValue(index, out var damage))
+                { cell.explosionHealth = damage.explosionHealth; cell.explosionHitTime = damage.explosionHitTime; }
+                cell.slot = cells.Count;
+                preparedCells[index] = cell;
+                cells.Add(index);
+            }
             intactDamage.Clear();
             renderDirty = true;
             InvalidateAllCollisionColumns();
@@ -1351,7 +1334,7 @@ namespace WeaponWorkshop
         // Collider identities stay within their X/Y column; a hole only rebuilds that column.
         private void InvalidateAllCollisionColumns()
         {
-            collisionDirty = true; allColumnsDirty = true; dirtyColumns.Clear();
+            collisionDirty = true; allColumnsDirty = true; dirtyColumns.Clear(); collisionColumnCursor = 0;
             if (dirtyColumnFlags != null) System.Array.Clear(dirtyColumnFlags, 0, dirtyColumnFlags.Length);
         }
         private void MarkCollisionColumn(int column)
@@ -1382,11 +1365,38 @@ namespace WeaponWorkshop
                 collisionColumns = new List<BoxCollider>[divisions.x * divisions.y];
                 dirtyColumnFlags = new bool[collisionColumns.Length];
                 allColumnsDirty = true;
+                collisionColumnCursor = 0;
             }
+            int processed = 0;
             if (allColumnsDirty)
-                for (int column = 0; column < collisionColumns.Length; column++) UpdateCollisionColumn(column);
+            {
+                while (collisionColumnCursor < collisionColumns.Length)
+                {
+                    // One column per call keeps progress; the rest resumes at the same cursor.
+                    if (processed > 0 && DestructionFrameBudget.IsExhausted) return false;
+                    UpdateCollisionColumn(collisionColumnCursor++);
+                    processed++;
+                }
+                collisionColumnCursor = 0;
+            }
             else
-                foreach (int column in dirtyColumns) UpdateCollisionColumn(column);
+            {
+                int index = 0;
+                while (index < dirtyColumns.Count)
+                {
+                    if (processed > 0 && DestructionFrameBudget.IsExhausted) break;
+                    int column = dirtyColumns[index++];
+                    UpdateCollisionColumn(column);
+                    dirtyColumnFlags[column] = false;
+                    processed++;
+                }
+                if (index < dirtyColumns.Count)
+                {
+                    dirtyColumns.RemoveRange(0, index);
+                    return false;
+                }
+                dirtyColumns.Clear();
+            }
             foreach (int column in dirtyColumns) dirtyColumnFlags[column] = false;
             dirtyColumns.Clear(); allColumnsDirty = false; collisionDirty = false;
             return true;

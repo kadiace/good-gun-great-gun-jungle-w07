@@ -234,11 +234,16 @@ namespace WeaponWorkshop
             {
                 UnityEngine.Profiling.Profiler.BeginSample("NightRaidController.CellLogQueueCount=" + pendingCellLogs.Count);
                 long started = Stopwatch.GetTimestamp();
-                long budgetTicks = (long)(Stopwatch.Frequency * CellLogFrameBudgetMilliseconds / 1000.0);
+                double sharedBudgetMilliseconds = System.Math.Min(CellLogFrameBudgetMilliseconds,
+                    DestructionFrameBudget.RemainingMilliseconds);
+                long budgetTicks = (long)(Stopwatch.Frequency * sharedBudgetMilliseconds / 1000.0);
                 try
                 {
-                    while (pendingCellLogs.Count > 0 && Stopwatch.GetTimestamp() - started < budgetTicks)
-                        RecordNextCellLog();
+                    // One entry always drains so a spent combat budget cannot stall the queue forever.
+                    bool wrote = false;
+                    while (pendingCellLogs.Count > 0 &&
+                        (!wrote || Stopwatch.GetTimestamp() - started < budgetTicks))
+                    { RecordNextCellLog(); wrote = true; }
                 }
                 finally { UnityEngine.Profiling.Profiler.EndSample(); }
             }

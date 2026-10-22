@@ -157,11 +157,15 @@ namespace WeaponWorkshop
             if (DestructionCollisionBatch.Flush()) needsSync = false;
             if (needsSync) { Physics.SyncTransforms(); needsSync = false; }
             int budget = QueryBudget;
+            // Share the frame window with explosion, mesh, and log work; a tiny guaranteed slice
+            // keeps support scans moving when destruction consumes the rest of the budget.
+            float sharedBudgetMilliseconds = Mathf.Max(0.05f,
+                Mathf.Min(QueryBudgetMilliseconds, DestructionFrameBudget.RemainingMilliseconds));
             long budgetStart = System.Diagnostics.Stopwatch.GetTimestamp();
             while (budget > 0)
             {
                 // Stop at this frame's time budget; the scan resumes at the same collider next frame.
-                if (ElapsedMilliseconds(budgetStart) >= QueryBudgetMilliseconds) break;
+                if (ElapsedMilliseconds(budgetStart) >= sharedBudgetMilliseconds) break;
                 // A scan can span frames, so drop one whose target left the graph in the meantime.
                 if (scanning != null && !targets.Contains(scanning)) { AbandonScan(); continue; }
                 if (scanning == null)

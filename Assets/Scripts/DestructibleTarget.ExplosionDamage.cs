@@ -9,21 +9,69 @@ namespace WeaponWorkshop
         private readonly Dictionary<int, Cell> intactDamage = new Dictionary<int, Cell>();
         private bool intactGridReady;
         private Bounds intactMeshBounds;
+        private bool occupancyPrepared;
+        private Cell[] occupancyCells = System.Array.Empty<Cell>();
 
         // An intact target needs only grid dimensions and the cells that have actually been hit.
         private void PrepareIntactGrid()
         {
             if (subdivided || intactGridReady) return;
-            var bounds = targetMesh.sharedMesh.bounds;
+            ComputeGridLayout();
+            intactGridReady = true;
+        }
+
+        private void ComputeGridLayout()
+        {
+            if (targetMesh == null || targetMesh.sharedMesh == null) return;
+            Bounds bounds = targetMesh.sharedMesh.bounds;
             intactMeshBounds = bounds;
             divisions = GetGridDivisions();
             float size = Mathf.Max(.01f, partSize);
-            var matrix = CellRoot.localToWorldMatrix;
+            Matrix4x4 matrix = CellRoot.localToWorldMatrix;
             gridOrigin = bounds.min;
             gridStep = new Vector3(size / Mathf.Max(matrix.MultiplyVector(Vector3.right).magnitude, .00001f),
                 size / Mathf.Max(matrix.MultiplyVector(Vector3.up).magnitude, .00001f),
                 size / Mathf.Max(matrix.MultiplyVector(Vector3.forward).magnitude, .00001f));
+            totalCellCount = divisions.x * divisions.y * divisions.z;
+        }
+
+        internal bool NeedsOccupancyPrewarm => isActiveAndEnabled && !subdivided && !occupancyPrepared &&
+            targetMesh != null && targetMesh.sharedMesh != null;
+
+        // Builds the cell table before combat. Subdivide takes ownership instead of enumerating again.
+        internal void PrepareOccupancyTemplate()
+        {
+            if (subdivided || occupancyPrepared || targetMesh == null || targetMesh.sharedMesh == null) return;
+            ComputeGridLayout();
             intactGridReady = true;
+            if (occupancyCells.Length != totalCellCount) occupancyCells = new Cell[totalCellCount];
+            Bounds bounds = intactMeshBounds;
+            int index = 0;
+            for (int x = 0; x < divisions.x; x++)
+                for (int y = 0; y < divisions.y; y++)
+                    for (int z = 0; z < divisions.z; z++)
+                    {
+                        Vector3 offset = new Vector3(x * gridStep.x, y * gridStep.y, z * gridStep.z);
+                        Vector3 cellSize = Vector3.Min(gridStep, bounds.size - offset);
+                        occupancyCells[index] = new Cell
+                        {
+                            root = CellRoot, slot = index, coordinate = new Vector3Int(x, y, z),
+                            explosionHealth = 1d, explosionHitTime = -1000f,
+                            localPosition = gridOrigin + offset + cellSize * .5f, localScale = cellSize
+                        };
+                        index++;
+                    }
+            occupancyPrepared = true;
+            // Components are created once here and stay disabled until the first collision rebuild.
+            // One per X/Y column covers the solid first rebuild; later holes grow the pool on demand.
+            EnsureCollisionColliderPoolSize(Mathf.Max(1, divisions.x * divisions.y));
+        }
+
+        private void InvalidateOccupancyTemplate()
+        {
+            occupancyPrepared = false;
+            occupancyCells = System.Array.Empty<Cell>();
+            intactGridReady = false;
         }
 
         private bool TryGetExplosionCell(Vector3Int coordinate, out Cell cell)

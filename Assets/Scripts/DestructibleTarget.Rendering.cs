@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Profiling;
-using System.Diagnostics;
 
 namespace WeaponWorkshop
 {
@@ -139,41 +138,6 @@ namespace WeaponWorkshop
         private static readonly ProfilerMarker collisionMarker = new ProfilerMarker("DestructibleTarget.UpdateCollisionRuns");
         private static readonly ProfilerMarker subdivideMarker = new ProfilerMarker("DestructibleTarget.Subdivide");
         private static readonly ProfilerMarker explosionFinishMarker = new ProfilerMarker("DestructibleTarget.FinishExplosionStep");
-        private static readonly ProfilerMarker subdivisionBudgetMarker = new ProfilerMarker("DestructibleTarget.SubdivisionBudget");
-        public static float SubdivisionBudgetMilliseconds { get; set; } = 4f;
-        private static int subdivisionBudgetFrame = -1;
-        private static int subdivisionsThisFrame;
-        private static long subdivisionElapsedTicks;
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetSubdivisionBudget()
-        {
-            subdivisionBudgetFrame = -1;
-            subdivisionsThisFrame = 0; subdivisionElapsedTicks = 0;
-            SubdivisionBudgetMilliseconds = 4f;
-        }
-
-        private static bool IsSubdivisionBudgetAvailable()
-        {
-            using (subdivisionBudgetMarker.Auto())
-            {
-                ResetSubdivisionFrameIfNeeded();
-                return subdivisionsThisFrame == 0 || subdivisionElapsedTicks < SubdivisionBudgetTicks;
-            }
-        }
-
-        private static long SubdivisionBudgetTicks => (long)(Mathf.Max(0f, SubdivisionBudgetMilliseconds) * Stopwatch.Frequency / 1000f);
-        private static void ResetSubdivisionFrameIfNeeded()
-        {
-            if (subdivisionBudgetFrame == Time.frameCount) return;
-            subdivisionBudgetFrame = Time.frameCount; subdivisionsThisFrame = 0; subdivisionElapsedTicks = 0;
-        }
-        private static void RecordSubdivisionTime(long elapsedTicks)
-        {
-            using (subdivisionBudgetMarker.Auto())
-            {
-                ResetSubdivisionFrameIfNeeded(); subdivisionsThisFrame++; subdivisionElapsedTicks += elapsedTicks;
-            }
-        }
         private static Vector3Int RenderKey(Vector3Int cell) => new Vector3Int(
             cell.x / RenderChunkWidth, cell.y / RenderChunkWidth, cell.z / RenderChunkWidth);
 
@@ -200,6 +164,8 @@ namespace WeaponWorkshop
         {
             if (renderDirty)
             {
+                bool rebuildStopped = false;
+                int rebuiltChunks = 0;
                 using (meshMarker.Auto())
                 {
                     if (renderChunks.Count == 0)
@@ -211,6 +177,9 @@ namespace WeaponWorkshop
                     {
                         var chunk = pair.Value;
                         if (!chunk.dirty) continue;
+                        // At least one chunk per call keeps progress; the rest wait for the next frame.
+                        if (rebuiltChunks > 0 && DestructionFrameBudget.IsExhausted) { rebuildStopped = true; break; }
+                        rebuiltChunks++;
                         if (SurfaceRendering) { RebuildSurfaceChunk(pair.Key, chunk); CacheChunkBounds(pair.Key, chunk); chunk.dirty = false; continue; }
                         var origin = pair.Key * RenderChunkWidth;
                         int count = 0;
@@ -241,7 +210,7 @@ namespace WeaponWorkshop
                         CacheChunkBounds(pair.Key, chunk);
                         chunk.dirty = false;
                     }
-                    renderDirty = false;
+                    renderDirty = rebuildStopped;
                     // 청크 경계가 새로 정해졌으니 월드 경계도 다시 만들어야 한다.
                     chunkBoundsCount = -1;
                 }
