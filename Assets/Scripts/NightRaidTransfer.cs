@@ -12,7 +12,10 @@ namespace WeaponWorkshop
         private static void ResetReturnFade() => ReturnDayFadePending = false;
         private static bool enteringRaid;
         private static bool standaloneReturn;
+        private static int standaloneDollars;
+        private static int standaloneParts;
         private static int standaloneSlotTickets;
+        private static int[] standaloneModules = System.Array.Empty<int>();
         // 결과 확정 시에만 채운다. 훈련 습격과 결과 없는 복귀는 번호 0·클리어 false다.
         public static int ResultRaidNumber { get; private set; }
         public static string ResultRaidScene { get; private set; }
@@ -31,20 +34,40 @@ namespace WeaponWorkshop
         public static int EntryCost { get; private set; }
         private static int moduleCreditsBeforeLoss;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneSlotTickets = 0; EntryCost = 0; RecordResult(0, null, false); }
+        private static void Reset() { Workshop = null; Returning = enteringRaid = standaloneReturn = false; moduleCreditsBeforeLoss = standaloneDollars = standaloneParts = standaloneSlotTickets = 0; standaloneModules = System.Array.Empty<int>(); EntryCost = 0; RecordResult(0, null, false); }
         // 씬을 직접 연 경우에는 공방 스냅샷 없이 결과만 전달한다.
-        public static void MarkStandaloneReturn(int slotTickets)
+        public static void MarkStandaloneReturn(int dollars, int parts, int slotTickets, int[] modules)
         {
             standaloneReturn = true;
+            standaloneDollars = Mathf.Max(0, dollars);
+            standaloneParts = Mathf.Max(0, parts);
             standaloneSlotTickets = Mathf.Max(0, slotTickets);
+            standaloneModules = modules ?? System.Array.Empty<int>();
         }
-        public static bool TryConsumeStandaloneReturn(out int slotTickets)
+        public static bool TryConsumeStandaloneReturn(out int dollars, out int parts, out int slotTickets, out int[] modules)
         {
             bool pending = standaloneReturn;
+            dollars = pending ? standaloneDollars : 0;
+            parts = pending ? standaloneParts : 0;
             slotTickets = pending ? standaloneSlotTickets : 0;
+            modules = pending ? standaloneModules : System.Array.Empty<int>();
             if (pending) Reset();
             return pending;
         }
+
+        public static void AddRaidRewardsToWorkshop(int dollars, int parts, int slotTickets, int[] modules)
+        {
+            if (Workshop == null) return;
+            Workshop.balance = SaturatingAdd(Workshop.balance, dollars);
+            Workshop.moduleCredits = SaturatingAdd(Workshop.moduleCredits, parts);
+            Workshop.slotTickets = SaturatingAdd(Workshop.slotTickets, slotTickets);
+            var unlocked = new System.Collections.Generic.HashSet<int>(Workshop.unlockedModules ?? System.Array.Empty<int>());
+            if (modules != null) foreach (int module in modules) if (module > 0) unlocked.Add(module);
+            Workshop.unlockedModules = unlocked.OrderBy(id => id).ToArray();
+        }
+
+        private static int SaturatingAdd(int balance, int amount) =>
+            (int)System.Math.Min(int.MaxValue, (long)Mathf.Max(0, balance) + Mathf.Max(0, amount));
         /// <summary>
         /// 공방 체크포인트를 보관하고 습격 진입 상태를 시작한다.
         /// checkpoint를 저장하고 이전 습격 결과를 초기화한다.

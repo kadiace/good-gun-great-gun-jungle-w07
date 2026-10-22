@@ -13,18 +13,22 @@ namespace WeaponWorkshop
         private void OnDisable() => activeCrates.Remove(this);
         [SerializeField, Min(1)] private int moduleId = 10;
         [SerializeField] private ModuleUnlockPickup pickupPrefab;
-        [SerializeField, Min(0f)] private float upwardSpeed = 3f;
+        [SerializeField, Min(0f)] private float upwardSpeed = 6f;
         [SerializeField] private GameObject classificationLabel;
         private DestructibleTarget body;
         private bool claimed;
+        private GameObject modulePrefab;
+        private string moduleName;
         public bool IsClaimed => claimed;
         private RaidCrateSpawner.Objective objective;
         public void TrackObjective(RaidCrateSpawner.Objective target) => objective = target;
         public Transform OutlineRoot => transform;
         private void Awake() { body = GetComponent<DestructibleTarget>(); claimed = false; }
-        public void Configure(int id)
+        public void Configure(int id, GameObject prefab, string displayName)
         {
             moduleId = id;
+            modulePrefab = prefab;
+            moduleName = displayName;
             body.DamageProtected = TutorialManager.TrainingRaidPending;
         }
         private void LateUpdate()
@@ -35,7 +39,7 @@ namespace WeaponWorkshop
             if (classificationLabel != null) classificationLabel.SetActive(false);
             var pickup = Instantiate(pickupPrefab, transform.position + Vector3.up * 0.3f, Quaternion.identity, transform.parent);
             if (objective != null) objective.Target = pickup.transform;
-            pickup.Release(moduleId, Vector3.up * upwardSpeed);
+            pickup.Release(moduleId, Vector3.up * upwardSpeed, modulePrefab, moduleName);
         }
         public bool CanInteract(Interaction interactor) => false;
         public bool Interact(Interaction interactor) => false;

@@ -2954,13 +2954,7 @@ MonoBehaviour:
     - none
   - id: raid-retry
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "\uBC24\uC5D0\uB294 \uC0C8\uB85C\uC6B4 \uBAA8\uB4C8\uACFC \uC7AC\uB8CC\uB97C
-      \uAD6C\uD558\uB7EC \uC2B5\uACA9\uC744 \uB5A0\uB0A0 \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uC774\uBC88
-      \uBAA9\uC801\uC9C0\uB294 \uC5F0\uC2B5\uC6A9 \uBAA9\uC870\uC8FC\uD0DD\uC785\uB2C8\uB2E4.
-      \uAD00\uD1B5 \uBAA8\uB4C8 \uB450 \uAC1C\uB85C \uBAA9\uC7AC\uB97C \uB6AB\uACE0,
-      \uD3ED\uBC1C \uBAA8\uB4C8\uB85C \uC8FC\uBCC0\uC744 \uD568\uAED8 \uBD80\uC218\uB294
-      \uBB34\uAE30\uB97C \uC900\uBE44\uD574 \uBD05\uC2DC\uB2E4.\n\uC900\uBE44\uB41C
-      \uBAB8\uCCB4\uAC00 \uC788\uB294 \uC791\uC5C5\uB300\uB85C \uB4E4\uC5B4\uAC00\uC138\uC694."
+    description: "\ubc24\uc5d0\ub294 \uc0c8\ub85c\uc6b4 \ubaa8\ub4c8\uacfc \uc7ac\ub8cc\ub97c \uad6c\ud558\ub7ec \uc2b5\uaca9\uc744 \ub5a0\ub0a0 \uc218 \uc788\uc2b5\ub2c8\ub2e4.\n\uc774\ubc88 \ubaa9\uc801\uc9c0\ub294 \uc5f0\uc2b5\uc6a9 \ubaa9\uc870\uc8fc\ud0dd\uc785\ub2c8\ub2e4. \uad00\ud1b5 \ubaa8\ub4c8 \ub450 \uac1c\ub85c \ubaa9\uc7ac\ub97c \ub6ab\ub294 \ubb34\uae30\ub97c \uc900\ube44\ud574 \ubd05\uc2dc\ub2e4.\n\uc900\ube44\ub41c \ubab8\uccb4\uac00 \uc788\ub294 \uc791\uc5c5\ub300\ub85c \ub4e4\uc5b4\uac00\uc138\uc694."
     objective: 
     showDescriptionBeforeObjective: 0
     completion: 0
@@ -2988,7 +2982,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3028,7 +3022,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: core-placed-on-workbench
@@ -3069,7 +3063,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3114,95 +3108,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
-    restrictQuickslotChange: 0
-    requiredQuickslotNumber: 2
-    requiredSignal: 
-    strictAllowedActions: 0
-    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
-      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
-    allowedActions:
-    - attach
-    - rotate
-    - reset-rotation
-    - palette
-    - exit
-  - id: raid-explosion-introduction
-    title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "\uAC19\uC740 \uAE38\uC5D0 \uBAA8\uB4C8\uC744 \uC774\uC5B4 \uBD99\uC774\uBA74
-      \uAE30\uB2A5\uC744 \uD568\uAED8 \uC0AC\uC6A9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uAD00\uD1B5
-      \uBAA8\uB4C8 \uC55E\uC5D0 \uD3ED\uBC1C \uBAA8\uB4C8\uC744 \uBD99\uC5EC \uBCF4\uC138\uC694.
-      \uAD00\uD1B5\uACFC \uD3ED\uBC1C\uC774 \uD568\uAED8 \uC788\uC73C\uBA74 \uB6AB\uACE0
-      \uC9C0\uB098\uAC00\uB294 \uACF3\uB9C8\uB2E4 \uD3ED\uBC1C\uC774 \uC77C\uC5B4\uB0A9\uB2C8\uB2E4."
-    objective: 
-    showDescriptionBeforeObjective: 0
-    completion: 0
-    target: 0
-    targetLabel: 
-    requiresWorkbenchEditing: 0
-    requiredRotationDegrees: 45
-    rotationGuide: 0
-    buttonGuide: 0
-    showPlacementHints: 0
-    openCoreFace: {x: 0, y: 0, z: 1}
-    hintCells: []
-    requiredModuleId: 0
-    requiredCustomerCount: 0
-    requiredTargetDistance: 5
-    requiredCell: {x: 0, y: 0, z: 1}
-    requireOutputDirection: 0
-    excludeRequiredOutputDirection: 0
-    requiredOutputDirection: {x: 0, y: 0, z: 1}
-    restrictPlacement: 0
-    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
-      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
-    wrongModuleMessage: 
-    prepareBlockedCore: 0
-    preparedWeaponPrefab: {fileID: 0}
-    preparedWeaponOpenCells: []
-    discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
-    restrictQuickslotChange: 0
-    requiredQuickslotNumber: 2
-    requiredSignal: 
-    strictAllowedActions: 0
-    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
-      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
-    allowedActions:
-    - none
-  - id: raid-explosion
-    title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: 
-    objective: "\uAD00\uD1B5 \uBAA8\uB4C8 \uC55E\uC5D0 \uD3ED\uBC1C \uBAA8\uB4C8\uC744
-      \uC774\uC5B4 \uBD99\uC774\uC138\uC694."
-    showDescriptionBeforeObjective: 0
-    completion: 3
-    target: 4
-    targetLabel: 
-    requiresWorkbenchEditing: 1
-    requiredRotationDegrees: 45
-    rotationGuide: 0
-    buttonGuide: 0
-    showPlacementHints: 1
-    openCoreFace: {x: 0, y: 0, z: 1}
-    hintCells:
-    - {x: 0, y: 0, z: 3}
-    requiredModuleId: 9
-    requiredCustomerCount: 0
-    requiredTargetDistance: 5
-    requiredCell: {x: 0, y: 0, z: 3}
-    requireOutputDirection: 0
-    excludeRequiredOutputDirection: 0
-    requiredOutputDirection: {x: 0, y: 0, z: 1}
-    restrictPlacement: 1
-    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
-      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
-    wrongModuleMessage: 
-    prepareBlockedCore: 0
-    preparedWeaponPrefab: {fileID: 0}
-    preparedWeaponOpenCells: []
-    discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3250,7 +3156,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3289,7 +3195,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3329,7 +3235,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3369,7 +3275,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: raid-map-opened
@@ -3409,7 +3315,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: raid-entered
@@ -3454,7 +3360,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3496,7 +3402,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3535,7 +3441,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3578,7 +3484,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3618,7 +3524,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3662,7 +3568,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3702,7 +3608,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: training-module-collected
@@ -3748,7 +3654,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3788,7 +3694,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: home-returned
@@ -3832,7 +3738,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3873,7 +3779,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3913,7 +3819,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3954,7 +3860,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000009000000
+    allowedModuleIds: 01000000020000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
