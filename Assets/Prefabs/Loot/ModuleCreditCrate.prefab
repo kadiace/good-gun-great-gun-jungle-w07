@@ -204,9 +204,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pickupPrefab: {fileID: 114002, guid: 7255c3617b4e4f94a9d9d7d246d8cb02, type: 3}
+  dollarPrefab: {fileID: 114002, guid: dc6f17b83f684824b16b91ec6f59f0b4, type: 3}
   creditsPerPickup: 5
-  scatterSpeed: 2
-  upwardSpeed: 3
+  scatterSpeed: 0.75
+  upwardSpeed: 6
 --- !u!114 &7352774144054754105
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -219,8 +220,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c2cd8bdccc9d3449b951fd5ac236855, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: "\uBAA8\uB4C8 \uC7AC\uB8CC \uC0C1\uC790"
-  unavailableCondition: "\uBAA8\uB4C8 \uC7AC\uB8CC\uAC00 \uB4E4\uC5B4 \uC788\uC2B5\uB2C8\uB2E4.
+  title: "부품 상자"
+  unavailableCondition: "부품이 들어 있습니다.
     \uC0C1\uC790\uB97C \uD30C\uAD34\uD574\uC57C\uB9CC \uD68D\uB4DD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
 --- !u!114 &7108077514893755815
 MonoBehaviour:

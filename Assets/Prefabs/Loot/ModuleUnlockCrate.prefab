@@ -132,7 +132,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moduleId: 10
   pickupPrefab: {fileID: 114002, guid: d85a215f259341c5a7cf01d0a3176de2, type: 3}
-  upwardSpeed: 3
+  upwardSpeed: 6
   classificationLabel: {fileID: 0}
 --- !u!114 &8501005806581122707
 MonoBehaviour:

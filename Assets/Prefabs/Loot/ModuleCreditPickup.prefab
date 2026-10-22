@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 330000}
   - component: {fileID: 540000}
   - component: {fileID: 114002}
+  - component: {fileID: 650000}
+  - component: {fileID: 114003}
   m_Layer: 0
   m_Name: ModuleCreditPickup
   m_TagString: Untagged
@@ -129,10 +131,45 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pickupDelay: 0.35
   magnet:
-    attractionRadius: 8
-    attractionSpeed: 8
-    acceleration: 20
+    attractionRadius: 1000
+    attractionSpeed: 30
+    acceleration: 60
     collectDistance: 0.2
     restHeight: 0.09
     scanInterval: 0.1
-  color: {r: 0.2, g: 1, b: 0.32, a: 1}
+  color: {r: 1, g: 0.75, b: 0.12, a: 1}
+--- !u!65 &650000
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &114003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c2cd8bdccc9d3449b951fd5ac236855, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  title: "부품"
+  unavailableCondition: "부품을 획득합니다."

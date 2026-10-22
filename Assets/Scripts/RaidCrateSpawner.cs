@@ -86,8 +86,13 @@ namespace WeaponWorkshop
                     continue;
                 }
                 if (moduleCratePrefab == null) continue;
+                if (!catalog.TryGet(id, out var entry) || entry.prefab == null)
+                {
+                    Debug.LogError($"모듈 {code}의 외형 프리팹이 없습니다.", this);
+                    continue;
+                }
                 var crate = Instantiate(moduleCratePrefab, spot.transform.position, spot.transform.rotation, transform);
-                crate.Configure(id);
+                crate.Configure(id, entry.prefab, entry.displayName);
                 var objective = new Objective(id, crate.transform);
                 objectives.Add(objective);
                 crate.TrackObjective(objective);

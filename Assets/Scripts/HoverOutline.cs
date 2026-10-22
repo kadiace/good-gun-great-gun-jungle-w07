@@ -76,17 +76,25 @@ namespace WeaponWorkshop
 
         private void LateUpdate()
         {
+            if (maskMaterial == null || outlineMaterial == null) return;
+            foreach (var pickup in PickupOutline.Active)
+                if (pickup != null && pickup.transform != Target)
+                    DrawTarget(pickup.transform, Color.white);
+            if (Target != null) DrawTarget(Target, targetAvailable ? outlineColor : Color.white);
+        }
+
+        private void DrawTarget(Transform root, Color color)
+        {
             // Interaction briefly clears Target during each raycast. Compare only the final target here.
-            if (batchTarget != Target || Target == null)
+            if (batchTarget != root)
             {
                 batches.Clear();
                 renderers.Clear();
-                batchTarget = Target;
+                batchTarget = root;
             }
-            if (Target == null || maskMaterial == null || outlineMaterial == null) return;
             foreach (var matrices in batches.Values) matrices.Clear();
             // Refresh live geometry so assembly changes, destruction and active-state changes remain immediate.
-            Target.GetComponentsInChildren<MeshRenderer>(false, renderers);
+            root.GetComponentsInChildren<MeshRenderer>(false, renderers);
             foreach (MeshRenderer renderer in renderers)
             {
                 if (!renderer.enabled || renderer.shadowCastingMode == ShadowCastingMode.ShadowsOnly) continue;
@@ -103,7 +111,7 @@ namespace WeaponWorkshop
 
             bool instanced = SystemInfo.supportsInstancing && maskMaterial.enableInstancing && outlineMaterial.enableInstancing;
             MaterialPropertyBlock drawProperties = instanced ? instancedProperties : properties;
-            drawProperties.SetColor(ColorId, targetAvailable ? outlineColor : Color.white);
+            drawProperties.SetColor(ColorId, color);
             drawProperties.SetFloat(WidthId, outlineWidth);
             unusedBatches.Clear();
             foreach (var batch in batches)

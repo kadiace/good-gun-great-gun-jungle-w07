@@ -8,7 +8,7 @@ namespace WeaponWorkshop
         public static event System.Action<FirstPersonPlayer, int> CreditCollected;
         [SerializeField, Min(0f)] private float pickupDelay = 0.35f;
         [SerializeField] private PickupMagnet magnet = new PickupMagnet();
-        [SerializeField] private Color color = new Color(0.2f, 1f, 0.32f, 1f);
+        [SerializeField] private Color color = new Color(1f, 0.75f, 0.12f, 1f);
         private int amount;
         private bool materialCrateReward;
         private bool collected;
@@ -19,10 +19,12 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
+            gameObject.AddComponent<PickupOutline>();
             collected = false;
             availableAt = Time.time + pickupDelay;
-            canCollect = player => Time.time >= availableAt && PlayerWallet.ForPlayer(player) != null;
             magnet.Initialize(GetComponent<Rigidbody>());
+            canCollect = player => amount > 0 && Time.time >= availableAt &&
+                player.GetComponent<PlayerWallet>() != null;
             var tint = new MaterialPropertyBlock();
             tint.SetColor("_BaseColor", color);
             tint.SetColor("_Color", color);
@@ -43,11 +45,10 @@ namespace WeaponWorkshop
 
         private void FixedUpdate()
         {
-            if (collected || amount <= 0 || GameManager.GameplayBlocked) return;
+            if (collected || GameManager.GameplayBlocked) return;
             var player = magnet.Tick(canCollect);
             if (player == null) return;
             var wallet = PlayerWallet.ForPlayer(player);
-            if (wallet == null) return;
             collected = true;
             wallet.CreditModuleCredits(amount);
             if (materialCrateReward) CreditCollected?.Invoke(player, amount);

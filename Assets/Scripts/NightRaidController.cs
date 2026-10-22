@@ -49,6 +49,7 @@ namespace WeaponWorkshop
         private int[] raidStartingModules;
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
+        private int collectedDollars;
         private int earnedSlotTickets, collectedSlotTickets;
         private readonly System.Collections.Generic.List<int> moduleCrateRewards = new System.Collections.Generic.List<int>();
         private readonly System.Collections.Generic.List<int> pendingMaterialPickups = new System.Collections.Generic.List<int>();
@@ -75,7 +76,7 @@ namespace WeaponWorkshop
             var text = new System.Text.StringBuilder(training ? "획득 정산 (튜토리얼 연습)\n\n" : "획득 정산\n\n");
             if (training) text.AppendLine("연습 습격의 획득물은 공방에 반영되지 않습니다.").AppendLine();
             // 지갑 차이는 디버그 재화·무기 환급까지 섞이므로 상자에서 실제로 주운 재료만 보여준다.
-            text.Append("모듈 재료  +").Append(materialCrateCredits).AppendLine();
+            text.Append("부품  +").Append(materialCrateCredits).AppendLine();
             text.Append("슬롯머신 티켓  +").Append(earnedSlotTickets).AppendLine();
             int money = Mathf.Max(0, wallet.Balance - raidStartingBalance);
             if (money > 0) text.Append("돈  +").Append(money).AppendLine();
@@ -110,14 +111,11 @@ namespace WeaponWorkshop
             returningAfterDeath = died;
             if (isClear && !TutorialManager.TrainingRaidPending)
                 player.GetComponent<PlayerWallet>()?.CreditSlotTickets(earnedSlotTickets - collectedSlotTickets);
-            // 재료 달러는 획득 즉시 지급된다(OnMaterialCollected). 결과 로그에는 이번 습격에서 지급된 액수만 남긴다.
             int materialPickups = pendingMaterialPickups.Count;
-            int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
-            int dollarReward = materialPickups * perPickup;
+            int dollarReward = collectedDollars;
             materialCrateCredits = 0;
             foreach (int v in pendingMaterialPickups) materialCrateCredits += v;
             moduleCrateRewards.AddRange(pendingModuleCollects);
-            pendingMaterialPickups.Clear();
             pendingModuleCollects.Clear();
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
@@ -193,6 +191,7 @@ namespace WeaponWorkshop
             RaidEnemyCore.Spawned += OnEnemySpawned;
             RaidEnemyCore.Killed += OnEnemyKilled;
             ModuleCreditPickup.CreditCollected += OnMaterialCollected;
+            DollarPickup.DollarCollected += OnDollarCollected;
             ModuleUnlockPickup.RewardCollected += OnModuleCollected;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             Application.quitting += OnApplicationQuitting;
@@ -205,6 +204,7 @@ namespace WeaponWorkshop
             RaidEnemyCore.Spawned -= OnEnemySpawned;
             RaidEnemyCore.Killed -= OnEnemyKilled;
             ModuleCreditPickup.CreditCollected -= OnMaterialCollected;
+            DollarPickup.DollarCollected -= OnDollarCollected;
             ModuleUnlockPickup.RewardCollected -= OnModuleCollected;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             Application.quitting -= OnApplicationQuitting;
@@ -303,8 +303,12 @@ namespace WeaponWorkshop
             if (!inRaid || resultOpen || transitioning || collector != player || amount <= 0 ||
                 (playerHealth != null && playerHealth.IsDead)) return;
             pendingMaterialPickups.Add(amount);
-            int perPickup = TableManager.Instance.RaidMap.Find(gameObject.scene.name)?.Settings()?.reward?.dollarsPerMaterialPickup ?? 1000;
-            player.GetComponent<PlayerWallet>()?.Credit(perPickup);
+        }
+        private void OnDollarCollected(FirstPersonPlayer collector, int amount)
+        {
+            if (!inRaid || resultOpen || transitioning || collector != player || amount <= 0 ||
+                (playerHealth != null && playerHealth.IsDead)) return;
+            collectedDollars += amount;
         }
         private void OnModuleCollected(FirstPersonPlayer collector, int moduleId)
         {
@@ -367,7 +371,7 @@ namespace WeaponWorkshop
                 health = playerHealth != null ? playerHealth.CurrentHealth : 0f,
                 exitReason = "ending_quit", endChestOpened = endChestOpened,
                 day = RaidDay, training = TutorialManager.TrainingRaidPending,
-                materialPickups = pendingMaterialPickups.Count, dollarReward = 0, rewardsApplied = false
+                materialPickups = pendingMaterialPickups.Count, dollarReward = collectedDollars, rewardsApplied = false
             });
         }
         private static string CaptureAssemblyId(EquipableWeapon weapon, out string status)
@@ -554,7 +558,8 @@ namespace WeaponWorkshop
             raidStartingBalance = player.GetComponent<PlayerWallet>().Balance;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
-            enemyKills = materialCrateCredits = 0;
+            enemyKills = materialCrateCredits = collectedDollars = 0;
+            pendingMaterialPickups.Clear();
             earnedSlotTickets = collectedSlotTickets = 0;
             pendingModuleCollects.Clear(); discoveredEnemies.Clear();
             loggedRaidWeaponAssemblies.Clear();
