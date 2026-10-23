@@ -1916,10 +1916,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1205328163195860000, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_Name
-      value: StartUI_Manager
-      objectReference: {fileID: 0}
     - target: {fileID: 1343267157769507110, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4292602864
@@ -1987,46 +1983,6 @@ PrefabInstance:
     - target: {fileID: 7698777144614024116, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
       propertyPath: m_TextStyleHashCode
       value: -1183493901
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 846.08325
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 497.27454
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 1.0331819
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9201208227499378286, guid: 742fe6f4e1ee84647ae7346770b94b52, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
