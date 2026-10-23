@@ -79,6 +79,7 @@ namespace WeaponWorkshop
         }
         private static string Describe(CustomerRequestData.Condition condition, float current)
         {
+            if (condition.Measure == GunMeasure.Shape) return CustomerRequestInfo.Describe(condition, current);
             // Keep the current value together below the requirement in this narrow HUD column.
             return CustomerRequestInfo.Describe(condition, includePathScope: false) + "\n<nobr>현재 " + current.ToString("0.##") + "</nobr>";
         }
@@ -93,14 +94,16 @@ namespace WeaponWorkshop
             }
             var row = rows[used++];
             var layout = row.rect.GetComponent<HorizontalLayoutGroup>();
+            string status = heading ? string.Empty : met ? "[O]" : "[ ]";
             bool changed = !row.rect.gameObject.activeSelf || row.description.text != text ||
+                row.status.text != status ||
                 row.status.gameObject.activeSelf == heading ||
                 row.description.fontStyle != (heading ? FontStyles.Bold : FontStyles.Normal) ||
                 layout.padding.left != depth * 14;
             row.rect.gameObject.SetActive(true);
             layout.padding.left = depth * 14;
             Color color = heading ? Color.white : met ? new Color(.5f, .88f, .65f) : new Color(1f, .63f, .56f);
-            row.status.text = heading ? string.Empty : met ? "[O]" : "[ ]";
+            row.status.text = status;
             row.status.gameObject.SetActive(!heading);
             row.status.color = row.description.color = color;
             row.description.text = text;

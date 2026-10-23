@@ -108,7 +108,8 @@ namespace WeaponWorkshop
                 for (int i = 0; i < upGraphics.Length; i++) upAlphas[i] = upGraphics[i].color.a;
             }
             if (upMark != null) upMark.gameObject.SetActive(editing);
-            if (rotationCircle != null) rotationCircle.gameObject.SetActive(editing);
+            if (rotationCircle != null) rotationCircle.gameObject.SetActive(editing &&
+                (workshopSession == null || workshopSession.PlanarView == null || !workshopSession.PlanarView.Is2D));
             if (frontMark != null) frontMark.gameObject.SetActive(editing);
             if (!editing) SetFrontOpacity(1f);
         }
@@ -193,49 +194,32 @@ namespace WeaponWorkshop
             bool editing = workshopSession != null && workshopSession.IsEditing;
             PowerCore core = editing && workshopSession.ActiveWorkbench != null ? workshopSession.ActiveWorkbench.CurrentCore : null;
             Camera view = editing ? workshopSession.WorkshopCamera : null;
-            if (editing && rotationCircle != null)
+            bool planar = editing && workshopSession.PlanarView != null && workshopSession.PlanarView.Is2D;
+            if (rotationCircle != null && rotationCircle.gameObject.activeSelf != (editing && !planar))
+                rotationCircle.gameObject.SetActive(editing && !planar);
+            if (editing && !planar && rotationCircle != null)
             {
                 Rect viewport = workshopSession.RotationViewport;
                 rotationCircle.SetGeometry(viewport, GetWorkshopRotationRadius(viewport));
             }
-            if (core == null || view == null)
+            if (core == null || view == null || planar)
             {
                 if (frontMark != null) frontMark.gameObject.SetActive(false);
                 if (upMark != null) upMark.gameObject.SetActive(false);
                 return;
             }
-            // Follow the connected blocks on the core's local forward axis, independent of their output direction.
+            // 2D와 같은 최외곽 면을 사용한다. 모듈의 출력 방향과는 무관하다.
             var assembly = core.GetComponent<CubeAssembly>();
-            var occupied = new System.Collections.Generic.HashSet<Vector3Int>();
-            if (assembly != null)
-                foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>())
-                    if (block.transform.parent == assembly.transform) occupied.Add(block.Cell);
-            UpdateDirectionMark(frontMark, Vector3Int.forward, core, view, occupied, frontGraphics, frontAlphas);
-            UpdateDirectionMark(upMark, Vector3Int.up, core, view, occupied, upGraphics, upAlphas);
+            UpdateDirectionMark(frontMark, Vector3Int.forward, core, view, assembly, frontGraphics, frontAlphas);
+            UpdateDirectionMark(upMark, Vector3Int.up, core, view, assembly, upGraphics, upAlphas);
         }
         private void UpdateDirectionMark(RectTransform mark, Vector3Int axis, PowerCore core, Camera view,
-            System.Collections.Generic.HashSet<Vector3Int> occupied, UnityEngine.UI.Graphic[] graphics, float[] alphas)
+            CubeAssembly assembly, UnityEngine.UI.Graphic[] graphics, float[] alphas)
         {
             if (mark == null) return;
-            Vector3Int cell = Vector3Int.zero;
-            int furthest = 0;
-            int closestToCoreAxis = 0;
-            foreach (var candidate in occupied)
-            {
-                int depth = (candidate.x * axis.x + candidate.y * axis.y + candidate.z * axis.z);
-                int axisDistance = candidate.sqrMagnitude - depth * depth;
-                if (depth > furthest || (depth == furthest && axisDistance < closestToCoreAxis))
-                {
-                    cell = candidate;
-                    furthest = depth;
-                    closestToCoreAxis = axisDistance;
-                }
-                else if (depth == furthest && axisDistance == closestToCoreAxis &&
-                    (candidate.x < cell.x || (candidate.x == cell.x &&
-                    (candidate.y < cell.y || (candidate.y == cell.y && candidate.z < cell.z)))))
-                    cell = candidate;
-            }
-            Vector3 facePoint = core.transform.TransformPoint((Vector3)cell + (Vector3)axis * .501f);
+            Vector3 localFace = assembly != null ? assembly.GetOutermostFace(axis) : (Vector3)axis * .501f;
+            Transform space = assembly != null ? assembly.transform : core.transform;
+            Vector3 facePoint = space.TransformPoint(localFace);
             Vector3 screenPoint = view.WorldToScreenPoint(facePoint);
             bool visible = screenPoint.z > view.nearClipPlane;
             mark.gameObject.SetActive(visible);
@@ -270,11 +254,27 @@ namespace WeaponWorkshop
             }
         }
         private void OnDisable() { feedback?.Cancel(); SetWorkshopUI(false); }
+        /// <summary>
+        /// 게임 일시정지 상태에 맞춰 일시정지 패널 표시와 캔버스 우선순위를 갱신합니다.
+        /// game 상태를 확인하여 일시정지 메뉴를 최상위(sortingOrder 200)로 올리거나 하위 창을 닫습니다.
+        /// </summary>
         public void Refresh(GameManager game)
         {
             bool pauseChanged = pausePanel != null && pausePanel.activeSelf != game.IsPaused;
             // 일시정지를 닫으면 하위 설정 화면도 닫아 다음 열기에서 메뉴가 겹치지 않게 한다.
             if (pauseChanged && !game.IsPaused) GetComponent<SoundSettingsUI>()?.Close();
+            if (game.IsPaused && pausePanel != null)
+            {
+                pausePanel.transform.SetAsLastSibling();
+                var pauseCanvas = pausePanel.GetComponent<Canvas>();
+                if (pauseCanvas == null)
+                {
+                    pauseCanvas = pausePanel.AddComponent<Canvas>();
+                    pausePanel.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                }
+                pauseCanvas.overrideSorting = true;
+                pauseCanvas.sortingOrder = 200;
+            }
             pausePanel?.SetActive(game.IsPaused);
             if (pauseChanged && UnityEngine.EventSystems.EventSystem.current != null)
                 UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);

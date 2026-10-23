@@ -1,39 +1,78 @@
 using UnityEngine;
 namespace WeaponWorkshop
 {
-    [RequireComponent(typeof(Rigidbody))]
-    public sealed class ModuleUnlockPickup : MonoBehaviour
+    [RequireComponent(typeof(Rigidbody), typeof(BoxCollider), typeof(InteractionLabel))]
+    public sealed class ModuleUnlockPickup : MonoBehaviour, IInteractable
     {
         public static event System.Action<FirstPersonPlayer, int> RewardCollected;
         [SerializeField, Min(0f)] private float pickupDelay = 0.35f;
-        [SerializeField] private PickupMagnet magnet = new PickupMagnet();
+        private Rigidbody body;
         private int moduleId;
         private bool collected;
         private float availableAt;
-        private System.Func<FirstPersonPlayer, bool> canCollect;
+        public Transform OutlineRoot => transform;
         private void Awake()
         {
+            gameObject.AddComponent<PickupOutline>();
             collected = false; availableAt = Time.time + pickupDelay;
-            canCollect = player => Time.time >= availableAt && player.GetComponent<PlayerModuleUnlocks>() != null;
-            magnet.Initialize(GetComponent<Rigidbody>());
+            body = GetComponent<Rigidbody>();
+            body.isKinematic = false;
+            body.useGravity = true;
+            GetComponent<BoxCollider>().isTrigger = false;
         }
-        public void Release(int id, Vector3 velocity)
-        { moduleId = id; magnet.Launch(velocity); }
-
-        private void FixedUpdate()
+        public void Release(int id, Vector3 velocity, GameObject modulePrefab, string moduleName)
         {
-            if (collected || moduleId < 1 || GameManager.GameplayBlocked) return;
-            var player = magnet.Tick(canCollect);
-            if (player == null) return;
+            moduleId = id;
+            GetComponent<InteractionLabel>().SetTitle(moduleName);
+            var draw = modulePrefab.GetComponent<ModuleDraw>();
+            CopyVisual(modulePrefab.transform, transform, draw != null ? draw.Arrow : null);
+            body.linearVelocity = velocity;
+        }
+
+        private static void CopyVisual(Transform source, Transform parent, Transform arrow)
+        {
+            if (source == arrow || !source.gameObject.activeSelf) return;
+            var visual = new GameObject(source.name).transform;
+            visual.SetParent(parent, false);
+            visual.localPosition = source.localPosition;
+            visual.localRotation = source.localRotation;
+            visual.localScale = source.localScale;
+            visual.gameObject.layer = parent.gameObject.layer;
+            var sourceFilter = source.GetComponent<MeshFilter>();
+            var sourceRenderer = source.GetComponent<MeshRenderer>();
+            if (sourceFilter != null && sourceRenderer != null)
+            {
+                visual.gameObject.AddComponent<MeshFilter>().sharedMesh = sourceFilter.sharedMesh;
+                var renderer = visual.gameObject.AddComponent<MeshRenderer>();
+                renderer.sharedMaterials = sourceRenderer.sharedMaterials;
+                renderer.enabled = sourceRenderer.enabled;
+                renderer.shadowCastingMode = sourceRenderer.shadowCastingMode;
+                renderer.receiveShadows = sourceRenderer.receiveShadows;
+            }
+            foreach (Transform child in source) CopyVisual(child, visual, arrow);
+        }
+
+        public bool CanInteract(Interaction interactor) => !collected && moduleId > 0 &&
+            Time.time >= availableAt && !GameManager.GameplayBlocked && interactor != null &&
+            interactor.Player != null && interactor.Player.GetComponent<PlayerModuleUnlocks>() != null;
+
+        public bool Interact(Interaction interactor)
+        {
+            if (!CanInteract(interactor)) return false;
+            var player = interactor.Player;
             var unlocks = player.GetComponent<PlayerModuleUnlocks>();
-            if (unlocks == null) return;
+            var raid = NightRaidController.Instance;
+            if (raid != null && raid.IsInRaid)
+            {
+                if (!raid.TryCollectModule(player, moduleId)) return false;
+            }
+            else unlocks.UnlockModule(moduleId);
             collected = true;
-            if (NightRaidController.Instance == null || !NightRaidController.Instance.TryCollectTrainingModule(moduleId))
-                unlocks.UnlockModule(moduleId);
             RewardCollected?.Invoke(player, moduleId);
             if (TutorialManager.Instance != null) TutorialManager.Instance.NotifyTrainingLoot(moduleId);
             gameObject.SetActive(false);
             Destroy(gameObject);
+            return true;
         }
     }
 }

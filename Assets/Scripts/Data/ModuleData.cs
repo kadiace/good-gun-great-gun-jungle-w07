@@ -28,8 +28,6 @@ namespace WeaponWorkshop
         [SerializeField] private Color color = UnityEngine.Color.white;
         [SerializeField, Tooltip("특별 모듈: 돈 대신 모듈 재화로 결제합니다.")]
         private bool useModuleCredits;
-        [SerializeField, Tooltip("새 게임에서 잠금. 플레이어가 해금하면 사용할 수 있습니다.")]
-        private bool initiallyLocked;
         [SerializeField, Min(0)] private int moduleCreditCost;
         [SerializeField, Tooltip("이 모듈의 종류(개수 계산·회전 연사 보너스 기준). 보너스 스탯이 여러 개여도 종류는 하나.")]
         private StatType moduleType;
@@ -44,7 +42,8 @@ namespace WeaponWorkshop
         public string Description => description;
         public Color Color => color;
         public bool UseModuleCredits => useModuleCredits;
-        public bool InitiallyLocked => initiallyLocked;
+        // 해금 규칙은 습격 표가 단일 출처다. 보상 목록에 없는 모듈은 처음부터 사용할 수 있다.
+        public bool InitiallyLocked => TableManager.Instance.RaidMap.RequiresUnlock(codeId);
         public int ModuleCreditCost => moduleCreditCost;
         public StatType ModuleType => moduleType;
         public int BuyPrice => buyPrice;

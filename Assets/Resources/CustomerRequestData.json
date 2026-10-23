@@ -1,6 +1,63 @@
 {
   "requests": [
     {
+      "id": "construction/cost-1500",
+      "name": "제작비 요구",
+      "phrase": "제작비 $1,500 이상",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "cost-1500",
+          "label": "제작비($)",
+          "measure": "ConstructionCost",
+          "stat": "",
+          "min": 1500,
+          "max": 3.4028235e+38
+        }
+      ]
+    },
+    {
+      "id": "shape/cat",
+      "name": "고양이 영역",
+      "phrase": "고양이 영역 안 자유 배치",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "shape-cat",
+          "label": "고양이 영역",
+          "measure": "Shape",
+          "stat": "",
+          "shapeId": "cat",
+          "min": 1,
+          "max": 1
+        }
+      ]
+    },
+    {
+      "id": "color/crimson-3",
+      "name": "크림슨 도색",
+      "phrase": "크림슨 3면 이상",
+      "tagId": "",
+      "saleBonus": true,
+      "requiredTestIds": [],
+      "conditions": [
+        {
+          "id": "paint-crimson-3",
+          "label": "크림슨 도색 면",
+          "measure": "PaintedColorFaces",
+          "stat": "",
+          "colorHex": "#A8323D",
+          "colorTolerance": 0.06,
+          "min": 3,
+          "max": 3.4028235e+38
+        }
+      ]
+    },
+    {
       "id": "module/explosion/min-2",
       "name": "폭발 모듈 개수",
       "phrase": "",
@@ -134,7 +191,7 @@
     },
     {
       "id": "module/shotgun/min-3",
-      "name": "산탄 모듈 개수",
+      "name": "방사 모듈 개수",
       "phrase": "",
       "tagId": "",
       "saleBonus": false,
@@ -142,7 +199,7 @@
       "conditions": [
         {
           "id": "ea91fe61df2d41f49c414dadd5e9abe0",
-          "label": "산탄 모듈 개수",
+          "label": "방사 모듈 개수",
           "measure": "PathModules",
           "stat": "Shotgun",
           "min": 3.0
@@ -652,7 +709,7 @@
         },
         {
           "id": "c2ab0b1ab62942739a5632f68913b417",
-          "label": "탄속 배율",
+          "label": "가속",
           "measure": "WeaponStat",
           "stat": "Speed",
           "min": 2.0

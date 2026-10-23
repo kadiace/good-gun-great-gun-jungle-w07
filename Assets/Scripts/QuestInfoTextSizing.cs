@@ -15,6 +15,8 @@ namespace WeaponWorkshop
         [SerializeField, Min(1f)] private float maximumHeight = 1000f;
         [SerializeField, Min(0f)] private float bottomMargin = 32f;
         private readonly List<TMP_Text> labels = new List<TMP_Text>();
+        private readonly List<HorizontalOrVerticalLayoutGroup> layoutGroups =
+            new List<HorizontalOrVerticalLayoutGroup>();
         private RectTransform panel;
         private bool dirty = true;
         private bool resetScroll;
@@ -60,32 +62,64 @@ namespace WeaponWorkshop
             resetScroll = false;
             labels.Clear();
             content.GetComponentsInChildren(false, labels);
+            layoutGroups.Clear();
+            content.GetComponentsInChildren(false, layoutGroups);
             float minimum = Mathf.Max(1f, minimumFontSize);
-            float size = Mathf.Max(minimum, preferredFontSize);
-            float height;
-            // Fit the entire list together, preserving equal sizes for every row and its status.
-            // Independent TMP Auto Size would make longer requirements smaller than short ones.
-            while (true)
+            float preferred = Mathf.Max(minimum, preferredFontSize);
+            foreach (var label in labels)
             {
-                foreach (var label in labels)
+                label.enableAutoSizing = false;
+                label.fontSize = preferred;
+            }
+
+            // Establish widths once. The prefab fixes the status width and stretches the
+            // description, so changing font size does not change either text box's width.
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            float height = Mathf.Max(1f, Mathf.Ceil(LayoutUtility.GetPreferredHeight(content)));
+            bool shrink = height > availableHeight && preferred > minimum;
+            if (shrink)
+            {
+                // Find the largest fitting common size on the existing 0.5pt scale.
+                // Probe preferred heights only; let the fitter apply the chosen height once.
+                int first = 1;
+                int last = Mathf.CeilToInt((preferred - minimum) / .5f);
+                float bestSize = minimum;
+                float measuredSize = preferred;
+                while (first <= last)
                 {
-                    label.enableAutoSizing = false;
-                    label.fontSize = size;
+                    int step = first + (last - first) / 2;
+                    measuredSize = Mathf.Max(minimum, preferred - step * .5f);
+                    height = MeasureContentHeight(measuredSize);
+                    if (height <= availableHeight)
+                    {
+                        bestSize = measuredSize;
+                        last = step - 1;
+                    }
+                    else first = step + 1;
                 }
-                LayoutRebuilder.ForceRebuildLayoutImmediate(content);
-                height = Mathf.Max(1f, LayoutUtility.GetPreferredHeight(content));
-                if (height <= availableHeight || size <= minimum) break;
-                size = Mathf.Max(minimum, size - .5f);
+                if (!Mathf.Approximately(measuredSize, bestSize))
+                    height = MeasureContentHeight(bestSize);
             }
 
             float panelHeight = Mathf.Min(height, availableHeight);
             panel.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, panelHeight);
-            content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
-            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            // The content's ContentSizeFitter owns its full height; only the viewport is capped.
+            if (shrink) LayoutRebuilder.ForceRebuildLayoutImmediate(content);
             scrollRect.vertical = height > panelHeight + .5f;
             scrollRect.StopMovement();
             content.anchoredPosition = new Vector2(0f,
                 Mathf.Clamp(scrollOffset, 0f, Mathf.Max(0f, height - panelHeight)));
+        }
+
+        private float MeasureContentHeight(float fontSize)
+        {
+            foreach (var label in labels) label.fontSize = fontSize;
+            // Recalculate layout inputs from the rows up to the content, without resizing
+            // any RectTransforms or overriding TMP's preferred height with a LayoutElement.
+            for (int i = layoutGroups.Count - 1; i >= 0; i--)
+                if (layoutGroups[i].isActiveAndEnabled)
+                    layoutGroups[i].CalculateLayoutInputVertical();
+            return Mathf.Max(1f, Mathf.Ceil(LayoutUtility.GetPreferredHeight(content)));
         }
     }
 }

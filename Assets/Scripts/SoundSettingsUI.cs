@@ -1,7 +1,9 @@
 using System;
-using TMPro;
+
 using UnityEngine;
 using UnityEngine.UI;
+
+using TMPro;
 
 namespace WeaponWorkshop
 {
@@ -27,7 +29,10 @@ namespace WeaponWorkshop
 
         private void Awake() => Initialize();
 
-        // 비활성 패널도 UIManager에서 초기화해 씬에 저장된 활성 상태에 의존하지 않는다.
+        /// <summary>
+        /// 슬라이더·토글·버튼 이벤트와 곡 선택 행을 초기화한다.
+        /// 표의 selectableInMain 설정에 따라 비선택 곡 행을 명시적으로 숨기고 선택 가능한 곡만 리스너를 연결한다.
+        /// </summary>
         public void Initialize()
         {
             if (initialized) return;
@@ -42,8 +47,15 @@ namespace WeaponWorkshop
             closeButton.onClick.AddListener(Close);
             foreach (var row in songs)
             {
-                BgmId id = row.id;
-                row.button.onClick.AddListener(() => { SoundManager.TryChooseMainTrack(id); Sync(); });
+                if (row == null || row.button == null) continue;
+                var track = SoundInfo.Track(row.id);
+                bool selectable = track != null && track.selectableInMain;
+                row.button.gameObject.SetActive(selectable);
+                if (selectable)
+                {
+                    BgmId id = row.id;
+                    row.button.onClick.AddListener(() => { SoundManager.TryChooseMainTrack(id); Sync(); });
+                }
             }
             Close();
         }
@@ -94,7 +106,7 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 볼륨·음소거·곡 잠금과 실제 재생 곡 표시를 UI에 반영한다.
-        /// SoundManager와 테이블 상태를 읽어 현재 행 표시를 갱신한다.
+        /// SoundManager와 테이블 상태를 읽어 비선택 곡을 숨기고 선택 가능 행의 상호작용 및 라벨을 갱신한다.
         /// </summary>
         private void Sync()
         {
@@ -108,12 +120,20 @@ namespace WeaponWorkshop
             songStatus.text = SoundManager.CanChooseMainTrack ? "곡 선택 · Main에서만 적용" : "곡 선택 · Main에서 선택할 수 있습니다";
             foreach (var row in songs)
             {
+                if (row == null || row.button == null) continue;
                 var track = SoundInfo.Track(row.id);
+                bool selectable = track != null && track.selectableInMain;
+                row.button.gameObject.SetActive(selectable);
+                if (!selectable) continue;
+
                 // 목록 표시와 실제 선택 모두 테이블의 Main 선택 허용 여부를 따른다.
-                bool unlocked = track != null && SoundManager.IsMainTrackUnlocked(row.id);
+                bool unlocked = SoundManager.IsMainTrackUnlocked(row.id);
                 row.button.interactable = unlocked && SoundManager.CanChooseMainTrack;
-                row.label.text = (unlocked ? "" : "잠김 · ") + (track?.label ?? row.id.ToString()) +
-                    (SoundManager.IsPlayingTrack(row.id) ? "  ♪" : "");
+                if (row.label != null)
+                {
+                    row.label.text = (unlocked ? "" : "잠김 · ") + (track.label ?? row.id.ToString()) +
+                        (SoundManager.IsPlayingTrack(row.id) ? "  ♪" : "");
+                }
             }
         }
     }

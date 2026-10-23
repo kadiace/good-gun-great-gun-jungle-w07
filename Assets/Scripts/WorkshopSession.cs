@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 namespace WeaponWorkshop
 {
-    [RequireComponent(typeof(FirstPersonPlayer)), DefaultExecutionOrder(25)]
+    [RequireComponent(typeof(FirstPersonPlayer), typeof(WorkshopPlanarView)), DefaultExecutionOrder(25)]
     public sealed class WorkshopSession : MonoBehaviour
     {
         [SerializeField] private InputActionAsset inputActions;
@@ -17,7 +17,8 @@ namespace WeaponWorkshop
         [SerializeField, Range(1f, 179f)] private float minWorkshopFieldOfView = 20f;
         [SerializeField, Range(1f, 179f)] private float maxWorkshopFieldOfView = 80f;
         private InputActionMap editingControls;
-        private InputAction rotate, look, point, zoom;
+        private InputAction rotate, look, point, zoom, pan, layerModifier;
+        public WorkshopPlanarView PlanarView { get; private set; }
         private bool rotationDrag, rollDrag;
         private float rotationDragDegrees;
         private Vector2 previousRollOffset;
@@ -53,6 +54,10 @@ namespace WeaponWorkshop
             player = GetComponent<FirstPersonPlayer>();
             weaponHolder = GetComponent<WeaponHolder>();
             builder = playerCamera != null ? playerCamera.GetComponent<CubeBuilder>() : null;
+            PlanarView = GetComponent<WorkshopPlanarView>();
+            if (PlanarView == null) PlanarView = gameObject.AddComponent<WorkshopPlanarView>();
+            PlanarView.Initialize(this, playerCamera, builder);
+            builder?.SetPlanarView(PlanarView);
             if (builder != null) builder.enabled = false;
             workshopUI?.SetWorkshopUI(false);
             if (inputActions == null || playerCamera == null) { enabled = false; return; }
@@ -66,6 +71,8 @@ namespace WeaponWorkshop
             rotate = editingControls.FindAction("Rotate", true);
             look = editingControls.FindAction("Look", true);
             point = editingControls.FindAction("Point", true);
+            pan = editingControls.FindAction("Pan", true);
+            layerModifier = editingControls.FindAction("LayerModifier", true);
             rotate.performed += _ => BeginRotation();
             rotate.canceled += _ => EndRotation();
             editingControls.FindAction("ResetRotation", true).performed += _ =>
@@ -73,6 +80,7 @@ namespace WeaponWorkshop
                 if (!IsEditing || GameManager.GameplayBlocked) return;
                 if (!TutorialManager.TryAction("reset-rotation")) return;
                 rotationDrag = false;
+                if (PlanarView.Is2D) { PlanarView.ResetFraming(); return; }
                 activeWorkbench.ResetRotation();
                 if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("rotation-reset", activeWorkbench);
             };
@@ -150,6 +158,7 @@ namespace WeaponWorkshop
 
         private void SetMode(bool workshop, bool animate = false)
         {
+            if (!workshop) PlanarView?.Restore3D();
             if (!workshop && activeWorkbench != null) WorkbenchExited?.Invoke(activeWorkbench.CurrentWeapon);
             if (cameraMove != null) StopCoroutine(cameraMove);
             cameraMove = null;
@@ -198,6 +207,7 @@ namespace WeaponWorkshop
             {
                 Transform target = activeWorkbench.CameraPosition;
                 cameraTransform.SetPositionAndRotation(target.position, target.rotation);
+                if (PlanarView != null && PlanarView.Is2D) PlanarView.ApplyDisplayPose();
                 return;
             }
             cameraTransform.localPosition = Vector3.zero;
@@ -213,7 +223,7 @@ namespace WeaponWorkshop
                 builder.enabled = editing;
             }
             if (editingControls != null)
-                foreach (string name in new[] { "Rotate", "Look", "Point", "ResetRotation" })
+                foreach (string name in new[] { "Rotate", "Look", "Point", "ResetRotation", "Pan", "LayerModifier" })
                 {
                     var action = editingControls.FindAction(name, true);
                     if (editing) action.Enable(); else action.Disable();
@@ -221,12 +231,15 @@ namespace WeaponWorkshop
             workshopUI?.SetWorkshopUI(editing);
         }
 
+        public void CancelRotationDrag() => rotationDrag = false;
+
         private void BeginRotation()
         {
             rotationDragDegrees = 0f;
-            if (!IsEditing || GameManager.GameplayBlocked) return;
+            if (!IsEditing || GameManager.GameplayBlocked || PlanarView.Is2D) return;
             if (!TutorialManager.TryAction("rotate")) return;
             Vector2 pointer = point.ReadValue<Vector2>();
+            if (builder != null && builder.IsPointerOverInterface(pointer)) return;
             rotationDrag = RotationViewport.Contains(pointer);
             previousRollOffset = pointer - RotationViewport.center;
             rollDrag = previousRollOffset.sqrMagnitude > RotationRadius * RotationRadius;
@@ -248,7 +261,15 @@ namespace WeaponWorkshop
                 return;
             }
             if (!IsEditing || GameManager.GameplayBlocked || !Application.isFocused)
-            { rotationDrag = false; return; }
+            { rotationDrag = false; PlanarView?.StopPan(); return; }
+            if (PlanarView.Is2D && ((builder != null && builder.IsCustomMode) || !TutorialManager.ActionAllowed("view-mode")))
+                PlanarView.Restore3D();
+            if (PlanarView.Is2D)
+            {
+                rotationDrag = false;
+                PlanarView.UpdateInput(pan, point, zoom, layerModifier);
+                return;
+            }
             ApplyWorkshopZoom();
             if (!TutorialManager.ActionAllowed("rotate")) { rotationDrag = false; return; }
             if (!rotationDrag || !rotate.IsPressed()) return;
@@ -316,6 +337,7 @@ namespace WeaponWorkshop
             Cursor.visible = IsInWorkshop;
             if (Application.isFocused) SetCursor();
         }
-        private void OnApplicationFocus(bool focused) { rotationDrag = false; if (focused && controls != null) SetCursor(); }
+        private void OnApplicationFocus(bool focused)
+        { rotationDrag = false; PlanarView?.StopPan(); if (focused && controls != null) SetCursor(); }
     }
 }

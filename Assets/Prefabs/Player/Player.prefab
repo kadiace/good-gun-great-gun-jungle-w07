@@ -321,6 +321,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -342,9 +344,11 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &6353088565467977408
 CapsuleCollider:
@@ -393,6 +397,7 @@ GameObject:
   - component: {fileID: 6035759403416784380}
   - component: {fileID: 7382427185515709691}
   - component: {fileID: 4157956253638915225}
+  - component: {fileID: 7057880918029420426}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -656,3 +661,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f7eba6625b9a4e4388635c01f46284d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.PlayerShootingTest
+--- !u!114 &7057880918029420426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7023710557123375426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7a5edd7445d4aba8097265d2ce9d246, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.WorkshopPlanarView
+  initialSize: 1
+  minimumSize: 0.2
+  maximumSize: 3
+  zoomSpeed: 0.1

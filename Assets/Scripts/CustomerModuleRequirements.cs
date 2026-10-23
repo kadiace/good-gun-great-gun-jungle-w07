@@ -19,12 +19,26 @@ namespace WeaponWorkshop
             {
                 var row = table.FindRequest(id);
                 foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
-                    if (!TableManager.Instance.ShootingTestTable.IsAvailable(testId)) return false;
+                {
+                    var tests = TableManager.Instance.ShootingTestTable;
+                    if (!tests.IsAvailable(testId)) return false;
+                    foreach (var requirement in tests.Find(testId).requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
+                        if (!ShootingTestInfo.TryGetModuleKind(requirement, out var kind) ||
+                            unlocks == null || !unlocks.IsUnlocked(kind) || unlocks.FindModule(kind) == null) return false;
+                }
                 foreach (var condition in table.Conditions(row))
                 {
                     if (condition.min <= 0f) continue;
                     switch (condition.Measure)
                     {
+                        case GunMeasure.ConstructionCost:
+                        case GunMeasure.Shape:
+                        case GunMeasure.PaintedFaces:
+                        case GunMeasure.PaintedColorFaces:
+                            break; // 제작비·영역·도색은 특정 스탯 모듈 해금을 요구하지 않는다.
+                        case GunMeasure.ColorModules:
+                            if (unlocks == null || !unlocks.IsUnlocked(ModuleKind.Color)) return false;
+                            break;
                         case GunMeasure.SplitTwoBlocks:
                             if (unlocks == null || !unlocks.IsUnlocked(ModuleKind.SplitTwo)) return false;
                             break;
@@ -59,6 +73,13 @@ namespace WeaponWorkshop
             {
                 var row = table.FindRequest(id);
                 if (row == null) continue;
+                foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
+                {
+                    var test = TableManager.Instance.ShootingTestTable.Find(testId);
+                    if (test == null) continue;
+                    foreach (var requirement in test.requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
+                        if (ShootingTestInfo.TryGetModuleKind(requirement, out var kind)) Need(kind, requirement.count, need);
+                }
                 foreach (var condition in table.Conditions(row))
                 {
                     if (condition.min <= 0f) continue;
@@ -66,7 +87,10 @@ namespace WeaponWorkshop
                     {
                         case GunMeasure.SplitTwoBlocks: Need(ModuleKind.SplitTwo, Mathf.CeilToInt(condition.min), need); break;
                         case GunMeasure.SplitFourBlocks: Need(ModuleKind.SplitFour, Mathf.CeilToInt(condition.min), need); break;
-                        case GunMeasure.TotalModules: case GunMeasure.Muzzles: break;
+                        case GunMeasure.TotalModules: case GunMeasure.Muzzles:
+                        case GunMeasure.ConstructionCost: case GunMeasure.Shape:
+                        case GunMeasure.PaintedFaces: case GunMeasure.PaintedColorFaces: break;
+                        case GunMeasure.ColorModules: Need(ModuleKind.Color, Mathf.CeilToInt(condition.min), need); break;
                         default:
                             if (!ModuleCounter.TryToKind(condition.Stat, out var kind)) break;
                             float missing = condition.Measure == GunMeasure.PathModules ? condition.min : condition.min - core.Get(condition.Stat);

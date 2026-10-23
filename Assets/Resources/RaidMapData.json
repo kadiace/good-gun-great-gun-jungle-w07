@@ -28,8 +28,8 @@
         "materialPerCrate": 25,
         "dollarsPerMaterialPickup": 100,
         "moduleCodes": [
-          "8185707d079aa3d4eba1d33833009eb2",
-          "9841ca931bf7a8c4b866da354b808ad7"
+          "ac721da9683bfcc46b24fdba51a5b278",
+          "cf32abdb412c6124cabcbdd85c103cb5"
         ]
       },
       "helicopters": true,
@@ -46,8 +46,8 @@
         "materialPerCrate": 25,
         "dollarsPerMaterialPickup": 100,
         "moduleCodes": [
-          "0277d45126374004b802798d93561da2",
-          "8d0c0ddd9cf586745abb86717c7cc6b6"
+          "36f778d16d639104b90e807dc937aaaa",
+          "0277d45126374004b802798d93561da2"
         ]
       },
       "helicopters": true,
@@ -64,8 +64,8 @@
         "materialPerCrate": 25,
         "dollarsPerMaterialPickup": 100,
         "moduleCodes": [
-          "36f778d16d639104b90e807dc937aaaa",
-          "cf32abdb412c6124cabcbdd85c103cb5"
+          "3819fc250847c48448b1dc45b4ce63a6",
+          "8185707d079aa3d4eba1d33833009eb2"
         ]
       },
       "helicopters": true,

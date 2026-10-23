@@ -60,6 +60,16 @@ namespace WeaponWorkshop
         public static string[] ModuleCodes(this RaidMapData.Region region) =>
             region.Settings()?.reward?.moduleCodes ?? Array.Empty<string>();
 
+        /// <summary>습격 보상으로 지정된 모듈만 초기 잠금 대상이다. 그 외 모듈은 기본 해금한다.</summary>
+        public static bool RequiresUnlock(this RaidMapData table, string moduleCode)
+        {
+            if (table?.regions == null || string.IsNullOrEmpty(moduleCode)) return false;
+            foreach (var region in table.regions)
+                if (region?.reward?.moduleCodes != null && Array.IndexOf(region.reward.moduleCodes, moduleCode) >= 0)
+                    return true;
+            return false;
+        }
+
         // 상속 행은 자기 reward가 없어 0이다. 클리어 기록이 실제 씬별로 남으므로 상속하면 보너스가 중복된다.
         public static float FirstClearSaleBonus(this RaidMapData.Region region) =>
             region?.reward != null ? Mathf.Max(0f, region.reward.firstClearSaleBonus) : 0f;
@@ -89,7 +99,7 @@ namespace WeaponWorkshop
             // 이미 해금한 모듈 자리에는 재료 상자가 대신 나온다(RaidCrateSpawner).
             int materialCrates = (settings.reward != null ? Mathf.Max(0, settings.reward.materialCrates) : 0) + acquiredCount;
             text.AppendLine().Append("모듈 상자  ").Append(remaining).AppendLine("개")
-                .Append("재료 상자  ").Append(materialCrates).AppendLine("개").AppendLine().AppendLine("출몰 적");
+                .Append("부품 상자  ").Append(materialCrates).AppendLine("개").AppendLine().AppendLine("출몰 적");
             if (settings.tanks) text.AppendLine("• 탱크");
             if (settings.maximumReinforcedTanks > 0 || region.scene == "NightRaid_Millitary_base") text.AppendLine("• 강화 탱크");
             if (settings.helicopters) text.AppendLine("• 헬기");

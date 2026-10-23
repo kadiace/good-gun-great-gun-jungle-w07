@@ -221,6 +221,12 @@ namespace WeaponWorkshop
                     return dayZeroOwner != null && dayZeroOwner.CompletedGuests >= step.requiredCustomerCount;
                 case TutorialCompletion.CustomerKilled:
                     return dayZeroOwner != null && dayZeroOwner.CompletedGuests >= step.requiredCustomerCount && dayZeroOwner.KilledGuests > 0;
+                case TutorialCompletion.RaidTicketCollected:
+                    return NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid &&
+                        NightRaidController.Instance.RaidEarnedTickets > 0;
+                case TutorialCompletion.RaidMaterialCollected:
+                    return NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid &&
+                        NightRaidController.Instance.RaidEarnedParts > 0;
                 default: return false;
             }
         }
@@ -292,6 +298,35 @@ namespace WeaponWorkshop
                 if (objective.Target != null && (CurrentStep.requiredModuleId == 0 || objective.ModuleId == CurrentStep.requiredModuleId))
                     return objective.Target;
             return null;
+        }
+        private Component RaidMaterialCrateTarget()
+        {
+            var player = TutorialPlayer;
+            ModuleCreditCrate nearest = null;
+            float distance = float.PositiveInfinity;
+            foreach (var crate in ModuleCreditCrate.ActiveCrates)
+            {
+                if (crate == null || !crate.isActiveAndEnabled || crate.IsClaimed ||
+                    crate.gameObject.scene != gameObject.scene) continue;
+                float candidate = player != null ? (crate.transform.position - player.transform.position).sqrMagnitude : 0f;
+                if (candidate < distance) { distance = candidate; nearest = crate; }
+            }
+            return nearest;
+        }
+        private Component RaidTankTarget()
+        {
+            var player = TutorialPlayer;
+            RaidEnemyCore nearest = null;
+            float distance = float.PositiveInfinity;
+            for (int i = 0; i < RaidEnemyCore.ActiveCount; i++)
+            {
+                var core = RaidEnemyCore.ActiveAt(i);
+                if (core == null || core.IsDestroyed || core.EnemyType != RaidEnemyType.Tank ||
+                    core.gameObject.scene != gameObject.scene) continue;
+                float candidate = player != null ? (core.MarkerPosition - player.transform.position).sqrMagnitude : 0f;
+                if (candidate < distance) { distance = candidate; nearest = core; }
+            }
+            return nearest;
         }
         private Component RaidExitTarget()
         {

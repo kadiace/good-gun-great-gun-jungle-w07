@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    public enum TutorialCompletion { Confirmation, Signal, FiveCoreFacesBlocked, ModuleInstalled, CellEmpty, CustomerWeaponReady, WorkshopExited, WeaponHeld, SettlementClosed, CustomerSold, CustomerKilled, TargetNearby, TargetScanned, RaidTankSpawned, RetirementIntroduction }
-    public enum TutorialTarget { None, Shutter, Customer, MainCoreDispenser, Workbench, ShootingTarget, WorkbenchWeapon, CloseShop, RaidEntrance, RaidLoot, RaidExit }
+    public enum TutorialCompletion { Confirmation, Signal, FiveCoreFacesBlocked, ModuleInstalled, CellEmpty, CustomerWeaponReady, WorkshopExited, WeaponHeld, SettlementClosed, CustomerSold, CustomerKilled, TargetNearby, TargetScanned, RaidTankSpawned, RetirementIntroduction, RaidTicketCollected, RaidMaterialCollected }
+    public enum TutorialTarget { None, Shutter, Customer, MainCoreDispenser, Workbench, ShootingTarget, WorkbenchWeapon, CloseShop, RaidEntrance, RaidLoot, RaidExit, RaidMaterialCrate, RaidTank }
     public enum TutorialRotationGuide { None, Tilt, Roll }
     public enum TutorialButtonGuide { None, Recipe, PresetFirst, RaidHouse, LoanConfirm }
 

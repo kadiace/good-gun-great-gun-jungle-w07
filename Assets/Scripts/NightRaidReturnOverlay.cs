@@ -14,7 +14,6 @@ namespace WeaponWorkshop
         private static readonly ProfilerMarker CollectMarker = new ProfilerMarker("NightRaidReturnOverlay.GCCollect");
         private const float FadeDuration = .3f;
         private const float TransitionGrace = .3f;
-        private const float TransitionTimeout = 10f;
         private static NightRaidReturnOverlay instance;
         private Canvas overlayCanvas;
         private CanvasGroup overlayGroup;
@@ -96,7 +95,6 @@ namespace WeaponWorkshop
             while (!operation.isDone) yield return null;
 
             yield return ReleaseAfterWorkshopTransition();
-            yield return Fade(1f, 0f);
             Finish();
         }
 
@@ -107,20 +105,15 @@ namespace WeaponWorkshop
             while (elapsed < TransitionGrace)
             {
                 transition = Object.FindFirstObjectByType<DayTransitionUI>();
-                if (transition != null && transition.IsTransitioning) break;
+                // BeginReturn already covers the workshop. Hand over immediately so this
+                // higher-sorting blackout does not hide its Day title and reveal fade.
+                if (transition != null && transition.IsTransitioning) yield break;
                 elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            if (transition != null && transition.IsTransitioning)
-            {
-                elapsed = 0f;
-                while (transition != null && transition.IsTransitioning && elapsed < TransitionTimeout)
-                {
-                    elapsed += Time.unscaledDeltaTime;
-                    yield return null;
-                }
-            }
+            // Death returns and other paths without a day transition reveal the workshop here.
+            yield return Fade(1f, 0f);
         }
 
         private IEnumerator Fade(float from, float to)

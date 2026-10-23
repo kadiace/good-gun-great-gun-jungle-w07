@@ -52,6 +52,7 @@ namespace WeaponWorkshop
         private float baseNearClipPlane = 0.3f;
         private bool zoomApplied;
         private bool _tutorialCameraOverride;
+        private bool _aimStartedWhileBlocked;
 
         private readonly List<EquipableWeapon.ScopeView> views = new List<EquipableWeapon.ScopeView>();
         private readonly List<ScopeViewPose> scopeViewPoses = new List<ScopeViewPose>();
@@ -107,6 +108,11 @@ namespace WeaponWorkshop
             if (inputActions == null) return;
             controls = inputActions.FindActionMap("Player", true).Clone();
             aim = controls.FindAction("Aim", true);
+            if (aim != null)
+            {
+                aim.started += OnAimStarted;
+                aim.performed += OnAimStarted;
+            }
             cycleScope = controls.FindAction("CycleScope", true);
         }
 
@@ -125,11 +131,42 @@ namespace WeaponWorkshop
             BindScopeViewsWeapon(null);
             ResetZoom();
             _tutorialCameraOverride = false;
+            _aimStartedWhileBlocked = false;
         }
 
         private void OnDestroy()
         {
+            if (aim != null)
+            {
+                aim.started -= OnAimStarted;
+                aim.performed -= OnAimStarted;
+            }
             controls?.Dispose();
+        }
+
+        /// <summary>
+        /// 조준 입력 시작 시 게임플레이 차단 여부를 점검하여 차단 중 시작된 입력을 선제 기록합니다.
+        /// context로부터 입력 콜백을 수신하여 차단 중 발생한 조준 입력을 마킹합니다.
+        /// </summary>
+        private void OnAimStarted(InputAction.CallbackContext context)
+        {
+            if (GameManager.GameplayBlocked || _tutorialCameraOverride)
+            {
+                _aimStartedWhileBlocked = true;
+            }
+        }
+
+        private void Update()
+        {
+            if (_tutorialCameraOverride) return;
+            if (GameManager.GameplayBlocked)
+            {
+                if (aim != null && aim.IsPressed()) _aimStartedWhileBlocked = true;
+            }
+            else if (_aimStartedWhileBlocked)
+            {
+                if (aim == null || !aim.IsPressed()) _aimStartedWhileBlocked = false;
+            }
         }
 
         private void LateUpdate()
@@ -158,9 +195,18 @@ namespace WeaponWorkshop
                 baseNearClipPlane = view.nearClipPlane;
             }
 
+            if (GameManager.GameplayBlocked)
+            {
+                if (aim != null && aim.IsPressed()) _aimStartedWhileBlocked = true;
+            }
+            else if (_aimStartedWhileBlocked)
+            {
+                if (aim == null || !aim.IsPressed()) _aimStartedWhileBlocked = false;
+            }
+
             EquipableWeapon weapon = holder.EquippedWeapon;
             ProjectileTuning tuning = weapon != null ? weapon.Tuning : null;
-            bool canAim = aim != null && aim.IsPressed() && tuning != null && weapon.IsEquipped &&
+            bool canAim = !_aimStartedWhileBlocked && aim != null && aim.IsPressed() && tuning != null && weapon.IsEquipped &&
                           !weapon.IsMoving && !GameManager.GameplayBlocked && player != null && player.isActiveAndEnabled;
             // Each independent scope position is a selectable sight; aligned scopes form one magnification group.
             if (scopeViewsWeapon != weapon) BindScopeViewsWeapon(weapon);

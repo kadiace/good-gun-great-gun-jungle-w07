@@ -33,7 +33,8 @@ namespace WeaponWorkshop
         {
             var custom = Instantiate(buttonTemplate, grid);
             custom.name = "CustomCube";
-            custom.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = "커스텀 큐브";
+            var customLabel = custom.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+            if (customLabel != null) customLabel.text = "커스텀 큐브";
             custom.onClick.AddListener(() => { SetCustomVisible(!customPanel.activeSelf); if (statusText != null) statusText.text = ""; });
             custom.gameObject.SetActive(true);
             customPanel = new GameObject("CustomCubeSettings", typeof(RectTransform), typeof(UnityEngine.UI.Image));
@@ -44,7 +45,7 @@ namespace WeaponWorkshop
             root.anchoredPosition = new Vector2(0f,-12f);
             root.sizeDelta = new Vector2(460f,350f);
             customPanel.GetComponent<UnityEngine.UI.Image>().color = new Color(0.08f,0.1f,0.14f,1f);
-            var font = buttonTemplate.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).font;
+            var font = customLabel != null ? customLabel.font : null;
             string[] labels = { "가로 (m)", "세로 (m)", "높이 (m)", "관통 저항", "폭발 저항", "화속성 저항", "수속성 저항" };
             for (int i=0;i<7;i++)
             {
@@ -74,7 +75,9 @@ namespace WeaponWorkshop
                 field.text=i<3 ? "3" : "0"; customInputs[i]=field;
             }
             var spawn=Instantiate(buttonTemplate,root);
-            spawn.name="SpawnCustomCube"; spawn.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text="소환";
+            spawn.name="SpawnCustomCube";
+            var spawnLabel = spawn.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+            if (spawnLabel != null) spawnLabel.text="소환";
             var sr=(RectTransform)spawn.transform; sr.anchorMin=sr.anchorMax=new Vector2(0.5f,0f);
             sr.pivot=new Vector2(0.5f,0f); sr.anchoredPosition=new Vector2(0f,14f); sr.sizeDelta=new Vector2(190f,40f);
             spawn.onClick.AddListener(SpawnCustom);
@@ -103,11 +106,21 @@ namespace WeaponWorkshop
         }
 
 
+        private void ValidateRequiredTests()
+        {
+            var tests = timedTests ?? System.Array.Empty<ShootingTestData>();
+            foreach (var request in TableManager.Instance.CustomerRequest.requests ?? System.Array.Empty<CustomerRequestData.Request>())
+                foreach (string id in request?.requiredTestIds ?? System.Array.Empty<string>())
+                    if (!System.Array.Exists(tests, test => test != null && test.Id == id))
+                        Debug.LogError("주문 필수 테스트가 선택창에 연결되지 않았습니다: " + id, this);
+        }
+
         private void Awake()
         {
             panel?.SetActive(false);
             SetCustomVisible(false);
             bell = null;
+            ValidateRequiredTests();
             game = GameManager.Instance;
             if (game != null) game.TargetSelectionCloseRequested += Close;
             closeButton?.onClick.AddListener(Close);
@@ -118,21 +131,24 @@ namespace WeaponWorkshop
                 int index = i;
                 var button = Instantiate(buttonTemplate, grid);
                 button.name = "Target" + i;
-                button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text =
+                var label = button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+                if (label != null) label.text =
                     i < targetNames.Length ? targetNames[i] : targetPrefabs[i] != null ? targetPrefabs[i].name : "없음";
                 button.interactable = targetPrefabs[i] != null;
                 button.onClick.AddListener(() => Select(index));
                 SoundManager.RegisterButtonSound(button, "SpawnButtonClick");
                 button.gameObject.SetActive(true);
             }
-            for (int i = 0; i < timedTests.Length; i++)
+            var tests = timedTests ?? System.Array.Empty<ShootingTestData>();
+            for (int i = 0; i < tests.Length; i++)
             {
                 int index = i;
                 var button = Instantiate(buttonTemplate, grid);
                 button.name = "TimedTest" + i;
-                var data = timedTests[i];
+                var data = tests[i];
                 button.interactable = data != null && data.IsAvailable;
-                button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = data != null
+                var label = button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+                if (label != null) label.text = data != null
                     ? data.DisplayName + " · " + data.TimeLimit.ToString("0") + "초" : "미설정 테스트";
                 button.onClick.AddListener(() => SelectTimedTest(index));
                 SoundManager.RegisterButtonSound(button, "SpawnButtonClick");
@@ -144,7 +160,8 @@ namespace WeaponWorkshop
             cleanupRect.anchorMin = cleanupRect.anchorMax = cleanupRect.pivot = Vector2.zero;
             cleanupRect.anchoredPosition = new Vector2(24f,20f);
             cleanupRect.sizeDelta = new Vector2(180f,42f);
-            cleanup.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text = "내부 청소";
+            var cleanupLabel = cleanup.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+            if (cleanupLabel != null) cleanupLabel.text = "내부 청소";
             cleanup.interactable = true;
             var cleanupColors = cleanup.colors;
             cleanupColors.normalColor = new Color(0.8f,0.12f,0.12f,1f);
@@ -157,7 +174,7 @@ namespace WeaponWorkshop
             statusRoot.transform.SetParent(grid.parent,false);
             statusText = statusRoot.GetComponent<TMPro.TextMeshProUGUI>();
             var templateText = buttonTemplate.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
-            statusText.font = templateText.font;
+            if (templateText != null) statusText.font = templateText.font;
             statusText.fontSize = 20;
             statusText.color = new Color(1f,0.35f,0.35f,1f);
             statusText.alignment = TMPro.TextAlignmentOptions.Midline;
@@ -176,17 +193,40 @@ namespace WeaponWorkshop
 
         public bool Open(TargetBell source)
         {
-            if (source == null || panel == null || GameManager.GameplayBlocked) return false;
+            if (source == null || panel == null || grid == null || buttonTemplate == null || GameManager.GameplayBlocked) return false;
             game = GameManager.Instance;
             if (game == null) return false;
             bell = source;
+            var required = source.RequiredTestIds() ?? new System.Collections.Generic.List<string>();
+            var tests = timedTests ?? System.Array.Empty<ShootingTestData>();
+            UnityEngine.UI.Button selected = null;
             for (int i = 0; i < testButtons.Count; i++)
-                testButtons[i].interactable = source.TestController != null && timedTests[i] != null && timedTests[i].IsAvailable;
+            {
+                var data = i < tests.Length ? tests[i] : null;
+                var button = testButtons[i];
+                if (button == null) continue;
+                bool mandatory = data != null && required.Contains(data.Id);
+                button.interactable = source.TestController != null && data != null && data.IsAvailable;
+                var label = button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+                if (label != null)
+                    label.text = data == null ? "미설정 테스트" :
+                        (mandatory ? "<color=#FFE28A>[주문 필수]</color> " : "") + data.DisplayName + " · " + data.TimeLimit.ToString("0") + "초";
+                var colors = buttonTemplate.colors;
+                if (mandatory) { colors.normalColor = new Color(.75f, .62f, .3f); colors.selectedColor = new Color(1f, .85f, .4f); }
+                button.colors = colors;
+            }
+            foreach (string id in required)
+            {
+                int index = System.Array.FindIndex(tests, test => test != null && test.Id == id);
+                if (index >= 0 && index < testButtons.Count && testButtons[index] != null && testButtons[index].interactable)
+                { selected = testButtons[index]; break; }
+            }
             grid.gameObject.SetActive(true);
             SetCustomVisible(false);
             if (statusText != null) statusText.text = "";
             game.SetTargetSelection(true);
             panel.SetActive(true);
+            if (selected != null) selected.Select();
             return true;
         }
 
@@ -199,10 +239,11 @@ namespace WeaponWorkshop
 
         private void SelectTimedTest(int index)
         {
-            if (bell == null || index < 0 || index >= timedTests.Length || timedTests[index] == null || !timedTests[index].IsAvailable) return;
+            var tests = timedTests ?? System.Array.Empty<ShootingTestData>();
+            if (bell == null || index < 0 || index >= tests.Length || tests[index] == null || !tests[index].IsAvailable) return;
             var source = bell; // Close clears the UI's bell reference.
             var player = GameManager.Instance != null && GameManager.Instance.UI != null ? GameManager.Instance.UI.Player : null;
-            if (!source.PrepareTest(timedTests[index], player))
+            if (!source.PrepareTest(tests[index], player))
             { if (statusText != null) statusText.text = source.SpawnFailureReason; return; }
             Close();
             source.TestController.Begin();

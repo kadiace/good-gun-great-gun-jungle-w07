@@ -11,6 +11,9 @@
       "basePrice": 200,
       "pricePerRequest": 200,
       "requests": [
+        {"id": "construction/cost-1500", "unlockDay": 2},
+        {"id": "shape/cat", "unlockDay": 2},
+        {"id": "color/crimson-3", "unlockDay": 2},
         {
           "id": "module/scope/min-1",
           "unlockDay": 1
@@ -86,6 +89,18 @@
         {
           "id": "tag/water-gun",
           "unlockDay": 3
+        },
+        {
+          "id": "shooting-test/around-cover",
+          "unlockDay": 4
+        },
+        {
+          "id": "shooting-test/behind-barrier",
+          "unlockDay": 5
+        },
+        {
+          "id": "shooting-test/wide-targets",
+          "unlockDay": 6
         }
       ],
       "orderTemplates": [
@@ -268,7 +283,7 @@
       ],
       "price": 200,
       "lines": [
-        "총구가 8개 이상인 총 부탁드려요. 샷건 모듈 말고, 4방향 분할로요!"
+        "총구가 8개 이상인 총 부탁드려요. 방사 모듈 말고, 4방향 분할로요!"
       ],
       "endsClear": true,
       "happyLine": "총구가 우수수! 마음에 들어요.",
@@ -342,7 +357,7 @@
       ],
       "price": 200,
       "lines": [
-        "총구가 8개 이상인 총 부탁드려요. 샷건 모듈 말고, 4방향 분할로요!"
+        "총구가 8개 이상인 총 부탁드려요. 방사 모듈 말고, 4방향 분할로요!"
       ],
       "endsClear": true,
       "happyLine": "총구가 우수수! 마음에 들어요.",
@@ -847,12 +862,12 @@
       ],
       "price": 700,
       "lines": [
-        "샷건에 샷건을 달고, 거기에 다시 샷건을 달아서 드셔보시겠습니까?",
-        "샷건모듈 3개 이상 이어 붙여서요."
+        "방사 모듈에 방사 모듈을 달고, 거기에 다시 방사 모듈을 달아서 드셔보시겠습니까?",
+        "방사 모듈 3개 이상 이어 붙여서요."
       ],
       "endsClear": true,
-      "happyLine": "샷건 속에 샷건 속에 샷건! 잘 먹겠습니다.",
-      "angryLine": "샷건이 빠졌잖아!"
+      "happyLine": "방사 모듈 속에 방사 모듈 속에 방사 모듈! 잘 먹겠습니다.",
+      "angryLine": "방사 모듈이 빠졌잖아!"
     },
     {
       "id": "9f6cc4a608cdb4e4bbe4dcd2b1d6167d",
@@ -864,7 +879,7 @@
       "price": 700,
       "lines": [
         "탕! 이게 진짜 총이었으면 당신은 죽었습니다.",
-        "샷건 태그에, 2방향 분할도 장착해주세요."
+        "산탄총 태그에, 2방향 분할도 장착해주세요."
       ],
       "endsClear": true,
       "happyLine": "탕! 이번엔 진짜군요. 완벽하게 작동합니다.",
