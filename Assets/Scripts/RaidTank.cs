@@ -175,6 +175,11 @@ namespace WeaponWorkshop
         }
         private void FixedUpdate()
         {
+            if (released && transform.position.y <= -100f)
+            {
+                Destroy(gameObject);
+                return;
+            }
             if (released && !destroyed)
             {
                 bool hadSupport = landed;

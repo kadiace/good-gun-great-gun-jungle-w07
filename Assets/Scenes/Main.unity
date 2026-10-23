@@ -561,6 +561,14 @@ PrefabInstance:
       propertyPath: interaction
       value: 
       objectReference: {fileID: 2087899907347993065}
+    - target: {fileID: 2863824831375802897, guid: ea603e9380f5f0e4d86434f238a66899, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.78
+      objectReference: {fileID: 0}
+    - target: {fileID: 2863824831375802897, guid: ea603e9380f5f0e4d86434f238a66899, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.6
+      objectReference: {fileID: 0}
     - target: {fileID: 3373554112135935051, guid: ea603e9380f5f0e4d86434f238a66899, type: 3}
       propertyPath: retireUI
       value: 
@@ -603,6 +611,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5873428792925063157, guid: ea603e9380f5f0e4d86434f238a66899, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7162143621422662636, guid: ea603e9380f5f0e4d86434f238a66899, type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8409061613517403137, guid: ea603e9380f5f0e4d86434f238a66899, type: 3}

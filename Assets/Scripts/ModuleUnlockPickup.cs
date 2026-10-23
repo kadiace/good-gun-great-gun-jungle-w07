@@ -13,7 +13,7 @@ namespace WeaponWorkshop
         public Transform OutlineRoot => transform;
         private void Awake()
         {
-            gameObject.AddComponent<PickupOutline>();
+            gameObject.AddComponent<PickupOutline>().WidthMultiplier = 1.5f;
             collected = false; availableAt = Time.time + pickupDelay;
             body = GetComponent<Rigidbody>();
             body.isKinematic = false;
