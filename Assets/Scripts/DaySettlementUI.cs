@@ -190,7 +190,8 @@ public sealed class DaySettlementUI : MonoBehaviour
         if (!show) confirmRequested = false;
         if (!show) WeaponWorkshop.FeedbackUI.For(this)?.CancelChoice(this);
         moneyDisplay?.gameObject.SetActive(wallet != null);
-        moduleCreditDisplay?.gameObject.SetActive(wallet != null);
+        // 티켓 UI 복제에 쓰는 원본은 유지하되 보유 부품은 표시하지 않는다.
+        moduleCreditDisplay?.gameObject.SetActive(false);
         slotTicketDisplay?.gameObject.SetActive(wallet != null);
         if (slotTicketText != null && wallet != null)
             slotTicketCounter.SetTarget(wallet.SlotTickets, moneyCountDuration);
@@ -304,9 +305,9 @@ public sealed class DaySettlementUI : MonoBehaviour
     private RectTransform CreateSlotTicketDisplay()
     {
         if (moduleCreditDisplay == null || moduleCreditText == null) return null;
+        // 원본의 앵커·피벗·위치·크기를 그대로 복제해 같은 화면 비율과 재화 행 위치를 사용한다.
         var display = Instantiate(moduleCreditDisplay, moduleCreditDisplay.parent);
         display.name = "SlotTicketDisplay";
-        display.anchoredPosition = moduleCreditDisplay.anchoredPosition - new Vector2(0f, moduleCreditDisplay.rect.height + 6f);
         slotTicketText = display.Find("ModuleCreditText")?.GetComponent<TMPro.TextMeshProUGUI>();
         var icon = display.Find("ModuleIcon")?.GetComponent<Image>();
         if (icon != null) icon.color = new Color(0.65f, 0.2f, 1f);

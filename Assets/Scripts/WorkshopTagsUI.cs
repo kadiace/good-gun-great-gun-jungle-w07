@@ -64,7 +64,9 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
+            showingRaidRewards = false;
             panel?.SetActive(false);
+            if (weightText != null) weightText.gameObject.SetActive(false);
             if (tagsText != null) tagsText.text = "활성 태그";
             if (tagTemplate != null) tagTemplate.gameObject.SetActive(false);
             if (tagContainer != null) tagContainer.gameObject.SetActive(false);
@@ -75,6 +77,7 @@ namespace WeaponWorkshop
         private void OnDisable()
         {
             panel?.SetActive(false);
+            if (weightText != null) weightText.gameObject.SetActive(false);
             showingRaidRewards = false;
         }
 
@@ -105,6 +108,7 @@ namespace WeaponWorkshop
             var core = weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null;
             bool visible = core != null;
             if (panel != null && panel.activeSelf != visible) panel.SetActive(visible);
+            if (weightText != null) weightText.gameObject.SetActive(visible);
             // 패널이 꺼져 있거나 공방 모드가 아니면 0.1초 갱신 자체를 건너뛴다.
             if (panel == null || !panel.activeSelf || session == null || !session.IsEditing) return;
             if (!visible)
@@ -175,7 +179,8 @@ namespace WeaponWorkshop
         {
             if (panel != null && !panel.activeSelf) panel.SetActive(true);
             if (salePriceText != null) salePriceText.text = $"$ {raid.RaidEarnedDollars:N0}";
-            if (weightText != null) weightText.text = $"부품  {raid.RaidEarnedParts:N0}";
+            // 공방의 무게 표시와 공유하므로 습격 중에만 숨긴다.
+            if (weightText != null) weightText.gameObject.SetActive(false);
             if (tagsText != null) tagsText.text = $"티켓  {raid.RaidEarnedTickets:N0}";
             int count = raid.RaidEarnedModules.Count;
             if (tagTemplate == null || tagContainer == null)

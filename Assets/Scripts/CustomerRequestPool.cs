@@ -24,9 +24,11 @@ namespace WeaponWorkshop
         public int MaxRequests => Row.maxRequests;
 
         // day 일차에 등장할 수 있는 요구사항만 min~max개 조합.
-        // moduleCredits: 보유 모듈 재화. 조합 전체의 필요 재화가 이 안에 들도록 고름.
-        public CustomerProfile Create(int day, int min, int max, PlayerModuleUnlocks unlocks = null, int moduleCredits = int.MaxValue)
+        // 대출 가능한 날에는 잔액이 부족한 주문도 허용한다. 실제 대출은 플레이어가 선택한다.
+        public CustomerProfile Create(int day, int min, int max, PlayerModuleUnlocks unlocks = null,
+            int money = int.MaxValue, bool canTakeLoan = false)
         {
+            money = Mathf.Max(0, money);
             var table = TableManager.Instance.CustomerRequest;
             var pool = Row;
             var picked = new List<string>();
@@ -36,7 +38,7 @@ namespace WeaponWorkshop
                 string id = table.FindRequest(entry?.id)?.id;
                 if (id == null || entry.unlockDay > day || candidates.Contains(id)) continue;
                 if (CustomerModuleRequirements.Allows(new[] { id }, unlocks, CoreStats) &&
-                    CustomerModuleRequirements.CreditCost(new[] { id }, unlocks, CoreStats) <= moduleCredits) candidates.Add(id);
+                    (canTakeLoan || CustomerModuleRequirements.DollarCost(new[] { id }, unlocks, CoreStats) <= money)) candidates.Add(id);
             }
             int count = Mathf.Min(Random.Range(min, Mathf.Max(min, max) + 1), candidates.Count);
             for (int i = 0; i < count && candidates.Count > 0; i++)
@@ -47,7 +49,7 @@ namespace WeaponWorkshop
                 candidates.RemoveAt(index);
                 // 같이 만족할 수 없는 요구사항은 후보에서 뺀다 (예: 권총 태그 + 스코프).
                 candidates.RemoveAll(c => pool.Conflicts(next, c));
-                candidates.RemoveAll(c => CreditCost(picked, c, unlocks) > moduleCredits);
+                if (!canTakeLoan) candidates.RemoveAll(c => DollarCost(picked, c, unlocks) > money);
             }
 
             var phrases = new List<string>();
@@ -69,10 +71,10 @@ namespace WeaponWorkshop
             return profile;
         }
 
-        // 이미 고른 요구사항에 extra를 더했을 때의 필요 모듈 재화.
-        private int CreditCost(List<string> picked, string extra, PlayerModuleUnlocks unlocks)
+        // 이미 고른 요구사항에 extra를 더했을 때의 필요 모듈 구매액.
+        private int DollarCost(List<string> picked, string extra, PlayerModuleUnlocks unlocks)
         {
-            return CustomerModuleRequirements.CreditCost(new List<string>(picked) { extra }.ToArray(), unlocks, CoreStats);
+            return CustomerModuleRequirements.DollarCost(new List<string>(picked) { extra }.ToArray(), unlocks, CoreStats);
         }
 
         private static T Pick<T>(T[] items, T fallback)

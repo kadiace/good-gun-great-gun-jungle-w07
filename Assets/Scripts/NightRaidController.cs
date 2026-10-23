@@ -81,8 +81,6 @@ namespace WeaponWorkshop
             bool training = TutorialManager.TrainingRaidPending;
             var text = new System.Text.StringBuilder(training ? "획득 정산 (튜토리얼 연습)\n\n" : "획득 정산\n\n");
             if (training) text.AppendLine("연습 습격의 획득물은 공방에 반영되지 않습니다.").AppendLine();
-            // 지갑 차이는 디버그 재화·무기 환급까지 섞이므로 상자에서 실제로 주운 재료만 보여준다.
-            text.Append("부품  +").Append(materialCrateCredits).AppendLine();
             text.Append("슬롯머신 티켓  +").Append(earnedSlotTickets).AppendLine();
             text.Append("돈  +").Append(raidEarnedDollars).AppendLine();
             foreach (int id in unlocks.CaptureUnlockedModules())
