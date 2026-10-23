@@ -3,13 +3,15 @@ using UnityEngine.EventSystems;
 
 namespace WeaponWorkshop
 {
-    // 누르거나 끄는 위치를 이 사각형 안의 0~1 좌표(왼쪽 아래 = 0,0)로 알려준다. ColorPickerUI가 사용.
-    public sealed class ColorPickArea : MonoBehaviour, IPointerDownHandler, IDragHandler
+    // 누르거나 끄는 위치를 이 사각형 안의 0~1 좌표(왼쪽 아래 = 0,0)로 알려준다. ColorPickerUI·도색 패널이 사용.
+    public sealed class ColorPickArea : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
     {
         public event System.Action<Vector2> Picked;
+        public event System.Action Released;
 
         public void OnPointerDown(PointerEventData eventData) => Pick(eventData);
         public void OnDrag(PointerEventData eventData) => Pick(eventData);
+        public void OnPointerUp(PointerEventData eventData) => Released?.Invoke();
 
         private void Pick(PointerEventData eventData)
         {

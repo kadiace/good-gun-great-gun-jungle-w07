@@ -60,7 +60,8 @@ namespace WeaponWorkshop
             Quaternion.Inverse(Quaternion.LookRotation(-(Vector3)NormalFor(axis), VerticalFor(axis)));
         public Vector3Int Horizontal => Vector3Int.RoundToInt(Vector3.Cross(Vertical, -(Vector3)Normal));
         public bool CanChangeView => session != null && session.IsEditing && !GameManager.GameplayBlocked &&
-            builder != null && !builder.IsCustomMode;
+            builder != null && !builder.IsCustomMode && !SlotDragActive;
+        private bool SlotDragActive => builder != null && builder.IsFavoriteDragging;
 
         public void Initialize(WorkshopSession owner, Camera camera, CubeBuilder cubeBuilder)
         {

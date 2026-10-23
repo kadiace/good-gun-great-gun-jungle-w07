@@ -3,6 +3,15 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
+    internal enum WorkshopPlacementFailureReason
+    {
+        None,
+        Structural,
+        WalletUnavailable,
+        CreditsInsufficient,
+        DollarsInsufficient
+    }
+
     // 순서가 있는 경로를 가상 조립에 적용한다. 실제 설치·구매는 CubeBuilder의 단일 트랜잭션이다.
     internal sealed class WorkshopPlacementPlan
     {
@@ -14,6 +23,7 @@ namespace WeaponWorkshop
         public readonly List<Part> Parts = new();
         public bool Valid { get; private set; }
         public string Error { get; private set; }
+        public WorkshopPlacementFailureReason FailureReason { get; private set; }
         public int Dollars { get; private set; }
         public int Credits { get; private set; }
         public int CornerExtensions { get; private set; }
@@ -22,7 +32,13 @@ namespace WeaponWorkshop
         public void Build(CubeAssembly assembly, IReadOnlyList<Vector3Int> path, int slot,
             Vector3Int normal, Vector3Int horizontal, PlayerWallet wallet, System.Func<int, bool> isLocked)
         {
-            Parts.Clear(); Valid = false; Error = ""; InvalidCell = null; Dollars = Credits = 0;
+            Parts.Clear();
+            Valid = false;
+            Error = "";
+            FailureReason = WorkshopPlacementFailureReason.Structural;
+            InvalidCell = null;
+            Dollars = 0;
+            Credits = 0;
             CornerExtensions = 0;
             if (assembly == null || assembly.GetPrefab(slot) == null) { Error = "모듈을 선택하세요"; return; }
             var state = new CubePlacementState(assembly);
@@ -86,8 +102,25 @@ namespace WeaponWorkshop
             }
             Dollars = (int)dollars; Credits = (int)credits; InvalidCell = null;
             if (Parts.Count == 0) { Error = "새로 설치할 셀이 없습니다"; return; }
-            if (wallet == null || !wallet.CanAfford(Dollars) || !wallet.CanAffordModuleCredits(Credits))
-            { Error = "설치 비용 또는 모듈 재료가 부족합니다"; return; }
+            if (wallet == null || !wallet.isActiveAndEnabled)
+            {
+                FailureReason = WorkshopPlacementFailureReason.WalletUnavailable;
+                Error = "지갑을 사용할 수 없습니다";
+                return;
+            }
+            if (wallet.ModuleCredits < Credits)
+            {
+                FailureReason = WorkshopPlacementFailureReason.CreditsInsufficient;
+                Error = "부품이 부족합니다.";
+                return;
+            }
+            if (wallet.Balance < Dollars)
+            {
+                FailureReason = WorkshopPlacementFailureReason.DollarsInsufficient;
+                Error = "설치 비용이 부족합니다";
+                return;
+            }
+            FailureReason = WorkshopPlacementFailureReason.None;
             Valid = true;
         }
     }

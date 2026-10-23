@@ -1,109 +1,99 @@
-using System;
-using System.Text;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+using TMPro;
+
 namespace WeaponWorkshop
 {
+    /// <summary>
+    /// 기존 UIManager·WorkshopSession 세션과 레시피 화면(RecipeView/RecipePresenter)을 연결하는 브리지입니다.
+    /// 씬 오버라이드 보존을 위해 기존 직렬화 필드(panel·openButton·buttonLabel·weaponInfo·scroll·inlineLayout·recipes)를
+    /// 그대로 유지하고, Awake에서 유효 참조를 View에 주입한 뒤 Presenter를 초기화합니다.
+    /// 프레임 진입은 이 컴포넌트의 LateUpdate가 Presenter.Tick으로 전달하며 기존 public API(IsOpen·TutorialButton·Open·Close)는 유지합니다.
+    /// </summary>
     public sealed class WeaponRecipeUI : MonoBehaviour
     {
-        [Serializable] public sealed class RecipeEntry
-        {
-            public string tagId;
-            public TMP_Text title;
-            public TagPillGraphic badge;
-            public TMP_Text conditions;
-        }
-        [SerializeField] private GameObject panel;
+        [SerializeField] private RecipeView m_view;
         [SerializeField] private UIManager uiManager;
+        [SerializeField] private GameObject panel;
         [SerializeField] private Button openButton;
         [SerializeField] private TMP_Text buttonLabel;
         [SerializeField] private RectTransform weaponInfo;
         [SerializeField] private ScrollRect scroll;
         [SerializeField] private LayoutElement inlineLayout;
-        [SerializeField] private RecipeEntry[] recipes = new RecipeEntry[0];
-        private readonly Vector3[] canvasCorners = new Vector3[4];
-        private bool layoutDirty;
-        public bool IsOpen => panel != null && panel.activeSelf;
-        public RectTransform TutorialButton => openButton != null ? openButton.transform as RectTransform : null;
+        [SerializeField] private RecipeView.RecipeEntry[] recipes = new RecipeView.RecipeEntry[0];
+
+        private RecipePresenter m_presenter;
+
+        public bool IsOpen => m_presenter != null && m_presenter.IsOpen;
+
+        public RectTransform TutorialButton => m_view != null ? m_view.TutorialButton : null;
 
         private void Awake()
         {
-            if (panel != null) panel.SetActive(false);
-            if (openButton != null) openButton.gameObject.SetActive(false);
-            SetButtonLabel();
-            if (openButton != null) openButton.onClick.AddListener(Toggle);
-        }
-        private void OnDisable() => Close();
-        private void OnDestroy()
-        {
-            if (openButton != null) openButton.onClick.RemoveListener(Toggle);
-        }
-        private void Toggle()
-        {
-            if (IsOpen) Close();
-            else Open();
-        }
-        public void Open()
-        {
-            if (GameManager.GameplayBlocked || IsOpen ||
-                panel == null || weaponInfo == null || !weaponInfo.gameObject.activeInHierarchy) return;
-            if (!TutorialManager.TryAction("recipe")) return;
-            var table = TableManager.Instance.CustomerRequest;
-            foreach (var recipe in recipes)
+            if (m_view == null)
             {
-                var tag = table.FindTag(recipe.tagId);
-                if (tag == null) continue;
-                recipe.title.text = tag.name;
-                recipe.badge.color = tag.color;
-                var text = new StringBuilder();
-                foreach (var condition in tag.conditions ?? Array.Empty<CustomerRequestData.Condition>())
-                    if (condition != null) text.Append("• ").Append(CustomerRequestInfo.Describe(condition)).AppendLine();
-                recipe.conditions.text = text.Length > 0 ? text.ToString().TrimEnd() : "조건이 설정되지 않았습니다.";
+                Debug.LogError("[WeaponRecipeUI] Initialize 실패: m_view 참조 누락. UIManager.prefab의 RecipeView 컴포넌트 연결이 필요합니다.", this);
+                return;
             }
-            panel.SetActive(true);
-            SetButtonLabel();
-            layoutDirty = true;
-            scroll.StopMovement(); scroll.verticalNormalizedPosition = 1f;
-            // Inline inspection can finish while the recipe stays visible during construction.
-            if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("recipe-inspected");
+
+            // 씬 오버라이드가 적용된 브리지 직렬화 참조를 Initialize 전에 View에 주입한다.
+            m_view.BindReferences(panel, openButton, buttonLabel, weaponInfo, scroll, inlineLayout, recipes);
+            m_presenter = new RecipePresenter(m_view, ResolveSession);
+            if (!m_presenter.Initialize())
+            {
+                m_presenter = null;
+            }
         }
-        public void Close()
-        {
-            if (panel != null) panel.SetActive(false);
-            SetButtonLabel();
-        }
-        private void SetButtonLabel()
-        {
-            if (buttonLabel != null) buttonLabel.text = IsOpen ? "레시피 접기" : "레시피 보기";
-        }
+
         private void LateUpdate()
         {
-            var player = uiManager != null ? uiManager.Player : null;
-            var session = player != null ? player.GetComponent<WorkshopSession>() : null;
-            bool canBrowse = session != null && session.IsEditing;
-            if (openButton != null && openButton.gameObject.activeSelf != canBrowse)
-                openButton.gameObject.SetActive(canBrowse);
-            if (!canBrowse) { Close(); return; }
-            if (!IsOpen) return;
-            if (weaponInfo == null || !weaponInfo.gameObject.activeInHierarchy) { Close(); return; }
-            if (layoutDirty)
+            if (m_presenter != null)
             {
-                // Resolve wrapped content at the sidebar width before measuring its height.
-                LayoutRebuilder.ForceRebuildLayoutImmediate(weaponInfo);
-                LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
-                layoutDirty = false;
+                m_presenter.Tick();
             }
-            var canvas = weaponInfo.GetComponentInParent<Canvas>().rootCanvas.GetComponent<RectTransform>();
-            canvas.GetWorldCorners(canvasCorners);
-            float bottom = weaponInfo.InverseTransformPoint(canvasCorners[0]).y + 24f;
-            // Exclude the old recipe height when calculating remaining screen space.
-            float headerHeight = weaponInfo.rect.height - ((RectTransform)panel.transform).rect.height;
-            float available = Mathf.Max(0f, weaponInfo.rect.yMax - headerHeight - bottom);
-            float preferred = LayoutUtility.GetPreferredHeight(scroll.content);
-            float height = Mathf.Min(preferred, available);
-            if (!Mathf.Approximately(inlineLayout.preferredHeight, height)) inlineLayout.preferredHeight = height;
+        }
+
+        private void OnDisable()
+        {
+            if (m_presenter != null)
+            {
+                m_presenter.Close();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (m_presenter != null)
+            {
+                m_presenter.Dispose();
+                m_presenter = null;
+            }
+        }
+
+        public void Open()
+        {
+            if (m_presenter != null)
+            {
+                m_presenter.Open();
+            }
+        }
+
+        public void Close()
+        {
+            if (m_presenter != null)
+            {
+                m_presenter.Close();
+            }
+        }
+
+        /// <summary>
+        /// 기존 경로와 같은 세션 탐색(UIManager.Player의 WorkshopSession)을 Presenter에 공급합니다.
+        /// </summary>
+        private WorkshopSession ResolveSession()
+        {
+            FirstPersonPlayer player = uiManager != null ? uiManager.Player : null;
+            return player != null ? player.GetComponent<WorkshopSession>() : null;
         }
     }
 }
