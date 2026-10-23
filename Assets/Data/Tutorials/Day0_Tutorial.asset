@@ -3838,7 +3838,7 @@ MonoBehaviour:
     showDescriptionBeforeObjective: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
-    completion: 13
+    completion: 0
     target: 0
     targetLabel: 
     requiresWorkbenchEditing: 0
