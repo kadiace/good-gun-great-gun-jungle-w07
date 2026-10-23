@@ -319,11 +319,12 @@ namespace WeaponWorkshop
                 tagPills[i].GetComponent<TagPillGraphic>().color = weaponTags[i].TagColor;
             }
             for (int i = weaponTags.Count; i < tagPills.Count; i++) tagPills[i].gameObject.SetActive(false);
-            bool preview = weapon.GetComponent<PresetWeaponPreview>() != null;
+            var preview = weapon.GetComponent<PresetWeaponPreview>();
             description.gameObject.SetActive(false);
             UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(textArea);
             Show(weapon.WeaponName, string.Empty);
-            if (!preview) ShowInteract();
+            // A long workbench ray may describe another preview beyond interaction range.
+            if (preview == null || interaction != null && interaction.AimedTarget == preview) ShowInteract();
             title.color = Color.white;
             description.color = bodyColor;
         }
