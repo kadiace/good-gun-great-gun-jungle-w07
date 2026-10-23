@@ -37,7 +37,7 @@ flowchart TD
 
 - 시작·불러오기: `Start_UI`가 기존 참조·외부 API를 유지하고 StartMenuPresenter → StartMenuDomainAdapter로 저장 상태와 씬 이동을 연결한다. StartMenuView는 저작된 메뉴 표시·포커스를 담당한다. 저장 카드 자체의 MVP 이관은 후속이다.
 - 편집 모드: `WorkshopSession`이 작업대·장착·카메라·입력 맵을 관리한다. `CubeBuilder`와 UI를 한 클래스로 합치지 않는다.
-- 화면 제어: `GameManager.TogglePause()`가 일반 C# `UICancelRouter`에 화면별 ESC 판단을 위임하고 `UIManager.Refresh()`는 `PausePresenter`에 일시정지 표시를 위임한다. 드래그 취소·Pause 하위 저장/설정 닫기·직접 Resume을 연결했다. 공통 입력·커서·시간 정책의 전체 이관은 남아 있다.
+- 화면 제어: `GameManager.TogglePause()`가 일반 C# `UICancelRouter`에 화면별 ESC 판단을 위임하고 `UIManager.Refresh()`는 `PausePresenter`에 일시정지 표시를 위임한다. 드래그 취소·Pause 하위 저장/설정 닫기·직접 Resume을 연결했다. 커서·일시정지/야간 시간 배율·Game/Workshop 액션맵은 `UIInputPolicy`가 모은다.
 - 날짜 진행: `_DayManager`가 정산 상태와 다음 날 진행을 소유한다. UI가 날짜·지갑 상태의 두 번째 원본이 되면 안 된다.
 - 습격 왕복: `NightRaidController`와 `NightRaidTransfer`가 출발 상태·예정 보상·귀환을 연결한다. 결과창 표시와 실제 지급 시점은 구분한다.
 - 튜토리얼: UI 표시뿐 아니라 허용 행동·대상·입력 중복 방지까지 연결된다. 화면만 옮겨 기능을 보존했다고 판단하지 않는다.
@@ -50,7 +50,7 @@ flowchart TD
 | 슬롯 드래그와 시점 점유·D02 | [P2-C 입력 점유](P2CDragOwnershipImplementation.md) | 기존 드래그 상태를 카메라 입력에서 공유하는 단위. 전체 에디터 MVP·프리팹 이관과 분리 |
 | 연속 배치 비용·D06 | [P2-C 비용 안내](P2CStrokeFundsImplementation.md) | 경로 취소 뒤 기존 대출 안내 연결. 구조/부품/달러 실패 구분, 승인 후 자동 설치 금지 |
 | 메뉴·설정·편집 표시·D09 | [P2 병렬 이관](P2ParallelWaveImplementation.md) | 시작·사운드·이름·레시피·층·시점 MVP와 View6개 저작, Pause 나가기 Presenter 연결. 층 버튼·배치·방향키 복원. 모듈 목록/커스텀·저장·정산 등 전체 이관은 후속 |
-| 남은 화면 이관·해상도 | [P3 화면 이관](P3ScreenMigrationImplementation.md) | 모듈 목록·커스텀·저장·정산·습격·호버·사격장·전투 HUD·튜토리얼 표시·프리셋·매뉴얼·엔딩 MVP와 저작 명령, 씬 인라인 화면 추출, 1920×1080 match 1 환산. 레이어·탐색·입력 정책·월드 상호작용은 진행 중 |
+| 남은 화면 이관·해상도 | [P3 화면 이관](P3ScreenMigrationImplementation.md) | 모듈 목록·커스텀·저장·정산·습격·호버·사격장·전투 HUD·튜토리얼 표시·프리셋·매뉴얼·엔딩 MVP와 저작 명령, 씬 인라인 화면 추출, 1920×1080 match 1 환산. 레이어·중앙 폭·명시 탐색·입력 정책·월드 상호작용·씬 오버라이드 정리 반영. 일부 Automatic Navigation과 플레이 확인은 남음 |
 | 공통 구조·계약·스타일 | [Contracts](Contracts.md), 저장소 `.editorconfig` | P1 착수 기준 통합. 전체 화면 API·수정 소유권은 해당 단위에서 구체화 |
 | 메뉴·공방 영업 | [MenuWorkshopInventory](MenuWorkshopInventory.md) | 관리자 통합 46개 기능 가족. 상세 연결/플레이 대조 전 |
 | 총기 에디터·커스텀 | [EditorCustomInventory](EditorCustomInventory.md) | 관리자 통합 51개 기능 가족. 상세 연결/플레이 대조 전 |
