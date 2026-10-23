@@ -47,13 +47,28 @@ namespace WeaponWorkshop
             enemyRoot.GetComponent<RaidTank>() != null ? "탱크" : "적";
         public Vector3 MarkerPosition => enemyRoot != null ? enemyRoot.transform.position : transform.position;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetRegistry() => activeCores.Clear();
+        private static void ResetRegistry()
+        {
+            activeCores.Clear();
+            findForPartCache.Clear();
+        }
+        // part → core lookup cache (Transform instanceID keys). enemyRoot never changes at runtime and nothing is
+        // re-parented into enemy subtrees after creation, so misses (null) stay valid until a core registers or
+        // leaves; positives are re-checked with one IsChildOf so a part that left its enemy returns a fresh answer.
+        private static readonly System.Collections.Generic.Dictionary<int, RaidEnemyCore> findForPartCache = new System.Collections.Generic.Dictionary<int, RaidEnemyCore>();
         public static RaidEnemyCore FindForPart(Transform part)
         {
+            int partId = part.GetInstanceID();
+            if (findForPartCache.TryGetValue(partId, out var cached))
+            {
+                if (cached == null) return null;
+                if (!cached.IsDestroyed && cached.enemyRoot != null && part.IsChildOf(cached.enemyRoot.transform)) return cached;
+            }
             RaidEnemyCore match = null;
             foreach (var core in activeCores)
                 if (core != null && !core.IsDestroyed && core.enemyRoot != null && part.IsChildOf(core.enemyRoot.transform) &&
                     (match == null || core.enemyRoot.transform.IsChildOf(match.enemyRoot.transform))) match = core;
+            findForPartCache[partId] = match;
             return match;
         }
         public bool IsDestroyed { get; private set; }
@@ -62,12 +77,14 @@ namespace WeaponWorkshop
         private void OnEnable()
         {
             activeCores.Add(this);
+            findForPartCache.Clear();
             if (health == null) return;
             health.Destroyed += BreakEnemy;
         }
         private void OnDisable()
         {
             activeCores.Remove(this);
+            findForPartCache.Clear();
             if (health == null) return;
             health.Destroyed -= BreakEnemy;
         }
@@ -123,7 +140,41 @@ namespace WeaponWorkshop
             foreach (var part in enemyRoot.GetComponentsInChildren<DestructibleTarget>())
                 part.BreakAll(transform.position, Vector3.down);
             // Keep the debris owners alive until their existing fade finishes.
-            Destroy(enemyRoot, 12f);
+            StartCoroutine(DelayedRootRemoval());
+            // 코어가 그 사이 꺼져 코루틴이 멈춰도 잔해가 남지 않게 기존 지연 삭제를 예비로 둔다.
+            Destroy(enemyRoot, DebrisRemovalDelay + 1f);
+        }
+
+        // 기존 12초 지연 Destroy를 대체한다. 리지드바디 Destroy 비용은 질량·관성 텐서 자동 재계산이
+        // 지배하므로 삭제 직전에만 끄고 바로 지운다(남은 12초 물리 동작은 그대로).
+        private const float DebrisRemovalDelay = 12f;
+        private System.Collections.IEnumerator DelayedRootRemoval()
+        {
+            yield return new WaitForSeconds(DebrisRemovalDelay);
+            if (enemyRoot == null) yield break;
+            PrepareRootForDestroy(enemyRoot);
+            Destroy(enemyRoot);
+        }
+
+        private static void PrepareRootForDestroy(GameObject root)
+        {
+            var bodies = root.GetComponentsInChildren<Rigidbody>(true);
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                bodies[i].automaticCenterOfMass = false;
+                bodies[i].automaticInertiaTensor = false;
+            }
+        }
+
+        // 공방 복귀 언로드 전에 호출해 씬에 남은 적 잔해 전체를 삭제 준비 상태로 바꾼다.
+        public static void PrepareAllForUnload()
+        {
+            for (int i = 0; i < activeCores.Count; i++)
+            {
+                var core = activeCores[i];
+                if (core == null || core.enemyRoot == null) continue;
+                PrepareRootForDestroy(core.enemyRoot);
+            }
         }
     }
 }

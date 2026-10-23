@@ -229,15 +229,15 @@ namespace WeaponWorkshop
             if (pendingCellLogs.Count == 0) return;
             using (cellLogFlushMarker.Auto())
             {
-                UnityEngine.Profiling.Profiler.BeginSample("NightRaidController.CellLogQueueCount=" + pendingCellLogs.Count);
                 long started = Stopwatch.GetTimestamp();
-                long budgetTicks = (long)(Stopwatch.Frequency * CellLogFrameBudgetMilliseconds / 1000.0);
-                try
-                {
-                    while (pendingCellLogs.Count > 0 && Stopwatch.GetTimestamp() - started < budgetTicks)
-                        RecordNextCellLog();
-                }
-                finally { UnityEngine.Profiling.Profiler.EndSample(); }
+                double sharedBudgetMilliseconds = System.Math.Min(CellLogFrameBudgetMilliseconds,
+                    DestructionFrameBudget.RemainingMilliseconds);
+                long budgetTicks = (long)(Stopwatch.Frequency * sharedBudgetMilliseconds / 1000.0);
+                // One entry always drains so a spent combat budget cannot stall the queue forever.
+                bool wrote = false;
+                while (pendingCellLogs.Count > 0 &&
+                    (!wrote || Stopwatch.GetTimestamp() - started < budgetTicks))
+                { RecordNextCellLog(); wrote = true; }
             }
         }
         private void FlushCellLogs()
@@ -245,17 +245,14 @@ namespace WeaponWorkshop
             if (pendingCellLogs.Count == 0) return;
             using (cellLogFlushMarker.Auto())
             {
-                UnityEngine.Profiling.Profiler.BeginSample("NightRaidController.CellLogQueueCount=" + pendingCellLogs.Count);
-                try { while (pendingCellLogs.Count > 0) RecordNextCellLog(); }
-                finally { UnityEngine.Profiling.Profiler.EndSample(); }
+                while (pendingCellLogs.Count > 0) RecordNextCellLog();
             }
         }
         private void RecordNextCellLog()
         {
-            CellDestroyedLog entry = pendingCellLogs.Peek();
+            CellDestroyedLog entry = pendingCellLogs.Dequeue();
             GameLogger.Data("Info", "NightRaid", "블록 파괴", new RaidBlockDestroyedLog
             { stageId = entry.stageId, time = entry.time, blockId = entry.blockId });
-            pendingCellLogs.Dequeue();
         }
         private void OnSceneUnloaded(Scene scene)
         {
@@ -648,12 +645,26 @@ namespace WeaponWorkshop
             if (workshopSave == null || !workshopSave.TryCaptureTravel(out checkpoint, out error))
             { wallet?.Credit(cost); ui.ShowError(workshopSave == null ? "공방 저장 관리자가 연결되지 않았습니다." : error); return; }
             checkpoint.settlement = true;
-            if (training && !tutorial.PrepareTrainingRaid()) { wallet?.Credit(cost); return; }
-            // 여기서부터는 실제 진입 확정. 사망·귀환을 포함해 환불하지 않는다.
-            transitioning = true; ui.SetLoading(); PoolManager.ClearActive();
+            // PrepareTrainingRaid는 0.9 도달 뒤 onReady에서 호출한다. 로드 실패 시 튜토리얼 상태를 남기지 않는다.
+            // 여기서부터는 실제 진입 확정. 사망·귀환을 포함해 환불하지 않는다. 로드 실패만 예외로 환불한다.
+            transitioning = true; ui.SetLoading();
             NightRaidTransfer.Begin(checkpoint, cost);
             SoundManager.CaptureRaidDeparture();
-            SceneManager.LoadSceneAsync(regionScene, LoadSceneMode.Single);
+            NightRaidEntryOverlay.BeginEntry(regionScene,
+                () => !training || tutorial.PrepareTrainingRaid(),
+                () => AbortRaidEntry(cost));
+        }
+
+        // 커버가 새 씬을 활성화하기 전에 실패했을 때만 호출된다.
+        private void AbortRaidEntry(int cost)
+        {
+            if (!transitioning || inRaid) return;
+            NightRaidTransfer.Abandon();
+            player?.GetComponent<PlayerWallet>()?.Credit(cost);
+            transitioning = false;
+            ui.ResetBackButton();
+            ui.ShowMap(true);
+            ui.ShowError("습격 진입에 실패해 입장 비용을 환불했습니다.");
         }
         private void Teleport(Vector3 position, Quaternion rotation)
         {

@@ -175,6 +175,38 @@ namespace WeaponWorkshop
             if (firstWall != null && firstWall.loadState == AudioDataLoadState.Unloaded) firstWall.LoadAudioData();
         }
 
+        /// <summary>
+        /// 습격 진입 커버가 떠 있는 동안 전투 BGM 데이터를 미리 올린다.
+        /// 재생 상태(activeRaidScene/currentBgm/musicTransition)는 바꾸지 않는다.
+        /// </summary>
+        public static bool PreloadRaidMusic(string scene)
+        {
+            if (instance == null) return false;
+            if (scene == TutorialManager.TrainingScene)
+            {
+                AudioClip night = instance.GetMusicClip(BgmId.Night);
+                if (night == null || night.loadState != AudioDataLoadState.Unloaded) return false;
+                night.LoadAudioData();
+                return true;
+            }
+
+            int raidNumber = SoundInfo.Raid(scene)?.number ?? 0;
+            AudioClip travel = instance.GetMusicClip(RaidMusicId(raidNumber, RaidBgmPhase.Travel)) ?? instance.defaultMusicClip;
+            AudioClip firstWall = instance.GetMusicClip(RaidMusicId(raidNumber, RaidBgmPhase.FirstWall));
+            bool loaded = false;
+            if (travel != null && travel.loadState == AudioDataLoadState.Unloaded)
+            {
+                travel.LoadAudioData();
+                loaded = true;
+            }
+            if (firstWall != null && firstWall.loadState == AudioDataLoadState.Unloaded)
+            {
+                firstWall.LoadAudioData();
+                loaded = true;
+            }
+            return loaded;
+        }
+
         // 첫 벽 파괴 여부는 씬의 NightRaidController가 소유한다.
         public static void OnRaidFirstWallDestroyed(string scene)
         {

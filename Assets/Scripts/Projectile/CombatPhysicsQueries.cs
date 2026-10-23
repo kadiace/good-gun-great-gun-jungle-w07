@@ -60,7 +60,12 @@ namespace WeaponWorkshop
                 var target = findTarget != null ? findTarget(hit.collider) : hit.collider.GetComponentInParent<DestructibleTarget>();
                 if (target != null && target.HasPendingCellCollisions)
                 {
-                    if (!refinedTargets.Add(target) || !target.SweepOccupiedCells(center, rotation, halfExtents, distance,
+                    // Casting against a dirty target would pay the cell sweep until the shared budget
+                    // finishes the rebuild; a hit target completes its remaining columns right here so
+                    // later casts hit rebuilt colliders again.
+                    if (!refinedTargets.Add(target)) continue;
+                    target.CompletePendingCollisionRebuild();
+                    if (!target.SweepOccupiedCells(center, rotation, halfExtents, distance,
                         out resolved.distance, out resolved.normal, out resolved.point)) continue;
                 }
                 resolvedCasts[used++] = resolved;

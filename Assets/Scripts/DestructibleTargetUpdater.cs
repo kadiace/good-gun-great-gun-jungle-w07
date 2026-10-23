@@ -20,6 +20,9 @@ namespace WeaponWorkshop
         private readonly List<DestructibleTarget> renderTargets = new List<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> registeredRenderTargets = new HashSet<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> pendingRefresh = new HashSet<DestructibleTarget>();
+        private readonly List<DestructibleTarget> occupancyPrewarm = new List<DestructibleTarget>();
+        private readonly HashSet<DestructibleTarget> occupancyPrewarmSet = new HashSet<DestructibleTarget>();
+        private const double OccupancyPrewarmBudgetMilliseconds = 0.75;
         private bool updating;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -58,6 +61,12 @@ namespace WeaponWorkshop
         internal static void RefreshRegistration(DestructibleTarget target)
         {
             if (!Application.isPlaying || ReferenceEquals(target, null)) return;
+            // Build cell occupancy during load so the first hit only activates prebuilt state.
+            if (target.NeedsOccupancyPrewarm)
+            {
+                DestructibleTargetUpdater prewarmOwner = GetOrCreate();
+                prewarmOwner.QueueOccupancyPrewarm(target);
+            }
             if (!target.NeedsLateUpdate && !target.NeedsRenderUpdate)
             {
                 if (instance != null) instance.QueueRefresh(target);
@@ -102,6 +111,41 @@ namespace WeaponWorkshop
             else ApplyRefresh(target);
         }
 
+        private void QueueOccupancyPrewarm(DestructibleTarget target)
+        {
+            if (target == null || !target.NeedsOccupancyPrewarm) return;
+            if (occupancyPrewarmSet.Add(target)) occupancyPrewarm.Add(target);
+        }
+
+        // Spread cell-table construction across a few frames instead of one load spike.
+        private void ProcessOccupancyPrewarm()
+        {
+            if (occupancyPrewarm.Count == 0) return;
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            double budgetTicks = System.Diagnostics.Stopwatch.Frequency * OccupancyPrewarmBudgetMilliseconds / 1000d;
+            while (occupancyPrewarm.Count > 0)
+            {
+                DestructibleTarget target = occupancyPrewarm[0];
+                if (target == null || !target.NeedsOccupancyPrewarm)
+                {
+                    occupancyPrewarmSet.Remove(target);
+                    RemovePrewarmAt(0);
+                    continue;
+                }
+                target.PrepareOccupancyTemplate();
+                occupancyPrewarmSet.Remove(target);
+                RemovePrewarmAt(0);
+                if (System.Diagnostics.Stopwatch.GetTimestamp() - started >= budgetTicks) break;
+            }
+        }
+
+        private void RemovePrewarmAt(int index)
+        {
+            int last = occupancyPrewarm.Count - 1;
+            if (index != last) occupancyPrewarm[index] = occupancyPrewarm[last];
+            occupancyPrewarm.RemoveAt(last);
+        }
+
         private void ApplyRefresh(DestructibleTarget target)
         {
             bool active = target != null && target.NeedsLateUpdate;
@@ -137,10 +181,14 @@ namespace WeaponWorkshop
             registeredMovingTargets.Clear();
             renderTargets.Clear(); registeredRenderTargets.Clear();
             pendingRefresh.Clear();
+            occupancyPrewarm.Clear(); occupancyPrewarmSet.Clear();
         }
 
         private void LateUpdate()
         {
+            // 같은 프레임 이웃 파츠의 콜라이더 재빌드를 먼저 마쳐, 이미 사라진 이웃 셀이 지지를 붙들지 못하게 한다.
+            PoolManager.FlushExplosionFinish();
+            ProcessOccupancyPrewarm();
             using (updateMarker.Auto())
             {
                 updating = true;

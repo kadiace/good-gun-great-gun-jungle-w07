@@ -17,7 +17,8 @@ namespace WeaponWorkshop
         private readonly System.Collections.Generic.List<GameObject> effects = new System.Collections.Generic.List<GameObject>();
         public static GameManager Instance { get; private set; }
         // 글자 입력 중에는 F(상호작용)·단축키 등 게임 조작이 입력과 함께 실행되지 않게 막는다.
-        public static bool GameplayBlocked => ModalBlocked || TextInputFocused;
+        // 진입 커버가 떠 있는 동안에는 게임 조작도 막는다.
+        public static bool GameplayBlocked => NightRaidEntryOverlay.InputBlocked || ModalBlocked || TextInputFocused;
         // 창·대화·일시정지 등 화면 상태로만 막힌 경우. 입력칸에서 바로 누를 수 있어야 하는 UI 버튼의 활성 판정에 쓴다.
         public static bool ModalBlocked => Instance != null && (Instance.IsPaused || Instance.InDialogue || Instance.IsNight || Instance.InTargetSelection || Instance.InManual || (Instance.UI != null && Instance.UI.IsChoiceOpen));
         public static bool TextInputFocused
@@ -82,6 +83,7 @@ namespace WeaponWorkshop
         }
         public void TogglePause()
         {
+            if (NightRaidEntryOverlay.InputBlocked) return;
             if (uiManager != null && uiManager.GetComponent<RetireUI>()?.IsOpen == true) return;
             // ESC는 입력칸 선택 중에도 창 닫기·작업대 나가기로 동작하므로 화면 상태(ModalBlocked)만 본다.
             if (!ModalBlocked && uiManager != null && uiManager.GetComponent<ShootingTestHUD>()?.CloseRetry() == true) return;
