@@ -225,13 +225,39 @@ namespace WeaponWorkshop.EditorTools
 
         private static IEnumerable<string> GetBuildScenePaths()
         {
+            HashSet<string> paths = new HashSet<string>(StringComparer.Ordinal);
             foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)
             {
                 if (scene.enabled && !string.IsNullOrEmpty(scene.path))
                 {
-                    yield return scene.path;
+                    paths.Add(scene.path);
                 }
             }
+
+            // git 병합으로 바뀐 빌드 씬 목록은 에디터 재시작 전까지 메모리에 반영되지 않으므로 파일 목록도 함께 읽는다.
+            const string BUILD_SETTINGS_FILE = "ProjectSettings/EditorBuildSettings.asset";
+            if (System.IO.File.Exists(BUILD_SETTINGS_FILE))
+            {
+                bool enabled = false;
+                foreach (string line in System.IO.File.ReadAllLines(BUILD_SETTINGS_FILE))
+                {
+                    string trimmed = line.Trim();
+                    if (trimmed.StartsWith("- enabled:", StringComparison.Ordinal))
+                    {
+                        enabled = trimmed.EndsWith("1", StringComparison.Ordinal);
+                    }
+                    else if (enabled && trimmed.StartsWith("path: ", StringComparison.Ordinal))
+                    {
+                        string path = trimmed.Substring("path: ".Length).Trim();
+                        if (System.IO.File.Exists(path))
+                        {
+                            paths.Add(path);
+                        }
+                    }
+                }
+            }
+
+            return paths;
         }
 
         private static bool IsRedundantModification(PropertyModification _mod)

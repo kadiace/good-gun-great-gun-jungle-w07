@@ -61,6 +61,8 @@ develop의 기능을 개편 구조로 옮겼다. 2560 기준 픽셀 값은 0.75�
 - 모듈 선택창 버튼: 퀵슬롯 위 "모듈 선택창 [TAB]" 버튼을 `ModulePalette/Author`가 저작하고 View 이벤트로 `CubeBuilder.TogglePalette`를 호출한다. develop의 `ModulePaletteButtonAuthoring`은 이 단계로 대체했다.
 - 코어 배출기: 저장 슬롯은 장착 중 교체 허용, 지급 중 재진입 차단, 제작 실패 알림, 전시 무기 바라보며 가져가기(호버 상호작용 안내 포함).
 - Main 씬: develop의 커스텀 UI·휴지통 위치 오버라이드를 적용했다(UIManager 크기·위치는 0.75배).
+- NightRaid_Airport: 씬 안 목표 표시(ObjectiveStatus·ObjectiveMarkerTemplate) 크기·글자를 다른 습격 씬과 같은 1920 기준 값으로 맞췄고, 소스와 같은 UIManager 오버라이드를 정리했다(Main 20건 포함).
+- `SceneOverrides` 정리는 에디터 메모리의 빌드 씬 목록에 `ProjectSettings/EditorBuildSettings.asset` 파일 목록을 더해 돈다. git 병합으로 바뀐 빌드 목록은 에디터를 재시작해야 메모리에 반영된다.
 
 ## 남은 범위
 
