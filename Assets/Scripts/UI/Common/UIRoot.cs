@@ -18,6 +18,8 @@ namespace WeaponWorkshop
         private GameObject m_previousSelectedObject;
         private bool m_hasLoggedLayerError;
 
+        public static UIRoot Instance { get; private set; }
+
         public RectTransform HudLayer
         {
             get
@@ -60,7 +62,20 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+
             ValidateLayers();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         /// <summary>
@@ -106,15 +121,15 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 상위 화면을 열기 직전의 유효 선택 객체를 보관합니다.
+        /// 상위 화면을 열기 직전의 유효 선택 객체를 대상 저장 변수에 보관합니다.
         /// 이미 열리려는 화면 내부의 하위 요소가 선택된 상태라면 덮어쓰지 않습니다.
         /// </summary>
-        public void SaveCurrentFocus(Transform _ignoredHierarchyRoot)
+        public static void SaveFocus(ref GameObject _storage, Transform _ignoredHierarchyRoot = null)
         {
             UnityEngine.EventSystems.EventSystem eventSystem = UnityEngine.EventSystems.EventSystem.current;
             if (eventSystem == null)
             {
-                m_previousSelectedObject = null;
+                _storage = null;
                 return;
             }
 
@@ -124,14 +139,14 @@ namespace WeaponWorkshop
                 return;
             }
 
-            m_previousSelectedObject = current;
+            _storage = current;
         }
 
         /// <summary>
         /// 화면 표시 성공 후 기본 선택 대상을 EventSystem에 적용합니다.
         /// 기본 대상이 비활성·사용 불가이면 후보 목록에서 첫 유효 항목을 선택합니다.
         /// </summary>
-        public bool ApplyFocus(UnityEngine.UI.Selectable _defaultSelectable, UnityEngine.UI.Selectable[] _fallbackSelectables)
+        public static bool SetFocus(UnityEngine.UI.Selectable _defaultSelectable, UnityEngine.UI.Selectable[] _fallbackSelectables = null)
         {
             UnityEngine.EventSystems.EventSystem eventSystem = UnityEngine.EventSystems.EventSystem.current;
             if (eventSystem == null)
@@ -171,10 +186,10 @@ namespace WeaponWorkshop
         /// 화면을 닫을 때 보관해 둔 이전 선택 객체가 여전히 활성·상호작용 가능하면 복원하고,
         /// 그렇지 않으면 대체 항목 또는 null로 선택을 정리합니다.
         /// </summary>
-        public void RestorePreviousFocus(UnityEngine.UI.Selectable _fallbackSelectable = null)
+        public static void RestoreFocus(ref GameObject _storage, UnityEngine.UI.Selectable _fallbackSelectable = null)
         {
-            GameObject saved = m_previousSelectedObject;
-            m_previousSelectedObject = null;
+            GameObject saved = _storage;
+            _storage = null;
 
             UnityEngine.EventSystems.EventSystem eventSystem = UnityEngine.EventSystems.EventSystem.current;
             if (eventSystem == null)
@@ -201,6 +216,33 @@ namespace WeaponWorkshop
             }
 
             eventSystem.SetSelectedGameObject(null);
+        }
+
+        /// <summary>
+        /// 상위 화면을 열기 직전의 유효 선택 객체를 보관합니다.
+        /// 이미 열리려는 화면 내부의 하위 요소가 선택된 상태라면 덮어쓰지 않습니다.
+        /// </summary>
+        public void SaveCurrentFocus(Transform _ignoredHierarchyRoot)
+        {
+            SaveFocus(ref m_previousSelectedObject, _ignoredHierarchyRoot);
+        }
+
+        /// <summary>
+        /// 화면 표시 성공 후 기본 선택 대상을 EventSystem에 적용합니다.
+        /// 기본 대상이 비활성·사용 불가이면 후보 목록에서 첫 유효 항목을 선택합니다.
+        /// </summary>
+        public bool ApplyFocus(UnityEngine.UI.Selectable _defaultSelectable, UnityEngine.UI.Selectable[] _fallbackSelectables)
+        {
+            return SetFocus(_defaultSelectable, _fallbackSelectables);
+        }
+
+        /// <summary>
+        /// 화면을 닫을 때 보관해 둔 이전 선택 객체가 여전히 활성·상호작용 가능하면 복원하고,
+        /// 그렇지 않으면 대체 항목 또는 null로 선택을 정리합니다.
+        /// </summary>
+        public void RestorePreviousFocus(UnityEngine.UI.Selectable _fallbackSelectable = null)
+        {
+            RestoreFocus(ref m_previousSelectedObject, _fallbackSelectable);
         }
 
         /// <summary>

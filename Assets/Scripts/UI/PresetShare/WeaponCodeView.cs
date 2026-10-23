@@ -121,13 +121,10 @@ namespace WeaponWorkshop
                 return;
             }
 
-            if (EventSystem.current != null)
-            {
-                m_restoredFocus = EventSystem.current.currentSelectedGameObject;
-            }
-
+            UIRoot.SaveFocus(ref m_restoredFocus, m_panel.transform);
             m_panel.SetActive(true);
             m_panel.transform.SetAsLastSibling();
+            UIRoot.SetFocus(m_copyButton, m_importButton != null ? new Selectable[] { m_importButton, m_closeButton } : null);
         }
 
         public void HidePanel()
@@ -137,12 +134,8 @@ namespace WeaponWorkshop
                 m_panel.SetActive(false);
             }
 
-            if (EventSystem.current != null && m_restoredFocus != null && m_restoredFocus.activeInHierarchy)
-            {
-                EventSystem.current.SetSelectedGameObject(m_restoredFocus);
-            }
-
-            m_restoredFocus = null;
+            Selectable fallback = m_openButton != null ? (Selectable)m_openButton : null;
+            UIRoot.RestoreFocus(ref m_restoredFocus, fallback);
         }
 
         public void SetCode(string _code)

@@ -41,6 +41,7 @@ namespace WeaponWorkshop
         private readonly List<SongRow> m_boundSongRows = new List<SongRow>();
         private readonly List<UnityAction> m_boundSongHandlers = new List<UnityAction>();
 
+        private GameObject m_savedFocus;
         private bool m_isInitialized;
         private bool m_hasAppliedInitialHiddenState;
         private bool m_hasLoggedReferenceError;
@@ -193,6 +194,8 @@ namespace WeaponWorkshop
                 return;
             }
 
+            UIRoot.SaveFocus(ref m_savedFocus, transform);
+
             if (m_mainPanel != null)
             {
                 m_mainPanel.SetActive(false);
@@ -202,6 +205,9 @@ namespace WeaponWorkshop
             {
                 m_panel.SetActive(true);
             }
+
+            Selectable defaultSelectable = m_masterSlider != null ? (Selectable)m_masterSlider : m_closeButton;
+            UIRoot.SetFocus(defaultSelectable, m_closeButton != null ? new Selectable[] { m_closeButton } : null);
         }
 
         /// <summary>
@@ -218,6 +224,8 @@ namespace WeaponWorkshop
             {
                 m_mainPanel.SetActive(true);
             }
+
+            UIRoot.RestoreFocus(ref m_savedFocus, m_openButton);
         }
 
         /// <summary>

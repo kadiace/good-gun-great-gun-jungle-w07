@@ -124,7 +124,7 @@ namespace WeaponWorkshop
         /// </summary>
         public void FocusDefault()
         {
-            Focus(m_continueButton);
+            UIRoot.SetFocus(m_continueButton, m_quitButton != null ? new Selectable[] { m_quitButton } : null);
         }
 
         public void ClearSelection()

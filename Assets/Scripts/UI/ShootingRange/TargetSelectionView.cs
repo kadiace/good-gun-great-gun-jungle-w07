@@ -32,6 +32,7 @@ namespace WeaponWorkshop
         private readonly List<Button> m_targetRows = new List<Button>();
         private readonly List<Button> m_timedTestRows = new List<Button>();
 
+        private GameObject m_savedFocus;
         private bool m_isInitialized;
         private bool m_hasAppliedInitialHiddenState;
         private bool m_hasLoggedReferenceError;
@@ -195,10 +196,31 @@ namespace WeaponWorkshop
 
         public void Show()
         {
+            UIRoot.SaveFocus(ref m_savedFocus, transform);
             if (m_panel != null)
             {
                 m_panel.SetActive(true);
             }
+
+            Selectable defaultSelectable = null;
+            if (m_targetRows.Count > 0 && UIRoot.IsValidSelectable(m_targetRows[0]))
+            {
+                defaultSelectable = m_targetRows[0];
+            }
+            else if (m_timedTestRows.Count > 0 && UIRoot.IsValidSelectable(m_timedTestRows[0]))
+            {
+                defaultSelectable = m_timedTestRows[0];
+            }
+            else if (UIRoot.IsValidSelectable(m_customToggleButton))
+            {
+                defaultSelectable = m_customToggleButton;
+            }
+            else
+            {
+                defaultSelectable = m_closeButton;
+            }
+
+            UIRoot.SetFocus(defaultSelectable, m_closeButton != null ? new Selectable[] { m_closeButton } : null);
         }
 
         public void Hide()
@@ -207,6 +229,8 @@ namespace WeaponWorkshop
             {
                 m_panel.SetActive(false);
             }
+
+            UIRoot.RestoreFocus(ref m_savedFocus);
         }
 
         public void SetCustomPanelVisible(bool _visible)

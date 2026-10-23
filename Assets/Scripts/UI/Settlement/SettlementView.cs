@@ -78,6 +78,7 @@ namespace WeaponWorkshop
         private bool m_confirmQueued;
         private int m_openedFrame;
         private Coroutine m_morningNotice;
+        private GameObject m_savedFocus;
         private bool m_isListenerBound;
         private bool m_isInitialized;
         private bool m_hasLoggedReferenceError;
@@ -409,6 +410,10 @@ namespace WeaponWorkshop
 
             m_nextDayButton.gameObject.SetActive(_active);
             m_nextDayButton.interactable = _interactable;
+            if (_active && _interactable && IsPanelOpen && (m_confirmButton == null || !m_confirmButton.interactable))
+            {
+                UIRoot.SetFocus(m_nextDayButton);
+            }
         }
 
         public void SetConfirmInteractable(bool _interactable)
@@ -416,6 +421,10 @@ namespace WeaponWorkshop
             if (m_confirmButton != null)
             {
                 m_confirmButton.interactable = _interactable;
+                if (_interactable && IsPanelOpen)
+                {
+                    UIRoot.SetFocus(m_confirmButton, m_nextDayButton != null ? new Selectable[] { m_nextDayButton } : null);
+                }
             }
         }
 
@@ -437,6 +446,7 @@ namespace WeaponWorkshop
             if (_visible && !m_panel.activeSelf)
             {
                 m_openedFrame = Time.frameCount;
+                UIRoot.SaveFocus(ref m_savedFocus, transform);
             }
 
             if (!_visible)
@@ -445,6 +455,21 @@ namespace WeaponWorkshop
             }
 
             m_panel.SetActive(_visible);
+
+            if (_visible)
+            {
+                Selectable defaultBtn = (m_confirmButton != null && m_confirmButton.interactable)
+                    ? m_confirmButton
+                    : (m_nextDayButton != null && m_nextDayButton.interactable ? (Selectable)m_nextDayButton : null);
+                if (defaultBtn != null)
+                {
+                    UIRoot.SetFocus(defaultBtn);
+                }
+            }
+            else
+            {
+                UIRoot.RestoreFocus(ref m_savedFocus);
+            }
         }
 
         public void HideMorningNotice()

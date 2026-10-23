@@ -44,6 +44,7 @@ namespace WeaponWorkshop
         private TMP_Text[] m_labels;
         private TMP_Text[] m_menuLabels;
         private UnityAction[] m_selectActions;
+        private GameObject m_axisMenuSavedFocus;
         private bool m_isInitialized;
         private bool m_hasLoggedReferenceError;
 
@@ -168,7 +169,25 @@ namespace WeaponWorkshop
         {
             if (m_axisMenuRoot != null)
             {
-                m_axisMenuRoot.SetActive(!m_axisMenuRoot.activeSelf);
+                bool willOpen = !m_axisMenuRoot.activeSelf;
+                if (willOpen)
+                {
+                    UIRoot.SaveFocus(ref m_axisMenuSavedFocus, m_axisMenuRoot.transform);
+                }
+
+                m_axisMenuRoot.SetActive(willOpen);
+
+                if (willOpen)
+                {
+                    Selectable defaultSelectable = (m_axisMenuButtons != null && m_axisMenuButtons.Length > 0)
+                        ? m_axisMenuButtons[0]
+                        : null;
+                    UIRoot.SetFocus(defaultSelectable);
+                }
+                else
+                {
+                    UIRoot.RestoreFocus(ref m_axisMenuSavedFocus, m_axisMenuButton);
+                }
             }
         }
 
@@ -176,7 +195,12 @@ namespace WeaponWorkshop
         {
             if (m_axisMenuRoot != null)
             {
+                bool wasOpen = m_axisMenuRoot.activeSelf;
                 m_axisMenuRoot.SetActive(false);
+                if (wasOpen)
+                {
+                    UIRoot.RestoreFocus(ref m_axisMenuSavedFocus, m_axisMenuButton);
+                }
             }
         }
 

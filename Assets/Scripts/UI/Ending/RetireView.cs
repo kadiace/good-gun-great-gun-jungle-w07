@@ -24,6 +24,7 @@ namespace WeaponWorkshop
 
         private bool m_isInitialized;
         private bool m_isBound;
+        private GameObject m_savedFocus;
         private bool m_hasAppliedInitialHiddenState;
         private bool m_hasLoggedReferenceError;
 
@@ -109,6 +110,7 @@ namespace WeaponWorkshop
                 return;
             }
 
+            UIRoot.SaveFocus(ref m_savedFocus, transform);
             m_panel.SetActive(true);
             m_panel.transform.SetAsLastSibling();
         }
@@ -119,6 +121,8 @@ namespace WeaponWorkshop
             {
                 m_panel.SetActive(false);
             }
+
+            UIRoot.RestoreFocus(ref m_savedFocus);
         }
 
         /// <summary>
@@ -126,7 +130,7 @@ namespace WeaponWorkshop
         /// </summary>
         public void FocusDefault()
         {
-            Focus(m_continueButton);
+            UIRoot.SetFocus(m_continueButton, m_lobbyButton != null ? new Selectable[] { m_lobbyButton } : null);
         }
 
         public void ClearSelection()

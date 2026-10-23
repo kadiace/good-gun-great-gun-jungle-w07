@@ -25,6 +25,7 @@ namespace WeaponWorkshop
         private string[] m_originalLabels;
         private UnityAction[] m_regionClickHandlers;
         private UnityAction m_backClickHandler;
+        private GameObject m_savedFocus;
         private bool m_isInitialized;
         private bool m_isButtonBound;
         private bool m_hasLoggedReferenceError;
@@ -106,10 +107,23 @@ namespace WeaponWorkshop
                 return;
             }
 
+            if (_show)
+            {
+                UIRoot.SaveFocus(ref m_savedFocus, transform);
+            }
+
             m_panel.SetActive(_show);
             if (_show)
             {
                 m_panel.transform.SetAsLastSibling();
+                Selectable defaultButton = (m_regionButtons != null && m_regionButtons.Length > 0)
+                    ? m_regionButtons[0]
+                    : (Selectable)m_backButton;
+                UIRoot.SetFocus(defaultButton, m_backButton != null ? new Selectable[] { m_backButton } : null);
+            }
+            else
+            {
+                UIRoot.RestoreFocus(ref m_savedFocus);
             }
         }
 

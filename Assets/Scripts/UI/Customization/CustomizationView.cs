@@ -24,6 +24,7 @@ namespace WeaponWorkshop
         [SerializeField] private GameObject[] m_panels = Array.Empty<GameObject>();
 
         private readonly List<PanelBinding> m_panelBindings = new List<PanelBinding>();
+        private GameObject m_savedFocus;
         private bool m_isInitialized;
         private bool m_hasLoggedReferenceError;
 
@@ -118,6 +119,11 @@ namespace WeaponWorkshop
         // 커스텀 모드 표시 여부와 선택 패널을 저작된 오브젝트에 적용한다.
         public void Render(bool _visible, int _selectedIndex)
         {
+            if (_visible)
+            {
+                UIRoot.SaveFocus(ref m_savedFocus, transform);
+            }
+
             SetActive(m_navigation, _visible);
             SetActive(m_contentArea, _visible);
             SetActive(m_removeButton != null ? m_removeButton.gameObject : null, _visible);
@@ -131,6 +137,40 @@ namespace WeaponWorkshop
             }
 
             RenderTabs(_selectedIndex);
+
+            if (_visible)
+            {
+                Selectable defaultBtn = null;
+                if (m_panelButtons != null && m_panelButtons.Length > 0)
+                {
+                    if (_selectedIndex >= 0 && _selectedIndex < m_panelButtons.Length && UIRoot.IsValidSelectable(m_panelButtons[_selectedIndex]))
+                    {
+                        defaultBtn = m_panelButtons[_selectedIndex];
+                    }
+                    else
+                    {
+                        for (int i = 0; i < m_panelButtons.Length; i++)
+                        {
+                            if (UIRoot.IsValidSelectable(m_panelButtons[i]))
+                            {
+                                defaultBtn = m_panelButtons[i];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (defaultBtn == null)
+                {
+                    defaultBtn = m_removeButton;
+                }
+
+                UIRoot.SetFocus(defaultBtn, m_removeButton != null ? new Selectable[] { m_removeButton } : null);
+            }
+            else
+            {
+                UIRoot.RestoreFocus(ref m_savedFocus, m_customButton);
+            }
         }
 
         public GameObject PanelAt(int _index)

@@ -56,6 +56,19 @@ namespace WeaponWorkshop
             }
         }
 
+        public Selectable DefaultSelectable
+        {
+            get
+            {
+                if (m_slotButtons != null && m_slotButtons.Length > 0 && m_slotButtons[0] != null)
+                {
+                    return m_slotButtons[0];
+                }
+
+                return m_autoSaveButton;
+            }
+        }
+
         /// <summary>
         /// 브리지 SaveSlotsUI가 보유한 실효 직렬화 참조(씬 오버라이드 반영)를 Initialize 전에 받아
         /// 같은 대상을 가리키게 합니다. null 인자는 해당 필드의 저작된 기본 참조를 유지합니다.

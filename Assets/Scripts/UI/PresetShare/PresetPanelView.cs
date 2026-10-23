@@ -24,6 +24,7 @@ namespace WeaponWorkshop
         [SerializeField] private TMP_Text m_choiceMessage;
 
         private UnityAction[] m_slotHandlers;
+        private GameObject m_panelSavedFocus;
         private GameObject m_restoredFocus;
         private bool m_isInitialized;
         private bool m_isListenerBound;
@@ -121,9 +122,28 @@ namespace WeaponWorkshop
 
         public void SetPanelVisible(bool _visible)
         {
-            if (m_panel != null)
+            if (m_panel == null || m_panel.activeSelf == _visible)
             {
-                m_panel.SetActive(_visible);
+                return;
+            }
+
+            if (_visible)
+            {
+                UIRoot.SaveFocus(ref m_panelSavedFocus, transform);
+            }
+
+            m_panel.SetActive(_visible);
+
+            if (_visible)
+            {
+                Selectable defaultSelectable = (m_slots != null && m_slots.Length > 0)
+                    ? m_slots[0]
+                    : (Selectable)m_closeButton;
+                UIRoot.SetFocus(defaultSelectable, m_closeButton != null ? new Selectable[] { m_closeButton } : null);
+            }
+            else
+            {
+                UIRoot.RestoreFocus(ref m_panelSavedFocus);
             }
         }
 
@@ -148,10 +168,7 @@ namespace WeaponWorkshop
         /// </summary>
         public void ShowChoice(string _message)
         {
-            if (EventSystem.current != null)
-            {
-                m_restoredFocus = EventSystem.current.currentSelectedGameObject;
-            }
+            UIRoot.SaveFocus(ref m_restoredFocus, m_choicePanel != null ? m_choicePanel.transform : null);
 
             if (m_choiceMessage != null)
             {
@@ -165,10 +182,7 @@ namespace WeaponWorkshop
 
             m_choicePanel.SetActive(true);
             m_choicePanel.transform.SetAsLastSibling();
-            if (EventSystem.current != null && m_saveButton != null)
-            {
-                EventSystem.current.SetSelectedGameObject(m_saveButton.gameObject);
-            }
+            UIRoot.SetFocus(m_saveButton, m_loadButton != null ? new Selectable[] { m_loadButton, m_closeButton } : null);
         }
 
         public void HideChoice()
@@ -178,12 +192,8 @@ namespace WeaponWorkshop
                 m_choicePanel.SetActive(false);
             }
 
-            if (EventSystem.current != null && m_restoredFocus != null && m_restoredFocus.activeInHierarchy)
-            {
-                EventSystem.current.SetSelectedGameObject(m_restoredFocus);
-            }
-
-            m_restoredFocus = null;
+            Selectable fallback = (m_slots != null && m_slots.Length > 0) ? m_slots[0] : null;
+            UIRoot.RestoreFocus(ref m_restoredFocus, fallback);
         }
 
         public void HideAll()

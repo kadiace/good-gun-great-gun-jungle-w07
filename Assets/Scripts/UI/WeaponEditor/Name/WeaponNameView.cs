@@ -20,6 +20,7 @@ namespace WeaponWorkshop
         [SerializeField] private TMP_InputField m_input;
         [SerializeField] private Button m_confirm;
 
+        private GameObject m_savedFocus;
         private bool m_isInitialized;
         private bool m_isBound;
         private bool m_hasLoggedReferenceError;
@@ -91,9 +92,23 @@ namespace WeaponWorkshop
 
         public void SetVisible(bool _visible)
         {
+            if (_visible)
+            {
+                UIRoot.SaveFocus(ref m_savedFocus, transform);
+            }
+
             if (m_panel != null)
             {
                 m_panel.SetActive(_visible);
+            }
+
+            if (_visible)
+            {
+                UIRoot.SetFocus(m_input, m_confirm != null ? new Selectable[] { m_confirm } : null);
+            }
+            else
+            {
+                UIRoot.RestoreFocus(ref m_savedFocus);
             }
         }
 

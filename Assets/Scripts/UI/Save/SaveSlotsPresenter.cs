@@ -22,6 +22,7 @@ namespace WeaponWorkshop
         private readonly SaveSlotsView m_view;
         private readonly SaveSlotsDomain m_domain;
 
+        private GameObject m_savedFocus;
         private bool m_isInitialized;
         private bool m_hasLoggedDependencyError;
 
@@ -124,10 +125,12 @@ namespace WeaponWorkshop
             }
 
             m_view.SetTitle(m_domain.IsSaveMode ? SAVE_TITLE : LOAD_TITLE);
+            UIRoot.SaveFocus(ref m_savedFocus, m_view.transform);
             m_view.SetPanelVisible(true);
             Refresh();
             m_view.SetMainPanelVisible(false);
             m_view.SetOpenerVisible(false);
+            UIRoot.SetFocus(m_view.DefaultSelectable);
         }
 
         /// <summary>
@@ -140,6 +143,9 @@ namespace WeaponWorkshop
             m_view.SetPanelVisible(false);
             m_view.SetMainPanelVisible(true);
             m_view.SetOpenerVisible(true);
+            Selectable openerSelectable = m_view.OpenButton != null ? m_view.OpenButton.GetComponent<Selectable>() : null;
+            UIRoot.RestoreFocus(ref m_savedFocus, openerSelectable);
+            FocusOpenerOrPause();
         }
 
         /// <summary>UICancelRouter의 Pause 하위 저장 닫기 경로. 열려 있을 때만 닫고 포커스를 복원합니다.</summary>

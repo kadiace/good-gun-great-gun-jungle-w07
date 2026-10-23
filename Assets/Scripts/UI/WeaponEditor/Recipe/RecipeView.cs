@@ -31,6 +31,7 @@ namespace WeaponWorkshop
         [SerializeField] private RecipeEntry[] recipes = new RecipeEntry[0];
 
         private readonly Vector3[] m_canvasCorners = new Vector3[4];
+        private GameObject m_savedFocus;
         private bool m_isInitialized;
         private bool m_isButtonBound;
 
@@ -150,9 +151,28 @@ namespace WeaponWorkshop
 
         public void SetPanelVisible(bool _visible)
         {
-            if (panel != null && panel.activeSelf != _visible)
+            if (panel == null || panel.activeSelf == _visible)
             {
-                panel.SetActive(_visible);
+                return;
+            }
+
+            if (_visible)
+            {
+                UIRoot.SaveFocus(ref m_savedFocus, transform);
+            }
+
+            panel.SetActive(_visible);
+
+            if (_visible)
+            {
+                Selectable defaultSelectable = (scroll != null && scroll.verticalScrollbar != null)
+                    ? scroll.verticalScrollbar
+                    : (Selectable)openButton;
+                UIRoot.SetFocus(defaultSelectable, openButton != null ? new Selectable[] { openButton } : null);
+            }
+            else
+            {
+                UIRoot.RestoreFocus(ref m_savedFocus, openButton);
             }
         }
 
