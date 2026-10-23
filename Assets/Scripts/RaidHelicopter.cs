@@ -7,6 +7,8 @@ namespace WeaponWorkshop
         [SerializeField] private RaidEnemyCore core;
         [SerializeField] private Transform rotor;
         [SerializeField, Min(1f)] private float flightSpeed = 12f;
+        [SerializeField, Min(0.01f), Tooltip("추적 출발 가속과 목표 접근 감속에 쓰는 ease-in-out 시간(초). 클수록 변화가 완만합니다.")]
+        private float followSmoothTime = 1.2f;
         [SerializeField, Min(1f)] private float hoverHeight = 12f;
         [SerializeField, Min(1f)] private float hoverDistance = 14f;
         [SerializeField] private float rotorSpeed = 1200f;
@@ -39,6 +41,7 @@ namespace WeaponWorkshop
         private int gunBarrel;
         private bool hasGunAim;
         private Vector3 gunAim;
+        private float followElapsed;
 
         public void Initialize(FirstPersonPlayer target, string enemyId)
         {
@@ -48,6 +51,7 @@ namespace WeaponWorkshop
             gunTimer = 0f;
             gunAcquired = 0f;
             hasGunAim = false;
+            followElapsed = 0f;
             WorkshopSoundEffects.RaiseHelicopterAmbientStarted(transform);
         }
         private void OnEnable() { if (core != null) core.Destroyed += StopFlying; }
@@ -71,7 +75,12 @@ namespace WeaponWorkshop
             offset.y = 0f;
             if (offset.sqrMagnitude < 0.01f) offset = Vector3.forward;
             Vector3 destination = player.transform.position + offset.normalized * hoverDistance + Vector3.up * hoverHeight;
-            transform.position = Vector3.MoveTowards(transform.position, destination, flightSpeed * Time.deltaTime);
+            followElapsed += Time.deltaTime;
+            float accelerate = Mathf.SmoothStep(0f, 1f, followElapsed / followSmoothTime);
+            float distance = Vector3.Distance(transform.position, destination);
+            float brake = Mathf.SmoothStep(0f, 1f, distance / (flightSpeed * followSmoothTime));
+            transform.position = Vector3.MoveTowards(transform.position, destination,
+                flightSpeed * accelerate * brake * Time.deltaTime);
             Vector3 chest = player.transform.position + Vector3.up;
             Vector3 look = chest - transform.position; look.y = 0f;
             if (look.sqrMagnitude > 0.01f)
