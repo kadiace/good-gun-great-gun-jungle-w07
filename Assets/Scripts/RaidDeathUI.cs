@@ -3,65 +3,66 @@ using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
+    // 레거시 습격 사망 패널의 기존 연결점(브리지). 체력 구독 수명주기와 직렬화 필드 호환을 유지한다.
+    // 표시는 RaidDeathView, 컨트롤러 전달·게임 상태 전환은 RaidDeathPresenter가 담당한다.
     public sealed class RaidDeathUI : MonoBehaviour
     {
         [SerializeField] private UIManager uiManager;
         [SerializeField] private GameObject panel;
         [SerializeField] private Button returnButton;
-        private RaidPlayerHealth health;
-        private bool hasStarted;
+        [SerializeField] private RaidDeathView m_view;
+
+        private RaidDeathPresenter m_presenter;
+
         private void Awake()
         {
-            if (panel != null) panel.SetActive(false);
-            if (returnButton != null) returnButton.onClick.AddListener(Return);
+            // 씬에 저장된 활성 상태와 무관하게 닫힌 상태로 시작한다.
+            if (panel != null)
+            {
+                panel.SetActive(false);
+            }
+
+            RaidDeathView view = ResolveView();
+            if (view == null)
+            {
+                Debug.LogError(
+                    "[RaidDeathUI] Awake 실패: RaidDeathView 참조가 없습니다. " +
+                    "Tools/UI/Authoring/Ending/Author 실행 결과를 확인하세요.", this);
+                return;
+            }
+
+            view.Configure(panel, returnButton);
+            m_presenter = new RaidDeathPresenter(view, uiManager);
+            if (!m_presenter.Initialize())
+            {
+                m_presenter = null;
+            }
         }
-        private void OnEnable() => BindHealth();
+
+        private void OnEnable()
+        {
+            m_presenter?.HandleEnabled();
+        }
 
         private void Start()
         {
-            hasStarted = true;
-            BindHealth();
+            m_presenter?.MarkStarted();
         }
 
-        private void BindHealth()
-        {
-            var player = uiManager != null ? uiManager.Player : null;
-            var nextHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
-            if (health != nextHealth)
-            {
-                if (health != null) health.Died -= Show;
-                health = nextHealth;
-                if (health != null) health.Died += Show;
-            }
-            if (hasStarted && health != null && health.IsDead) Show();
-        }
-        private void Show()
-        {
-            if (NightRaidController.Instance != null)
-            {
-                if (panel != null) panel.SetActive(false);
-                NightRaidController.Instance.ShowDeathResult();
-                return;
-            }
-            GameManager.Instance?.SetDialogue(true);
-            GameManager.Instance?.SetNight(true);
-            var player = uiManager != null ? uiManager.Player : null;
-            player?.GetComponent<WeaponHolder>()?.EquippedWeapon?.CancelCharge();
-            if (panel == null) return;
-            panel.SetActive(true); panel.transform.SetAsLastSibling();
-            if (returnButton != null) returnButton.interactable = true;
-        }
-        private void Return() => NightRaidController.Instance?.ReturnAfterDeath();
         private void OnDisable()
         {
-            if (health != null) health.Died -= Show;
-            health = null;
-            if (panel != null) panel.SetActive(false);
+            m_presenter?.HandleDisabled();
         }
+
         private void OnDestroy()
         {
-            if (health != null) health.Died -= Show;
-            if (returnButton != null) returnButton.onClick.RemoveListener(Return);
+            m_presenter?.Dispose();
+            m_presenter = null;
+        }
+
+        private RaidDeathView ResolveView()
+        {
+            return m_view != null ? m_view : GetComponent<RaidDeathView>();
         }
     }
 }
