@@ -1,11 +1,20 @@
 {
   "requests": [
     {
+      "id": "weapon/basic",
+      "name": "기본 총 납품",
+      "phrase": "기본 총 한 정",
+      "tagId": "",
+      "reward": 75,
+      "rewardPerDay": 0,
+      "requiredTestIds": [],
+      "conditions": []
+    },
+    {
       "id": "construction/cost-1500",
       "name": "제작비 요구",
       "phrase": "제작비 $1,500 이상",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -16,14 +25,15 @@
           "min": 1500,
           "max": 3.4028235e+38
         }
-      ]
+      ],
+      "reward": 2250,
+      "rewardPerDay": 0
     },
     {
       "id": "shape/cat",
       "name": "고양이 영역",
       "phrase": "고양이 영역 안 자유 배치",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -35,14 +45,15 @@
           "min": 1,
           "max": 1
         }
-      ]
+      ],
+      "reward": 345,
+      "rewardPerDay": 0
     },
     {
       "id": "color/crimson-3",
       "name": "크림슨 도색",
       "phrase": "크림슨 3면 이상",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -55,14 +66,15 @@
           "min": 3,
           "max": 3.4028235e+38
         }
-      ]
+      ],
+      "reward": 90,
+      "rewardPerDay": 0
     },
     {
       "id": "module/explosion/min-2",
       "name": "폭발 모듈 개수",
       "phrase": "",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -76,14 +88,15 @@
       "legacyIds": [
         "module/explosion/min-2/d5-3-student",
         "08dbc26e0a7043288f412d911e86341d"
-      ]
+      ],
+      "reward": 1575,
+      "rewardPerDay": 0
     },
     {
       "id": "module/fire-rate/min-1",
       "name": "연사 모듈 개수",
       "phrase": "",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -99,14 +112,15 @@
         "446282254eab4b3abda70d3caabfd2a8",
         "module/fire-rate/min-1/d1-3-split-two",
         "81148a6e113140c18bfdab5b9d6201d6"
-      ]
+      ],
+      "reward": 225,
+      "rewardPerDay": 0
     },
     {
       "id": "module/penetration/min-1",
       "name": "관통 모듈 개수",
       "phrase": "",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -128,14 +142,15 @@
         "4d02285ccf89482d86daf245b15b6c0a",
         "module/penetration/min-1/d1-5-combo",
         "0de1724fb39d46cc88a0316007dc3e2f"
-      ]
+      ],
+      "reward": 825,
+      "rewardPerDay": 0
     },
     {
       "id": "module/scope/min-1",
       "name": "스코프",
       "phrase": "스코프",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -148,14 +163,15 @@
       ],
       "legacyIds": [
         "c8e35a29c16ae91459a744997e871c23"
-      ]
+      ],
+      "reward": 225,
+      "rewardPerDay": 0
     },
     {
       "id": "module/scope/min-2",
       "name": "스코프 개수",
       "phrase": "",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -169,14 +185,15 @@
       "legacyIds": [
         "module/scope/min-2/d4-4-professional",
         "4e7c1ebb9b774bf0aa76abe4fc7e855c"
-      ]
+      ],
+      "reward": 375,
+      "rewardPerDay": 0
     },
     {
       "id": "module/shotgun/min-1",
       "name": "방사 모듈 개수",
       "phrase": "방사 모듈이 연결된 총",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -187,14 +204,15 @@
           "min": 1.0
         }
       ],
-      "legacyIds": []
+      "legacyIds": [],
+      "reward": 525,
+      "rewardPerDay": 0
     },
     {
       "id": "module/shotgun/min-3",
       "name": "방사 모듈 개수",
       "phrase": "",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -208,14 +226,15 @@
       "legacyIds": [
         "module/shotgun/min-3/d5-4-shotgun-ception",
         "ca4f3f1971ec4adf8f498ed34a364093"
-      ]
+      ],
+      "reward": 1425,
+      "rewardPerDay": 0
     },
     {
       "id": "module/split-four/min-1",
       "name": "쿼드라배럴(4방향 분할)",
       "phrase": "4방향 분할(쿼드라배럴)",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -234,14 +253,15 @@
         "4ebfaf28deed49c4bdaea72e4f161b12",
         "module/split-four/min-1/d3-2-quad-shotgun",
         "40b0f2c46533419d80e7a465fde35429"
-      ]
+      ],
+      "reward": 675,
+      "rewardPerDay": 0
     },
     {
       "id": "module/split-four/min-2",
       "name": "4방향 분할 모듈 개수",
       "phrase": "",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -257,14 +277,15 @@
         "5495cdb5ec8b49889fedb519f9f530ff",
         "module/split-four/min-2/d1-4-more-muzzles",
         "37d5a78ecb744efd96386f736b71cf9f"
-      ]
+      ],
+      "reward": 1275,
+      "rewardPerDay": 0
     },
     {
       "id": "module/split-two/min-1",
       "name": "더블배럴(2방향 분할)",
       "phrase": "2방향 분할(더블배럴)",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -285,14 +306,15 @@
         "485e61ed24d2490987931ad36a029e77",
         "module/split-two/min-1/d5-5-real-gun",
         "81d72487c62c42bb8a2c996de2071c0d"
-      ]
+      ],
+      "reward": 375,
+      "rewardPerDay": 0
     },
     {
       "id": "module/stat-modules/exact-0",
       "name": "스탯 모듈 개수",
       "phrase": "",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -307,50 +329,54 @@
       "legacyIds": [
         "module/stat-modules/exact-0/d1-1-base-core",
         "c0fbdc9111b6474fbe47321706b603fd"
-      ]
+      ],
+      "reward": 75,
+      "rewardPerDay": 0
     },
     {
       "id": "shooting-test/around-cover",
       "name": "엄폐 뒤 표적 테스트 통과",
       "phrase": "엄폐 뒤 표적 테스트를 통과한 총",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [
         "around-cover"
       ],
       "conditions": [],
-      "legacyIds": []
+      "legacyIds": [],
+      "reward": 0,
+      "rewardPerDay": 1000
     },
     {
       "id": "shooting-test/behind-barrier",
       "name": "장애물 뒤 표적 테스트 통과",
       "phrase": "장애물 뒤 표적 테스트를 통과한 총",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [
         "behind-barrier"
       ],
       "conditions": [],
-      "legacyIds": []
+      "legacyIds": [],
+      "reward": 0,
+      "rewardPerDay": 1000
     },
     {
       "id": "shooting-test/wide-targets",
       "name": "넓게 흩어진 표적 테스트 통과",
       "phrase": "넓게 흩어진 표적 테스트를 통과한 총",
       "tagId": "",
-      "saleBonus": true,
       "requiredTestIds": [
         "wide-targets"
       ],
       "conditions": [],
-      "legacyIds": []
+      "legacyIds": [],
+      "reward": 0,
+      "rewardPerDay": 1000
     },
     {
       "id": "stat/weight/min-4",
       "name": "무게",
       "phrase": "",
       "tagId": "",
-      "saleBonus": false,
       "requiredTestIds": [],
       "conditions": [
         {
@@ -364,187 +390,202 @@
       "legacyIds": [
         "stat/weight/min-4/d3-4-sommelier",
         "2be3abe367214f4498ce45b36c408667"
-      ]
+      ],
+      "reward": 135,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/assault-rifle",
       "name": "돌격소총 태그",
       "phrase": "돌격소총 태그 (관통 2 이상, 연사 3 이상, 무게 15 이상)",
       "tagId": "9b6639978cc6faf49a0a539f89ad1ffb",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "bfd5154c074e097469bfe8a36c7fd547",
         "tag/assault-rifle/legacy",
         "a953407380ff6594a942af751bf23efb"
-      ]
+      ],
+      "reward": 1305,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/charge",
       "name": "차지 태그",
       "phrase": "차지 태그 (차지 모듈 1개 이상)",
       "tagId": "f591f239c94e4f44dae9ea87c6bcdb26",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "0d8bdcf9176b9d144832800890380fe9",
         "tag/charge/legacy",
         "db5262cea8401e542a56f9a2812196a3"
-      ]
+      ],
+      "reward": 525,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/flamethrower",
       "name": "화염방사 태그",
       "phrase": "화염방사 태그 (발열 모듈 1개 이상, 연사 1 이상)",
       "tagId": "b370a46a3f0c45a438dc174b4b9c8d32",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "f414d5e3527d6c94caba92a8f1ea4073",
         "tag/flamethrower/legacy",
         "c45e9713dbf2ac3469b4a59283112118"
-      ]
+      ],
+      "reward": 825,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/gravity-gun",
       "name": "중력건 태그",
       "phrase": "중력건 태그 (중력 모듈 1개 이상)",
       "tagId": "1199a71d1cb406344b40eab02c202fd0",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "2a84630bf124ec64ba0d101ec701cbe6",
         "tag/gravity-gun/legacy",
         "6bfd82587bbb4a640a1dcc436cacd347"
-      ]
+      ],
+      "reward": 825,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/grenade-launcher",
       "name": "유탄 태그",
       "phrase": "유탄 태그 (폭발 1 이상, 3 미만)",
       "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "c72d25cecff161540a6c693be4355a28",
         "tag/grenade-launcher/legacy",
         "982660b8fcc3c1340adfa1edcdfb1257"
-      ]
+      ],
+      "reward": 825,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/handgun",
       "name": "권총 태그",
       "phrase": "권총 태그 (무게 20 미만, 스코프 모듈 없음)",
       "tagId": "f9e8d0ecf0b963e4aa51f837b5ae8602",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "018d81c1a0e6af041832d131bd683963",
         "tag/handgun/legacy",
         "afce91ece9f68f44b92e48a1652ea36b"
-      ]
+      ],
+      "reward": 75,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/homing",
       "name": "유도 태그",
       "phrase": "유도 태그 (유도 모듈 1개 이상)",
       "tagId": "7d95d7b383516df44830a4c7b34f3568",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "91214fdaf5f33204b87af5b6e5faafc8",
         "tag/homing/legacy",
         "a577397affb1dba46a5ab05ee475eec6"
-      ]
+      ],
+      "reward": 825,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/mini-nuke",
       "name": "소형핵 태그",
       "phrase": "소형핵 태그 (폭발 10 이상)",
       "tagId": "3396cf208ef6d564bb1cd952a6fe598b",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "a0eed031913cef84eab19bafbe2ff4df"
-      ]
+      ],
+      "reward": 8325,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/ricochet",
       "name": "도탄 태그",
       "phrase": "도탄 태그 (반사 모듈 1개 이상)",
       "tagId": "36dc9431816b1d84182d3e07c11a2c4c",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "b2f89098d7e03e14ea82f271ee522562",
         "tag/ricochet/legacy",
         "fdd2d5a8251468842be3744e7dba689f"
-      ]
+      ],
+      "reward": 525,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/shotgun",
       "name": "산탄총 태그",
       "phrase": "산탄총 태그 (폭발 2, 관통 16, 방사 1 이상)",
       "tagId": "b89c88322f37da74cb6f1624397fce4d",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "9dc28f49f1304f142a4751f178f39cdf",
         "tag/shotgun/legacy",
         "70d86a3c50472dd47b261b990ddd9210"
-      ]
+      ],
+      "reward": 8025,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/sniper-rifle",
       "name": "저격소총 태그",
       "phrase": "저격총 태그 (관통 2 이상, 무게 15 이상, 속도 2 이상, 스코프 1 이상)",
       "tagId": "aaf2e5c321465134bab63de10ee5e54a",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "4f973a10b24bb66429934674b59258d1",
         "tag/sniper-rifle/legacy",
         "d6d6fd1701a033d4b849c531f7f4f5f1"
-      ]
+      ],
+      "reward": 1440,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/spin",
       "name": "회전 태그",
       "phrase": "회전 태그 (회전 모듈 1개 이상)",
       "tagId": "b5d9e450608d02c448b9a7d3bba5ad92",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "6dd80349125f3384f99d6fce630dd64e",
         "tag/spin/legacy",
         "60c861d406fb6fd48a48e2649ddcb52b"
-      ]
+      ],
+      "reward": 375,
+      "rewardPerDay": 0
     },
     {
       "id": "tag/water-gun",
       "name": "물총 태그",
       "phrase": "물총 태그 (전력이 연결된 물 모듈 1개 이상)",
       "tagId": "3912bb5b7da966a47995e32041938a6a",
-      "saleBonus": true,
       "requiredTestIds": [],
       "conditions": [],
       "legacyIds": [
         "a06ceb531cbb6a041b8f160acf2c8c1d",
         "tag/water-gun/legacy",
         "48aeae95d13c1f643817498a6dae1573"
-      ]
+      ],
+      "reward": 150,
+      "rewardPerDay": 0
     }
   ],
   "tags": [

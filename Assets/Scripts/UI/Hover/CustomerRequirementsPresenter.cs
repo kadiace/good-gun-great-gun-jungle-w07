@@ -17,6 +17,7 @@ namespace WeaponWorkshop
             new List<CustomerRequirementsView.RowData>();
 
         private Bell m_bell;
+        private GameSaveController m_save;
         private float m_nextUpdate;
         private Customer m_previousCustomer;
         private EquipableWeapon m_previousWeapon;
@@ -116,8 +117,19 @@ namespace WeaponWorkshop
 
             CustomerRequestData table = TableManager.Instance.CustomerRequest;
             var snapshot = new CustomerRequestInfo.WeaponSnapshot(weapon);
+            if (m_save == null) m_save = Object.FindFirstObjectByType<GameSaveController>();
+            var quote = CustomerRewardInfo.Calculate(customer.Profile, weapon, CustomerRewardInfo.SaleMultiplier(m_save), snapshot);
             m_rows.Clear();
             AddRow("손님 요청사항", true, 0, true);
+            if (customer.Profile != null && customer.Profile.IsDifficult)
+            {
+                float percent = TableManager.Instance.CustomerOrder.sale.difficultCustomerRatio * 100f;
+                AddRow($"제출 보상: 제작비의 {percent:0.#}%\n현재 지급액 ${quote.price:N0}", true, 0, true);
+            }
+            else
+            {
+                AddRow($"현재 보상 ${quote.price:N0} / 최대 ${quote.maximumPrice:N0}\n클리어 배율 ×{quote.multiplier:0.##}", true, 0, true);
+            }
             string[] ids = customer.Profile != null ? customer.Profile.RequestIds : null;
             if (ids == null)
             {
@@ -131,7 +143,7 @@ namespace WeaponWorkshop
             {
                 foreach (string id in ids)
                 {
-                    AddRequestRows(table, id, snapshot);
+                    AddRequestRows(table, id, snapshot, CustomerRewardInfo.ContractReward(customer.Profile, id));
                 }
             }
 
@@ -139,7 +151,7 @@ namespace WeaponWorkshop
         }
 
         private void AddRequestRows(CustomerRequestData _table, string _id,
-            CustomerRequestInfo.WeaponSnapshot _snapshot)
+            CustomerRequestInfo.WeaponSnapshot _snapshot, int _reward)
         {
             CustomerRequestData.Request request = _table.FindRequest(_id);
             if (request == null)
@@ -154,7 +166,7 @@ namespace WeaponWorkshop
             int depth = grouped ? 1 : 0;
             if (grouped)
             {
-                AddRow(tag != null ? tag.name + " 태그" : request.name, _table.MeetsRequest(_id, _snapshot), 0);
+                AddRow((tag != null ? tag.name + " 태그" : request.name) + $" · ${_reward:N0}", _table.MeetsRequest(_id, _snapshot), 0);
             }
 
             foreach (CustomerRequestData.Condition condition in _table.Conditions(request))
@@ -165,7 +177,7 @@ namespace WeaponWorkshop
                 }
                 else
                 {
-                    AddRow(Describe(condition, _snapshot.Value(condition)), _snapshot.Meets(condition), depth);
+                    AddRow(Describe(condition, _snapshot.Value(condition)) + (grouped ? "" : $" · ${_reward:N0}"), _snapshot.Meets(condition), depth);
                 }
             }
 

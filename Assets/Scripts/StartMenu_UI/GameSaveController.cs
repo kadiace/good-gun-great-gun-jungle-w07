@@ -42,11 +42,13 @@ namespace WeaponWorkshop
             if (button != null) button.gameObject.SetActive(!retired);
         }
         public bool HasClearedRaid(string scene) => !string.IsNullOrEmpty(scene) && clearedRaidScenes.Contains(scene);
+        public float SaleRewardMultiplier => 1f + SaleBonusRatio;
+        // 최초 클리어 보너스만 합산한다. 요청의 초기 50% 이익은 이미 정액에 포함된다.
         public float SaleBonusRatio
         {
             get
             {
-                float bonus = TableManager.Instance.CustomerOrder.sale.tagBonusRatio;
+                float bonus = 0f;
                 var map = TableManager.Instance.RaidMap;
                 if (map?.regions == null) return bonus;
                 foreach (var region in map.regions)

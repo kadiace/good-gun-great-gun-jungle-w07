@@ -20,7 +20,11 @@ namespace WeaponWorkshop
         public int amount, interest, outstandingLoans, balanceAfter, completedGuests;
     }
     [Serializable] public sealed class ShopOrderLinkLogEvent : ShopLogEvent
-    { public string profileId; public string[] requestIds; }
+    {
+        public string profileId; public string[] requestIds;
+        public int generatedDay;
+        public CustomerOrderState.RequestReward[] requestRewards;
+    }
     [Serializable] public class ShopWeaponLogEvent : ShopLogEvent
     { public string weaponCode = "", weaponCodeStatus = "no_weapon"; }
     [Serializable] public sealed class ShopPresetLogEvent : ShopWeaponLogEvent { public int slot; }
@@ -29,8 +33,12 @@ namespace WeaponWorkshop
     [Serializable] public sealed class ShopSaleLogEvent : ShopWeaponLogEvent
     {
         public int price, tagCount; public bool satisfied;
-        // price = basePrice(낸 제작비) + bonus. 불만족 판매면 bonus는 음수(할인).
+        // basePrice·bonus는 기존 분석 호환용 제작비·제작비 대비 손익이다. 지급액은 달성 요청 정액 × saleMultiplier.
         public int basePrice, bonus;
+        // tagCount는 기존 필드명을 유지하되 v2부터 충족한 요청 수를 기록한다.
+        public int generatedDay, rewardBeforeMultiplier;
+        public float saleMultiplier;
+        public bool difficultCustomer;
         public string[] metRequestIds, failedRequestIds;
     }
     // part_purchased / part_refunded. money·moduleCredits는 이번에 낸(돌려받은) 양.
