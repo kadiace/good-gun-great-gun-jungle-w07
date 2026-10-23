@@ -1,22 +1,26 @@
-using UnityEditor;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+
 namespace WeaponWorkshop.Editor
 {
-    // 필수 음원과 습격별 세 조건을 한 화면에서 연결하고 누락을 즉시 표시한다.
+    // 필수 음원과 습격별 두 조건을 한 화면에서 연결하고 누락을 즉시 표시한다.
     [CustomEditor(typeof(SoundManager))]
     public sealed class SoundManagerEditor : UnityEditor.Editor
     {
+        /// <summary>
+        /// 기본 SoundManager 설정과 습격별 필수 BGM(입장·첫 벽 파괴) 슬롯을 그리고 유효성을 검사한다.
+        /// </summary>
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
             DrawPropertiesExcluding(serializedObject, "m_Script", "raidMusicSets");
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("습격별 BGM 조건 (모두 필수)", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("각 습격의 입장 / 첫 벽 파괴 / 클리어 후 Main 음원을 각각 넣어 주세요. 누락 시 플레이와 빌드를 시작할 수 없습니다.", MessageType.Info);
+            EditorGUILayout.HelpBox("각 습격의 입장 / 첫 벽 파괴 음원을 각각 넣어 주세요. 누락 시 플레이와 빌드를 시작할 수 없습니다.", MessageType.Info);
             var sets = serializedObject.FindProperty("raidMusicSets");
             for (int i = 0; i < sets.arraySize; i++)
             {
@@ -26,7 +30,6 @@ namespace WeaponWorkshop.Editor
                 using (new EditorGUI.DisabledScope(true)) EditorGUILayout.PropertyField(stage, new GUIContent("습격"));
                 EditorGUILayout.PropertyField(set.FindPropertyRelative("travel"));
                 EditorGUILayout.PropertyField(set.FindPropertyRelative("firstWall"));
-                EditorGUILayout.PropertyField(set.FindPropertyRelative("clear"));
                 EditorGUILayout.EndVertical();
             }
             serializedObject.ApplyModifiedProperties();
