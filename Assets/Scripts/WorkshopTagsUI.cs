@@ -55,6 +55,13 @@ namespace WeaponWorkshop
         private readonly System.Collections.Generic.List<UnityEngine.UI.Image> raidIcons =
             new System.Collections.Generic.List<UnityEngine.UI.Image>();
 
+        public UnityEngine.Sprite GetRaidModuleIcon(int moduleId)
+        {
+            foreach (var mapping in raidModuleIcons)
+                if (mapping.moduleId == moduleId) return mapping.sprite != null ? mapping.sprite : raidFallbackIcon;
+            return raidFallbackIcon;
+        }
+
         private void Awake()
         {
             panel?.SetActive(false);
