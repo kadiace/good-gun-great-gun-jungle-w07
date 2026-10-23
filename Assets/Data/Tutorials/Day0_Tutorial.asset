@@ -967,6 +967,7 @@ MonoBehaviour:
       \uAD50\uCCB4\uB9CC \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - quickslot
+    - palette
   - id: quickslot-restore-extension
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
@@ -1015,6 +1016,7 @@ MonoBehaviour:
       \uAD50\uCCB4\uB9CC \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - quickslot
+    - palette
   - id: extension-introduction
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
