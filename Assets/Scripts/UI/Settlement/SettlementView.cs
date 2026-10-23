@@ -275,9 +275,10 @@ namespace WeaponWorkshop
                 m_moneyDisplay.gameObject.SetActive(_visible);
             }
 
+            // 보유 부품은 정산 화면에 표시하지 않는다. 원본 행은 티켓 행 저작의 기준으로만 남긴다.
             if (m_moduleCreditDisplay != null)
             {
-                m_moduleCreditDisplay.gameObject.SetActive(_visible);
+                m_moduleCreditDisplay.gameObject.SetActive(false);
             }
 
             if (m_slotTicketDisplay != null)

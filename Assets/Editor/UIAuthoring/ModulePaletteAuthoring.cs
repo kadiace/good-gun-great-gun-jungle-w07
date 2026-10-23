@@ -85,6 +85,7 @@ namespace WeaponWorkshop.Editor
                 RectTransform hotbar = AuthorHotbar(root, view, font);
                 ModuleSlotUI[] hotbarSlots = CollectHotbarSlots(hotbar);
                 TMPro.TextMeshProUGUI guide = AuthorGuide(root, font);
+                Button paletteToggle = AuthorPaletteToggle(root, font);
 
                 ModulePaletteView.PaletteCategory[] categories = new ModulePaletteView.PaletteCategory[3];
                 Vector2 referenceSize;
@@ -100,6 +101,7 @@ namespace WeaponWorkshop.Editor
                 Assign(viewData, "m_hotbar", hotbar);
                 Assign(viewData, "m_hotbarLayout", hotbar.GetComponent<HorizontalLayoutGroup>());
                 Assign(viewData, "m_hotbarGuide", guide);
+                Assign(viewData, "m_paletteToggleButton", paletteToggle);
                 SerializedProperty slotArray = viewData.FindProperty("m_hotbarSlots");
                 slotArray.arraySize = hotbarSlots.Length;
                 for (int i = 0; i < hotbarSlots.Length; i++)
@@ -223,6 +225,44 @@ namespace WeaponWorkshop.Editor
             }
 
             return slots;
+        }
+
+        // 퀵슬롯 위 "모듈 선택창 [TAB]" 버튼. 마우스로 모듈 목록을 열고 닫는다(글자 크기는 1920 기준).
+        private static Button AuthorPaletteToggle(RectTransform root, TMP_FontAsset font)
+        {
+            RectTransform rect = GetOrCreateRect(root, "PaletteToggleButton");
+            rect.anchorMin = new Vector2(.082f, .13f);
+            rect.anchorMax = new Vector2(.247f, .17f);
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            Image background = GetOrAdd<Image>(rect.gameObject);
+            background.color = Color.white;
+            Button button = GetOrAdd<Button>(rect.gameObject);
+            button.targetGraphic = background;
+            ColorBlock colors = button.colors;
+            colors.normalColor = SlotColor;
+            colors.highlightedColor = colors.selectedColor = new Color32(0x3D, 0x44, 0x4F, 255);
+            colors.pressedColor = new Color32(0x1C, 0x20, 0x26, 255);
+            colors.disabledColor = new Color32(0x22, 0x25, 0x2B, 255);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = .12f;
+            button.colors = colors;
+
+            RectTransform labelRect = GetOrCreateRect(rect, "Label");
+            labelRect.anchorMin = new Vector2(.04f, .08f);
+            labelRect.anchorMax = new Vector2(.96f, .92f);
+            labelRect.offsetMin = labelRect.offsetMax = Vector2.zero;
+            TMPro.TextMeshProUGUI label = GetOrCreateText(labelRect, font);
+            label.text = "모듈 선택창 [TAB]";
+            label.alignment = TextAlignmentOptions.Midline;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.enableAutoSizing = true;
+            label.fontSize = 18f;
+            label.fontSizeMax = 18f;
+            label.fontSizeMin = 12f;
+            label.color = Color.white;
+            label.raycastTarget = false;
+            rect.gameObject.SetActive(false);
+            return button;
         }
 
         private static TMPro.TextMeshProUGUI AuthorGuide(RectTransform root, TMP_FontAsset font)

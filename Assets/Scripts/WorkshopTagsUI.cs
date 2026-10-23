@@ -85,6 +85,20 @@ namespace WeaponWorkshop
         }
 
         // 습격 보상용 public API 유지 (기존 호출부 호환)
+        // 습격 결과 화면의 모듈 아이콘이 같은 아이콘 표를 쓴다.
+        public UnityEngine.Sprite GetRaidModuleIcon(int _moduleId)
+        {
+            foreach (RaidModuleIcon mapping in raidModuleIcons)
+            {
+                if (mapping.moduleId == _moduleId)
+                {
+                    return mapping.sprite != null ? mapping.sprite : raidFallbackIcon;
+                }
+            }
+
+            return raidFallbackIcon;
+        }
+
         public void EnterRaidRewards()
         {
             m_presenter?.EnterRaidRewards();

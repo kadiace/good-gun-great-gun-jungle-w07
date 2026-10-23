@@ -130,7 +130,8 @@ namespace WeaponWorkshop
                 bool firstClearAvailable = region != null && region.FirstClearSaleBonus() > 0f &&
                     (m_save == null || !m_save.HasClearedRaid(region.scene));
                 m_view.SetRegionFirstClearMark(slot, firstClearAvailable);
-                m_view.SetRegionInteractable(slot, show && CanAffordEntry(index) &&
+                // 이전 순번 지역을 클리어해야 다음 지역에 들어갈 수 있다(develop 지역 해금 규칙).
+                m_view.SetRegionInteractable(slot, show && m_controller.IsRegionUnlocked(index) && CanAffordEntry(index) &&
                     (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(index)));
             }
         }

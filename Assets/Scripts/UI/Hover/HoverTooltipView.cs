@@ -14,6 +14,8 @@ namespace WeaponWorkshop
         private const string SCREEN_NAME = "HoverTooltipView";
 
         [SerializeField] private GameObject m_panel;
+        // 습격 결과 화면(ScreenLayer) 위에 툴팁을 그리기 위한 저작된 정렬 Canvas. 평소에는 꺼 둔다.
+        [SerializeField] private Canvas m_resultSortingCanvas;
         [SerializeField] private TMP_Text m_title;
         [SerializeField] private TMP_Text m_description;
         [SerializeField] private GameObject m_interact;
@@ -217,6 +219,14 @@ namespace WeaponWorkshop
             if (m_scanLoading != null)
             {
                 m_scanLoading.gameObject.SetActive(_visible);
+            }
+        }
+
+        public void SetResultSortingEnabled(bool _enabled)
+        {
+            if (m_resultSortingCanvas != null)
+            {
+                m_resultSortingCanvas.enabled = _enabled;
             }
         }
 

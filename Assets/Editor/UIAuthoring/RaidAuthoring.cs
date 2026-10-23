@@ -78,6 +78,77 @@ namespace WeaponWorkshop.Editor
             }
         }
 
+        // 습격 결과 화면의 획득 모듈 아이콘 줄과 아이콘 템플릿(1920 기준 위치·크기).
+        [MenuItem("Tools/UI/Authoring/Raid/ResultModules")]
+        public static void AuthorResultModules()
+        {
+            const string step = "Raid/ResultModules";
+            GameObject root = null;
+            try
+            {
+                root = LoadPrefab(RAID_UI_PREFAB_PATH);
+                NightRaidUI bridge = RequireNightRaidUI(root);
+                SerializedObject bridgeData = new SerializedObject(bridge);
+                CanvasGroup content = RequireProperty(bridgeData, "resultContent").objectReferenceValue as CanvasGroup;
+                TMPro.TextMeshProUGUI body = RequireProperty(bridgeData, "resultBody").objectReferenceValue as TMPro.TextMeshProUGUI;
+                if (content == null || body == null)
+                {
+                    throw new InvalidOperationException("NightRaidUI.resultContent·resultBody 참조가 비어 있습니다.");
+                }
+
+                Transform rowTransform = content.transform.Find("ResultModuleIcons");
+                if (rowTransform == null)
+                {
+                    GameObject rowObject = new GameObject("ResultModuleIcons", typeof(RectTransform));
+                    rowObject.layer = content.gameObject.layer;
+                    rowTransform = rowObject.transform;
+                    rowTransform.SetParent(content.transform, false);
+                }
+
+                RectTransform row = (RectTransform)rowTransform;
+                row.anchorMin = new Vector2(0.5f, 0.5f);
+                row.anchorMax = new Vector2(0.5f, 0.5f);
+                row.anchoredPosition = new Vector2(0f, -82.5f);
+                row.sizeDelta = new Vector2(495f, 48f);
+                row.gameObject.SetActive(false);
+
+                Transform templateTransform = rowTransform.Find("ModuleIconTemplate");
+                if (templateTransform == null)
+                {
+                    GameObject templateObject = new GameObject("ModuleIconTemplate", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                    templateObject.layer = content.gameObject.layer;
+                    templateTransform = templateObject.transform;
+                    templateTransform.SetParent(rowTransform, false);
+                }
+
+                Image template = EnsureComponent<Image>(templateTransform.gameObject);
+                template.raycastTarget = true;
+                template.preserveAspect = true;
+                EnsureComponent<ResultModuleIconHover>(templateTransform.gameObject);
+                templateTransform.gameObject.SetActive(false);
+
+                ResultModuleRowView rowView = EnsureComponent<ResultModuleRowView>(bridge.gameObject);
+                SerializedObject rowData = new SerializedObject(rowView);
+                SetObject(rowData, "m_row", row);
+                SetObject(rowData, "m_iconTemplate", template);
+                SetObject(rowData, "m_body", body);
+                rowData.ApplyModifiedPropertiesWithoutUndo();
+
+                SetObject(bridgeData, "m_resultModuleRow", rowView);
+                bridgeData.ApplyModifiedPropertiesWithoutUndo();
+                SavePrefabOrThrow(root, RAID_UI_PREFAB_PATH);
+                Debug.Log("[UIAuthoring] OK " + step + " ResultModuleIcons·ModuleIconTemplate·ResultModuleRowView 연결");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError("[UIAuthoring] FAIL " + step + " " + exception.Message);
+            }
+            finally
+            {
+                UnloadPrefab(root);
+            }
+        }
+
         [MenuItem("Tools/UI/Authoring/Raid/Hud")]
         public static void AuthorHud()
         {

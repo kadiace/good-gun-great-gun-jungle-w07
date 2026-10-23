@@ -28,8 +28,8 @@
         "materialPerCrate": 25,
         "dollarsPerMaterialPickup": 100,
         "moduleCodes": [
-          "ac721da9683bfcc46b24fdba51a5b278",
-          "cf32abdb412c6124cabcbdd85c103cb5"
+          "3819fc250847c48448b1dc45b4ce63a6",
+          "8185707d079aa3d4eba1d33833009eb2"
         ]
       },
       "helicopters": true,
@@ -51,26 +51,27 @@
         ]
       },
       "helicopters": true,
-      "tanks": true
+      "tanks": true,
+      "maximumReinforcedTanks": 2
     },
     {
       "entryCost": 1500,
-      "name": "정글 캠퍼스",
+      "name": "공항",
       "selectionOrder": 3,
-      "scene": "NightRaid_JungleCampus",
+      "scene": "NightRaid_Airport",
       "reward": {
         "firstClearSaleBonus": 0.1,
         "materialCrates": 12,
         "materialPerCrate": 25,
         "dollarsPerMaterialPickup": 100,
         "moduleCodes": [
-          "3819fc250847c48448b1dc45b4ce63a6",
-          "8185707d079aa3d4eba1d33833009eb2"
+          "ac721da9683bfcc46b24fdba51a5b278",
+          "cf32abdb412c6124cabcbdd85c103cb5"
         ]
       },
       "helicopters": true,
       "tanks": true,
-      "maximumReinforcedTanks": 2
+      "maximumReinforcedTanks": 1
     },
     {
       "name": "정글 캠퍼스 (개선)",

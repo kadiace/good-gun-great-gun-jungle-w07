@@ -146,6 +146,23 @@ namespace WeaponWorkshop.EditorTools
             CopyFloat(bridgeSo, "scanTextRevealDuration", viewSo, "m_scanTextRevealDuration");
             viewSo.FindProperty("m_scanLoading").objectReferenceValue = scanLoading;
             viewSo.FindProperty("m_scanLoadingText").objectReferenceValue = scanLoadingText;
+
+            // 습격 결과 화면의 모듈 상세 툴팁이 결과 화면 위에 그려지도록 패널에 정렬 Canvas를 둔다(평소 비활성).
+            GameObject panel = bridgeSo.FindProperty("panel").objectReferenceValue as GameObject;
+            if (panel != null)
+            {
+                Canvas sortingCanvas = panel.GetComponent<Canvas>();
+                if (sortingCanvas == null)
+                {
+                    sortingCanvas = panel.AddComponent<Canvas>();
+                }
+
+                sortingCanvas.overrideSorting = true;
+                sortingCanvas.sortingOrder = 500;
+                sortingCanvas.enabled = false;
+                viewSo.FindProperty("m_resultSortingCanvas").objectReferenceValue = sortingCanvas;
+            }
+
             viewSo.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(view);
 

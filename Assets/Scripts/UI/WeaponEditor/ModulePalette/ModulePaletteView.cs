@@ -45,6 +45,8 @@ namespace WeaponWorkshop
         [SerializeField] private RectTransform m_hotbar;
         [SerializeField] private HorizontalLayoutGroup m_hotbarLayout;
         [SerializeField] private TMPro.TextMeshProUGUI m_hotbarGuide;
+        // 퀵슬롯 위 "모듈 선택창 [TAB]" 버튼(마우스로 목록 열기·닫기).
+        [SerializeField] private UnityEngine.UI.Button m_paletteToggleButton;
         [SerializeField] private ModuleSlotUI[] m_hotbarSlots;
 
         [Header("Palette")]
@@ -93,6 +95,7 @@ namespace WeaponWorkshop
         public event Action<PointerEventData> SlotDragged;
         public event Action<ModuleSlotUI, PointerEventData> SlotDropped;
         public event Action<PointerEventData> SlotDragEnded;
+        public event Action PaletteToggleClicked;
 
         public void NotifySlotHovered(ModuleSlotUI _slot) => SlotHovered?.Invoke(_slot);
 
@@ -130,6 +133,11 @@ namespace WeaponWorkshop
 
             m_layoutConfig = _layout;
             BuildCategoryState();
+            if (m_paletteToggleButton != null)
+            {
+                m_paletteToggleButton.onClick.AddListener(OnPaletteToggleClicked);
+            }
+
             m_isInitialized = true;
             ApplyLayout();
             ApplyNavigation();
@@ -303,8 +311,36 @@ namespace WeaponWorkshop
             }
         }
 
+        public void SetPaletteToggleState(bool _visible, bool _interactable)
+        {
+            if (m_paletteToggleButton == null)
+            {
+                return;
+            }
+
+            SetVisible(m_paletteToggleButton.gameObject, _visible);
+            if (m_paletteToggleButton.interactable != _interactable)
+            {
+                m_paletteToggleButton.interactable = _interactable;
+            }
+        }
+
+        private void OnPaletteToggleClicked()
+        {
+            PaletteToggleClicked?.Invoke();
+        }
+
+        private void OnDestroy()
+        {
+            if (m_paletteToggleButton != null)
+            {
+                m_paletteToggleButton.onClick.RemoveListener(OnPaletteToggleClicked);
+            }
+        }
+
         public void HideAll()
         {
+            SetPaletteToggleState(false, false);
             SetHotbarVisible(false);
             SetGuideVisible(false);
             SetPaletteVisible(false);
@@ -352,7 +388,11 @@ namespace WeaponWorkshop
 
             if (m_hotbarGuide != null)
             {
-                Vector2 guideMin = new Vector2(m_layoutConfig.hotbarAnchorMin.x, m_layoutConfig.hotbarAnchorMax.y + .01f);
+                // 모듈 선택창 버튼이 있으면 안내 문구는 버튼 오른쪽에서 시작한다.
+                float guideLeft = m_paletteToggleButton != null
+                    ? ((RectTransform)m_paletteToggleButton.transform).anchorMax.x + .01f
+                    : m_layoutConfig.hotbarAnchorMin.x;
+                Vector2 guideMin = new Vector2(guideLeft, m_layoutConfig.hotbarAnchorMax.y + .01f);
                 Vector2 guideMax = new Vector2(m_layoutConfig.hotbarAnchorMax.x, m_layoutConfig.hotbarAnchorMax.y + .04f);
                 ApplyAnchors(m_hotbarGuide.rectTransform, guideMin, guideMax);
             }

@@ -63,11 +63,13 @@ namespace WeaponWorkshop
             }
             return true;
         }
-        public static int CreditCost(CustomerProfile profile, PlayerModuleUnlocks unlocks, WeaponStats core)
-            => profile == null ? 0 : CreditCost(profile.RequestIds, unlocks, core);
-        public static int CreditCost(string[] ids, PlayerModuleUnlocks unlocks, WeaponStats core)
+        // 필요 모듈 구매액을 추정한다. 코어·연결용 연장 비용이나 기존 무기 재사용은 포함하지 않는다.
+        public static int DollarCost(CustomerProfile profile, PlayerModuleUnlocks unlocks, WeaponStats core)
+            => profile == null ? 0 : DollarCost(profile.RequestIds, unlocks, core);
+        public static int DollarCost(string[] ids, PlayerModuleUnlocks unlocks, WeaponStats core)
         {
             var need = new Dictionary<ModuleKind, int>();
+            int constructionMinimum = 0;
             var table = TableManager.Instance.CustomerRequest;
             foreach (string id in ids ?? Array.Empty<string>())
             {
@@ -87,8 +89,11 @@ namespace WeaponWorkshop
                     {
                         case GunMeasure.SplitTwoBlocks: Need(ModuleKind.SplitTwo, Mathf.CeilToInt(condition.min), need); break;
                         case GunMeasure.SplitFourBlocks: Need(ModuleKind.SplitFour, Mathf.CeilToInt(condition.min), need); break;
+                        case GunMeasure.ConstructionCost:
+                            constructionMinimum = Mathf.Max(constructionMinimum, Mathf.CeilToInt(condition.min));
+                            break;
                         case GunMeasure.TotalModules: case GunMeasure.Muzzles:
-                        case GunMeasure.ConstructionCost: case GunMeasure.Shape:
+                        case GunMeasure.Shape:
                         case GunMeasure.PaintedFaces: case GunMeasure.PaintedColorFaces: break;
                         case GunMeasure.ColorModules: Need(ModuleKind.Color, Mathf.CeilToInt(condition.min), need); break;
                         default:
@@ -109,11 +114,11 @@ namespace WeaponWorkshop
                 if (module != null)
                 {
                     long count = item.Value;
-                    long credits = Mathf.Max(0, module.ModuleCreditCost);
-                    total += item.Key == ModuleKind.Shotgun ? credits * count * (count + 1) / 2 : credits * count;
+                    total += (long)Mathf.Max(0, module.BuyPrice) * count;
+                    if (total >= int.MaxValue) return int.MaxValue;
                 }
             }
-            return (int)Math.Min(total, int.MaxValue);
+            return Mathf.Max((int)total, constructionMinimum);
         }
         private static void Need(ModuleKind kind, int count, Dictionary<ModuleKind, int> need)
             => need[kind] = Mathf.Max(count, need.TryGetValue(kind, out int current) ? current : 0);

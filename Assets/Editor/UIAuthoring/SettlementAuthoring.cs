@@ -87,8 +87,6 @@ public static class SettlementAuthoring
             GameObject clone = Object.Instantiate(moduleCreditDisplay.gameObject, currencyGroup);
             clone.name = SLOT_TICKET_NAME;
             RectTransform displayRect = clone.GetComponent<RectTransform>();
-            displayRect.anchoredPosition = moduleCreditDisplay.anchoredPosition -
-                new Vector2(0f, moduleCreditDisplay.rect.height + 4.5f);
             Image icon = clone.transform.Find("ModuleIcon") != null
                 ? clone.transform.Find("ModuleIcon").GetComponent<Image>() : null;
             if (icon != null)
@@ -104,6 +102,14 @@ public static class SettlementAuthoring
         TMPro.TextMeshProUGUI slotTicketText = slotTicket.Find("ModuleCreditText") != null
             ? slotTicket.Find("ModuleCreditText").GetComponent<TMPro.TextMeshProUGUI>() : null;
         Require(slotTicketText, SLOT_TICKET_NAME + "/ModuleCreditText");
+
+        // 보유 부품 행은 숨기고 티켓 행이 그 자리를 쓴다. 원본의 앵커·피벗·위치·크기를 매번 맞춘다(멱등).
+        RectTransform slotTicketRect = (RectTransform)slotTicket;
+        slotTicketRect.anchorMin = moduleCreditDisplay.anchorMin;
+        slotTicketRect.anchorMax = moduleCreditDisplay.anchorMax;
+        slotTicketRect.pivot = moduleCreditDisplay.pivot;
+        slotTicketRect.anchoredPosition = moduleCreditDisplay.anchoredPosition;
+        slotTicketRect.sizeDelta = moduleCreditDisplay.sizeDelta;
 
         // 2. 자리세 행: MoneyText 오른쪽에 붙는 TMP(기존 CreateDailyRentText와 같은 앵커·크기·스타일).
         bool createdDailyRent = false;

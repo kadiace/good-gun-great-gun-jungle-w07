@@ -82,28 +82,24 @@ namespace WeaponWorkshop
                 FeedbackUI.For(this)?.ShowNotification("튜토리얼 모듈 획득: " + player.GetComponent<PlayerModuleUnlocks>().GetModuleName(moduleId));
             return true;
         }
-        private string RaidRewards()
+        private string RaidRewards(System.Collections.Generic.List<int> modules)
         {
             var unlocks = player.GetComponent<PlayerModuleUnlocks>();
             // 튜토리얼 습격은 복귀 때 출발 상태로 되돌린다(NightRaidTransfer.PrepareReturn). 획득량을 실제 보상처럼 보이지 않게 표시한다.
             bool training = TutorialManager.TrainingRaidPending;
             var text = new System.Text.StringBuilder(training ? "획득 정산 (튜토리얼 연습)\n\n" : "획득 정산\n\n");
             if (training) text.AppendLine("연습 습격의 획득물은 공방에 반영되지 않습니다.").AppendLine();
-            // 지갑 차이는 디버그 재화·무기 환급까지 섞이므로 상자에서 실제로 주운 재료만 보여준다.
-            text.Append("부품  +").Append(materialCrateCredits).AppendLine();
             text.Append("슬롯머신 티켓  +").Append(earnedSlotTickets).AppendLine();
-            int money = raidEarnedDollars;
-            if (money > 0) text.Append("돈  +").Append(money).AppendLine();
-            int count = 0;
+            text.Append("돈  +").Append(raidEarnedDollars).AppendLine();
             foreach (int id in unlocks.CaptureUnlockedModules())
                 if (System.Array.IndexOf(raidStartingModules, id) < 0)
-                { text.Append("• ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
+                    if (!modules.Contains(id)) modules.Add(id);
             foreach (int id in raidEarnedModules)
-            { text.Append("• ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
+                if (!modules.Contains(id)) modules.Add(id);
             foreach (int id in trainingModules)
                 if (!raidEarnedModules.Contains(id))
-                { text.Append("• 튜토리얼 모듈: ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
-            if (count == 0) text.AppendLine("획득한 신규 모듈 없음");
+                    if (!modules.Contains(id)) modules.Add(id);
+            if (modules.Count == 0) text.AppendLine("획득한 신규 모듈 없음");
             return text.ToString();
         }
         /// <summary>
@@ -159,7 +155,8 @@ namespace WeaponWorkshop
                 rewardsApplied = isClear && !TutorialManager.TrainingRaidPending
             };
             if (pendingCellLogs.Count == 0) RecordPendingResultLog();
-            ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(), () =>
+            var resultModules = new System.Collections.Generic.List<int>();
+            ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(resultModules), resultModules, () =>
             { returnOpen = true; ReturnHome(); });
         }
         public void ShowDeathResult() => ShowRaidResult(true);
@@ -643,6 +640,7 @@ namespace WeaponWorkshop
             if (!mapOpen || transitioning || index < 0 || index >= RegionCount) return;
             var tutorial = TutorialManager.Instance;
             if (tutorial != null && !tutorial.AllowsRaidRegion(index)) return;
+            if (!IsRegionUnlocked(index)) return;
             player = uiManager.Player;
             var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             var weapon = holder != null ? holder.EquippedWeapon : null;
@@ -667,9 +665,21 @@ namespace WeaponWorkshop
             string message = cost > 0 ? $"$ {cost:N0}를 내고 {name}에 입장하시겠습니까?" : $"{name}에 입장하시겠습니까?";
             ui.ShowEntryConfirm(message, () =>
             {
-                if (!mapOpen || transitioning || player == null || (!training && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))) return;
+                if (!mapOpen || transitioning || player == null || !IsRegionUnlocked(index) ||
+                    (!training && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))) return;
                 BeginRaid(regionScene, cost, training, tutorial);
             });
+        }
+        public bool IsRegionUnlocked(int index)
+        {
+            if (index < 0 || index >= RegionCount) return false;
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return index == 0;
+            var region = TableManager.Instance.RaidMap.Find(RegionScene(index));
+            if (region == null) return false;
+            if (region.selectionOrder <= 1) return true;
+            string previousScene = TableManager.Instance.RaidMap.SceneAt(region.selectionOrder - 2);
+            var save = FindFirstObjectByType<GameSaveController>();
+            return save != null && save.HasClearedRaid(previousScene);
         }
         // 검사(EnterRegion)·확인창 뒤의 확정 단계(차감+이동).
         private void BeginRaid(string regionScene, int cost, bool training, TutorialManager tutorial)

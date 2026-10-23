@@ -170,6 +170,7 @@ namespace WeaponWorkshop
                 m_view.SlotDragged -= Drag;
                 m_view.SlotDropped -= Drop;
                 m_view.SlotDragEnded -= EndDrag;
+                m_view.PaletteToggleClicked -= TogglePalette;
             }
 
             m_presenter?.Dispose();
@@ -199,6 +200,7 @@ namespace WeaponWorkshop
             bool paletteOpen = active && !customMode && builder.PaletteOpen;
             m_view.SetGuideVisible(active && !customMode && builder.CanEditFavorites);
             m_view.SetHotbarVisible(active && !customMode);
+            m_view.SetPaletteToggleState(active && !customMode, active && !customMode && !GameManager.GameplayBlocked);
             m_view.SetPaletteVisible(paletteOpen);
             if (customButtonRoot != null && customButtonRoot.gameObject.activeSelf != (active && builder.CanStartCustom))
                 customButtonRoot.gameObject.SetActive(active && builder.CanStartCustom);
@@ -223,6 +225,8 @@ namespace WeaponWorkshop
             }
             m_presenter.RefreshIfStateChanged();
         }
+
+        private void TogglePalette() => builder?.TogglePalette();
 
         public void HandleClick(ModuleSlotUI slot) => m_presenter?.HandleClick(slot);
 
@@ -279,6 +283,7 @@ namespace WeaponWorkshop
             m_view.SlotDragged += Drag;
             m_view.SlotDropped += Drop;
             m_view.SlotDragEnded += EndDrag;
+            m_view.PaletteToggleClicked += TogglePalette;
             BindCustomUI();
         }
 

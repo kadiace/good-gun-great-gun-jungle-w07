@@ -45,6 +45,24 @@ namespace WeaponWorkshop
             EnsureInitialized();
         }
 
+        // 습격 결과 화면의 모듈 아이콘에서 호출한다. 결과 화면 위에 모듈 상세를 띄운다.
+        public void ShowResultModule(ModuleData _module, Vector2 _position)
+        {
+            EnsureInitialized();
+            if (m_presenter != null)
+            {
+                m_presenter.ShowResultModule(_module, _position);
+            }
+        }
+
+        public void ClearResultModule()
+        {
+            if (m_presenter != null)
+            {
+                m_presenter.ClearResultModule();
+            }
+        }
+
         private void LateUpdate()
         {
             if (m_presenter == null)

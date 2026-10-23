@@ -14,7 +14,7 @@
         },
         {
           "id": "shape/cat",
-          "unlockDay": 2
+          "unlockDay": 20
         },
         {
           "id": "color/crimson-3",
@@ -98,11 +98,11 @@
         },
         {
           "id": "shooting-test/around-cover",
-          "unlockDay": 4
+          "unlockDay": 6
         },
         {
           "id": "shooting-test/behind-barrier",
-          "unlockDay": 5
+          "unlockDay": 6
         },
         {
           "id": "shooting-test/wide-targets",

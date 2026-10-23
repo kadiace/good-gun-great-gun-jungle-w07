@@ -170,6 +170,15 @@ namespace WeaponWorkshop
         public int SelectedSlot => selectedSlot;
         public bool DeleteMode => deleteMode;
         public bool PaletteOpen => paletteOpen && isActiveAndEnabled;
+        public void TogglePalette()
+        {
+            if (!isActiveAndEnabled || GameManager.GameplayBlocked || paintingMode) return;
+            if (!TutorialManager.TryAction("palette")) return;
+            CancelPreview();
+            paletteOpen = !paletteOpen;
+            hoveredPaletteModule = 0;
+            if (paletteOpen && TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("palette-opened");
+        }
         public void ClosePalette()
         {
             paletteOpen = false;
@@ -313,14 +322,7 @@ namespace WeaponWorkshop
                 int index = i - 1;
                 controls.FindAction("Select" + (i % 10), true).performed += _ => HandleFavoriteKey(index);
             }
-            controls.FindAction("TogglePalette", true).performed += _ =>
-            {
-                if (GameManager.GameplayBlocked || paintingMode) return;
-                if (!TutorialManager.TryAction("palette")) return;
-                CancelPreview();
-                paletteOpen = !paletteOpen; hoveredPaletteModule = 0;
-                if (paletteOpen && TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("palette-opened");
-            };
+            controls.FindAction("TogglePalette", true).performed += _ => TogglePalette();
             InputAction attach = controls.FindAction("Attach", true);
             attach.started += _ =>
             {

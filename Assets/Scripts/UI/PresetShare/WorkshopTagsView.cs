@@ -93,6 +93,12 @@ namespace WeaponWorkshop
             {
                 m_panel.SetActive(_visible);
             }
+
+            // 무게 표시는 공방에서 코어가 있을 때만 보인다(습격 보상 표시 중에는 숨김).
+            if (m_weightText != null)
+            {
+                m_weightText.gameObject.SetActive(_visible);
+            }
         }
 
         public void SetWeightText(string _text)
@@ -187,9 +193,10 @@ namespace WeaponWorkshop
                 m_salePriceText.text = $"$ {_dollars:N0}";
             }
 
+            // 공방의 무게 표시와 같은 텍스트를 쓰므로 습격 중에는 숨긴다.
             if (m_weightText != null)
             {
-                m_weightText.text = $"부품  {_parts:N0}";
+                m_weightText.gameObject.SetActive(false);
             }
 
             if (m_tagsHeaderText != null)

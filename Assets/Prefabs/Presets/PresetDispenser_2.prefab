@@ -977,6 +977,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8214677191773041734, guid: cf9441097b0bc6140b6ff3f1513a0dde, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9042487622464352914, guid: cf9441097b0bc6140b6ff3f1513a0dde, type: 3}
       propertyPath: m_Name
       value: PresetDispenser_2

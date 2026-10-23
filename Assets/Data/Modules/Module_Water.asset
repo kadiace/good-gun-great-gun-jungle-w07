@@ -17,7 +17,7 @@ MonoBehaviour:
   description: "\uD0C4\uD658\uC5D0 \uBB3C \uC18D\uC131\uC744 \uB354\uD558\uB294 \uBAA8\uB4C8\uC785\uB2C8\uB2E4."
   color: {r: 0.09999997, g: 0.45, b: 0.95, a: 1}
   useModuleCredits: 1
-  moduleCreditCost: 10
+  moduleCreditCost: 0
   moduleType: 8
   buyPrice: 50
   bonuses:

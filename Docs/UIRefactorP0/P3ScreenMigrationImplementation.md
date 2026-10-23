@@ -51,6 +51,17 @@
 - 씬 정리: `Tools/UI/Authoring/SceneOverrides/Clean`이 빌드 씬의 UIManager·StartUI 인스턴스에서 프리팹 값과 같은 오버라이드만 제거한다(1084건 제거, 활성 상태·다른 값·씬 참조·추가 오브젝트는 유지). 추출된 엔드 상자 화면 스케일러도 1920×1080 match 1이다.
 - 저작 명령 전체를 두 번 연속 실행해도 프리팹·씬이 바뀌지 않는다.
 
+## develop 병합 반영
+
+develop의 기능을 개편 구조로 옮겼다. 2560 기준 픽셀 값은 0.75배로 환산했다.
+
+- 습격 지역 해금: 지도 버튼 활성 조건에 `NightRaidController.IsRegionUnlocked`를 더했다(`RaidMapPresenter`).
+- 결과 화면 획득 모듈: `ResultModuleRowView`가 저작된 아이콘 줄·템플릿(`Raid/ResultModules`)을 재사용하고, 아이콘 호버는 `ResultModuleIconHover` → `HoveringUI.ShowResultModule`로 모듈 상세를 띄운다. 툴팁은 저작된 정렬 Canvas(평소 비활성, order 500)로 결과 화면 위에 그린다.
+- 정산: 보유 부품 행은 숨기고 티켓 행이 같은 위치를 쓴다. 공방 무게 표시는 코어가 있을 때만, 습격 보상 중에는 숨긴다. 결과 아이콘은 `WorkshopTagsUI.GetRaidModuleIcon`을 쓴다.
+- 모듈 선택창 버튼: 퀵슬롯 위 "모듈 선택창 [TAB]" 버튼을 `ModulePalette/Author`가 저작하고 View 이벤트로 `CubeBuilder.TogglePalette`를 호출한다. develop의 `ModulePaletteButtonAuthoring`은 이 단계로 대체했다.
+- 코어 배출기: 저장 슬롯은 장착 중 교체 허용, 지급 중 재진입 차단, 제작 실패 알림, 전시 무기 바라보며 가져가기(호버 상호작용 안내 포함).
+- Main 씬: develop의 커스텀 UI·휴지통 위치 오버라이드를 적용했다(UIManager 크기·위치는 0.75배).
+
 ## 남은 범위
 
 - Automatic Navigation이 남은 곳: 커스텀 목록 타일(스티커·키링·도색 슬롯, 그리드라 위치 기반 이동은 동작), 표적 선택 창 11개, 확인창 Yes/No·탄색 피커 확인/취소·무기 코드 버튼 일부.

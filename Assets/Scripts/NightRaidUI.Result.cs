@@ -12,6 +12,7 @@ namespace WeaponWorkshop
         [SerializeField] private TMPro.TextMeshProUGUI resultBody;
         [SerializeField] private UnityEngine.UI.Button resultConfirm;
         [SerializeField] private ResultView m_resultView;
+        [SerializeField] private ResultModuleRowView m_resultModuleRow;
         private ResultPresenter m_resultPresenter;
         private bool m_hasLoggedResultReferenceError;
 
@@ -62,6 +63,42 @@ namespace WeaponWorkshop
         private void HideResultExtraction()
         {
             SetExtraction(false, 0f, 0f);
+        }
+
+        // 생존 결과에는 이번 습격에서 얻은 모듈을 아이콘 줄로 보여 주고, 아이콘에 포인터를 올리면 모듈 상세를 띄운다.
+        public void ShowRaidResult(bool _died, string _summary, System.Collections.Generic.IReadOnlyList<int> _modules, Action _confirmed)
+        {
+            ShowRaidResult(_died, _summary, () =>
+            {
+                if (m_resultModuleRow != null)
+                {
+                    m_resultModuleRow.Hide();
+                }
+
+                _confirmed?.Invoke();
+            });
+            if (m_resultPresenter == null || m_resultModuleRow == null)
+            {
+                return;
+            }
+
+            WorkshopTagsUI icons = GetComponentInParent<WorkshopTagsUI>(true);
+            if (icons == null)
+            {
+                icons = transform.root.GetComponentInChildren<WorkshopTagsUI>(true);
+            }
+
+            HoveringUI tooltip = GetComponentInParent<HoveringUI>(true);
+            if (tooltip == null)
+            {
+                tooltip = transform.root.GetComponentInChildren<HoveringUI>(true);
+            }
+
+            m_resultModuleRow.Show(
+                _died ? null : _modules,
+                _id => icons != null ? icons.GetRaidModuleIcon(_id) : null,
+                _id => moduleCatalog != null && moduleCatalog.TryGet(_id, out ModuleCatalog.Entry entry) ? entry.data : null,
+                tooltip);
         }
 
         public void ShowRaidResult(bool _died, string _summary, Action _confirmed)

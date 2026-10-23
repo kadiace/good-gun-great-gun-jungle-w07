@@ -322,7 +322,7 @@ public class _DayManager : MonoBehaviour
     public bool OpenShop()
     {
         if (!IsAwaitingOpening || GameManager.GameplayBlocked || !HasRequiredReferences()) return false;
-        // 모듈재화 판정은 영업 시작 시점 기준. 대기열을 다시 넣는 것이라 종 시작 전에 해야 함.
+        // 잔액·대출 가능 여부는 영업 시작 시점 기준. 대기열을 다시 넣으므로 종 시작 전에 판정한다.
         if (DayNumber != 0 && CurrentCustomerDay != null && CurrentCustomerDay.customers != null)
         {
             ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday);
@@ -666,7 +666,7 @@ public class _DayManager : MonoBehaviour
         => CustomerModuleRequirements.Allows(profile, ModuleUnlocks,
             endlessRequests != null ? endlessRequests.CoreStats : default, day);
 
-    // 손님 한 명 처리(판매 퇴장·사망) 후 남은 손님을 현재 모듈재화로 재판정. 부족한 손님은 미루고 조합 손님으로 대체.
+    // 손님 한 명 처리 후 남은 손님을 잔액·대출 가능 여부로 재판정하고, 못 받는 손님은 미룬다.
     public void RefreshRemainingCustomers()
     {
         if (DayNumber == 0 || IsNight || CurrentCustomerDay == null || CurrentCustomerDay.customers == null || customerBell == null) return;
@@ -675,17 +675,18 @@ public class _DayManager : MonoBehaviour
         customerBell.ReplaceRemaining(CurrentCustomerDay.customers);
     }
 
-    // 영업 시작 시점 판정: 해금 + 필요한 모듈 재화를 지금 보유하고 있는지. 부족하면 미루고 조합 손님으로 대체.
+    // 모듈 해금은 필수. 잔액이 부족해도 오늘 대출을 사용할 수 있으면 주문을 허용한다.
     private bool CanServeToday(CustomerProfile profile, int day)
-        => CanServe(profile, day) && CustomerModuleRequirements.CreditCost(profile, ModuleUnlocks,
-            endlessRequests != null ? endlessRequests.CoreStats : default) <= ModuleCredits;
+        => CanServe(profile, day) && wallet != null &&
+            (wallet.CanTakeLoan(day) || wallet.CanAfford(CustomerModuleRequirements.DollarCost(profile, ModuleUnlocks,
+                endlessRequests != null ? endlessRequests.CoreStats : default)));
 
     private CustomerProfile CreateCombination(int day, int min = -1, int max = -1)
         => endlessRequests == null ? ScriptableObject.CreateInstance<CustomerProfile>()
             : endlessRequests.Create(day,
                 min < 0 ? endlessRequests.MinRequests : min,
                 max < 0 ? endlessRequests.MaxRequests : max,
-                ModuleUnlocks, ModuleCredits);
+                ModuleUnlocks, Money, wallet != null && wallet.CanTakeLoan(day));
 
     private CustomerDay PrepareDay(int dayNumber)
     {
@@ -710,7 +711,7 @@ public class _DayManager : MonoBehaviour
             {
                 var deferred = CreateRuntimeOrder(profile, dayNumber);
                 deferredCustomers.Add(deferred);
-                OrderDeferred?.Invoke(deferred, dayNumber, CanServe(profile, dayNumber) ? "credits" : "module_locked");
+                OrderDeferred?.Invoke(deferred, dayNumber, CanServe(profile, dayNumber) ? "money" : "module_locked");
             }
             day.customers[i] = CreateCombination(dayNumber, day.MinRequests, day.MaxRequests);
         }
@@ -756,7 +757,7 @@ public class _DayManager : MonoBehaviour
             // '예?' 손님을 목록 순서대로 하루 전체에 고르게 펼침. 첫 손님은 조합 손님이 오도록.
             bool special = next < specials.Count && (t + 1) * specials.Count / total > t * specials.Count / total;
             customers[t] = special ? specials[next++] : endlessRequests.Create(source.day, source.MinRequests, source.MaxRequests,
-                ModuleUnlocks, ModuleCredits);
+                ModuleUnlocks, Money, wallet != null && wallet.CanTakeLoan(source.day));
         }
         day.customers = customers;
         return day;

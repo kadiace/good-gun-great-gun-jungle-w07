@@ -25,6 +25,7 @@ namespace WeaponWorkshop
         private CubeBuilder m_builder;
         private PlayerScanMode m_scanner;
         private bool m_muzzleTooltipObserved;
+        private ModuleData m_resultModule;
         private bool m_isInitialized;
         private bool m_hasLoggedDependencyError;
 
@@ -99,13 +100,58 @@ namespace WeaponWorkshop
         public void HandleDisabled()
         {
             m_muzzleTooltipObserved = false;
+            ClearResultModule();
             Hide();
+        }
+
+        public void ShowResultModule(ModuleData _module, Vector2 _position)
+        {
+            if (!m_isInitialized || m_view == null || _module == null)
+            {
+                return;
+            }
+
+            m_resultModule = _module;
+            m_view.SetPointerPosition(_position);
+            m_view.SetResultSortingEnabled(true);
+            ShowResultModuleNow();
+        }
+
+        public void ClearResultModule()
+        {
+            if (m_resultModule == null)
+            {
+                return;
+            }
+
+            m_resultModule = null;
+            if (m_view != null)
+            {
+                m_view.SetResultSortingEnabled(false);
+            }
+
+            Hide();
+        }
+
+        private void ShowResultModuleNow()
+        {
+            m_view.SetTagGridVisible(false);
+            m_view.SetDescriptionVisible(true);
+            m_view.SetInteractVisible(false);
+            ShowModule(m_resultModule);
         }
 
         public void Tick()
         {
             if (!m_isInitialized || m_view == null)
             {
+                return;
+            }
+
+            // 결과 화면 모듈 상세는 게임 조작이 막힌 결과 화면에서도 유지한다.
+            if (m_resultModule != null)
+            {
+                ShowResultModuleNow();
                 return;
             }
 
@@ -416,9 +462,10 @@ namespace WeaponWorkshop
 
             var core = _weapon.GetComponentInChildren<PowerCore>();
             m_tagSource.GetMatchedTags(core, m_weaponTags);
-            bool preview = _weapon.GetComponent<PresetWeaponPreview>() != null;
+            var preview = _weapon.GetComponent<PresetWeaponPreview>();
             m_view.ShowWeaponTags(m_weaponTags, _weapon.WeaponName);
-            if (!preview)
+            // 프리셋 창고는 전시 무기를 바라볼 때 바로 가져갈 수 있다. 작업대 긴 광선이 사거리 밖 전시물을 설명하는 경우는 안내하지 않는다.
+            if (preview == null || (m_interaction != null && ReferenceEquals(m_interaction.AimedTarget, preview)))
             {
                 m_view.SetInteractVisible(CanInteract());
             }
