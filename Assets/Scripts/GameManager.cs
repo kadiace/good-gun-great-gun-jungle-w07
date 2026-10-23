@@ -14,34 +14,27 @@ namespace WeaponWorkshop
         [SerializeField] private WorkshopSession workshopSession;
         private InputActionMap controls;
         private Coroutine cursorRestore;
+        private UICancelRouter m_cancelRouter;
         private readonly System.Collections.Generic.List<GameObject> effects = new System.Collections.Generic.List<GameObject>();
         public static GameManager Instance { get; private set; }
         // 글자 입력 중에는 F(상호작용)·단축키 등 게임 조작이 입력과 함께 실행되지 않게 막는다.
         // 진입 커버가 떠 있는 동안에는 게임 조작도 막는다.
-        public static bool GameplayBlocked => NightRaidEntryOverlay.InputBlocked || ModalBlocked || TextInputFocused;
+        public static bool GameplayBlocked => UIInputPolicy.IsGameplayBlocked;
         // 창·대화·일시정지 등 화면 상태로만 막힌 경우. 입력칸에서 바로 누를 수 있어야 하는 UI 버튼의 활성 판정에 쓴다.
-        public static bool ModalBlocked => Instance != null && (Instance.IsPaused || Instance.InDialogue || Instance.IsNight || Instance.InTargetSelection || Instance.InManual || (Instance.UI != null && Instance.UI.IsChoiceOpen));
-        public static bool TextInputFocused
-        {
-            get
-            {
-                var selected = UnityEngine.EventSystems.EventSystem.current != null ? UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject : null;
-                return selected != null && selected.TryGetComponent<TMPro.TMP_InputField>(out var field) && field.isFocused;
-            }
-        }
-        public bool InManual { get; private set; }
+        public static bool ModalBlocked => UIInputPolicy.IsModalBlocked;
+        public static bool TextInputFocused => UIInputPolicy.IsTextInputFocused;
+        public bool InManual => UIInputPolicy.InManual;
         public event System.Action ManualCloseRequested;
-        public void SetManual(bool open) { InManual = open; RestoreCursor(); }
-        public bool InTargetSelection { get; private set; }
+        public void SetManual(bool open) { UIInputPolicy.SetManual(open); }
+        public bool InTargetSelection => UIInputPolicy.InTargetSelection;
         public event System.Action TargetSelectionCloseRequested;
         public void SetTargetSelection(bool open)
         {
-            InTargetSelection = open;
-            RestoreCursor();
+            UIInputPolicy.SetTargetSelection(open);
         }
-        public bool InDialogue { get; private set; }
-        public bool IsNight { get; private set; }
-        public bool IsPaused { get; private set; }
+        public bool InDialogue => UIInputPolicy.InDialogue;
+        public bool IsNight => UIInputPolicy.IsNight;
+        public bool IsPaused => UIInputPolicy.IsPaused;
         public bool CanLeaveWorkshop => workshopSession != null && workshopSession.IsInWorkshop;
 
         [SerializeField] private PoolManager combatPoolManagerPrefab;
@@ -50,17 +43,19 @@ namespace WeaponWorkshop
         {
             Instance = this;
             PoolManager.Ensure(combatPoolManagerPrefab);
-            Time.timeScale = 1f;
-            IsPaused = false;
-            IsNight = false;
-            InDialogue = false;
-            InTargetSelection = false;
-            InManual = false;
+            UIInputPolicy.ResetToGameplay();
+            m_cancelRouter = new UICancelRouter(this, uiManager, workshopSession,
+                TogglePauseState, Resume, RequestManualClose, RequestTargetSelectionClose);
             if (inputActions == null) return;
             controls = inputActions.FindActionMap("Game", true).Clone();
-            controls.FindAction("Pause", true).performed += _ => TogglePause();
+            controls.FindAction("Pause", true).performed += OnPausePerformed;
+            UIInputPolicy.RegisterGameMap(controls);
         }
-        private void OnEnable() => controls?.Enable();
+        private void OnPausePerformed(InputAction.CallbackContext _context)
+        {
+            TogglePause();
+        }
+        private void OnEnable() => UIInputPolicy.RequestActionMapEnabled(controls, true);
         private void Start()
         {
             // LogKit 자동 초기화(AfterSceneLoad)가 첫 씬 Awake보다 늦으므로 Start에서 기록한다.
@@ -73,76 +68,72 @@ namespace WeaponWorkshop
         {
             if (cursorRestore != null) StopCoroutine(cursorRestore);
             cursorRestore = null;
-            controls?.Disable();
-            Time.timeScale = 1f;
+            UIInputPolicy.RequestActionMapEnabled(controls, false);
+            UIInputPolicy.UnregisterGameMap(controls);
         }
         private void OnDestroy()
         {
+            UIInputPolicy.UnregisterGameMap(controls);
             controls?.Dispose();
             if (Instance == this) Instance = null;
         }
+        // ESC의 화면별 우선순위는 UICancelRouter가 결정하고, 여기서는 진입 차단만 확인한다.
         public void TogglePause()
         {
-            if (NightRaidEntryOverlay.InputBlocked) return;
-            if (uiManager != null && uiManager.GetComponent<RetireUI>()?.IsOpen == true) return;
-            // ESC는 입력칸 선택 중에도 창 닫기·작업대 나가기로 동작하므로 화면 상태(ModalBlocked)만 본다.
-            if (!ModalBlocked && uiManager != null && uiManager.GetComponent<ShootingTestHUD>()?.CloseRetry() == true) return;
-            var tutorialSkip = uiManager != null ? uiManager.GetComponent<TutorialSkipUI>() : null;
-            if (tutorialSkip != null && tutorialSkip.IsOpen) return;
-            var recipe = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponRecipeUI>() : null;
-            if (recipe != null && recipe.IsOpen) { recipe.Close(); return; }
-            if (InManual) { ManualCloseRequested?.Invoke(); return; }
-            if (uiManager != null && uiManager.IsChoiceOpen)
+            if (NightRaidEntryOverlay.InputBlocked)
             {
-                if (!uiManager.Feedback.IsChoiceInputSuspended) uiManager.Feedback.Cancel();
                 return;
             }
-            var presets = uiManager != null ? uiManager.GetComponent<PresetPanelUI>() : null;
-            if (presets != null && presets.IsOpen) { presets.Close(); return; }
-            var weaponCode = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponCodeUI>() : null;
-            if (weaponCode != null && weaponCode.IsOpen) { weaponCode.Close(); return; }
-            var weaponName = uiManager != null ? uiManager.GetComponent<WeaponWorkshop.WeaponNameUI>() : null;
-            if (weaponName != null && weaponName.CancelEditing()) return;
-            if (InTargetSelection) { TargetSelectionCloseRequested?.Invoke(); return; }
-            var builder = uiManager != null && uiManager.Player != null
-                ? uiManager.Player.GetComponentInChildren<CubeBuilder>(true) : null;
-            if (builder != null && builder.PaletteOpen) { builder.ClosePalette(); return; }
-            if (!ModalBlocked)
+            m_cancelRouter?.RouteCancel();
+        }
+        private void TogglePauseState()
+        {
+            SetPaused(!IsPaused);
+        }
+        private void SetPaused(bool _paused)
+        {
+            if (IsPaused == _paused)
             {
-                var session = workshopSession;
-                if (session == null && uiManager != null && uiManager.Player != null)
-                    session = uiManager.Player.GetComponent<WorkshopSession>();
-                if (session != null && session.IsInWorkshop)
-                {
-                    if (!session.IsTransitioning) session.Leave();
-                    return;
-                }
+                return;
             }
-            if (IsNight) return;
-            IsPaused = !IsPaused;
-            Time.timeScale = IsPaused ? 0f : 1f;
+            UIInputPolicy.SetPaused(_paused);
             GameLogger.Info("Game", IsPaused ? "일시정지" : "일시정지 해제");
             uiManager?.Refresh(this);
-            RestoreCursor();
             if (!IsPaused)
             {
                 if (cursorRestore != null) StopCoroutine(cursorRestore);
                 cursorRestore = StartCoroutine(RestoreCursorAfterPause());
             }
         }
+        private void RequestManualClose()
+        {
+            ManualCloseRequested?.Invoke();
+        }
+        private void RequestTargetSelectionClose()
+        {
+            TargetSelectionCloseRequested?.Invoke();
+        }
         private IEnumerator RestoreCursorAfterPause()
         {
             var pause = controls != null ? controls.FindAction("Pause") : null;
             while (pause != null && pause.IsPressed()) yield return null;
             yield return null;
-            if (Application.isFocused) RestoreCursor();
+            if (Application.isFocused) UIInputPolicy.RefreshCursor();
             yield return new WaitForEndOfFrame();
-            if (Application.isFocused) RestoreCursor();
+            if (Application.isFocused) UIInputPolicy.RefreshCursor();
             cursorRestore = null;
         }
+        // UI 버튼 등 프로그램 경로는 화면 취소 라우팅을 거치지 않고 실제로 재개한다.
         public void Resume()
         {
-            if (IsPaused) TogglePause();
+            if (NightRaidEntryOverlay.InputBlocked)
+            {
+                return;
+            }
+            if (IsPaused)
+            {
+                SetPaused(false);
+            }
         }
         public void LeaveWorkshop()
         {
@@ -166,27 +157,21 @@ namespace WeaponWorkshop
             }
             foreach (PowerCore core in FindObjectsByType<PowerCore>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 core.ResetFireCooldown();
-            IsPaused = false;
-            Time.timeScale = 1f;
+            UIInputPolicy.ResetToGameplay();
             uiManager?.Refresh(this);
-            RestoreCursor();
         }
         // 대화 중엔 이동/사격/상호작용을 막고 커서를 풂.
         public void SetDialogue(bool open)
         {
-            InDialogue = open;
-            RestoreCursor();
+            UIInputPolicy.SetDialogue(open);
         }
         public void SetNight(bool night)
         {
             if (night) uiManager?.GetComponent<ShootingTestHUD>()?.CancelTest();
             if (night) ManualCloseRequested?.Invoke();
             if (night) TargetSelectionCloseRequested?.Invoke();
-            IsNight = night;
-            IsPaused = false;
-            Time.timeScale = night ? 0f : 1f;
+            UIInputPolicy.SetNight(night);
             uiManager?.Refresh(this);
-            RestoreCursor();
         }
         public void RegisterEffect(GameObject effect)
         {
@@ -195,14 +180,9 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
-            if (GameplayBlocked) RestoreCursor();
+            if (GameplayBlocked) UIInputPolicy.RefreshCursor();
         }
-        public void RefreshInputState() => RestoreCursor();
-        private void RestoreCursor()
-        {
-            bool visible = GameplayBlocked || (workshopSession != null && workshopSession.IsInWorkshop);
-            Cursor.lockState = visible ? CursorLockMode.None : CursorLockMode.Locked;
-            Cursor.visible = visible;
-        }
+        public void RefreshInputState() => UIInputPolicy.RefreshCursor();
+        private void RestoreCursor() => UIInputPolicy.RefreshCursor();
     }
 }

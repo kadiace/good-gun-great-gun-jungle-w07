@@ -45,8 +45,6 @@ namespace WeaponWorkshop
         public bool IsTransitioning => cameraMove != null;
         private Renderer[] playerRenderers;
         private ShadowCastingMode[] originalShadows;
-        private CursorLockMode previousCursorLock;
-        private bool previousCursorVisible;
         public bool IsInWorkshop => activeWorkbench != null;
 
         private void Awake()
@@ -61,8 +59,6 @@ namespace WeaponWorkshop
             if (builder != null) builder.enabled = false;
             workshopUI?.SetWorkshopUI(false);
             if (inputActions == null || playerCamera == null) { enabled = false; return; }
-            previousCursorLock = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
             playerRenderers = GetComponentsInChildren<Renderer>();
             originalShadows = new ShadowCastingMode[playerRenderers.Length];
             for (int i = 0; i < playerRenderers.Length; i++) originalShadows[i] = playerRenderers[i].shadowCastingMode;
@@ -77,7 +73,10 @@ namespace WeaponWorkshop
             rotate.canceled += _ => EndRotation();
             editingControls.FindAction("ResetRotation", true).performed += _ =>
             {
-                if (!IsEditing || GameManager.GameplayBlocked) return;
+                if (!IsEditing || GameManager.GameplayBlocked || SlotDragActive)
+                {
+                    return;
+                }
                 if (!TutorialManager.TryAction("reset-rotation")) return;
                 rotationDrag = false;
                 if (PlanarView.Is2D) { PlanarView.ResetFraming(); return; }
@@ -91,24 +90,31 @@ namespace WeaponWorkshop
             {
                 if (IsInWorkshop && !IsTransitioning && !GameManager.GameplayBlocked) Leave();
             };
+            UIInputPolicy.RegisterWorkshopMaps(controls, editingControls);
         }
 
-        private void OnEnable() => controls?.Enable();
+        private void OnEnable() => UIInputPolicy.RequestActionMapEnabled(controls, true);
         private void Start() => SetMode(false);
         private void OnDisable()
         {
-            controls?.Disable();
+            UIInputPolicy.RequestActionMapEnabled(controls, false);
+            UIInputPolicy.UnregisterWorkshopMaps(controls, editingControls);
             SetEditing(false);
+            UIInputPolicy.SetInWorkshop(false);
             if (cursorRestore != null) StopCoroutine(cursorRestore);
             cursorRestore = null;
             if (activeWorkbench != null || cameraMove != null) SetMode(false);
             if (playerRenderers != null)
                 for (int i = 0; i < playerRenderers.Length; i++)
                     if (playerRenderers[i] != null) playerRenderers[i].shadowCastingMode = originalShadows[i];
-            Cursor.lockState = previousCursorLock;
-            Cursor.visible = previousCursorVisible;
+            UIInputPolicy.RefreshCursor();
         }
-        private void OnDestroy() { controls?.Dispose(); editingControls?.Dispose(); }
+        private void OnDestroy()
+        {
+            UIInputPolicy.UnregisterWorkshopMaps(controls, editingControls);
+            controls?.Dispose();
+            editingControls?.Dispose();
+        }
 
         public bool HasCoreForWorkbench(Workbench bench)
         {
@@ -158,6 +164,7 @@ namespace WeaponWorkshop
 
         private void SetMode(bool workshop, bool animate = false)
         {
+            UIInputPolicy.SetInWorkshop(workshop);
             if (!workshop) PlanarView?.Restore3D();
             if (!workshop && activeWorkbench != null) WorkbenchExited?.Invoke(activeWorkbench.CurrentWeapon);
             if (cameraMove != null) StopCoroutine(cameraMove);
@@ -217,6 +224,7 @@ namespace WeaponWorkshop
         private void SetEditing(bool editing)
         {
             rotationDrag = false;
+            UIInputPolicy.SetWorkshopEditing(editing);
             if (builder != null)
             {
                 builder.SetWorkspace(editing && activeWorkbench != null ? activeWorkbench.RotationTarget : null);
@@ -233,10 +241,16 @@ namespace WeaponWorkshop
 
         public void CancelRotationDrag() => rotationDrag = false;
 
+        private bool SlotDragActive => builder != null && builder.IsFavoriteDragging;
+
         private void BeginRotation()
         {
             rotationDragDegrees = 0f;
             if (!IsEditing || GameManager.GameplayBlocked || PlanarView.Is2D) return;
+            if (SlotDragActive)
+            {
+                return;
+            }
             if (!TutorialManager.TryAction("rotate")) return;
             Vector2 pointer = point.ReadValue<Vector2>();
             if (builder != null && builder.IsPointerOverInterface(pointer)) return;
@@ -249,7 +263,10 @@ namespace WeaponWorkshop
         {
             bool completedDrag = rotationDrag;
             rotationDrag = false;
-            if (!completedDrag || !IsEditing || GameManager.GameplayBlocked || !Application.isFocused) return;
+            if (!completedDrag || !IsEditing || GameManager.GameplayBlocked || !Application.isFocused || SlotDragActive)
+            {
+                return;
+            }
             if (TutorialManager.Instance != null) TutorialManager.Instance.NotifyRotation(rollDrag, activeWorkbench, rotationDragDegrees);
         }
 
@@ -264,6 +281,12 @@ namespace WeaponWorkshop
             { rotationDrag = false; PlanarView?.StopPan(); return; }
             if (PlanarView.Is2D && ((builder != null && builder.IsCustomMode) || !TutorialManager.ActionAllowed("view-mode")))
                 PlanarView.Restore3D();
+            if (SlotDragActive)
+            {
+                rotationDrag = false;
+                PlanarView?.StopPan();
+                return;
+            }
             if (PlanarView.Is2D)
             {
                 rotationDrag = false;
@@ -298,15 +321,7 @@ namespace WeaponWorkshop
 
         private void SetCursor()
         {
-            if (GameManager.GameplayBlocked)
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-                return;
-            }
-            CursorLockMode desired = IsInWorkshop ? CursorLockMode.None : CursorLockMode.Locked;
-            if (Cursor.lockState != desired) Cursor.lockState = desired;
-            Cursor.visible = IsInWorkshop;
+            UIInputPolicy.RefreshCursor();
         }
 
         private void ApplyWorkshopZoom()
@@ -334,10 +349,9 @@ namespace WeaponWorkshop
             if (controls == null) return;
             // Hold the workbench view while editing (the camera is not parented to the workbench).
             if (IsInWorkshop && cameraMove == null) SnapCamera(true);
-            Cursor.visible = IsInWorkshop;
-            if (Application.isFocused) SetCursor();
+            if (Application.isFocused) UIInputPolicy.RefreshCursor();
         }
         private void OnApplicationFocus(bool focused)
-        { rotationDrag = false; PlanarView?.StopPan(); if (focused && controls != null) SetCursor(); }
+        { rotationDrag = false; PlanarView?.StopPan(); if (focused && controls != null) UIInputPolicy.RefreshCursor(); }
     }
 }

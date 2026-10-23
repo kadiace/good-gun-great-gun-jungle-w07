@@ -149,8 +149,28 @@ namespace WeaponWorkshop
         [SerializeField] private TMPro.TextMeshProUGUI[] moduleLabels;
         [SerializeField] private Color selectedModuleColor = new Color(1f, 0.8f, 0.2f, 1f);
         private int lastSelectedSlot = -1;
-        [SerializeField] private GameObject pausePanel;
-        [SerializeField] private UnityEngine.UI.Button resumeButton;
+        [Header("UI Layers & Pause MVP")]
+        [SerializeField] private UIRoot m_uiRoot;
+        [SerializeField] private PauseView m_pauseView;
+        private PausePresenter m_pausePresenter;
+        private bool m_hasLoggedPauseWiringError;
+
+        public UIRoot Root
+        {
+            get
+            {
+                return m_uiRoot;
+            }
+        }
+
+        public PauseView PauseView
+        {
+            get
+            {
+                return m_pauseView;
+            }
+        }
+
         private void Awake()
         {
             nightRaidUI?.Initialize();
@@ -177,7 +197,7 @@ namespace WeaponWorkshop
             if (hoveringUI != null) hoveringUI.Initialize(builder, Player != null ? Player.GetComponentInChildren<Interaction>(true) : null);
 
             HideNotification();
-            pausePanel?.SetActive(false);
+            InitializePauseUI();
             UpdateModuleSelection();
         }
         public void Resume() => gameManager?.Resume();
@@ -253,31 +273,99 @@ namespace WeaponWorkshop
                 UIFonts.ApplyWeight(moduleLabels[i], selected ? 700 : 400);
             }
         }
-        private void OnDisable() { feedback?.Cancel(); SetWorkshopUI(false); }
-        /// <summary>
-        /// 게임 일시정지 상태에 맞춰 일시정지 패널 표시와 캔버스 우선순위를 갱신합니다.
-        /// game 상태를 확인하여 일시정지 메뉴를 최상위(sortingOrder 200)로 올리거나 하위 창을 닫습니다.
-        /// </summary>
-        public void Refresh(GameManager game)
+        private void OnDisable()
         {
-            bool pauseChanged = pausePanel != null && pausePanel.activeSelf != game.IsPaused;
-            // 일시정지를 닫으면 하위 설정 화면도 닫아 다음 열기에서 메뉴가 겹치지 않게 한다.
-            if (pauseChanged && !game.IsPaused) GetComponent<SoundSettingsUI>()?.Close();
-            if (game.IsPaused && pausePanel != null)
+            feedback?.ForceClose();
+            SetWorkshopUI(false);
+        }
+
+        private void OnDestroy()
+        {
+            if (m_pausePresenter != null)
             {
-                pausePanel.transform.SetAsLastSibling();
-                var pauseCanvas = pausePanel.GetComponent<Canvas>();
-                if (pauseCanvas == null)
-                {
-                    pauseCanvas = pausePanel.AddComponent<Canvas>();
-                    pausePanel.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-                }
-                pauseCanvas.overrideSorting = true;
-                pauseCanvas.sortingOrder = 200;
+                m_pausePresenter.Dispose();
+                m_pausePresenter = null;
             }
-            pausePanel?.SetActive(game.IsPaused);
-            if (pauseChanged && UnityEngine.EventSystems.EventSystem.current != null)
-                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+            else if (m_pauseView != null)
+            {
+                m_pauseView.Dispose();
+            }
+        }
+
+        private void InitializePauseUI()
+        {
+            if (m_uiRoot == null || m_pauseView == null)
+            {
+                if (!m_hasLoggedPauseWiringError)
+                {
+                    m_hasLoggedPauseWiringError = true;
+                    Debug.LogError(
+                        $"[UIManager] Initialize 실패: 필수 참조 누락 (m_uiRoot={m_uiRoot != null}, m_pauseView={m_pauseView != null})",
+                        this);
+                }
+
+                return;
+            }
+
+            m_uiRoot.ValidateLayers();
+            m_pauseView.Initialize();
+
+            if (gameManager != null)
+            {
+                EnsurePausePresenter(gameManager);
+            }
+        }
+
+        private bool EnsurePausePresenter(GameManager _targetGameManager)
+        {
+            if (m_pauseView == null || m_uiRoot == null || _targetGameManager == null)
+            {
+                return false;
+            }
+
+            // Refresh에 다른 GameManager가 전달되면 기존 구독을 정리하고 새 모델로 다시 연결한다.
+            if (m_pausePresenter != null && !m_pausePresenter.IsBoundTo(_targetGameManager))
+            {
+                m_pausePresenter.Dispose();
+                m_pausePresenter = null;
+            }
+
+            if (m_pausePresenter == null)
+            {
+                m_pausePresenter = new PausePresenter(m_pauseView, _targetGameManager, m_uiRoot);
+            }
+
+            return m_pausePresenter.Initialize();
+        }
+
+        /// <summary>
+        /// 명시적으로 전달된 GameManager의 일시정지 상태를 PausePresenter에 위임합니다.
+        /// (P1-A 명시적 이관 브리지: 후속 전체 흐름 이관 전까지 GameManager -> UIManager.Refresh -> PausePresenter.Refresh 연결을 유지합니다.)
+        /// </summary>
+        public void Refresh(GameManager _game)
+        {
+            if (_game == null)
+            {
+                return;
+            }
+
+            bool wasPaused = (m_pausePresenter != null && m_pausePresenter.IsOpen) ||
+                             (m_pauseView != null && m_pauseView.IsVisible);
+            bool pauseChanged = wasPaused != _game.IsPaused;
+            gameManager = _game;
+
+            // 일시정지를 닫으면 하위 설정 화면도 닫아 다음 열기에서 메뉴가 겹치지 않게 한다.
+            if (pauseChanged && !_game.IsPaused)
+            {
+                GetComponent<SoundSettingsUI>()?.Close();
+            }
+
+            if (!EnsurePausePresenter(_game))
+            {
+                return;
+            }
+
+            m_pausePresenter.Refresh();
         }
     }
 }

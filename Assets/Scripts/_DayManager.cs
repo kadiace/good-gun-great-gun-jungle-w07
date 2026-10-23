@@ -307,9 +307,7 @@ public class _DayManager : MonoBehaviour
         GameSaveFiles.PendingLoad = null;
         GameSaveFiles.ClearRaidRecovery();
         PoolManager.ClearActive();
-        Time.timeScale = 1f;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        WeaponWorkshop.UIInputPolicy.ApplyLobbyPolicy();
         SceneManager.LoadSceneAsync("Intro", LoadSceneMode.Single);
     }
     // Explicit hook for the authored tutorial's eventual completion; an empty day never auto-advances.
@@ -370,9 +368,7 @@ public class _DayManager : MonoBehaviour
             GameSaveFiles.PendingLoad = null;
             GameSaveFiles.ClearRaidRecovery();
             PoolManager.ClearActive();
-            Time.timeScale = 1f;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            WeaponWorkshop.UIInputPolicy.ApplyLobbyPolicy();
             Changed?.Invoke();
             SceneManager.LoadSceneAsync("Intro", LoadSceneMode.Single);
             return;
