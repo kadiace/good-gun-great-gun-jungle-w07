@@ -140,23 +140,15 @@ namespace WeaponWorkshop
             foreach (var part in enemyRoot.GetComponentsInChildren<DestructibleTarget>())
                 part.BreakAll(transform.position, Vector3.down);
             // Keep the debris owners alive until their existing fade finishes.
-            StartCoroutine(DelayedRootRemoval());
-            // 코어가 그 사이 꺼져 코루틴이 멈춰도 잔해가 남지 않게 기존 지연 삭제를 예비로 둔다.
-            Destroy(enemyRoot, DebrisRemovalDelay + 1f);
+            // 코어는 TargetHealth.Die에서 곧바로 꺼지므로 삭제 대기는 루트에 붙인 EnemyWreckRemoval이 맡는다.
+            if (enemyRoot != gameObject && enemyRoot.activeInHierarchy)
+                enemyRoot.AddComponent<EnemyWreckRemoval>().Begin(DebrisRemovalDelay);
+            else Destroy(enemyRoot, DebrisRemovalDelay);
         }
 
-        // 기존 12초 지연 Destroy를 대체한다. 리지드바디 Destroy 비용은 질량·관성 텐서 자동 재계산이
-        // 지배하므로 삭제 직전에만 끄고 바로 지운다(남은 12초 물리 동작은 그대로).
         private const float DebrisRemovalDelay = 12f;
-        private System.Collections.IEnumerator DelayedRootRemoval()
-        {
-            yield return new WaitForSeconds(DebrisRemovalDelay);
-            if (enemyRoot == null) yield break;
-            PrepareRootForDestroy(enemyRoot);
-            Destroy(enemyRoot);
-        }
 
-        private static void PrepareRootForDestroy(GameObject root)
+        internal static void PrepareRootForDestroy(GameObject root)
         {
             var bodies = root.GetComponentsInChildren<Rigidbody>(true);
             for (int i = 0; i < bodies.Length; i++)

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -14,7 +15,7 @@ namespace WeaponWorkshop
         private float groundClearance = 0.3f;
         [SerializeField, Min(0f), Tooltip("착지 후 차체 앞·뒤 끝에서 바깥으로 이 거리(m)까지의 부술 수 있는 파츠를 접촉과 무관하게 부숨(Track 앞뒤 걸림 방지)")]
         private float endReach = 1f;
-        [SerializeField, Min(1), Tooltip("물리 스텝당 부술 수 있는 DestructibleTarget 개수 상한(초과분은 다음 스텝)")]
+        [SerializeField, Min(1), Tooltip("프레임당 부술 수 있는 DestructibleTarget 개수 상한(초과분은 다음 프레임). 느린 프레임에 물리 스텝이 여러 번 돌아도 늘지 않음")]
         private int maxPartsPerStep = 24;
         [SerializeField, Min(0f), Tooltip("부서진 칸 파편이 튀는 속도(m/s)")] private float debrisSpeed = 4f;
         private RaidTank tank;
@@ -22,11 +23,15 @@ namespace WeaponWorkshop
         private readonly Collider[] hits = new Collider[128];
         private readonly HashSet<DestructibleTarget> processed = new HashSet<DestructibleTarget>();
         private int budget;
+        private int budgetFrame = -1;
+        private int crushMask;
+        private static readonly ProfilerMarker breakMarker = new ProfilerMarker("RaidTankCrusher.BreakInBox");
 
         private void Awake()
         {
             tank = GetComponent<RaidTank>();
             body = GetComponent<Rigidbody>();
+            crushMask = ~LayerMask.GetMask("Energy");
         }
 
         // 추락 중 닿아도 착지로 보지 않는 대상인지(부술 수 있는 파츠)
@@ -44,7 +49,12 @@ namespace WeaponWorkshop
         {
             DestructionCollisionBatch.Flush();
             processed.Clear();
-            budget = maxPartsPerStep;
+            // 상한은 물리 스텝이 아니라 프레임 단위로 채운다(한 프레임에 스텝이 몰리면 부수는 양이 배로 늘던 스파이크 방지).
+            if (budgetFrame != Time.frameCount)
+            {
+                budgetFrame = Time.frameCount;
+                budget = maxPartsPerStep;
+            }
             if (tank.IsFalling) CrushFalling();
             else if (tank.IsLanded && endReach > 0f) CrushEnds();
         }
@@ -61,7 +71,7 @@ namespace WeaponWorkshop
                 Vector3 center = transform.TransformPoint(new Vector3(bodyCenter.x, (lowerY + upperY) * 0.5f, bodyCenter.z + side * offsetZ));
                 DestructionCollisionBatch.Flush();
                 int count = Physics.OverlapBoxNonAlloc(center, half, hits, transform.rotation,
-                    ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore);
+                    crushMask, QueryTriggerInteraction.Ignore);
                 for (int i = 0; i < count && budget > 0; i++) Crush(hits[i], center, transform.rotation, half);
             }
         }
@@ -75,7 +85,7 @@ namespace WeaponWorkshop
             Vector3 center = transform.TransformPoint(bodyCenter) + Vector3.down * (travel * 0.5f);
             DestructionCollisionBatch.Flush();
             int count = Physics.OverlapBoxNonAlloc(center, half, hits, transform.rotation,
-                ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore);
+                crushMask, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count && budget > 0; i++) Crush(hits[i], center, transform.rotation, half);
         }
 
@@ -101,7 +111,7 @@ namespace WeaponWorkshop
             GetBodyBox(extraTop, out Vector3 center, out Vector3 half);
             DestructionCollisionBatch.Flush();
             int count = Physics.OverlapBoxNonAlloc(center, half, hits, transform.rotation,
-                ~LayerMask.GetMask("Energy"), QueryTriggerInteraction.Ignore);
+                crushMask, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count && budget > 0; i++) Crush(hits[i], center, transform.rotation, half);
         }
 
@@ -120,7 +130,7 @@ namespace WeaponWorkshop
             var part = collider.GetComponentInParent<DestructibleTarget>();
             if (!CanCrush(part) || !processed.Add(part)) return;
             budget--;
-            part.BreakInBox(center, rotation, half, debrisSpeed);
+            using (breakMarker.Auto()) part.BreakInBox(center, rotation, half, debrisSpeed);
         }
     }
 }

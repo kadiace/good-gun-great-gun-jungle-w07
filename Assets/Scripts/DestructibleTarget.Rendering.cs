@@ -594,9 +594,9 @@ namespace WeaponWorkshop
         private bool localSupportInProgress;
         private bool localSupportSupported;
         private Vector3Int localSupportSeed;
-        private Quaternion localSupportRootRotation;
-        // 탐색을 멈출 때의 외부 지지 집합 지문. 다음 호출에서 지지가 바뀌었으면 방문 기록을 버린다.
+        // 탐색을 멈출 때의 외부 지지 캐시 키. 다음 호출에서 지지 입력이 바뀌었으면 방문 기록을 버린다.
         private long localSuspendExternalSignature;
+        private bool localSuspendExternalKeyValid;
         // 방문 예산은 표적마다 따로 잡지 않고 모든 표적이 한 프레임 분을 함께 쓴다. 표적 수만큼
         // 곱해지면 폭발 한 번에 프레임이 통째로 막히므로 남은 예산이 없으면 최소 보장만 이어서 본다.
         private const int LocalSupportVisitBudget = 8192;
@@ -611,8 +611,6 @@ namespace WeaponWorkshop
         private static bool localSupportWorkPending;
         // 최소 보장은 표적마다 한 프레임에 한 번만 준다(중력 흡수 종료와 LateUpdate가 겹칠 때 두 배로 늘지 않게).
         private int localSupportServedFrame = -1;
-        // 시든 시드 거르는 조건자를 호출마다 새로 만들지 않게 하나만 캐시한다.
-        private System.Predicate<Vector3Int> staleBoundaryFilter;
         private static readonly ProfilerMarker localSupportMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport.Local");
         private static readonly ProfilerMarker supportFallbackMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport.FullFallback");
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -680,36 +678,27 @@ namespace WeaponWorkshop
         private void ResolveLocalSupportBudgeted()
         {
             EnsureLocalSupportFrameBudget();
-            if (staleBoundaryFilter == null) staleBoundaryFilter = coordinate => !HasCell(coordinate);
-            changedBoundary.RemoveWhere(staleBoundaryFilter);
+            // 시든 시드는 여기서 일괄로 거르지 않고 시드를 꺼낼 때 HasCell로 확인한다.
             if (!(localSupportInProgress || changedBoundary.Count > 0))
             {
                 // 남은 것이 시든 시드뿐이었다. 예약을 닫는다.
                 localSupportVisited.Clear();
-                localSuspendExternalSignature = 0;
+                localSuspendExternalKeyValid = false;
                 return;
             }
 
-            CollectExternalSupport();
-            // 지지해 주는 콜라이더와 그 경계만 본다. 이 표적의 칸 제거만으로는 지문이 바뀌지 않아
-            // 이미 본 컴포넌트를 다시 훑지 않는다.
-            long externalSignature = externalSupportColliders.Count;
-            foreach (Collider supportCollider in externalSupportColliders)
-            {
-                if (supportCollider == null) continue;
-                long item = (long)supportCollider.GetInstanceID() * 397 ^ supportCollider.bounds.GetHashCode();
-                externalSignature += item * 2654435761L;
-            }
-            externallyHeld = false;
-            foreach (int supportedIndex in externallySupportedCells)
-                if (supportedIndex >= 0 && supportedIndex < grid.Length && grid[supportedIndex])
-                { externallyHeld = true; break; }
-            // 멈춰 둔 탐색 중에 외부 지지가 바뀌었거나 뿌리가 돌았으면 방문 기록이 낡아진다.
+            // 외부 지지 결과는 입력(이웃 충돌 형상 버전·지지 상태·연결·루트 자세)이 그대로면 캐시를 쓴다.
+            // 이 표적의 칸 제거만으로는 캐시가 낡지 않아 이미 본 컴포넌트를 다시 훑지 않는다.
+            RefreshExternalSupport();
+            long externalSignature = externalSupportCacheKey;
+            externallyHeld = externalSupportCacheHeld;
+            // 멈춰 둔 탐색 중에 외부 지지 입력이 바뀌었으면 방문 기록이 낡아진다.
             // 그 밖의 새 시드는 이미 본 컴포넌트를 다시 훑을 필요가 없으므로 기록을 유지한다.
             if ((localSupportInProgress || localSupportVisited.Count > 0) &&
-                (externalSignature != localSuspendExternalSignature || CellRoot.rotation != localSupportRootRotation))
+                (!localSuspendExternalKeyValid || externalSignature != localSuspendExternalSignature))
                 ResetLocalSupportProgress();
             localSuspendExternalSignature = externalSignature;
+            localSuspendExternalKeyValid = true;
 
             // 이번 호출은 남은 공용 예산을 이어서 쓴다. 공용 창이 이미 소진된 프레임에는 다음
             // 프레임을 기다리지 않고 최소 보장만큼만 진행해 표적이 굶지 않게 한다.
@@ -789,14 +778,13 @@ namespace WeaponWorkshop
             }
             // 예약을 모두 처리했다. 방문 기록은 다음 일괄 때 낡아지므로 비워 둔다.
             localSupportVisited.Clear();
-            localSuspendExternalSignature = 0;
+            localSuspendExternalKeyValid = false;
         }
         // 예산을 다 썼다. 이어하기 상태(방문 기록·큐·시드·남은 예약)를 보존하고 예약이 남아 있는
         // 동안 표적이 갱신 대상에서 빠지지 않게 structureDirty를 되살린다. 다음 프레임에 밀린
         // 판정이 있었음을 남겨 30프레임을 넘기면 예산을 올린다.
         private void SuspendLocalSupport()
         {
-            localSupportRootRotation = CellRoot.rotation;
             localSupportWorkPending = true;
             MarkStructureDirty();
         }

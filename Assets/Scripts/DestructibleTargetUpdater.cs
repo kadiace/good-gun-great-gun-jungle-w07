@@ -23,6 +23,9 @@ namespace WeaponWorkshop
         private readonly List<DestructibleTarget> occupancyPrewarm = new List<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> occupancyPrewarmSet = new HashSet<DestructibleTarget>();
         private const double OccupancyPrewarmBudgetMilliseconds = 0.75;
+        // 공용 예산이 바닥난 프레임에도 지지 판정에 쓰는 최소 시간.
+        private const double SupportMinSliceMilliseconds = 1.0;
+        private int supportCursor;
         private bool updating;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -194,8 +197,17 @@ namespace WeaponWorkshop
                 updating = true;
                 try
                 {
-                    for (int i = 0; i < targets.Count; i++)
+                    // 지지 판정은 공용 파괴 예산을 따른다. 예산이 바닥나도 SupportMinSliceMilliseconds와
+                    // 표적 하나는 보장하고, 미룬 표적부터 다음 프레임에 시작해 뒤쪽 표적이 굶지 않게 한다.
+                    int count = targets.Count;
+                    int start = count > 0 ? supportCursor % count : 0;
+                    int deferredAt = -1;
+                    bool supportResolved = false;
+                    long supportStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                    long supportSliceTicks = (long)(System.Diagnostics.Stopwatch.Frequency * SupportMinSliceMilliseconds / 1000d);
+                    for (int n = 0; n < count; n++)
                     {
+                        int i = (start + n) % count;
                         DestructibleTarget target = targets[i];
                         if (target == null || !target.isActiveAndEnabled)
                         {
@@ -203,12 +215,21 @@ namespace WeaponWorkshop
                             continue;
                         }
 
+                        bool supportPending = target.SupportPending;
+                        bool allowSupport = !supportResolved || !DestructionFrameBudget.IsExhausted ||
+                            System.Diagnostics.Stopwatch.GetTimestamp() - supportStarted < supportSliceTicks;
+                        if (supportPending)
+                        {
+                            if (allowSupport) supportResolved = true;
+                            else if (deferredAt < 0) deferredAt = i;
+                        }
                         try
                         {
-                            using (targetUpdateMarker.Auto()) target.ProcessLateUpdate();
+                            using (targetUpdateMarker.Auto()) target.ProcessLateUpdate(allowSupport);
                         }
                         catch (System.Exception exception) { Debug.LogException(exception, target); }
                     }
+                    supportCursor = deferredAt >= 0 ? deferredAt : 0;
                     for (int i = 0; i < renderTargets.Count; i++)
                     {
                         DestructibleTarget target = renderTargets[i];

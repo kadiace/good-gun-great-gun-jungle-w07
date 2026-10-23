@@ -10,6 +10,18 @@ namespace WeaponWorkshop
     {
         private static readonly ProfilerMarker CollisionQueryMarker = new ProfilerMarker("ProjectileMotor.CollisionQuery");
         private static readonly ProfilerMarker ImpactEffectMarker = new ProfilerMarker("ProjectileMotor.ImpactEffect");
+        private static readonly ProfilerMarker HandleImpactMarker = new ProfilerMarker("ProjectileMotor.HandleImpact");
+        private static readonly ProfilerMarker PenetrateMarker = new ProfilerMarker("ProjectileMotor.Penetrate");
+        private static readonly ProfilerMarker CarveMarker = new ProfilerMarker("ProjectileMotor.Carve");
+        private static readonly ProfilerMarker HitEffectsMarker = new ProfilerMarker("ProjectileMotor.HitEffects");
+        // 모든 탄의 이동·충돌 처리가 한 프레임에 함께 쓰는 시간. 예산을 넘긴 탄은 남은 이동 시간을 다음 프레임으로 넘기고,
+        // 넘긴 탄은 다음 프레임에 예산과 무관하게 한 번은 진행해 멈춰 있지 않는다.
+        private const double TravelFrameBudgetMilliseconds = 4.0;
+        // 느린 프레임에 이동 거리가 길어져 관통·충돌이 늘고 프레임이 더 느려지는 악순환을 끊는 탄당 프레임 이동 시간 상한.
+        // 넘는 시간은 버린다(렉 중에는 탄이 실제 시간보다 느리게 날아간다).
+        private const float MaxTravelTimePerFrame = 1f / 30f;
+        private static int travelBudgetFrame = -1;
+        private static long travelSpentTicks, travelStartedTicks;
         private static readonly HashSet<ProjectileMotor> activeProjectiles = new HashSet<ProjectileMotor>();
         // LayerMask APIs throw inside a type initializer when Unity first touches this type from a
         // serialization/constructor context (e.g. prefab import), which poisons the type. Resolve lazily.
@@ -43,6 +55,9 @@ namespace WeaponWorkshop
         private ProjectileStatsSource source;
         private ProjectileEffects effects;
         private Vector3 velocity;
+        // 예산·상한으로 아직 날아가지 못한 시간과, 지난 프레임에 예산 때문에 밀렸는지 여부.
+        private float pendingTravelTime;
+        private bool travelDeferred;
         private float launchSpeed;
         private float traveledDistance;
         private const float MaximumLifetime = 5f;
@@ -78,7 +93,23 @@ namespace WeaponWorkshop
             => ColliderTargetIndex.ResolveEndChest(collider, out core, out shield);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetActiveProjectiles() => activeProjectiles.Clear();
+        private static void ResetActiveProjectiles()
+        {
+            activeProjectiles.Clear();
+            travelBudgetFrame = -1;
+            travelSpentTicks = travelStartedTicks = 0;
+        }
+
+        private static long TravelBudgetTicks => (long)(System.Diagnostics.Stopwatch.Frequency * TravelFrameBudgetMilliseconds / 1000d);
+        private static bool TravelBudgetExhausted
+        {
+            get
+            {
+                if (travelBudgetFrame != Time.frameCount) return false;
+                long running = travelStartedTicks != 0 ? System.Diagnostics.Stopwatch.GetTimestamp() - travelStartedTicks : 0;
+                return travelSpentTicks + running >= TravelBudgetTicks;
+            }
+        }
 
         internal static void CopyActiveProjectiles(List<ProjectileMotor> destination)
         {
@@ -103,6 +134,8 @@ namespace WeaponWorkshop
             selfRoot = ownerRoot = weaponRoot = null; ignoreRootsCached = false;
             traveledDistance = 0f;
             lifetime = 0f;
+            pendingTravelTime = 0f;
+            travelDeferred = false;
             ricochetsRemaining = effects != null
                 ? Mathf.Max(0, Mathf.FloorToInt(effects.Stats.ricochet + 0.5f)) : 0;
             var targeting = owner != null ? owner.GetComponent<PlayerHomingLock>() : null;
@@ -159,7 +192,22 @@ namespace WeaponWorkshop
 
             float deltaTime = Time.deltaTime;
             if (deltaTime <= 0f) return;
-            lifetime += deltaTime;
+            pendingTravelTime = Mathf.Min(pendingTravelTime + deltaTime, MaxTravelTimePerFrame);
+            if (travelBudgetFrame != Time.frameCount)
+            {
+                travelBudgetFrame = Time.frameCount;
+                travelSpentTicks = 0;
+            }
+            if (!travelDeferred && TravelBudgetExhausted)
+            {
+                travelDeferred = true;
+                return;
+            }
+            travelDeferred = false;
+            // 수명·유도·이동은 실제로 날아간 시간 기준이다.
+            float travelTime = pendingTravelTime;
+            pendingTravelTime = 0f;
+            lifetime += travelTime;
             if (lifetime >= MaximumLifetime)
             {
                 Terminate();
@@ -167,11 +215,11 @@ namespace WeaponWorkshop
             }
 
             UpdateIgnoredColliders();
-            ApplyHoming(deltaTime);
+            ApplyHoming(travelTime);
             // 이번 업데이트의 예외 판정에서 쓸 뿌리를 다시 잡는다.
             ignoreRootsCached = false;
 
-            float distance = Mathf.Min(velocity.magnitude * deltaTime,
+            float distance = Mathf.Min(velocity.magnitude * travelTime,
                 source.MaximumTravelDistance - traveledDistance);
             if (distance <= 0f)
             {
@@ -179,7 +227,13 @@ namespace WeaponWorkshop
                 return;
             }
 
-            Travel(distance);
+            travelStartedTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { Travel(distance); }
+            finally
+            {
+                travelSpentTicks += System.Diagnostics.Stopwatch.GetTimestamp() - travelStartedTicks;
+                travelStartedTicks = 0;
+            }
             if (!terminal && traveledDistance >= source.MaximumTravelDistance) Terminate();
         }
 
@@ -219,8 +273,16 @@ namespace WeaponWorkshop
                 transform.position += direction * advanced;
                 traveledDistance += advanced;
                 remaining -= advanced;
-                HandleImpact(hit, direction, ref remaining);
+                using (HandleImpactMarker.Auto()) HandleImpact(hit, direction, ref remaining);
                 if (terminal || this == null || !gameObject.activeInHierarchy) return;
+                // 공용 예산을 넘겼으면 남은 거리를 다음 프레임으로 넘긴다(다음 프레임은 예산과 무관하게 이어 간다).
+                if (remaining > 0.0001f && TravelBudgetExhausted)
+                {
+                    float speed = velocity.magnitude;
+                    if (speed > 0.0001f) pendingTravelTime = Mathf.Min(remaining / speed, MaxTravelTimePerFrame);
+                    travelDeferred = true;
+                    return;
+                }
             }
 
             // Stop this frame at the collision budget instead of skipping unchecked obstacles.
@@ -365,7 +427,8 @@ namespace WeaponWorkshop
                 (structure == null || firstHitOnStructure))
             {
                 if (structure == null && target != null) hitTargets.Add(target);
-                effects.ApplyHit(hit.point, incomingDirection, structure == null ? target : null, ignoredOwner, ignoredWeapon, false);
+                using (HitEffectsMarker.Auto())
+                    effects.ApplyHit(hit.point, incomingDirection, structure == null ? target : null, ignoredOwner, ignoredWeapon, false);
             }
             if (structure != null)
             {
@@ -384,10 +447,12 @@ namespace WeaponWorkshop
                 float lineDistance = Mathf.Min(structure.PenetrationStepDistance, Mathf.Min(remaining, structureSweepLimit));
                 if (!water && (effects == null || structure.AllowsImpact(effects.Stats)))
                 {
-                    penetrationPower = structure.PenetrateAlongLine(penetrationPower,
-                        transform.position, rotation, halfExtents, lineDistance,
-                        out passed, out float resistanceBeforeHit, out penetratedMaterial,
-                        allowResistanceReduction: !passages.Contains(structure));
+                    float resistanceBeforeHit;
+                    using (PenetrateMarker.Auto())
+                        penetrationPower = structure.PenetrateAlongLine(penetrationPower,
+                            transform.position, rotation, halfExtents, lineDistance,
+                            out passed, out resistanceBeforeHit, out penetratedMaterial,
+                            allowResistanceReduction: !passages.Contains(structure));
                     hitBlock = penetratedMaterial || structure.PenetrationResistance < resistanceBeforeHit;
                     bool blockedByResistance = !passed && resistanceBeforeHit > penetrationPower;
                     if (hitBlock) penetrationPower = Mathf.Max(0f, penetrationPower - 1f);
@@ -412,7 +477,8 @@ namespace WeaponWorkshop
                 if (passed)
                 {
                     if (penetratedMaterial && effects != null)
-                        effects.ApplyPenetrationExplosion(hit.point, incomingDirection, ignoredOwner, ignoredWeapon);
+                        using (HitEffectsMarker.Auto())
+                            effects.ApplyPenetrationExplosion(hit.point, incomingDirection, ignoredOwner, ignoredWeapon);
                     float advance = Mathf.Min(0.001f, Mathf.Min(remaining, structureSweepLimit));
                     CarvePassedStructures(transform.position, rotation, advance);
                     transform.position += incomingDirection * advance;
@@ -492,7 +558,7 @@ namespace WeaponWorkshop
 
         private void CarvePassedStructures(Vector3 start, Quaternion rotation, float distance)
         {
-            passages.Carve(start, rotation, halfExtents, distance);
+            using (CarveMarker.Auto()) passages.Carve(start, rotation, halfExtents, distance);
         }
 
         // 콜라이더→표적 매핑은 공용 인덱스가 게임 전체에서 한 번만 부모를 타고 찾는다.

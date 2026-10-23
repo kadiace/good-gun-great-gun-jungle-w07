@@ -421,12 +421,15 @@ namespace WeaponWorkshop
             debrisIndexDirty = false;
         }
 
-        internal void ProcessLateUpdate()
+        internal bool SupportPending => structureDirty;
+
+        // allowSupport가 false면 지지 판정을 다음 프레임으로 미룬다(structureDirty를 남겨 갱신 대상에 남긴다).
+        internal void ProcessLateUpdate(bool allowSupport)
         {
             UploadDamageAppearance();
             UpdatePenetrationFeedback();
             RefreshDebrisIndex();
-            if (structureDirty)
+            if (structureDirty && allowSupport)
             {
                 structureDirty = false;
                 ResolveSupport();
@@ -995,6 +998,7 @@ namespace WeaponWorkshop
                 Detach(cellIndex, outward * 1.5f + direction.normalized * 0.5f + Vector3.up * 0.5f);
             }
             structureDirty = false;
+            InvalidateCollisionShape();
             UpdateCollisionRuns();
         }
 
@@ -1006,6 +1010,7 @@ namespace WeaponWorkshop
             System.Array.Clear(grid, 0, grid.Length);
             MarkDebrisIndexDirty();
             InvalidateAllCollisionColumns();
+            InvalidateCollisionShape();
             UpdateCollisionRuns();
             debrisCloud?.ClearDebris();
             structureDirty = false;
@@ -1086,8 +1091,10 @@ namespace WeaponWorkshop
             }
             MarkDebrisIndexDirty();
             InvalidateRenderChunks();
-            // 복원으로 칸 집합이 통째로 바뀌면 멈춰 둔 국소 탐색의 방문 기록은 쓸 수 없다.
+            // 복원으로 칸 집합이 통째로 바뀌면 멈춰 둔 국소 탐색의 방문 기록과 외부 지지 캐시는 쓸 수 없다.
             ResetLocalSupportProgress();
+            InvalidateExternalSupportCache();
+            InvalidateCollisionShape();
             changedBoundary.Clear();
             if (supportValidated)
                 foreach (int cellIndex in cells) changedBoundary.Add(preparedCells[cellIndex].coordinate);
@@ -1143,7 +1150,7 @@ namespace WeaponWorkshop
         private void DropUnsupported()
         {
             supportValidated = false;
-            CollectExternalSupport();
+            RefreshExternalSupport();
             // Newly created/moved cell bounds must be current before checking floor support.
             var supported = supportedCells; supported.Clear();
             var pending = supportQueue; pending.Clear();
@@ -1198,7 +1205,7 @@ namespace WeaponWorkshop
 
         private void DropUnsupportedNearRemovedBoundary()
         {
-            CollectExternalSupport();
+            RefreshExternalSupport();
             changedBoundary.RemoveWhere(coordinate => !HasCell(coordinate));
             localSupportVisited.Clear();
             localSupportQueue.Clear();
@@ -1267,6 +1274,9 @@ namespace WeaponWorkshop
             // Occupancy is normally built during load; this only covers runtime-configured targets.
             if (!occupancyPrepared) PrepareOccupancyTemplate();
             subdivided = true;
+            // 분할 직후에는 원본 콜라이더 대신 열 콜라이더를 쓴다. 이웃의 외부 지지 캐시도 함께 무효화한다.
+            InvalidateExternalSupportCache();
+            InvalidateCollisionShape();
             Material material = originalRenderer.sharedMaterial;
             instancedMaterial = new Material(material) { enableInstancing = true };
             // Retain the original broad-phase shape until the deferred collision rebuild.
@@ -1368,6 +1378,7 @@ namespace WeaponWorkshop
             if (collisionColumns == null)
             {
                 foreach (Collider collider in originalColliders.Keys) collider.enabled = false;
+                InvalidateCollisionShape();
                 collisionColumns = new List<BoxCollider>[divisions.x * divisions.y];
                 dirtyColumnFlags = new bool[collisionColumns.Length];
                 allColumnsDirty = true;
@@ -1409,6 +1420,8 @@ namespace WeaponWorkshop
         }
         private void UpdateCollisionColumn(int column)
         {
+            // 열 콜라이더의 경계·활성 구성이 바뀌었다. 이웃은 이 버전으로 외부 지지 캐시를 검증한다.
+            InvalidateCollisionShape();
             var runs = collisionColumns[column];
             if (runs == null)
             {
