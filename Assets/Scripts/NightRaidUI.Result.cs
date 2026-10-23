@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -11,73 +11,81 @@ namespace WeaponWorkshop
         [SerializeField] private TMPro.TextMeshProUGUI resultTitle;
         [SerializeField] private TMPro.TextMeshProUGUI resultBody;
         [SerializeField] private UnityEngine.UI.Button resultConfirm;
-        private Coroutine resultRoutine;
-        private Action resultDone;
+        [SerializeField] private ResultView m_resultView;
+        private ResultPresenter m_resultPresenter;
+        private bool m_hasLoggedResultReferenceError;
+
         private void InitializeResult()
         {
-            if (resultBackdrop != null) { resultBackdrop.alpha = 0f; resultBackdrop.gameObject.SetActive(false); }
-            if (resultContent != null) resultContent.alpha = 0f;
-            if (resultConfirm != null) resultConfirm.onClick.AddListener(ConfirmResult);
+            if (m_resultPresenter != null)
+            {
+                return;
+            }
+
+            if (m_resultView == null)
+            {
+                if (!m_hasLoggedResultReferenceError)
+                {
+                    m_hasLoggedResultReferenceError = true;
+                    Debug.LogError(
+                        "[NightRaidUI] 결과 화면 초기화 실패: m_resultView 참조가 없습니다. " +
+                        "ResultView 컴포넌트를 NightRaidUI 프리팹에 추가하고 연결하세요.");
+                }
+
+                return;
+            }
+
+            m_resultView.Configure(transform, resultBackdrop, resultContent, resultTitle, resultBody, resultConfirm);
+            ResultPresenter presenter = new ResultPresenter(
+                m_resultView,
+                () => GameManager.Instance,
+                HideResultExtraction);
+            if (!presenter.Initialize())
+            {
+                presenter.Dispose();
+                return;
+            }
+
+            m_resultPresenter = presenter;
         }
-        public void ShowRaidResult(bool died, string summary, Action confirmed)
+
+        private void DisposeResult()
         {
-            ShowResult(died, died ? "당신은 죽었습니다" : "귀환 성공",
-                died ? new Color(1f,.22f,.18f) : new Color(.2f,1f,.45f),
-                died ? "이번 습격에서 획득한 모든 재화는 가져갈 수 없습니다." : summary, confirmed);
+            m_resultPresenter?.Dispose();
+            m_resultPresenter = null;
+            if (m_resultView != null)
+            {
+                m_resultView.Dispose();
+            }
         }
-        public void ShowBankruptcyResult(Action confirmed)
+
+        private void HideResultExtraction()
         {
-            ShowResult(true, "가게를 내놓았습니다", new Color(1f,.22f,.18f),
-                "자릿세를 내지 못해 가게를 내놓게 되었습니다.", confirmed);
+            SetExtraction(false, 0f, 0f);
         }
-        private void ShowResult(bool failure, string title, Color titleColor, string body, Action confirmed)
+
+        public void ShowRaidResult(bool _died, string _summary, Action _confirmed)
         {
             Initialize();
-            if (failure) SetExtraction(false, 0f, 0f);
-            if (resultBackdrop == null) { confirmed?.Invoke(); return; }
-            if (resultRoutine != null)
+            InitializeResult();
+            if (m_resultPresenter == null)
             {
-                if (!failure) return;
-                StopCoroutine(resultRoutine);
-                resultRoutine = null;
+                return;
             }
-            resultDone = confirmed;
-            resultContent.alpha = 0f;
-            GameManager.Instance?.SetDialogue(true);
-            resultTitle.text = title;
-            resultTitle.color = titleColor;
-            resultBody.text = body;
-            resultBody.color = Color.white;
-            resultConfirm.interactable = false;
-            resultBackdrop.gameObject.SetActive(true);
-            transform.SetAsLastSibling();
-            resultBackdrop.transform.SetAsLastSibling();
-            resultRoutine = StartCoroutine(RevealResult());
+
+            m_resultPresenter.ShowRaidResult(_died, _summary, _confirmed);
         }
-        private IEnumerator RevealResult()
+
+        public void ShowBankruptcyResult(Action _confirmed)
         {
-            yield return FadeResult(resultBackdrop, 0f, 1f);
-            SetExtraction(false, 0f, 0f);
-            yield return FadeResult(resultContent, 0f, 1f);
-            resultConfirm.interactable = true; resultRoutine = null;
-        }
-        private void ConfirmResult()
-        {
-            if (resultRoutine != null || resultDone == null) return;
-            resultConfirm.interactable = false;
-            resultRoutine = StartCoroutine(LeaveResult());
-        }
-        private IEnumerator LeaveResult()
-        {
-            yield return FadeResult(resultContent, 1f, 0f);
-            var done = resultDone; resultDone = null; resultRoutine = null;
-            done?.Invoke();
-        }
-        private static IEnumerator FadeResult(CanvasGroup group, float from, float to)
-        {
-            for (float time = 0; time < .45f; time += Time.unscaledDeltaTime)
-            { group.alpha = Mathf.Lerp(from, to, Mathf.SmoothStep(0, 1, time / .45f)); yield return null; }
-            group.alpha = to;
+            Initialize();
+            InitializeResult();
+            if (m_resultPresenter == null)
+            {
+                return;
+            }
+
+            m_resultPresenter.ShowBankruptcyResult(_confirmed);
         }
     }
 }
