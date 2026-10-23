@@ -10,10 +10,10 @@ namespace WeaponWorkshop
     {
         [SerializeField] private RectTransform content;
         [SerializeField] private ScrollRect scrollRect;
-        [SerializeField, Min(1f)] private float preferredFontSize = 28f;
-        [SerializeField, Min(1f)] private float minimumFontSize = 24f;
-        [SerializeField, Min(1f)] private float maximumHeight = 1000f;
-        [SerializeField, Min(0f)] private float bottomMargin = 32f;
+        [SerializeField, Min(1f)] private float preferredFontSize = 21f;
+        [SerializeField, Min(1f)] private float minimumFontSize = 18f;
+        [SerializeField, Min(1f)] private float maximumHeight = 750f;
+        [SerializeField, Min(0f)] private float bottomMargin = 24f;
         private readonly List<TMP_Text> labels = new List<TMP_Text>();
         private readonly List<HorizontalOrVerticalLayoutGroup> layoutGroups =
             new List<HorizontalOrVerticalLayoutGroup>();
