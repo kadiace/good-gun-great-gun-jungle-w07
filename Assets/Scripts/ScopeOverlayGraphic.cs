@@ -5,10 +5,10 @@ namespace WeaponWorkshop
     // 2배율은 짧은 중앙 조준선, 3배율 이상은 화면 끝까지 이어지는 십자 조준선을 그린다.
     public sealed class ScopeOverlayGraphic : UnityEngine.UI.MaskableGraphic
     {
-        [SerializeField, Min(0.5f)] private float crosshairWidth = 2f;
+        [SerializeField, Min(0.5f)] private float crosshairWidth = 1.5f;
         [SerializeField] private Color crosshairColor = Color.black;
-        [SerializeField, Min(2f)] private float reticleRadius = 12f;
-        [SerializeField, Min(0.5f)] private float redDotRadius = 2.5f;
+        [SerializeField, Min(2f)] private float reticleRadius = 9f;
+        [SerializeField, Min(0.5f)] private float redDotRadius = 1.875f;
         [SerializeField] private Color redDotColor = Color.red;
         [SerializeField, Range(0.2f, 1f), Tooltip("고배율 십자선 길이(스코프 시야 대비).")]
         private float fullLengthReticleExtent = 0.7f;
