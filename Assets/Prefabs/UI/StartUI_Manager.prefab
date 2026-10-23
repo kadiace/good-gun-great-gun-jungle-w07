@@ -2621,7 +2621,7 @@ MonoBehaviour:
   - {fileID: 1377151233597615260}
   autoSaveDeleteButton: {fileID: 2000000002}
   confirmDelete: 0
-  m_view: {fileID: 0}
+  m_view: {fileID: 7500909146728501320}
 --- !u!114 &7500909146728501320
 MonoBehaviour:
   m_ObjectHideFlags: 0

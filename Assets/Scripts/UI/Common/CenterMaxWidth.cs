@@ -21,6 +21,10 @@ namespace WeaponWorkshop
         private bool m_applySideMargins = true;
 
         private RectTransform m_rectTransform;
+        private bool m_isApplying;
+        private bool m_hasBaseOffsets;
+        private float m_baseOffsetMinX;
+        private float m_baseOffsetMaxX;
 
         public float MaxWidth
         {
@@ -92,11 +96,26 @@ namespace WeaponWorkshop
         /// </summary>
         public void Apply()
         {
-            if (!Application.isPlaying)
+            // sizeDelta·anchoredPosition 설정이 OnRectTransformDimensionsChange를 즉시 호출해 Apply로 다시 들어온다.
+            // 재진입을 막지 않으면 반쯤 적용된 값으로 계속 다시 설정해 스택 오버플로가 난다.
+            if (!Application.isPlaying || m_isApplying)
             {
                 return;
             }
 
+            m_isApplying = true;
+            try
+            {
+                ApplyWidthLimit();
+            }
+            finally
+            {
+                m_isApplying = false;
+            }
+        }
+
+        private void ApplyWidthLimit()
+        {
             EnsureRectTransform();
             if (m_rectTransform == null)
             {
@@ -133,26 +152,31 @@ namespace WeaponWorkshop
 
             if (isStretch && m_applySideMargins)
             {
-                if (parentWidth > m_maxWidth)
+                // 저작된 좌우 여백을 기준으로 두고, 부모가 최대 너비보다 넓을 때만 양쪽에 같은 여백을 더한다.
+                if (!m_hasBaseOffsets)
                 {
-                    float margin = (parentWidth - m_maxWidth) * 0.5f;
-                    Vector2 min = m_rectTransform.offsetMin;
-                    Vector2 max = m_rectTransform.offsetMax;
-                    if (!Mathf.Approximately(min.x, margin) || !Mathf.Approximately(max.x, -margin))
-                    {
-                        m_rectTransform.offsetMin = new Vector2(margin, min.y);
-                        m_rectTransform.offsetMax = new Vector2(-margin, max.y);
-                    }
+                    m_baseOffsetMinX = m_rectTransform.offsetMin.x;
+                    m_baseOffsetMaxX = m_rectTransform.offsetMax.x;
+                    m_hasBaseOffsets = true;
                 }
-                else
+
+                float extra = Mathf.Max(0f, (parentWidth - m_maxWidth) * 0.5f);
+                float targetMinX = m_baseOffsetMinX + extra;
+                float targetMaxX = m_baseOffsetMaxX - extra;
+                float targetWidth = targetMaxX - targetMinX;
+                float targetPositionX = targetMinX + targetWidth * m_rectTransform.pivot.x;
+
+                // offsetMin·offsetMax를 따로 쓰지 않고 크기와 위치를 한 번씩만 설정한다.
+                Vector2 sizeDelta = m_rectTransform.sizeDelta;
+                if (!Mathf.Approximately(sizeDelta.x, targetWidth))
                 {
-                    Vector2 min = m_rectTransform.offsetMin;
-                    Vector2 max = m_rectTransform.offsetMax;
-                    if (!Mathf.Approximately(min.x, 0f) || !Mathf.Approximately(max.x, 0f))
-                    {
-                        m_rectTransform.offsetMin = new Vector2(0f, min.y);
-                        m_rectTransform.offsetMax = new Vector2(0f, max.y);
-                    }
+                    m_rectTransform.sizeDelta = new Vector2(targetWidth, sizeDelta.y);
+                }
+
+                Vector2 position = m_rectTransform.anchoredPosition;
+                if (!Mathf.Approximately(position.x, targetPositionX))
+                {
+                    m_rectTransform.anchoredPosition = new Vector2(targetPositionX, position.y);
                 }
             }
             else

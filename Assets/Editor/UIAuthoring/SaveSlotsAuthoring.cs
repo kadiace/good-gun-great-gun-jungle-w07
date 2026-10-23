@@ -260,6 +260,12 @@ namespace WeaponWorkshop.EditorTools
             viewSo.FindProperty("m_autoSaveDeleteButton").objectReferenceValue = autoSaveDeleteButton;
             viewSo.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(view);
+
+            // 브리지는 m_view가 비어 있으면 초기화에 실패하므로 같은 오브젝트의 View를 연결한다.
+            SerializedObject linkSo = new SerializedObject(bridge);
+            linkSo.FindProperty("m_view").objectReferenceValue = view;
+            linkSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(bridge);
         }
 
         /// <summary>카드 버튼에 SaveSlotCardView를 붙이고 버튼·라벨 참조를 연결한다(멱등).</summary>
