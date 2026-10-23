@@ -425,7 +425,7 @@
     {
       "id": "tag/grenade-launcher",
       "name": "유탄 태그",
-      "phrase": "유탄 태그 (폭발 1 이상, 3 미만)",
+      "phrase": "유탄 태그 (폭발 1 이상, 5 미만)",
       "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
       "saleBonus": true,
       "requiredTestIds": [],
@@ -467,7 +467,7 @@
     {
       "id": "tag/mini-nuke",
       "name": "소형핵 태그",
-      "phrase": "소형핵 태그 (폭발 10 이상)",
+      "phrase": "소형핵 태그 (폭발 5 이상)",
       "tagId": "3396cf208ef6d564bb1cd952a6fe598b",
       "saleBonus": true,
       "requiredTestIds": [],
@@ -493,7 +493,7 @@
     {
       "id": "tag/shotgun",
       "name": "산탄총 태그",
-      "phrase": "산탄총 태그 (폭발 2, 관통 16, 방사 1 이상)",
+      "phrase": "산탄총 태그 (폭발 2, 관통 8, 방사 1 이상)",
       "tagId": "b89c88322f37da74cb6f1624397fce4d",
       "saleBonus": true,
       "requiredTestIds": [],
@@ -584,7 +584,7 @@
           "label": "폭발력",
           "measure": "WeaponStat",
           "stat": "Explosion",
-          "min": 11.0
+          "min": 5.0
         }
       ]
     },
@@ -800,7 +800,7 @@
           "label": "관통력",
           "measure": "WeaponStat",
           "stat": "Penetration",
-          "min": 16.0
+          "min": 8.0
         }
       ]
     },
@@ -828,7 +828,7 @@
           "measure": "WeaponStat",
           "stat": "Explosion",
           "min": 0.0,
-          "max": 10.0
+          "max": 4.0
         }
       ]
     },
