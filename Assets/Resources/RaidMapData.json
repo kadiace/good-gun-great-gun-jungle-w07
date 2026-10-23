@@ -56,9 +56,9 @@
     },
     {
       "entryCost": 1500,
-      "name": "정글 캠퍼스",
+      "name": "공항",
       "selectionOrder": 3,
-      "scene": "NightRaid_JungleCampus",
+      "scene": "NightRaid_Airport",
       "reward": {
         "firstClearSaleBonus": 0.1,
         "materialCrates": 12,

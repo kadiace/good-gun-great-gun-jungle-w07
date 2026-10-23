@@ -535,7 +535,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<color=#EFC061>03</color> \uC815\uAE00 \uCEA0\uD37C\uC2A4"
+  m_text: "<color=#EFC061>03</color> \uACF5\uD56D"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 780d2b3bdc09da44b867c61fd51dccb9, type: 2}
   m_sharedMaterial: {fileID: -7516200765120232523, guid: 780d2b3bdc09da44b867c61fd51dccb9, type: 2}
