@@ -38,6 +38,8 @@ namespace WeaponWorkshop
         [SerializeField, Tooltip("각 슬롯 너비·높이 기준 내부 텍스트 여백 비율(0~1).")]
         private Vector2 hotbarTextPaddingRatio = new Vector2(.02875767f, .04477612f);
         [SerializeField, Min(0f)] private float hotbarSpacingPixels = 6f;
+        [SerializeField] private Button paletteToggleButton;
+        [SerializeField] private TMPro.TextMeshProUGUI paletteToggleLabel;
         [SerializeField, Range(1, 6)] private int paletteColumns = 6;
         [Header("Module List Layout")]
         [SerializeField, Tooltip("부모 영역 기준 목록 너비·높이 비율. QHD 기존 크기에서 가로 16%, 세로 10% 확대한 기본값.")]
@@ -54,6 +56,7 @@ namespace WeaponWorkshop
         private Vector2 lastHotbarPadding = new Vector2(-1f, -1f);
         private Vector2 lastHotbarTextPadding = new Vector2(-1f, -1f);
         private float lastHotbarSpacing = -1f;
+        private float paletteToggleTextWidth;
         private TMPro.TextMeshProUGUI hotbarGuide;
         private const string HotbarGuideText = "퀵슬롯을 다른 번호 칸으로 드래그하면 서로 바뀝니다 · Tab: 모듈 목록";
         private RectTransform palette;
@@ -210,6 +213,7 @@ namespace WeaponWorkshop
             ResolveKeyringModels();
             Build();
             hotbar.gameObject.SetActive(false);
+            paletteToggleButton.gameObject.SetActive(false);
             hotbarGuide.gameObject.SetActive(false);
             palette.gameObject.SetActive(false);
             dragGhost.gameObject.SetActive(false);
@@ -231,6 +235,7 @@ namespace WeaponWorkshop
             wasCustomMode = false;
             customColorMode = false;
             hotbar?.gameObject.SetActive(false);
+            paletteToggleButton?.gameObject.SetActive(false);
             hotbarGuide?.gameObject.SetActive(false);
             palette?.gameObject.SetActive(false);
             customButtonRoot?.gameObject.SetActive(false);
@@ -244,6 +249,7 @@ namespace WeaponWorkshop
 
         private void OnDestroy()
         {
+            if (paletteToggleButton != null) paletteToggleButton.onClick.RemoveListener(TogglePalette);
             generatedPaintMaterials?.Dispose();
             foreach (Texture2D texture in generatedPaintUiTextures)
                 if (texture != null)
@@ -268,6 +274,8 @@ namespace WeaponWorkshop
             bool customMode = active && builder.IsCustomMode;
             
             bool paletteOpen = active && !customMode && builder.PaletteOpen;
+            paletteToggleButton.gameObject.SetActive(active && !customMode);
+            paletteToggleButton.interactable = active && !customMode && !GameManager.GameplayBlocked;
             hotbarGuide.gameObject.SetActive(active && !customMode && builder.CanEditFavorites);
             if (hotbar.gameObject.activeSelf != (active && !customMode))
                 hotbar.gameObject.SetActive(active && !customMode);
@@ -327,7 +335,9 @@ namespace WeaponWorkshop
             }
             if (hotbarGuide != null)
             {
-                Vector2 guideMin = new Vector2(hotbarAnchorMin.x, hotbarAnchorMax.y + .01f);
+                Vector2 guideMin = new Vector2(paletteToggleButton != null
+                    ? ((RectTransform)paletteToggleButton.transform).anchorMax.x + .01f : hotbarAnchorMin.x,
+                    hotbarAnchorMax.y + .01f);
                 Vector2 guideMax = new Vector2(hotbarAnchorMax.x, hotbarAnchorMax.y + .04f);
                 if (hotbarGuide.rectTransform.anchorMin != guideMin || hotbarGuide.rectTransform.anchorMax != guideMax)
                 {
@@ -352,8 +362,49 @@ namespace WeaponWorkshop
             int verticalPadding = Mathf.RoundToInt(size.y * Mathf.Clamp(hotbarPaddingRatio.y, 0f, .49f));
             hotbarLayout.padding = new RectOffset(horizontalPadding, horizontalPadding, verticalPadding, verticalPadding);
             hotbarLayout.spacing = hotbarSpacingPixels / scale;
+            UpdatePaletteToggleLayout(size, horizontalPadding);
             foreach (var slot in hotbarSlots) slot.SetContentPaddingRatio(hotbarTextPaddingRatio);
             LayoutRebuilder.MarkLayoutForRebuild(hotbar);
+        }
+
+        private void TogglePalette() => builder?.TogglePalette();
+
+        private void BuildPaletteToggle()
+        {
+            if (paletteToggleButton == null)
+                paletteToggleButton = CreateButton("PaletteToggleButton", transform, "모듈 선택창 [TAB]",
+                    Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero, SlotColor);
+            if (paletteToggleLabel == null)
+                paletteToggleLabel = paletteToggleButton.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+            paletteToggleLabel.text = "모듈 선택창 [TAB]";
+            paletteToggleLabel.font = font;
+            paletteToggleLabel.alignment = TMPro.TextAlignmentOptions.Midline;
+            paletteToggleLabel.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+            paletteToggleLabel.enableAutoSizing = true;
+            paletteToggleLabel.fontSize = paletteToggleLabel.fontSizeMax = 24f;
+            paletteToggleLabel.fontSizeMin = 16f;
+            paletteToggleLabel.raycastTarget = false;
+            // 기본 두 칸 너비에서 16pt로도 한 줄이 안 들어가면 필요한 만큼만 확장한다.
+            paletteToggleTextWidth = Mathf.Ceil(paletteToggleLabel.GetPreferredValues(paletteToggleLabel.text).x * (16f / 24f));
+            ApplyButtonColors(paletteToggleButton);
+            paletteToggleButton.onClick.AddListener(TogglePalette);
+            paletteToggleButton.gameObject.SetActive(false);
+        }
+
+        private void UpdatePaletteToggleLayout(Vector2 hotbarSize, int horizontalPadding)
+        {
+            if (paletteToggleButton == null || !(transform is RectTransform parent) || parent.rect.width <= 0f) return;
+            float slotWidth = (hotbarSize.x - horizontalPadding * 2f - hotbarLayout.spacing * 9f) / 10f;
+            float twoSlotsWidth = slotWidth * 2f + hotbarLayout.spacing;
+            float width = Mathf.Min(hotbarSize.x, Mathf.Max(twoSlotsWidth, (paletteToggleTextWidth + 2f) / .92f));
+            float left = hotbarAnchorMin.x + horizontalPadding / parent.rect.width;
+            var rect = (RectTransform)paletteToggleButton.transform;
+            rect.anchorMin = new Vector2(left, hotbarAnchorMax.y + .01f);
+            rect.anchorMax = new Vector2(left + width / parent.rect.width, hotbarAnchorMax.y + .05f);
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            paletteToggleLabel.rectTransform.anchorMin = new Vector2(.04f, .08f);
+            paletteToggleLabel.rectTransform.anchorMax = new Vector2(.96f, .92f);
+            paletteToggleLabel.rectTransform.offsetMin = paletteToggleLabel.rectTransform.offsetMax = Vector2.zero;
         }
 
         private void UpdatePaletteLayout()
@@ -551,6 +602,7 @@ namespace WeaponWorkshop
             hotbarLayout.childControlWidth = hotbarLayout.childControlHeight = true;
             hotbarLayout.childForceExpandWidth = hotbarLayout.childForceExpandHeight = true;
             for (int i = 0; i < 10; i++) hotbarSlots.Add(CreateSlot(hotbar, i));
+            BuildPaletteToggle();
             hotbarGuide = CreateText("HotbarGuide", (RectTransform)transform, HotbarGuideText, 18);
             hotbarGuide.rectTransform.anchorMin = new Vector2(hotbarAnchorMin.x, hotbarAnchorMax.y + .01f);
             hotbarGuide.rectTransform.anchorMax = new Vector2(hotbarAnchorMax.x, hotbarAnchorMax.y + .04f);
