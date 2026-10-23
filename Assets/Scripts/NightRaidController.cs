@@ -606,6 +606,7 @@ namespace WeaponWorkshop
             if (!mapOpen || transitioning || index < 0 || index >= RegionCount) return;
             var tutorial = TutorialManager.Instance;
             if (tutorial != null && !tutorial.AllowsRaidRegion(index)) return;
+            if (!IsRegionUnlocked(index)) return;
             player = uiManager.Player;
             var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             var weapon = holder != null ? holder.EquippedWeapon : null;
@@ -630,9 +631,21 @@ namespace WeaponWorkshop
             string message = cost > 0 ? $"$ {cost:N0}를 내고 {name}에 입장하시겠습니까?" : $"{name}에 입장하시겠습니까?";
             ui.ShowEntryConfirm(message, () =>
             {
-                if (!mapOpen || transitioning || player == null || (!training && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))) return;
+                if (!mapOpen || transitioning || player == null || !IsRegionUnlocked(index) ||
+                    (!training && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))) return;
                 BeginRaid(regionScene, cost, training, tutorial);
             });
+        }
+        public bool IsRegionUnlocked(int index)
+        {
+            if (index < 0 || index >= RegionCount) return false;
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return index == 0;
+            var region = TableManager.Instance.RaidMap.Find(RegionScene(index));
+            if (region == null) return false;
+            if (region.selectionOrder <= 1) return true;
+            string previousScene = TableManager.Instance.RaidMap.SceneAt(region.selectionOrder - 2);
+            var save = FindFirstObjectByType<GameSaveController>();
+            return save != null && save.HasClearedRaid(previousScene);
         }
         // 검사(EnterRegion)·확인창 뒤의 확정 단계(차감+이동).
         private void BeginRaid(string regionScene, int cost, bool training, TutorialManager tutorial)
