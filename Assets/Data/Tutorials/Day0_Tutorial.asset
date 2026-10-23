@@ -3276,8 +3276,7 @@ MonoBehaviour:
     description: "\uBC24\uC5D0\uB294 \uC0C8\uB85C\uC6B4 \uBAA8\uB4C8\uACFC \uC7AC\uB8CC\uB97C
       \uAD6C\uD558\uB7EC \uC2B5\uACA9\uC744 \uB5A0\uB0A0 \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uC774\uBC88
       \uBAA9\uC801\uC9C0\uB294 \uC5F0\uC2B5\uC6A9 \uBAA9\uC870\uC8FC\uD0DD\uC785\uB2C8\uB2E4.
-      \uAD00\uD1B5 \uBAA8\uB4C8 \uB450 \uAC1C\uB85C \uBAA9\uC7AC\uB97C \uB6AB\uB294
-      \uBB34\uAE30\uB97C \uC900\uBE44\uD574 \uBD05\uC2DC\uB2E4.\n\uC900\uBE44\uB41C
+       \uAD00\uD1B5 \uBAA8\uB4C8 \uB450 \uAC1C\uB97C \uB2EC\uACE0 \uC5F0\uC0AC \uBAA8\uB4C8 \uB450 \uAC1C\uB97C \uC774\uC5B4 \uB2EC\uC544 \uBB34\uAE30\uB97C \uC900\uBE44\uD574 \uBD05\uC2DC\uB2E4.\n\uC900\uBE44\uB41C
       \uBAB8\uCCB4\uAC00 \uC788\uB294 \uC791\uC5C5\uB300\uB85C \uB4E4\uC5B4\uAC00\uC138\uC694."
     objective: 
     showDescriptionBeforeObjective: 0
@@ -3308,7 +3307,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 0100000002000000080000000700000005000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3352,7 +3351,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 0100000002000000080000000700000005000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: core-placed-on-workbench
@@ -3397,7 +3396,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 0100000002000000080000000700000005000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3446,10 +3445,106 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 0100000002000000080000000700000005000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions:
+    - attach
+    - rotate
+    - reset-rotation
+    - palette
+    - exit
+  - id: raid-fire-rate
+    setBalanceOnStart: -1
+    restoreWithheldBalanceOnComplete: 0
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description:
+    objective: "관통 모듈 두 개 앞에 첫 번째 연사 모듈을 이어 붙이세요."
+    showDescriptionBeforeObjective: 0
+    objectiveWhileChoiceOpen:
+    choiceGuidance:
+    completion: 3
+    target: 4
+    targetLabel:
+    requiresWorkbenchEditing: 1
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 1
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells:
+    - {x: 0, y: 0, z: 3}
+    requiredModuleId: 5
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 3}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 1
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage:
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 0100000002000000080000000700000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal:
+    strictAllowedActions: 0
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
+      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions:
+    - attach
+    - rotate
+    - reset-rotation
+    - palette
+    - exit
+  - id: raid-fire-rate-two
+    setBalanceOnStart: -1
+    restoreWithheldBalanceOnComplete: 0
+    title: "\uD29C\uD1A0\uB9AC\uC5BC"
+    description:
+    objective: "첫 번째 연사 모듈 앞에 연사 모듈을 하나 더 이어 붙이세요."
+    showDescriptionBeforeObjective: 0
+    objectiveWhileChoiceOpen:
+    choiceGuidance:
+    completion: 3
+    target: 4
+    targetLabel:
+    requiresWorkbenchEditing: 1
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showPlacementHints: 1
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells:
+    - {x: 0, y: 0, z: 4}
+    requiredModuleId: 5
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 4}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 1
+    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
+      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
+    wrongModuleMessage:
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 0100000002000000080000000700000005000000
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal:
     strictAllowedActions: 0
     blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
       \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
@@ -3498,7 +3593,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 0100000002000000080000000700000005000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3541,7 +3636,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 0100000002000000080000000700000005000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -3585,7 +3680,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000020000000800000007000000
+    allowedModuleIds: 0100000002000000080000000700000005000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
