@@ -146,6 +146,8 @@ namespace WeaponWorkshop
             passages.Clear(); passagesRecorded = false;
             ignoredColliders.Clear();
 
+            // Size the already-scaled body in its launch orientation; do not multiply extents again.
+            SetDirection(direction);
             if (drawRenderer == null) drawRenderer = GetComponentInChildren<Renderer>(true);
             halfExtents = Vector3.one * 0.001f;
             if (drawRenderer != null)
@@ -160,7 +162,6 @@ namespace WeaponWorkshop
                     Mathf.Abs(x.z) + Mathf.Abs(y.z) + Mathf.Abs(z.z));
             }
             halfExtents = Vector3.Max(halfExtents, Vector3.one * 0.0001f);
-            SetDirection(direction);
             if (isActiveAndEnabled) activeProjectiles.Add(this);
         }
 

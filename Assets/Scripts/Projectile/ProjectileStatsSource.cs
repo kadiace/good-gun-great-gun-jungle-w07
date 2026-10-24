@@ -22,15 +22,10 @@ namespace WeaponWorkshop
         [SerializeField, Min(0f)] private float baseDamage = 10f;
 
         private ProjectileTuning fallbackTuning;
-        private float chargeTime;
-        private bool releasingCharge;
         private ParticleSystem chargeEffect;
         private Light chargeLight;
         private float chargeLightMaxIntensity;
         private float chargeEffectMaxRate;
-        // Mixed color-module tint of the projectile being configured (valid only inside ApplyStatsToProjectile).
-        private bool hasPathTint;
-        private Color pathTint;
         private readonly System.Collections.Generic.List<Color> pathColors = new System.Collections.Generic.List<Color>();
         private StatCollector statCollector;
         private CubeAssembly cubeAssembly;
@@ -52,31 +47,58 @@ namespace WeaponWorkshop
 
         // Charge: muzzles with a charge module charge while held and fire on release.
         // The stage multiplies nearly every value of that muzzle (damage, speed, penetration, explosion,
-        // ricochet, shotgun, gravity, homing). More charge modules = more stages and higher multipliers.
+        // ricochet, gravity, homing), but never the shotgun pellet count.
         public bool UsesCharge => powerCore != null && powerCore.HasChargeMuzzle;
-        public float ChargeTime => chargeTime;
-        public bool IsCharging => chargeTime > 0f;
-        // Gauge values use the strongest charge muzzle on the weapon.
-        public int MaxChargeLevel => powerCore != null ? MaxStages(powerCore.MaxMuzzleCharge) : 0;
-        public int CurrentChargeLevel => Mathf.Min(MaxChargeLevel, Mathf.FloorToInt(chargeTime / Tuning.chargeSecondsPerLevel));
+        public float ChargeTime => powerCore != null ? powerCore.ChargeTime : 0f;
+        public bool IsCharging => ChargeTime > 0f;
+        // Locked burst muzzles do not hide the charge progress of other available muzzles.
+        public int MaxChargeLevel => powerCore != null ? MaxStages(powerCore.MaxAvailableMuzzleCharge) : 0;
+        public int CurrentChargeLevel => ChargeLevel(MaxChargeLevel, ChargeTime);
         public float ChargeProgress => MaxChargeLevel > 0
-            ? Mathf.Clamp01(chargeTime / (Tuning.chargeSecondsPerLevel * MaxChargeLevel)) : 0f;
+            ? Mathf.Clamp01(ChargeTime / ChargeDuration(MaxChargeLevel)) : 0f;
 
         private int ChargeModules(float chargeStat) => Mathf.Max(0, Mathf.FloorToInt(chargeStat));
 
         public int MaxStages(float chargeStat)
         {
             int modules = ChargeModules(chargeStat);
-            return modules <= 0 ? 0 : Tuning.chargeBaseStages + Tuning.chargeStagesPerExtraModule * (modules - 1);
+            return modules <= 0 ? 0 : Mathf.Max(1, Tuning.chargeBaseStages)
+                + Mathf.Max(0, Tuning.chargeStagesPerExtraModule) * (modules - 1);
         }
 
+        // Full-charge duration grows linearly with capacity; distribute it evenly over this muzzle's stages.
+        // Defaults: 3 stages = 3s, each added stage adds 1/3s, so 12 stages = 6s.
+        private float ChargeDuration(int stages)
+        {
+            if (stages <= 0) return 0f;
+            int baseStages = Mathf.Max(1, Tuning.chargeBaseStages);
+            return Mathf.Min(stages, baseStages) * Mathf.Max(0.01f, Tuning.chargeSecondsPerLevel)
+                + Mathf.Max(0, stages - baseStages) * Mathf.Max(0.01f, Tuning.chargeSecondsPerExtraStage);
+        }
+
+        private int ChargeLevel(int stages, float seconds)
+        {
+            if (stages <= 0) return 0;
+            float duration = ChargeDuration(stages);
+            // The timer is clamped to this exact duration; ensure the last stage and its bonus are reached.
+            if (seconds >= duration) return stages;
+            return Mathf.Min(stages, Mathf.FloorToInt(Mathf.Max(0f, seconds) / duration * stages));
+        }
+
+        public float MaxChargeTime(float chargeStat) => ChargeDuration(MaxStages(chargeStat));
+
         public int GetChargeLevel(float chargeStat)
-            => Mathf.Min(MaxStages(chargeStat), Mathf.FloorToInt(chargeTime / Tuning.chargeSecondsPerLevel));
+            => GetChargeLevel(chargeStat, ChargeTime);
+
+        public int GetChargeLevel(float chargeStat, float seconds)
+            => ChargeLevel(MaxStages(chargeStat), seconds);
 
         /// <summary>Stage k of n charge modules: first + (k-1)·step + (n-1)·perModule, plus a bonus at the max stage.</summary>
-        public float GetChargeMultiplier(float chargeStat)
+        public float GetChargeMultiplier(float chargeStat) => GetChargeMultiplier(chargeStat, ChargeTime);
+
+        private float GetChargeMultiplier(float chargeStat, float seconds)
         {
-            int level = GetChargeLevel(chargeStat);
+            int level = GetChargeLevel(chargeStat, seconds);
             if (level <= 0) return 1f;
             float multiplier = Tuning.chargeFirstStageMultiplier + Tuning.chargeStageStep * (level - 1)
                                + Tuning.chargeMultiplierPerExtraModule * (ChargeModules(chargeStat) - 1);
@@ -144,14 +166,57 @@ namespace WeaponWorkshop
             return Mathf.Max(0f, recoil / VerticalRecoilWeightStability);
         }
 
-        // Random direction inside a cone; uniform over the cone's cross-section.
-        private static Vector3 Scatter(Vector3 direction, float degrees)
+        // The same muzzle-relative spread offset follows current aim throughout a charge burst.
+        private static Vector3 Scatter(Vector3 direction, Vector2 offset)
         {
-            if (degrees <= 0f) return direction;
             Vector3 side = Vector3.Cross(direction, Mathf.Abs(direction.y) > 0.99f ? Vector3.forward : Vector3.up).normalized;
             Vector3 up = Vector3.Cross(side, direction);
-            Vector2 offset = Random.insideUnitCircle * Mathf.Tan(degrees * Mathf.Deg2Rad);
             return (direction + side * offset.x + up * offset.y).normalized;
+        }
+
+        // Value copies survive release/reset and are shared by every pellet and deferred round.
+        public readonly struct ShotSnapshot
+        {
+            public readonly WeaponStats Stats;
+            public readonly float Speed, Damage, Scale, Recoil;
+            public readonly Vector2 SpreadOffset;
+            public readonly bool HasTint;
+            public readonly Color Tint;
+
+            public ShotSnapshot(WeaponStats stats, float speed, float damage, float scale, float recoil,
+                Vector2 spreadOffset, bool hasTint, Color tint)
+            {
+                Stats = stats; Speed = speed; Damage = damage; Scale = scale; Recoil = recoil;
+                SpreadOffset = spreadOffset; HasTint = hasTint; Tint = tint;
+            }
+        }
+
+        internal ShotSnapshot CaptureShot(WeaponStats stats, PlacedBlock[] path, float seconds,
+            float spread, bool chargeRelease)
+        {
+            float speed = projectileSpeed * (1f + Tuning.speedBonusPerModule * Mathf.Max(0f, stats.speed));
+            float damage = baseDamage;
+            float scale = 1f;
+            float recoil = VerticalRecoilForShot(stats, path, false);
+            if (chargeRelease)
+            {
+                seconds = Mathf.Clamp(seconds, 0f, MaxChargeTime(stats.charge));
+                float multiplier = GetChargeMultiplier(stats.charge, seconds);
+                recoil *= multiplier * Tuning.verticalRecoilChargeMultiplier;
+                speed *= multiplier;
+                damage *= multiplier;
+                stats.penetration *= multiplier;
+                stats.explosion *= multiplier;
+                stats.ricochet *= multiplier;
+                // Shotgun count is defined solely by the route, never by charge.
+                stats.gravity *= multiplier;
+                stats.homing *= multiplier;
+                if (GetChargeLevel(stats.charge, seconds) > 0)
+                    scale += seconds * Mathf.Max(0f, Tuning.chargeScaleGrowthPerSecond);
+            }
+            bool hasTint = TryGetProjectileTint(path, stats, out Color tint);
+            Vector2 offset = spread > 0f ? Random.insideUnitCircle * Mathf.Tan(spread * Mathf.Deg2Rad) : Vector2.zero;
+            return new ShotSnapshot(stats, speed, damage, scale, recoil, offset, hasTint, tint);
         }
 
         public WeaponStats GetMuzzleStats(PlacedBlock[] path)
@@ -226,20 +291,17 @@ namespace WeaponWorkshop
 
         public void HoldCharge(float deltaTime)
         {
-            // Per-muzzle caps apply at release; the timer stops at the weapon's highest cap.
-            float maxTime = Tuning.chargeSecondsPerLevel * MaxChargeLevel;
-            if (maxTime <= 0f) return;
-            bool starting = chargeTime <= 0f;
-            bool wasFull = chargeTime >= maxTime;
-            chargeTime = Mathf.Min(maxTime, chargeTime + Mathf.Max(0f, deltaTime));
-            if (starting && chargeTime > 0f)
+            bool starting = !IsCharging;
+            bool wasFull = ChargeProgress >= 1f;
+            if (powerCore == null || !powerCore.HoldCharge(deltaTime)) return;
+            if (starting && IsCharging)
             {
                 WorkshopSoundEffects.RaiseChargeStarted(transform.position);
                 WorkshopSoundEffects.RaiseChargeLoopStarted(transform);
             }
-            if (!wasFull && chargeTime >= maxTime)
+            if (!wasFull && ChargeProgress >= 1f)
                 WorkshopSoundEffects.RaiseChargeFullyLoaded(transform.position);
-            UpdateChargeEffect();
+            if (IsCharging) UpdateChargeEffect();
         }
 
         private void UpdateChargeEffect()
@@ -273,21 +335,19 @@ namespace WeaponWorkshop
             if (chargeLight != null) chargeLight.enabled = false;
         }
 
-        /// <summary>Fires every charge muzzle once with the current charge, then clears it.</summary>
+        /// <summary>Consumes available muzzle charges; deferred rounds own immutable shot snapshots.</summary>
         public bool ReleaseCharge()
         {
-            releasingCharge = true;
             bool fired = powerCore != null && powerCore.FireChargeMuzzles();
-            releasingCharge = false;
-            ResetCharge();
+            StopChargeEffect();
+            WorkshopSoundEffects.RaiseChargeLoopStopped(transform);
             return fired;
         }
 
         public void ResetCharge()
         {
-            bool wasCharging = chargeTime > 0f;
-            chargeTime = 0f;
-            releasingCharge = false;
+            bool wasCharging = IsCharging;
+            if (powerCore != null) powerCore.CancelCharge();
             StopChargeEffect();
             if (wasCharging) WorkshopSoundEffects.RaiseChargeLoopStopped(transform);
         }
@@ -299,28 +359,18 @@ namespace WeaponWorkshop
             Vector3 direction = projectile.transform.forward.normalized;
             if (direction.sqrMagnitude < 0.0001f) direction = transform.forward;
 
-            WeaponStats stats = powerCore != null ? powerCore.SpawningStats : weaponStats;
-            // Speed modules on this muzzle's route: +100% of the base speed each (multiplicative), before charge.
-            float speed = projectileSpeed * (1f + Tuning.speedBonusPerModule * Mathf.Max(0f, stats.speed));
-            float damage = baseDamage;
-            if (releasingCharge)
-            {
-                float multiplier = GetChargeMultiplier(stats.charge);
-                speed *= multiplier;
-                damage *= multiplier;
-                stats.penetration *= multiplier;
-                stats.explosion *= multiplier;
-                stats.ricochet *= multiplier;
-                stats.shotgun *= multiplier;
-                stats.gravity *= multiplier;
-                stats.homing *= multiplier;
-            }
+            ShotSnapshot shot = powerCore != null && powerCore.SpawningShot.HasValue
+                ? powerCore.SpawningShot.Value
+                : CaptureShot(powerCore != null ? powerCore.SpawningStats : weaponStats,
+                    powerCore != null ? powerCore.SpawningPath : null, 0f,
+                    powerCore != null ? powerCore.SpawningSpread : BaseSpread, false);
+            WeaponStats stats = shot.Stats;
 
             // Spread: the whole shot (shotgun / heat pattern included) leaves in a random direction inside the cone.
-            direction = Scatter(direction, powerCore != null ? powerCore.SpawningSpread : BaseSpread);
+            direction = Scatter(direction, shot.SpreadOffset);
 
             var pelletDirections = new System.Collections.Generic.List<Vector3>();
-            // Charge scales the number of radial parts before rounding; diameter 2n+1 gives (2n+1)^2 shots.
+            // Route-only shotgun count: charge grows each pellet instead of adding pellets.
             int shotgunPoints = Mathf.Max(0, Mathf.FloorToInt(stats.shotgun + 0.5f));
             int diameter = 2 * shotgunPoints + 1;
             int pellets = diameter * diameter;
@@ -348,14 +398,10 @@ namespace WeaponWorkshop
                 else pelletDirections.Add(pellet);
             }
 
-            // Color modules on this muzzle's route, mixed like paint; overrides the water/heat color.
-            hasPathTint = TryGetProjectileTint(powerCore != null ? powerCore.SpawningPath : null, stats, out pathTint);
-
             // Clone before configuring the source.
             for (int i = 1; i < pelletDirections.Count; i++)
-                SpawnAdditionalPellet(projectile, pelletDirections[i], stats, speed, damage);
-            ConfigureProjectile(projectile, pelletDirections[0], stats, speed, damage);
-            hasPathTint = false;
+                SpawnAdditionalPellet(projectile, pelletDirections[i], shot);
+            ConfigureProjectile(projectile, pelletDirections[0], shot);
         }
 
         private bool TryMixPathColor(PlacedBlock[] path, out Color color)
@@ -411,26 +457,29 @@ namespace WeaponWorkshop
             }
         }
 
-        private void ConfigureProjectile(GameObject projectile, Vector3 direction, WeaponStats stats, float speed, float damage)
+        private void ConfigureProjectile(GameObject projectile, Vector3 direction, ShotSnapshot shot)
         {
+            WeaponStats stats = shot.Stats;
+            // Scale before the motor measures the renderer. Each pellet uses its own prefab baseline.
+            if (projectile.TryGetComponent<PooledCombatObject>(out var pooled)) pooled.SetScaleMultiplier(shot.Scale);
             FirstPersonPlayer owner = GetComponentInParent<FirstPersonPlayer>(true);
             EnergyCube legacyMovement = projectile.GetComponent<EnergyCube>();
             if (legacyMovement != null)
             {
-                legacyMovement.Initialize(direction, speed,
+                legacyMovement.Initialize(direction, shot.Speed,
                     owner != null ? owner.transform : null, transform);
                 legacyMovement.enabled = false;
             }
-            if (hasPathTint) ApplyColor(projectile, pathTint);
+            if (shot.HasTint) ApplyColor(projectile, shot.Tint);
 
             ProjectileEffects effects = projectile.GetComponent<ProjectileEffects>();
             if (effects == null) effects = projectile.AddComponent<ProjectileEffects>();
-            effects.Initialize(stats, damage, this);
+            effects.Initialize(stats, shot.Damage, this);
 
             ProjectileMotor motor = projectile.GetComponent<ProjectileMotor>();
             if (motor == null) motor = projectile.AddComponent<ProjectileMotor>();
             motor.enabled = true;
-            motor.Initialize(this, direction, speed, owner != null ? owner.transform : null, transform);
+            motor.Initialize(this, direction, shot.Speed, owner != null ? owner.transform : null, transform);
             // After the motor sized its hit box, so the trail never counts as the projectile body.
             if (stats.heat > 0f && stats.water <= 0f) AttachHeatTrail(projectile);
         }
@@ -456,7 +505,7 @@ namespace WeaponWorkshop
             }
         }
 
-        private void SpawnAdditionalPellet(GameObject sourceProjectile, Vector3 direction, WeaponStats stats, float speed, float damage)
+        private void SpawnAdditionalPellet(GameObject sourceProjectile, Vector3 direction, ShotSnapshot shot)
         {
             var lease = sourceProjectile.GetComponent<PooledCombatObject>();
             GameObject template = lease != null && lease.SourcePrefab != null ? lease.SourcePrefab : sourceProjectile;
@@ -465,7 +514,7 @@ namespace WeaponWorkshop
                     ? Vector3.forward : Vector3.up));
             pellet.name = "Projectile_Shotgun";
             pellet.SetActive(false);
-            ConfigureProjectile(pellet, direction, stats, speed, damage);
+            ConfigureProjectile(pellet, direction, shot);
             pellet.SetActive(true);
         }
 
