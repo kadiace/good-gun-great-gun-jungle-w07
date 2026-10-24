@@ -5,7 +5,7 @@
       "name": "기본 총 납품",
       "phrase": "기본 총 한 정",
       "tagId": "",
-      "reward": 75,
+      "reward": 25,
       "rewardPerDay": 0,
       "requiredTestIds": [],
       "conditions": []
@@ -26,7 +26,7 @@
           "max": 3.4028235e+38
         }
       ],
-      "reward": 2250,
+      "reward": 750,
       "rewardPerDay": 0
     },
     {
@@ -46,7 +46,7 @@
           "max": 1
         }
       ],
-      "reward": 345,
+      "reward": 120,
       "rewardPerDay": 0
     },
     {
@@ -67,7 +67,7 @@
           "max": 3.4028235e+38
         }
       ],
-      "reward": 90,
+      "reward": 30,
       "rewardPerDay": 0
     },
     {
@@ -89,7 +89,7 @@
         "module/explosion/min-2/d5-3-student",
         "08dbc26e0a7043288f412d911e86341d"
       ],
-      "reward": 1575,
+      "reward": 525,
       "rewardPerDay": 0
     },
     {
@@ -113,7 +113,7 @@
         "module/fire-rate/min-1/d1-3-split-two",
         "81148a6e113140c18bfdab5b9d6201d6"
       ],
-      "reward": 225,
+      "reward": 75,
       "rewardPerDay": 0
     },
     {
@@ -143,7 +143,7 @@
         "module/penetration/min-1/d1-5-combo",
         "0de1724fb39d46cc88a0316007dc3e2f"
       ],
-      "reward": 825,
+      "reward": 275,
       "rewardPerDay": 0
     },
     {
@@ -164,7 +164,7 @@
       "legacyIds": [
         "c8e35a29c16ae91459a744997e871c23"
       ],
-      "reward": 225,
+      "reward": 75,
       "rewardPerDay": 0
     },
     {
@@ -186,7 +186,7 @@
         "module/scope/min-2/d4-4-professional",
         "4e7c1ebb9b774bf0aa76abe4fc7e855c"
       ],
-      "reward": 375,
+      "reward": 125,
       "rewardPerDay": 0
     },
     {
@@ -205,7 +205,7 @@
         }
       ],
       "legacyIds": [],
-      "reward": 525,
+      "reward": 175,
       "rewardPerDay": 0
     },
     {
@@ -227,7 +227,7 @@
         "module/shotgun/min-3/d5-4-shotgun-ception",
         "ca4f3f1971ec4adf8f498ed34a364093"
       ],
-      "reward": 1425,
+      "reward": 475,
       "rewardPerDay": 0
     },
     {
@@ -254,7 +254,7 @@
         "module/split-four/min-1/d3-2-quad-shotgun",
         "40b0f2c46533419d80e7a465fde35429"
       ],
-      "reward": 675,
+      "reward": 225,
       "rewardPerDay": 0
     },
     {
@@ -278,7 +278,7 @@
         "module/split-four/min-2/d1-4-more-muzzles",
         "37d5a78ecb744efd96386f736b71cf9f"
       ],
-      "reward": 1275,
+      "reward": 425,
       "rewardPerDay": 0
     },
     {
@@ -307,7 +307,7 @@
         "module/split-two/min-1/d5-5-real-gun",
         "81d72487c62c42bb8a2c996de2071c0d"
       ],
-      "reward": 375,
+      "reward": 125,
       "rewardPerDay": 0
     },
     {
@@ -330,7 +330,7 @@
         "module/stat-modules/exact-0/d1-1-base-core",
         "c0fbdc9111b6474fbe47321706b603fd"
       ],
-      "reward": 75,
+      "reward": 25,
       "rewardPerDay": 0
     },
     {
@@ -391,7 +391,7 @@
         "stat/weight/min-4/d3-4-sommelier",
         "2be3abe367214f4498ce45b36c408667"
       ],
-      "reward": 135,
+      "reward": 45,
       "rewardPerDay": 0
     },
     {
@@ -406,7 +406,7 @@
         "tag/assault-rifle/legacy",
         "a953407380ff6594a942af751bf23efb"
       ],
-      "reward": 1305,
+      "reward": 435,
       "rewardPerDay": 0
     },
     {
@@ -421,7 +421,7 @@
         "tag/charge/legacy",
         "db5262cea8401e542a56f9a2812196a3"
       ],
-      "reward": 525,
+      "reward": 175,
       "rewardPerDay": 0
     },
     {
@@ -436,7 +436,7 @@
         "tag/flamethrower/legacy",
         "c45e9713dbf2ac3469b4a59283112118"
       ],
-      "reward": 825,
+      "reward": 275,
       "rewardPerDay": 0
     },
     {
@@ -451,13 +451,13 @@
         "tag/gravity-gun/legacy",
         "6bfd82587bbb4a640a1dcc436cacd347"
       ],
-      "reward": 825,
+      "reward": 275,
       "rewardPerDay": 0
     },
     {
       "id": "tag/grenade-launcher",
       "name": "유탄 태그",
-      "phrase": "유탄 태그 (폭발 1 이상, 5 미만)",
+      "phrase": "유탄 태그 (폭발 1 이상, 10 이하)",
       "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
       "requiredTestIds": [],
       "conditions": [],
@@ -466,7 +466,7 @@
         "tag/grenade-launcher/legacy",
         "982660b8fcc3c1340adfa1edcdfb1257"
       ],
-      "reward": 825,
+      "reward": 275,
       "rewardPerDay": 0
     },
     {
@@ -481,7 +481,7 @@
         "tag/handgun/legacy",
         "afce91ece9f68f44b92e48a1652ea36b"
       ],
-      "reward": 75,
+      "reward": 25,
       "rewardPerDay": 0
     },
     {
@@ -496,7 +496,7 @@
         "tag/homing/legacy",
         "a577397affb1dba46a5ab05ee475eec6"
       ],
-      "reward": 825,
+      "reward": 275,
       "rewardPerDay": 0
     },
     {
@@ -509,7 +509,7 @@
       "legacyIds": [
         "a0eed031913cef84eab19bafbe2ff4df"
       ],
-      "reward": 8325,
+      "reward": 2775,
       "rewardPerDay": 0
     },
     {
@@ -524,7 +524,7 @@
         "tag/ricochet/legacy",
         "fdd2d5a8251468842be3744e7dba689f"
       ],
-      "reward": 525,
+      "reward": 175,
       "rewardPerDay": 0
     },
     {
@@ -539,7 +539,7 @@
         "tag/shotgun/legacy",
         "70d86a3c50472dd47b261b990ddd9210"
       ],
-      "reward": 8025,
+      "reward": 2675,
       "rewardPerDay": 0
     },
     {
@@ -554,7 +554,7 @@
         "tag/sniper-rifle/legacy",
         "d6d6fd1701a033d4b849c531f7f4f5f1"
       ],
-      "reward": 1440,
+      "reward": 480,
       "rewardPerDay": 0
     },
     {
@@ -569,7 +569,7 @@
         "tag/spin/legacy",
         "60c861d406fb6fd48a48e2649ddcb52b"
       ],
-      "reward": 375,
+      "reward": 125,
       "rewardPerDay": 0
     },
     {
@@ -584,7 +584,7 @@
         "tag/water-gun/legacy",
         "48aeae95d13c1f643817498a6dae1573"
       ],
-      "reward": 150,
+      "reward": 50,
       "rewardPerDay": 0
     }
   ],
@@ -869,7 +869,7 @@
           "measure": "WeaponStat",
           "stat": "Explosion",
           "min": 0.0,
-          "max": 4.0
+          "max": 10.0
         }
       ]
     },

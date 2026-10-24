@@ -13,12 +13,12 @@ namespace WeaponWorkshop
         {
             public readonly int baseReward, maximumBaseReward, price, maximumPrice, matchedRequests;
             public readonly float multiplier;
-            public Quote(long reward, long maximum, int matched, float saleMultiplier, int constructionCost = 0)
+            public Quote(long reward, long maximum, int matched, float saleMultiplier, int constructionCost = 0, float failedRatio = 0.5f)
             {
                 baseReward = Clamp(reward); maximumBaseReward = Clamp(maximum);
                 matchedRequests = matched; multiplier = saleMultiplier;
                 // 제작비는 클리어 배율에서 제외하고, 충족한 요청이 없으면 절반만 회수한다.
-                int costRecovery = matched > 0 ? constructionCost : Scale(constructionCost, 0.5f);
+                int costRecovery = matched > 0 ? constructionCost : Scale(constructionCost, failedRatio);
                 price = Clamp((long)Scale(baseReward, multiplier) + costRecovery);
                 maximumPrice = Clamp((long)Scale(maximumBaseReward, multiplier) + constructionCost);
             }
@@ -85,7 +85,7 @@ namespace WeaponWorkshop
                 matched++;
             }
             return new Quote(rewardTotal, maximum, matched, multiplier,
-                weapon != null ? weapon.PaidConstructionCost : 0);
+                weapon != null ? weapon.PaidConstructionCost : 0, TableManager.Instance.CustomerOrder.sale.failedSaleRatio);
         }
 
         public static bool ValidSavedRewards(CustomerOrderState state, string[] requestIds)

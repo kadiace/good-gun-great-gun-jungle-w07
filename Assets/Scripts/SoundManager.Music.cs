@@ -66,7 +66,7 @@ namespace WeaponWorkshop
         // 기존 판정과 훈련 이동 중의 정적 상태를 함께 확인해 씬 생성 순서의 틈도 막는다.
         public static bool IsTutorialMusicContext => TutorialManager.TrainingRaidPending || TutorialManager.TrainingReturnPending ||
             SceneManager.GetActiveScene().name == TutorialManager.TrainingScene ||
-            (TutorialManager.Instance != null && (TutorialManager.Instance.IsTutorialActive || TutorialManager.Instance.IsGuidedDayZero));
+            (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero);
 
         private void LoadSoundSettings()
         {
