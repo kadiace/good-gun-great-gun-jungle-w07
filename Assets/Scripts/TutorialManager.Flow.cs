@@ -60,8 +60,8 @@ namespace WeaponWorkshop
             originalUnlocks = null; originalPresets = null;
             originalSlotMachineDestructions = 0; originalSlotMachineDestroyedDay = -1; originalSlotMachineDestroyedAtNight = false;
         }
-        private FirstPersonPlayer TutorialPlayer => GameManager.Instance != null && GameManager.Instance.UI != null
-            ? GameManager.Instance.UI.Player : null;
+        private FirstPersonPlayer TutorialPlayer => GameManager.Instance != null
+            ? GameManager.Instance.Player : null;
         private CubeAssembly TutorialAssembly => workbench != null && workbench.CurrentWeapon != null
             ? workbench.CurrentWeapon.GetComponentInChildren<CubeAssembly>() : null;
         private Component PresetDispenserOneTarget()

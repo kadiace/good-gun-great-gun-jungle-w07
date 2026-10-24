@@ -87,8 +87,8 @@ namespace WeaponWorkshop
                 return;
             }
 
-            WeaponHolder holder = m_uiManager != null ? m_uiManager.PlayerWeaponHolder : null;
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
+            WeaponHolder holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             bool available = player != null && player.isActiveAndEnabled && !GameManager.GameplayBlocked;
             WeaponScope scope = ScopeOf(holder);
             bool aiming = scope != null && scope.IsAiming;

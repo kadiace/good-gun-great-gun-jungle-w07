@@ -253,10 +253,10 @@ namespace WeaponWorkshop
         }
         private void PrepareFirstDay()
         {
-            var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            if (ui != null && ui.Player != null)
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
+            if (player != null)
             {
-                var session = ui.Player.GetComponent<WorkshopSession>();
+                var session = player.GetComponent<WorkshopSession>();
                 if (session != null) session.LeaveImmediately();
             }
             EndPractice();
@@ -458,8 +458,7 @@ namespace WeaponWorkshop
         }
         private System.Collections.IEnumerator TurnToCustomer(Customer customer)
         {
-            var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            var player = ui != null ? ui.Player : null;
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             if (player != null && player.ViewPoint != null)
             {
                 Vector3 direction = customer.transform.position + Vector3.up - player.ViewPoint.position;

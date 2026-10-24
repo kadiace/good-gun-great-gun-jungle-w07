@@ -110,9 +110,9 @@ namespace WeaponWorkshop
                 return;
             }
 
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             WorkshopSession session = player != null ? player.GetComponent<WorkshopSession>() : null;
-            WeaponHolder holder = m_uiManager != null ? m_uiManager.PlayerWeaponHolder : null;
+            WeaponHolder holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             EquipableWeapon weapon = session != null && session.IsEditing && session.ActiveWorkbench != null
                 ? session.ActiveWorkbench.CurrentWeapon
                 : holder != null ? holder.EquippedWeapon : null;

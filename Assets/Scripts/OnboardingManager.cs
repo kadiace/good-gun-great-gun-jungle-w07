@@ -114,8 +114,8 @@ namespace WeaponWorkshop
 
         private void Update()
         {
-            var player = GameManager.Instance != null && GameManager.Instance.UI != null
-                ? GameManager.Instance.UI.Player : null;
+            var player = GameManager.Instance != null
+                ? GameManager.Instance.Player : null;
             var nextSession = player != null ? player.GetComponent<WorkshopSession>() : null;
             if (session != nextSession)
             {
