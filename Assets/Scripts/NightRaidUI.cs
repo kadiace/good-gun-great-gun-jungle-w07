@@ -131,7 +131,7 @@ namespace WeaponWorkshop
                         (save == null || !save.HasClearedRaid(region.scene));
                     regionLabels[i].text = originalRegionLabels[i] + (firstClearAvailable ? " <size=65%><color=#F04D4D>●</color></size>" : string.Empty);
                 }
-                regionButtons[i].interactable = show && listed && CanAffordEntry(i) &&
+                regionButtons[i].interactable = show && listed && controller != null && controller.IsRegionUnlocked(i) && CanAffordEntry(i) &&
                     (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(i));
             }
         }

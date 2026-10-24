@@ -79,11 +79,16 @@ namespace WeaponWorkshop
             if (maskMaterial == null || outlineMaterial == null) return;
             foreach (var pickup in PickupOutline.Active)
                 if (pickup != null && pickup.transform != Target)
-                    DrawTarget(pickup.transform, Color.white);
-            if (Target != null) DrawTarget(Target, targetAvailable ? outlineColor : Color.white);
+                    DrawTarget(pickup.transform, Color.white, pickup.WidthMultiplier);
+            if (Target != null)
+            {
+                var pickup = Target.GetComponent<PickupOutline>();
+                DrawTarget(Target, targetAvailable ? outlineColor : Color.white,
+                    pickup != null ? pickup.WidthMultiplier : 1f);
+            }
         }
 
-        private void DrawTarget(Transform root, Color color)
+        private void DrawTarget(Transform root, Color color, float widthMultiplier)
         {
             // Interaction briefly clears Target during each raycast. Compare only the final target here.
             if (batchTarget != root)
@@ -112,7 +117,7 @@ namespace WeaponWorkshop
             bool instanced = SystemInfo.supportsInstancing && maskMaterial.enableInstancing && outlineMaterial.enableInstancing;
             MaterialPropertyBlock drawProperties = instanced ? instancedProperties : properties;
             drawProperties.SetColor(ColorId, color);
-            drawProperties.SetFloat(WidthId, outlineWidth);
+            drawProperties.SetFloat(WidthId, outlineWidth * widthMultiplier);
             unusedBatches.Clear();
             foreach (var batch in batches)
             {

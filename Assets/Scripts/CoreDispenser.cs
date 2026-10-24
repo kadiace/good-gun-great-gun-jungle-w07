@@ -10,13 +10,20 @@ namespace WeaponWorkshop
         [SerializeField] private int presetSlot = -1;
         [SerializeField] private EquipableWeapon weaponPreview;
         private string displayedCode = "\0";
+        private bool dispensing;
         private WeaponPresets Presets => GameManager.Instance != null && GameManager.Instance.UI != null && GameManager.Instance.UI.Player != null
             ? GameManager.Instance.UI.Player.GetComponent<WeaponPresets>() : null;
         private const int CorePrice = WeaponPurchasePrices.Core;
         public Transform OutlineRoot => drawRoot != null ? drawRoot : transform;
         public bool IsBasicCoreDispenser => presetSlot < 0 && corePrefab != null;
+        public bool OwnsSavedPreview(PresetWeaponPreview preview) => presetSlot >= 0 &&
+            weaponPreview != null && preview != null && preview.transform == weaponPreview.transform;
 
-        private void Awake() => UpdateNameLabel();
+        private void Awake()
+        {
+            if (presetSlot >= 0 && weaponPreview != null) weaponPreview.gameObject.SetActive(false);
+            UpdateNameLabel();
+        }
         private void LateUpdate()
         {
             UpdateNameLabel();
@@ -59,21 +66,31 @@ namespace WeaponWorkshop
             if (weaponNameLabel.text != name) weaponNameLabel.text = name;
         }
 
+        // 저장 슬롯만 장착 중 교체를 허용하고, 빈 코어/고정 프리팹 지급기는 맨손 조건을 유지한다.
         public bool CanInteract(Interaction interactor)
         {
-            if (!isActiveAndEnabled || GameManager.GameplayBlocked || corePrefab == null ||
+            if (!isActiveAndEnabled || dispensing || GameManager.GameplayBlocked || corePrefab == null ||
                 interactor == null || interactor.Player == null) return false;
-            if (presetSlot >= 0 && interactor.Player.GetComponent<WeaponPresets>() != null &&
-                string.IsNullOrEmpty(interactor.Player.GetComponent<WeaponPresets>().GetCode(presetSlot))) return false;
+            var presets = interactor.Player.GetComponent<WeaponPresets>();
+            if (presetSlot >= 0 && (presets == null || string.IsNullOrEmpty(presets.GetCode(presetSlot)))) return false;
             WeaponHolder holder = interactor.Player.GetComponent<WeaponHolder>();
             PlayerWallet wallet = PlayerWallet.ForPlayer(interactor.Player);
-            return holder != null && holder.CanEquip && holder.EquippedWeapon == null &&
-                wallet != null;
+            if (holder == null || !holder.CanEquip || wallet == null) return false;
+            var held = holder.EquippedWeapon;
+            return held == null || presetSlot >= 0 && held.IsEquipped && !held.IsMoving;
         }
 
         public bool Interact(Interaction interactor)
         {
             if (!CanInteract(interactor)) return false;
+            dispensing = true;
+            try { return TryDispense(interactor); }
+            finally { dispensing = false; }
+        }
+
+        // 지급은 저장 코드의 제작/장착이 모두 성공한 뒤 결제한다. 전시 실물이나 슬롯을 소비하지 않는다.
+        private bool TryDispense(Interaction interactor)
+        {
             WeaponHolder holder = interactor.Player.GetComponent<WeaponHolder>();
             PlayerWallet wallet = PlayerWallet.ForPlayer(interactor.Player);
             if (wallet == null) return false;
@@ -116,16 +133,33 @@ namespace WeaponWorkshop
             string partKind = presetPlan != null ? corePrefab.name + "+preset" : corePrefab.name;
             bool purchased = wallet.TryPurchaseModule((int)dollarTotal, (int)materialTotal, () =>
             {
-                EquipableWeapon core = Instantiate(corePrefab, transform.position, transform.rotation);
-                purchasedCore = core;
-                core.name = corePrefab.name;
-                if (presetPlan != null)
+                EquipableWeapon core = null;
+                try
                 {
-                    if (!core.GetComponent<CubeAssembly>().RestoreLayout(presetPlan)) { Destroy(core.gameObject); return false; }
-                    core.SetWeaponName(blueprint.name);
-                    core.GetComponentInChildren<StatCollector>()?.Recalculate();
+                    core = Instantiate(corePrefab, transform.position, transform.rotation);
+                    purchasedCore = core;
+                    core.name = corePrefab.name;
+                    if (presetPlan != null)
+                    {
+                        if (!core.GetComponent<CubeAssembly>().RestoreLayout(presetPlan))
+                        {
+                            core.gameObject.SetActive(false);
+                            Destroy(core.gameObject);
+                            return false;
+                        }
+                        core.SetWeaponName(blueprint.name);
+                        core.GetComponentInChildren<StatCollector>()?.Recalculate();
+                    }
                 }
-                if (holder.Equip(core)) return true;
+                catch (System.Exception e)
+                {
+                    if (core != null) { core.gameObject.SetActive(false); Destroy(core.gameObject); }
+                    FeedbackUI.For(this)?.ShowNotification(e.Message);
+                    return false;
+                }
+                bool equipped = presetPlan != null ? holder.TryEquipWithDrop(core) : holder.Equip(core);
+                if (equipped) return true;
+                core.gameObject.SetActive(false);
                 Destroy(core.gameObject);
                 return false;
             }, partKind);

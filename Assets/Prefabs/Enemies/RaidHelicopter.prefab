@@ -6077,8 +6077,9 @@ MonoBehaviour:
   core: {fileID: 3191988470830902810}
   rotor: {fileID: 8226546224040809493}
   flightSpeed: 12
+  followSmoothTime: 1.2
   hoverHeight: 12
-  hoverDistance: 4
+  hoverDistance: 4.8
   rotorSpeed: 1200
   missileMount: {fileID: 2453673012386139440}
   missilePrefab: {fileID: 7844102423475657868, guid: 0e89889be0e64454f8eb589a52da0b93, type: 3}

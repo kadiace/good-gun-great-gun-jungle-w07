@@ -22,7 +22,7 @@ namespace WeaponWorkshop
                 case 0: House(); break;
                 case 1: Bank(); break;
                 case 2: Base(); break;
-                case 3: Campus(); break;
+                case 3: Airport(); break;
             }
             Entry(region == 1 ? -112 : 0, -66);
         }
@@ -74,17 +74,18 @@ namespace WeaponWorkshop
             for (int x = -150; x <= 150; x += 300)
                 for (int y = -59; y <= 61; y += 120) Frame(x - 5, y - 4, x + 5, y + 4);
         }
-        private void Campus()
+        private void Airport()
         {
-            // One central three-floor building in an enclosed campus, south approach.
-            Frame(-140, -57, 140, 63);
-            Building(-77, -24, 75, 43);
-            Frame(-69, -17, 66, 36); Frame(-61, -10, 58, 29);
-            for (int x = -48; x <= 45; x += 25) Line(x, 29, x, 36);
-            Line(-69, 8, -61, 8); Line(58, 8, 66, 8);
-            Frame(-14, -32, 14, -24);
-            Dash(0, -56, 0, -34);
-            Line(-140, -45, -130, -45); Line(130, -45, 140, -45);
+            Building(-132, -35, -21, 17);
+            Frame(-124, -28, -29, 10);
+            for (int x = -113; x <= -38; x += 15) Line(x, -19, x, -12);
+            for (int y = -24; y <= 7; y += 15) Frame(-21, y, 8, y + 5);
+            Building(-132, 44, -82, 63);
+            Frame(-150, -7, -137, 19);
+            Frame(57, -55, 112, 68);
+            Line(79, -55, 79, 68); Line(89, -55, 89, 68);
+            for (int y = -44; y <= 60; y += 19) Line(83, y, 86, y + 5);
+            Dash(-82, -57, -82, -35);
         }
         private void Building(float x1, float y1, float x2, float y2)
         {

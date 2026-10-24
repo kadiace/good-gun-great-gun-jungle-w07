@@ -209,6 +209,10 @@ namespace WeaponWorkshop
                 case TutorialCompletion.CustomerWeaponReady:
                     return session != null && session.IsEditing && workbench.CurrentWeapon != null &&
                         customerBell != null && customerBell.Current != null && customerBell.Current.CheckWeapon(workbench.CurrentWeapon);
+                case TutorialCompletion.WeaponTagged:
+                    return session != null && session.IsEditing && workbench.CurrentWeapon != null &&
+                        TableManager.Instance.CustomerRequest.MeetsTag(step.requiredTagId,
+                            new CustomerRequestInfo.WeaponSnapshot(workbench.CurrentWeapon));
                 case TutorialCompletion.WorkshopExited:
                     return session != null && !session.IsInWorkshop && !session.IsTransitioning;
                 case TutorialCompletion.WeaponHeld:

@@ -68,7 +68,8 @@ namespace WeaponWorkshop
             IInteractable target = null;
             hitTransform.GetComponentsInParent(false, targetComponents);
             foreach (MonoBehaviour component in targetComponents)
-                if (component != null && component is IInteractable interactable)
+                // Disabled behaviours cannot receive input and must not hide an active parent/peer target.
+                if (component != null && component.isActiveAndEnabled && component is IInteractable interactable)
                 { target = interactable; break; }
             if (target == null) return;
             aimedTarget = target;

@@ -41,12 +41,35 @@ namespace WeaponWorkshop
         private Color bodyColor;
         private readonly StringBuilder text = new StringBuilder();
         private readonly Dictionary<ModuleData, int> counts = new Dictionary<ModuleData, int>();
+        private ModuleData resultModule;
+        private Canvas resultTooltipCanvas;
         private static readonly string[] Labels = { "관통력", "연사력", "폭발력", "반사 횟수", "차지", "중력", "발열", "회전", "물", "유도", "산탄", "무게", "스코프", "가속", "컬러", "탄퍼짐" };
 
         public void Initialize(CubeBuilder source, Interaction interactionSource) { interaction = interactionSource; builder = source; if (tagTemplate != null) tagTemplate.gameObject.SetActive(false); if (tagGrid != null) tagGrid.gameObject.SetActive(false); bodyColor = description != null ? description.color : Color.white; Hide(); }
         private void Awake() { Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
-        private void OnDisable() { muzzleTooltipObserved = false; Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
+        private void OnDisable() { muzzleTooltipObserved = false; ClearResultModule(); Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
         private void Hide() { if (interact != null) interact.SetActive(false); if (panel != null) panel.SetActive(false); if (scanLoading != null) scanLoading.gameObject.SetActive(false); }
+        public void ShowResultModule(ModuleData data, Vector2 position)
+        {
+            if (data == null || panel == null) return;
+            resultModule = data;
+            pointerPosition = position;
+            if (resultTooltipCanvas == null)
+            {
+                resultTooltipCanvas = panel.GetComponent<Canvas>();
+                if (resultTooltipCanvas == null) resultTooltipCanvas = panel.AddComponent<Canvas>();
+            }
+            resultTooltipCanvas.overrideSorting = true;
+            resultTooltipCanvas.sortingOrder = 500;
+            resultTooltipCanvas.enabled = true;
+            ShowModule(data);
+        }
+        public void ClearResultModule()
+        {
+            resultModule = null;
+            if (resultTooltipCanvas != null) resultTooltipCanvas.enabled = false;
+            Hide();
+        }
         private void CreateScanLoading()
         {
             if (scanLoading != null || panel == null || title == null) return;
@@ -95,6 +118,13 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
+            if (resultModule != null)
+            {
+                if (tagGrid != null) tagGrid.gameObject.SetActive(false);
+                if (description != null) description.gameObject.SetActive(true);
+                ShowModule(resultModule);
+                return;
+            }
             bool hoveringMuzzle = false;
             try
             {
@@ -289,11 +319,12 @@ namespace WeaponWorkshop
                 tagPills[i].GetComponent<TagPillGraphic>().color = weaponTags[i].TagColor;
             }
             for (int i = weaponTags.Count; i < tagPills.Count; i++) tagPills[i].gameObject.SetActive(false);
-            bool preview = weapon.GetComponent<PresetWeaponPreview>() != null;
+            var preview = weapon.GetComponent<PresetWeaponPreview>();
             description.gameObject.SetActive(false);
             UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(textArea);
             Show(weapon.WeaponName, string.Empty);
-            if (!preview) ShowInteract();
+            // A long workbench ray may describe another preview beyond interaction range.
+            if (preview == null || interaction != null && interaction.AimedTarget == preview) ShowInteract();
             title.color = Color.white;
             description.color = bodyColor;
         }

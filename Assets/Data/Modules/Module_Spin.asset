@@ -20,7 +20,7 @@ MonoBehaviour:
     \uD68C\uC804\uC774 \uB204\uC801\uB429\uB2C8\uB2E4."
   color: {r: 0.54999995, g: 0.95, b: 0.19999996, a: 1}
   useModuleCredits: 1
-  moduleCreditCost: 100
+  moduleCreditCost: 0
   moduleType: 7
   buyPrice: 200
   bonuses:

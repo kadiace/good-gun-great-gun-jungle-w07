@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    public enum TutorialCompletion { Confirmation, Signal, FiveCoreFacesBlocked, ModuleInstalled, CellEmpty, CustomerWeaponReady, WorkshopExited, WeaponHeld, SettlementClosed, CustomerSold, CustomerKilled, TargetNearby, TargetScanned, RaidTankSpawned, RetirementIntroduction, RaidTicketCollected, RaidMaterialCollected }
+    public enum TutorialCompletion { Confirmation, Signal, FiveCoreFacesBlocked, ModuleInstalled, CellEmpty, CustomerWeaponReady, WorkshopExited, WeaponHeld, SettlementClosed, CustomerSold, CustomerKilled, TargetNearby, TargetScanned, RaidTankSpawned, RetirementIntroduction, RaidTicketCollected, RaidMaterialCollected, WeaponTagged }
     public enum TutorialTarget { None, Shutter, Customer, MainCoreDispenser, Workbench, ShootingTarget, WorkbenchWeapon, CloseShop, RaidEntrance, RaidLoot, RaidExit, RaidMaterialCrate, RaidTank }
     public enum TutorialRotationGuide { None, Tilt, Roll }
     public enum TutorialButtonGuide { None, Recipe, PresetFirst, RaidHouse, LoanConfirm }
@@ -32,6 +32,7 @@ namespace WeaponWorkshop
         public Vector3Int openCoreFace = Vector3Int.forward;
         [Tooltip("비우면 기존 5면 안내. 지정하면 해당 셀만 표시합니다.")] public Vector3Int[] hintCells = Array.Empty<Vector3Int>();
         public int requiredModuleId;
+        [Tooltip("WeaponTagged 단계에서 작업대 무기가 충족해야 할 CustomerRequestData.tags의 id(무기 타입 자산 GUID). tag/... 요청 id가 아니다.")] public string requiredTagId;
         public int requiredCustomerCount;
         [Min(0.1f), Tooltip("대상 접근·스캔 단계의 최대 거리(m)")] public float requiredTargetDistance = 5f;
         public Vector3Int requiredCell = Vector3Int.forward;
