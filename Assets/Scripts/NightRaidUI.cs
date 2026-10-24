@@ -4,7 +4,7 @@ using UnityEngine.UI;
 namespace WeaponWorkshop
 {
     // 기존 NightRaidUI API와 직렬화 참조를 유지하면서 지도·HUD View/Presenter를 연결한다.
-    public sealed partial class NightRaidUI : MonoBehaviour
+    public sealed partial class NightRaidUI : MonoBehaviour, IUIScreen
     {
         [SerializeField] private GameObject mapPanel;
         [SerializeField] private GameObject returnPanel;
@@ -60,6 +60,8 @@ namespace WeaponWorkshop
         {
             Initialize();
         }
+
+        public void InitializeScreen(UIContext _context) => Initialize();
 
         public void Initialize()
         {

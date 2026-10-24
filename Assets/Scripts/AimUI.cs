@@ -4,7 +4,7 @@ namespace WeaponWorkshop
 {
     // 전투 HUD 브리지. 기존 직렬화 참조·public API를 유지하고 실효 참조를 AimHudView로 전달한다.
     // 무기·스코프·유도 상태 판정은 AimHudPresenter가 맡는다.
-    public sealed class AimUI : MonoBehaviour
+    public sealed class AimUI : MonoBehaviour, IUIScreen
     {
         [SerializeField] private UIManager uiManager;
         [SerializeField] private GameObject dot;
@@ -17,6 +17,8 @@ namespace WeaponWorkshop
         private AimHudPresenter m_presenter;
         private bool m_hasLoggedViewError;
         private bool m_hasInitializationFailed;
+
+        public void InitializeScreen(UIContext _context) => Initialize(_context?.Ui);
 
         public void Initialize(UIManager owner)
         {

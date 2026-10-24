@@ -217,7 +217,7 @@ namespace WeaponWorkshop
                 var plan = WeaponShareCode.Resolve(blueprint, assembly, player.GetComponent<PlayerModuleUnlocks>(),
                     Mathf.Max(0, old.paidConstructionCost - oldMoney), out int money, out int materials);
                 EquipableWeapon current = m_weapon;
-                m_uiManager.Screen<FeedbackUI>().ShowChoice(m_owner,
+                m_uiManager.Screen<FeedbackUI>()?.ShowChoice(m_owner,
                     $"현재 조립을 '{blueprint.name}'으로 교체할까요?\n" +
                     $"차액: ${money - oldMoney:N0} / 재료 {materials - oldMaterials:N0}\n" +
                     "음수는 기존 모듈 구매비 환불입니다.", () =>

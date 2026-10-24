@@ -382,7 +382,7 @@
 
 - 모듈 가격(달러/재료): 기본10/0, 연장100/0, 2방200/0, 4방400/50, 연사100/0, 가속100/0, 산탄300/50, 관통500/0, 폭발500/0, 차지300/50, 반사300/50, 물50/10, 발열500/200, 회전200/100, 유도500/100, 중력500/200, 스코프100/0, 트리거100/0, 컬러10/0. 저장v4 이상은 새 모듈 ID 순서 사용; v2/v3 무기·해금 ID를 읽을 때 이전 순서에서 변환. 프리셋 연사/관통/스코프 ID도 변환.
 
-- 공용 UIManager.ShowNotification(string): 중앙 아래 알림 한 개. 새 문구로 즉시 교체하고 등장 연출 재시작; 투명도0→1/크기0.92→1(0.18초), 유지2초, 투명도1→0(0.4초), unscaled time. Awake/OnDisable에서 텍스트·모드 초기화 및 숨김. CoreDispenser는 달러 부족 시 외상 구매 가능하며, 프리셋의 모듈 재료가 부족하면 기존 재료 부족 알림 후 생성/결제 차단.
+- FeedbackUI owns shared notifications and choices. Components use `FeedbackUI.For(this)?.ShowNotification(msg)`; pure C# presenters use `UIManager.Screen<FeedbackUI>()`.
 
 - 돈·모듈 재화 숫자 연출은 기본0.25초. 감소 시 고정 두 바퀴 회전 대신 각 자릿수의 실제 금액 차이를 반영(과도한 회전은 추가2바퀴까지 제한); 변경 없는 자리는 고정. 실제 잔액 변경 시점은 유지.
 

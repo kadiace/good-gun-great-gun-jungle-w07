@@ -361,7 +361,7 @@ namespace WeaponWorkshop
             }
 
             FeedbackUI feedback = ui.Screen<FeedbackUI>();
-            return UIInputPolicy.IsChoiceOpen && (feedback == null || !feedback.IsChoiceInputSuspended);
+            return feedback != null && feedback.IsChoiceOpen && !feedback.IsChoiceInputSuspended;
         }
 
         // 대출 안내처럼 Feedback 선택 입력이 중단된 동안에는 대화가 선택창 위에 겹치는 기존 연출을 유지한다.
