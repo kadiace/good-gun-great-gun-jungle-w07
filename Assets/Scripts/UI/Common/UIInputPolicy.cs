@@ -565,7 +565,7 @@ namespace WeaponWorkshop
         {
             if (GameManager.Instance != null && GameManager.Instance.UI != null)
             {
-                return GameManager.Instance.UI.IsChoiceOpen;
+                return GameManager.Instance.UI.Screen<FeedbackUI>()?.IsChoiceOpen ?? false;
             }
 
             return false;
@@ -573,9 +573,9 @@ namespace WeaponWorkshop
 
         private static bool ResolveChoiceSuspended()
         {
-            if (GameManager.Instance != null && GameManager.Instance.UI != null && GameManager.Instance.UI.Feedback != null)
+            if (GameManager.Instance != null && GameManager.Instance.UI != null && GameManager.Instance.UI.Screen<FeedbackUI>() != null)
             {
-                return GameManager.Instance.UI.Feedback.IsChoiceInputSuspended;
+                return GameManager.Instance.UI.Screen<FeedbackUI>().IsChoiceInputSuspended;
             }
 
             return false;

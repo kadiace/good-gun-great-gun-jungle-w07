@@ -114,6 +114,8 @@ namespace WeaponWorkshop
         }
 
         /// <summary>UIManager가 비활성 패널까지 포함해 호출하는 초기 연결점이다. 기존과 같이 닫힌 화면으로 시작한다.</summary>
+        public void InitializeScreen(UIContext _context) => Initialize();
+
         public void Initialize()
         {
             EnsureInitialized();

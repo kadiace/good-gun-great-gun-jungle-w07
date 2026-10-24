@@ -8,7 +8,7 @@ namespace WeaponWorkshop
     // 공방 모듈 즐겨찾기(숫자키 1~9,0)와 TAB 모듈 창. 상태(선택·즐겨찾기·창 열림)는 CubeBuilder가 보유한다.
     // 목록 드래그로 등록하며, 즐겨찾기끼리의 맞바꿈은 TAB 창이 닫혀 있어도 가능.
     [RequireComponent(typeof(RectTransform))]
-    public sealed partial class ModulePaletteUI : MonoBehaviour
+    public sealed partial class ModulePaletteUI : MonoBehaviour, IUIScreen
     {
         [System.Serializable] private sealed class CustomPanelEntry
         {
@@ -18,6 +18,8 @@ namespace WeaponWorkshop
         }
 
         [SerializeField] private CubeBuilder builder;
+        public void InitializeScreen(UIContext _context) => Initialize(_context?.Builder);
+
         public void Initialize(CubeBuilder playerBuilder)
         {
             builder = playerBuilder;
