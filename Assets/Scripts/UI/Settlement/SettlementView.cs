@@ -74,6 +74,9 @@ namespace WeaponWorkshop
         private readonly BalanceDisplay m_moduleCreditCounter = new BalanceDisplay();
         private readonly BalanceDisplay m_slotTicketCounter = new BalanceDisplay();
 
+        private UIManager m_uiManager;
+        private CurrencyHudView m_currencyHud;
+
         private UnityEngine.InputSystem.InputActionMap m_confirmControls;
         private bool m_confirmQueued;
         private int m_openedFrame;
@@ -155,6 +158,33 @@ namespace WeaponWorkshop
             }
         }
 
+        public void SetUIManager(UIManager _uiManager)
+        {
+            m_uiManager = _uiManager;
+            m_currencyHud = null;
+        }
+
+        private CurrencyHudView ResolveCurrencyHud()
+        {
+            if (m_currencyHud != null)
+            {
+                return m_currencyHud;
+            }
+
+            UIManager ui = m_uiManager != null ? m_uiManager : GetComponentInParent<UIManager>();
+            if (ui != null)
+            {
+                m_currencyHud = ui.Screen<CurrencyHudView>();
+            }
+
+            if (m_currencyHud == null)
+            {
+                m_currencyHud = FindFirstObjectByType<CurrencyHudView>();
+            }
+
+            return m_currencyHud;
+        }
+
         private void LateUpdate()
         {
             if (m_confirmQueued)
@@ -163,9 +193,12 @@ namespace WeaponWorkshop
                 ConfirmInputPerformed?.Invoke();
             }
 
-            m_moneyCounter.Tick(m_moneyCountDuration);
-            m_moduleCreditCounter.Tick(m_moneyCountDuration);
-            m_slotTicketCounter.Tick(m_moneyCountDuration);
+            if (ResolveCurrencyHud() == null)
+            {
+                m_moneyCounter.Tick(m_moneyCountDuration);
+                m_moduleCreditCounter.Tick(m_moneyCountDuration);
+                m_slotTicketCounter.Tick(m_moneyCountDuration);
+            }
         }
 
         private void OnDestroy()
@@ -205,6 +238,13 @@ namespace WeaponWorkshop
             m_insufficientFundsDuration = Mathf.Max(0.01f, _insufficientFundsDuration);
             m_insufficientFundsPulses = Mathf.Max(1, _insufficientFundsPulses);
             m_insufficientFundsScale = Mathf.Max(1f, _insufficientFundsScale);
+
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.MoneyCountDuration = m_moneyCountDuration;
+                hud.RaidLossRollDuration = m_raidLossRollDuration;
+            }
         }
 
         /// <summary>
@@ -238,14 +278,22 @@ namespace WeaponWorkshop
             }
 
             // 기존 런타임 복제는 씬 오버라이드가 적용된 부품 숫자 글자 크기를 그대로 가져왔다. 저작된 티켓 숫자도 같은 크기를 따른다.
-            m_slotTicketText.enableAutoSizing = m_moduleCreditText.enableAutoSizing;
-            m_slotTicketText.fontSizeMin = m_moduleCreditText.fontSizeMin;
-            m_slotTicketText.fontSizeMax = m_moduleCreditText.fontSizeMax;
-            m_slotTicketText.fontSize = m_moduleCreditText.fontSize;
+            var currencyHud = ResolveCurrencyHud();
+            if (currencyHud == null)
+            {
+                if (m_slotTicketText != null && m_moduleCreditText != null)
+                {
+                    m_slotTicketText.enableAutoSizing = m_moduleCreditText.enableAutoSizing;
+                    m_slotTicketText.fontSizeMin = m_moduleCreditText.fontSizeMin;
+                    m_slotTicketText.fontSizeMax = m_moduleCreditText.fontSizeMax;
+                    m_slotTicketText.fontSize = m_moduleCreditText.fontSize;
+                }
 
-            m_moneyCounter.Initialize(m_moneyText, m_moneyRoll);
-            m_moduleCreditCounter.Initialize(m_moduleCreditText, m_moduleCreditRoll);
-            m_slotTicketCounter.Initialize(m_slotTicketText, m_slotTicketRoll);
+                m_moneyCounter.Initialize(m_moneyText, m_moneyRoll);
+                m_moduleCreditCounter.Initialize(m_moduleCreditText, m_moduleCreditRoll);
+                m_slotTicketCounter.Initialize(m_slotTicketText, m_slotTicketRoll);
+            }
+
             BindListeners();
             m_isInitialized = true;
             return true;
@@ -270,6 +318,13 @@ namespace WeaponWorkshop
 
         public void SetBalanceDisplaysVisible(bool _visible)
         {
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.SetBalanceDisplaysVisible(_visible);
+                return;
+            }
+
             if (m_moneyDisplay != null)
             {
                 m_moneyDisplay.gameObject.SetActive(_visible);
@@ -289,22 +344,50 @@ namespace WeaponWorkshop
 
         public void SetSlotTickets(int _amount)
         {
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.SetSlotTickets(_amount);
+                return;
+            }
+
             m_slotTicketCounter.SetTarget(_amount, m_moneyCountDuration);
         }
 
         public void SetModuleCredits(int _amount)
         {
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.SetModuleCredits(_amount);
+                return;
+            }
+
             m_moduleCreditCounter.SetTarget(_amount, m_moneyCountDuration);
         }
 
         public void SetMoneyBalance(int _amount, bool _negative)
         {
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.SetMoneyBalance(_amount, _negative);
+                return;
+            }
+
             m_moneyCounter.SetTarget(_amount, m_moneyCountDuration);
             m_moneyCounter.SetNegative(_negative);
         }
 
         public void ShowDailyRent(int _rent, long _principal, long _interest)
         {
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.ShowDailyRent(_rent, _principal, _interest);
+                return;
+            }
+
             if (m_dailyRentText == null)
             {
                 return;
@@ -322,6 +405,13 @@ namespace WeaponWorkshop
 
         public void HideDailyRent()
         {
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.HideDailyRent();
+                return;
+            }
+
             if (m_dailyRentText != null)
             {
                 m_dailyRentText.gameObject.SetActive(false);
@@ -489,12 +579,26 @@ namespace WeaponWorkshop
 
         public void PulseInsufficientFunds(bool _useModuleCredits)
         {
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.PulseInsufficientFunds(_useModuleCredits);
+                return;
+            }
+
             BalanceDisplay counter = _useModuleCredits ? m_moduleCreditCounter : m_moneyCounter;
             counter.PulseInsufficientFunds(m_insufficientFundsDuration, m_insufficientFundsPulses, m_insufficientFundsScale);
         }
 
         public void RollModuleCreditLoss(int _previousAmount, int _amount)
         {
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.RollModuleCreditLoss(_previousAmount, _amount);
+                return;
+            }
+
             m_moduleCreditCounter.RollLoss(_previousAmount, _amount, m_raidLossRollDuration);
         }
 
@@ -505,11 +609,20 @@ namespace WeaponWorkshop
         {
             DisableConfirmInput();
             HideMorningNotice();
-            m_moneyCounter.Reset();
-            m_moduleCreditCounter.Reset();
-            m_slotTicketCounter.Reset();
-            SetBalanceDisplaysVisible(false);
-            HideDailyRent();
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
+            {
+                hud.ApplyDisabledState();
+            }
+            else
+            {
+                m_moneyCounter.Reset();
+                m_moduleCreditCounter.Reset();
+                m_slotTicketCounter.Reset();
+                SetBalanceDisplaysVisible(false);
+                HideDailyRent();
+            }
+
             SetTodayIncomeVisible(false);
             SetPanelVisible(false);
             SetReopenVisible(false);
@@ -646,20 +759,28 @@ namespace WeaponWorkshop
 
         private void ApplyInitialHiddenState()
         {
-            HideDailyRent();
-            if (m_slotTicketDisplay != null)
+            var hud = ResolveCurrencyHud();
+            if (hud != null)
             {
-                m_slotTicketDisplay.gameObject.SetActive(false);
+                hud.ApplyDisabledState();
             }
-
-            if (m_moneyDisplay != null)
+            else
             {
-                m_moneyDisplay.gameObject.SetActive(false);
-            }
+                HideDailyRent();
+                if (m_slotTicketDisplay != null)
+                {
+                    m_slotTicketDisplay.gameObject.SetActive(false);
+                }
 
-            if (m_moduleCreditDisplay != null)
-            {
-                m_moduleCreditDisplay.gameObject.SetActive(false);
+                if (m_moneyDisplay != null)
+                {
+                    m_moneyDisplay.gameObject.SetActive(false);
+                }
+
+                if (m_moduleCreditDisplay != null)
+                {
+                    m_moduleCreditDisplay.gameObject.SetActive(false);
+                }
             }
 
             SetTodayIncomeVisible(false);
@@ -678,12 +799,16 @@ namespace WeaponWorkshop
 
         private bool ValidateReferences()
         {
+            var hud = ResolveCurrencyHud();
+            bool currencyValid = hud != null || (
+                m_moneyDisplay != null && m_moneyText != null &&
+                m_moduleCreditDisplay != null && m_moduleCreditText != null &&
+                m_dailyRentText != null && m_slotTicketDisplay != null && m_slotTicketText != null &&
+                m_moneyRoll != null && m_moduleCreditRoll != null && m_slotTicketRoll != null);
+
             // 다음 날·다시 열기·닫기·안내 문구는 프리팹에 아직 연결되지 않은 미사용 경로라 필수가 아니다.
             bool isValid = m_panel != null && m_summaryText != null && m_receiptTitle != null &&
-                m_confirmButton != null && m_moneyDisplay != null && m_moneyText != null &&
-                m_moduleCreditDisplay != null && m_moduleCreditText != null && m_todayIncomeText != null &&
-                m_dailyRentText != null && m_slotTicketDisplay != null && m_slotTicketText != null &&
-                m_moneyRoll != null && m_moduleCreditRoll != null && m_slotTicketRoll != null;
+                m_confirmButton != null && m_todayIncomeText != null && currencyValid;
             if (!isValid && !m_hasLoggedReferenceError)
             {
                 m_hasLoggedReferenceError = true;
@@ -695,7 +820,7 @@ namespace WeaponWorkshop
                     $"todayIncomeText={m_todayIncomeText != null}, dailyRentText={m_dailyRentText != null}, " +
                     $"slotTicketDisplay={m_slotTicketDisplay != null}, slotTicketText={m_slotTicketText != null}, " +
                     $"moneyRoll={m_moneyRoll != null}, moduleCreditRoll={m_moduleCreditRoll != null}, " +
-                    $"slotTicketRoll={m_slotTicketRoll != null}. " +
+                    $"slotTicketRoll={m_slotTicketRoll != null}, currencyHud={hud != null}. " +
                     "Tools/UI/Authoring/Settlement/Author 실행 결과와 DaySettlementUI 직렬화 참조를 확인하세요.");
             }
 

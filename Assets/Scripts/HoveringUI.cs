@@ -117,7 +117,7 @@ namespace WeaponWorkshop
             m_view.BindReferences(panel, title, description, interact, textArea, point1, point2, connector,
                 connectorWidth, textOffset, screenPadding, scanModeText, scanLoadingDiameter,
                 scanLoadingThickness, scanTextRevealDuration, tagGrid, tagTemplate);
-            m_presenter = new HoverTooltipPresenter(m_view, palette, tagSource);
+            m_presenter = new HoverTooltipPresenter(m_view, tagSource);
             if (!m_presenter.Initialize())
             {
                 m_presenter = null;
