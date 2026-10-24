@@ -229,7 +229,8 @@ namespace WeaponWorkshop
         {
             if (m_resultSortingCanvas != null)
             {
-                m_resultSortingCanvas.enabled = _enabled;
+                m_resultSortingCanvas.enabled = true;
+                m_resultSortingCanvas.overrideSorting = _enabled;
             }
         }
 
@@ -441,6 +442,7 @@ namespace WeaponWorkshop
 
         private void ApplyInitialHiddenState()
         {
+            SetResultSortingEnabled(false);
             Hide();
             SetScanModeTextVisible(false);
         }

@@ -26,6 +26,10 @@ namespace WeaponWorkshop
         private PlayerScanMode m_scanner;
         private bool m_muzzleTooltipObserved;
         private ModuleData m_resultModule;
+        private string m_completedScanText;
+        private Color m_completedScanColor;
+        private Vector2 m_completedScanPointer;
+        private float m_completedScanVisibleUntil;
         private bool m_isInitialized;
         private bool m_hasLoggedDependencyError;
 
@@ -100,6 +104,7 @@ namespace WeaponWorkshop
         public void HandleDisabled()
         {
             m_muzzleTooltipObserved = false;
+            m_completedScanVisibleUntil = 0f;
             ClearResultModule();
             Hide();
         }
@@ -168,6 +173,7 @@ namespace WeaponWorkshop
                 m_view.SetScanLoadingVisible(false);
                 if (GameManager.GameplayBlocked)
                 {
+                    m_completedScanVisibleUntil = 0f;
                     Hide();
                     return;
                 }
@@ -175,6 +181,17 @@ namespace WeaponWorkshop
                 if (scanning)
                 {
                     ShowScan();
+                    return;
+                }
+
+                if (Time.unscaledTime < m_completedScanVisibleUntil)
+                {
+                    m_view.SetPointerPosition(m_completedScanPointer);
+                    m_view.SetTagGridVisible(false);
+                    m_view.SetDescriptionVisible(true);
+                    m_view.Show("스캔 완료", m_completedScanText);
+                    m_view.SetTitleColor(m_completedScanColor);
+                    m_view.SetDescriptionColor(m_view.BodyColor);
                     return;
                 }
 
@@ -331,6 +348,7 @@ namespace WeaponWorkshop
         {
             if (!m_scanner.HasTarget)
             {
+                m_completedScanVisibleUntil = 0f;
                 m_view.ShowScanLoading(1f, "Scan mode");
                 return;
             }
@@ -342,6 +360,7 @@ namespace WeaponWorkshop
             m_view.SetInteractVisible(false);
             if (!m_scanner.ScanComplete)
             {
+                m_completedScanVisibleUntil = 0f;
                 m_view.ShowScanLoading(m_scanner.ScanProgress, "Scanning");
                 return;
             }
@@ -382,8 +401,10 @@ namespace WeaponWorkshop
             m_view.Show("스캔 완료", m_text.ToString());
             m_view.SetTitleColor(m_scanner.TargetColor);
             m_view.SetDescriptionColor(m_view.BodyColor);
-            float reveal = m_view.RevealDuration <= 0f ? 1f : Mathf.Clamp01(m_scanner.CompletedElapsed / m_view.RevealDuration);
-            m_view.SetReveal(reveal);
+            m_completedScanText = m_text.ToString();
+            m_completedScanColor = m_scanner.TargetColor;
+            m_completedScanPointer = m_interaction.HoverPointer;
+            m_completedScanVisibleUntil = Time.unscaledTime + 2f;
         }
 
         private void AppendScanResistance(string _label, float _value, float _highest)

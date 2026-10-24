@@ -111,9 +111,13 @@ namespace WeaponWorkshop
                 return true;
             }
 
-            // 야간 정산·지도·습격 결과 화면은 하위 화면을 닫거나 일시정지로 넘어가지 않는다.
             if (m_gameManager.IsNight)
             {
+                NightRaidController raid = NightRaidController.Instance;
+                if (raid != null && raid.IsMapOpen)
+                {
+                    raid.CloseMap();
+                }
                 return true;
             }
 
