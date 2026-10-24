@@ -25,8 +25,8 @@ namespace WeaponWorkshop
         public bool IsEditing => IsInWorkshop && !IsTransitioning;
         public Rect RotationViewport => playerCamera.pixelRect;
         public Camera WorkshopCamera => playerCamera;
-        private UIManager workshopUI;
-        public void BindWorkshopUI(UIManager owner) => workshopUI = owner;
+        private WorkshopDirectionMarksUI workshopUI;
+        public void BindWorkshopUI(WorkshopDirectionMarksUI owner) => workshopUI = owner;
         private float RotationRadius => workshopUI != null ? workshopUI.GetWorkshopRotationRadius(RotationViewport) : 0f;
         public bool CanEnterWorkshop => isActiveAndEnabled && controls != null &&
             playerCamera != null && builder != null && !IsInWorkshop && !IsTransitioning;
