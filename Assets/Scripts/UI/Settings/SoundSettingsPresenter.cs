@@ -79,6 +79,7 @@ namespace WeaponWorkshop
             m_view.MuteChanged += OnMuteChanged;
             m_view.SongSelected -= OnSongSelected;
             m_view.SongSelected += OnSongSelected;
+            ApplySongRowVisibility();
 
             m_isInitialized = true;
             return true;
@@ -181,6 +182,11 @@ namespace WeaponWorkshop
 
         private void OnSongSelected(BgmId _id)
         {
+            if (!IsSelectableInMain(_id))
+            {
+                return;
+            }
+
             // 선택 요청은 도메인이 잠금·상태를 판정하고, 결과와 무관하게 표시를 다시 동기화한다.
             SoundManager.TryChooseMainTrack(_id);
             Sync();
@@ -208,7 +214,7 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 볼륨·음소거·곡 잠금과 실제 재생 곡 표시를 View에 반영한다.
-        /// SoundManager와 테이블 상태를 읽어 현재 행 표시를 갱신한다.
+        /// SoundManager와 테이블 상태를 읽어 비선택 곡을 숨기고 선택 가능 행의 상호작용·라벨을 갱신한다.
         /// </summary>
         private void Sync()
         {
@@ -232,11 +238,42 @@ namespace WeaponWorkshop
                 }
 
                 var track = SoundInfo.Track(row.id);
+                bool selectable = IsSelectableInMain(row.id);
+                m_view.SetSongRowVisible(row, selectable);
+                if (!selectable)
+                {
+                    continue;
+                }
+
                 // 목록 표시와 실제 선택 모두 테이블의 Main 선택 허용 여부를 따른다.
-                bool unlocked = track != null && SoundManager.IsMainTrackUnlocked(row.id);
-                string label = (unlocked ? "" : "잠김 · ") + (track?.label ?? row.id.ToString()) +
+                bool unlocked = SoundManager.IsMainTrackUnlocked(row.id);
+                string label = (unlocked ? "" : "잠김 · ") + (track.label ?? row.id.ToString()) +
                     (SoundManager.IsPlayingTrack(row.id) ? "  ♪" : "");
                 m_view.SetSongRowState(row, label, unlocked && SoundManager.CanChooseMainTrack);
+            }
+        }
+
+        // 표의 selectableInMain이 꺼진 곡(현재 DaySecond)은 목록에서 숨기고 선택도 받지 않는다.
+        private static bool IsSelectableInMain(BgmId _id)
+        {
+            var track = SoundInfo.Track(_id);
+            return track != null && track.selectableInMain;
+        }
+
+        private void ApplySongRowVisibility()
+        {
+            IReadOnlyList<SoundSettingsView.SongRow> rows = m_view.SongRows;
+            if (rows == null)
+            {
+                return;
+            }
+
+            foreach (SoundSettingsView.SongRow row in rows)
+            {
+                if (row != null)
+                {
+                    m_view.SetSongRowVisible(row, IsSelectableInMain(row.id));
+                }
             }
         }
 

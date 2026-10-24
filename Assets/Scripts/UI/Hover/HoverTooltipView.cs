@@ -18,6 +18,8 @@ namespace WeaponWorkshop
         [SerializeField] private Canvas m_resultSortingCanvas;
         [SerializeField] private TMP_Text m_title;
         [SerializeField] private TMP_Text m_description;
+        // 미획득 모듈 해금 상자를 조준할 때만 설명 아래에 켜는 저작된 "Q키를 눌러 스캔하기" 안내.
+        [SerializeField] private TMP_Text m_moduleCrateScanHint;
         [SerializeField] private GameObject m_interact;
         [SerializeField] private RectTransform m_textArea;
         [SerializeField] private RectTransform m_point1;
@@ -161,6 +163,7 @@ namespace WeaponWorkshop
 
         public void Hide()
         {
+            SetModuleCrateScanHintVisible(false);
             if (m_interact != null)
             {
                 m_interact.SetActive(false);
@@ -328,7 +331,7 @@ namespace WeaponWorkshop
         /// <summary>
         /// 제목·본문 표시와 포인터 기준 패널·연결선 배치를 담당합니다.
         /// </summary>
-        public void Show(string _heading, string _body, bool _richText = false)
+        public void Show(string _heading, string _body, bool _richText = false, bool _showModuleCrateScanHint = false)
         {
             if (m_title != null)
             {
@@ -350,8 +353,9 @@ namespace WeaponWorkshop
                 return;
             }
 
+            bool hintChanged = SetModuleCrateScanHintVisible(_showModuleCrateScanHint);
             m_description.richText = _richText;
-            bool changed = m_title.text != _heading || m_description.text != _body;
+            bool changed = m_title.text != _heading || m_description.text != _body || hintChanged;
             if (m_title.text != _heading)
             {
                 m_title.text = _heading;
@@ -421,6 +425,18 @@ namespace WeaponWorkshop
                     m_connector.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
                 }
             }
+        }
+
+        // 상태가 바뀌었으면 true를 돌려 레이아웃을 다시 계산하게 한다.
+        private bool SetModuleCrateScanHintVisible(bool _visible)
+        {
+            if (m_moduleCrateScanHint == null || m_moduleCrateScanHint.gameObject.activeSelf == _visible)
+            {
+                return false;
+            }
+
+            m_moduleCrateScanHint.gameObject.SetActive(_visible);
+            return true;
         }
 
         private void ApplyInitialHiddenState()

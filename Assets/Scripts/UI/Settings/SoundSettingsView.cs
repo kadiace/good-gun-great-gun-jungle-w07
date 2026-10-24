@@ -287,6 +287,17 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
+        /// 곡 행 표시 여부를 갱신합니다. 표에서 Main 선택이 막힌 곡은 행을 숨깁니다.
+        /// </summary>
+        public void SetSongRowVisible(SongRow _row, bool _visible)
+        {
+            if (_row != null && _row.button != null && _row.button.gameObject.activeSelf != _visible)
+            {
+                _row.button.gameObject.SetActive(_visible);
+            }
+        }
+
+        /// <summary>
         /// 곡 행의 문장과 선택 가능 상태를 갱신합니다.
         /// </summary>
         public void SetSongRowState(SongRow _row, string _label, bool _interactable)

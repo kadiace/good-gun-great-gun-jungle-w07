@@ -483,7 +483,8 @@ namespace WeaponWorkshop.EditorTools
                 {
                     SerializedProperty songRow = songsProp.GetArrayElementAtIndex(i);
                     Button songBtn = songRow.FindPropertyRelative("button")?.objectReferenceValue as Button;
-                    if (songBtn != null)
+                    // 표에서 Main 선택이 막혀 저작 상태가 비활성인 곡 행(DaySecond)은 탐색 체인에서 뺀다.
+                    if (songBtn != null && songBtn.gameObject.activeSelf)
                     {
                         chain.Add(songBtn);
                     }

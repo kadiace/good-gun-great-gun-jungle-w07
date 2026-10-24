@@ -18,6 +18,11 @@ namespace WeaponWorkshop.EditorTools
         private const string UI_MANAGER_PREFAB_PATH = "Assets/Prefabs/Managers/UIManager.prefab";
         private const string SCAN_LOADING_NAME = "ScanLoading";
         private const string SCAN_LOADING_TEXT_NAME = "ScanningText";
+        private const string MODULE_CRATE_SCAN_HINT_NAME = "Text_ModuleCrateScanHint";
+        private const string MODULE_CRATE_SCAN_HINT_TEXT = "Q키를 눌러 스캔하기";
+        // develop 원본(2560 기준 28, 자동 크기 22~28)의 0.75배.
+        private const float MODULE_CRATE_SCAN_HINT_FONT_SIZE = 21f;
+        private const float MODULE_CRATE_SCAN_HINT_FONT_SIZE_MIN = 16.5f;
 
         // 기존 HoveringUI.CreateScanLoading의 값과 같다.
         private const float SCAN_TEXT_FONT_SIZE = 19.5f;
@@ -53,7 +58,7 @@ namespace WeaponWorkshop.EditorTools
 
                 Debug.Log(
                     "[UIAuthoring] OK HoverOrder/Author UIManager.prefab" +
-                    "(ScanLoading·ScanningText 저작, HoverTooltipView·CustomerRequirementsView 연결)");
+                    "(ScanLoading·ScanningText·Text_ModuleCrateScanHint 저작, HoverTooltipView·CustomerRequirementsView 연결)");
             }
             finally
             {
@@ -108,7 +113,19 @@ namespace WeaponWorkshop.EditorTools
                 return error;
             }
 
-            HoverTooltipView tooltipView = WireTooltipView(hoverBridge, hoverSo, scanLoading, scanLoadingText);
+            TMP_Text description = hoverSo.FindProperty("description").objectReferenceValue as TMP_Text;
+            if (description == null)
+            {
+                return "HoveringUI.description 참조가 비어 있습니다";
+            }
+
+            TMP_Text scanHint = GetOrCreateModuleCrateScanHint(description, out error);
+            if (scanHint == null)
+            {
+                return error;
+            }
+
+            HoverTooltipView tooltipView = WireTooltipView(hoverBridge, hoverSo, scanLoading, scanLoadingText, scanHint);
             if (tooltipView == null)
             {
                 return "HoverTooltipView 연결에 실패했습니다";
@@ -118,7 +135,7 @@ namespace WeaponWorkshop.EditorTools
         }
 
         private static HoverTooltipView WireTooltipView(HoveringUI bridge, SerializedObject bridgeSo,
-            ScanLoadingGraphic scanLoading, TMP_Text scanLoadingText)
+            ScanLoadingGraphic scanLoading, TMP_Text scanLoadingText, TMP_Text scanHint)
         {
             HoverTooltipView view = bridge.GetComponent<HoverTooltipView>();
             if (view == null)
@@ -146,6 +163,7 @@ namespace WeaponWorkshop.EditorTools
             CopyFloat(bridgeSo, "scanTextRevealDuration", viewSo, "m_scanTextRevealDuration");
             viewSo.FindProperty("m_scanLoading").objectReferenceValue = scanLoading;
             viewSo.FindProperty("m_scanLoadingText").objectReferenceValue = scanLoadingText;
+            viewSo.FindProperty("m_moduleCrateScanHint").objectReferenceValue = scanHint;
 
             // 습격 결과 화면의 모듈 상세 툴팁이 결과 화면 위에 그려지도록 패널에 정렬 Canvas를 둔다(평소 비활성).
             GameObject panel = bridgeSo.FindProperty("panel").objectReferenceValue as GameObject;
@@ -283,6 +301,61 @@ namespace WeaponWorkshop.EditorTools
             text.raycastTarget = false;
             text.color = SCAN_LOADING_COLOR;
             text.text = string.Empty;
+            EditorUtility.SetDirty(text);
+            return text;
+        }
+
+        // 모듈 해금 상자 스캔 안내. TextArea 레이아웃에서 설명 바로 아래에 오도록 형제 순서를 맞춘다.
+        private static TMP_Text GetOrCreateModuleCrateScanHint(TMP_Text description, out string error)
+        {
+            error = null;
+            Transform textArea = description.transform.parent;
+            if (textArea == null)
+            {
+                error = "HoveringUI.description의 부모(TextArea)를 찾지 못했습니다";
+                return null;
+            }
+
+            Transform existing = textArea.Find(MODULE_CRATE_SCAN_HINT_NAME);
+            TextMeshProUGUI text;
+            if (existing == null)
+            {
+                GameObject hintObject = new GameObject(MODULE_CRATE_SCAN_HINT_NAME, typeof(RectTransform),
+                    typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                hintObject.layer = description.gameObject.layer;
+                hintObject.transform.SetParent(textArea, false);
+                text = hintObject.GetComponent<TextMeshProUGUI>();
+                EditorUtility.SetDirty(hintObject);
+            }
+            else
+            {
+                text = existing.GetComponent<TextMeshProUGUI>();
+                if (text == null)
+                {
+                    error = "TextArea의 Text_ModuleCrateScanHint 오브젝트에 TextMeshProUGUI가 없습니다";
+                    return null;
+                }
+            }
+
+            int targetIndex = description.transform.GetSiblingIndex() + 1;
+            if (text.transform.GetSiblingIndex() != targetIndex)
+            {
+                text.transform.SetSiblingIndex(targetIndex);
+            }
+
+            text.font = description.font;
+            text.fontSharedMaterial = description.fontSharedMaterial;
+            text.text = MODULE_CRATE_SCAN_HINT_TEXT;
+            text.color = new Color(0.5f, 0.9f, 1f, 1f);
+            text.enableAutoSizing = true;
+            text.fontSize = MODULE_CRATE_SCAN_HINT_FONT_SIZE;
+            text.fontSizeMax = MODULE_CRATE_SCAN_HINT_FONT_SIZE;
+            text.fontSizeMin = MODULE_CRATE_SCAN_HINT_FONT_SIZE_MIN;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.richText = false;
+            text.raycastTarget = false;
+            text.gameObject.SetActive(false);
             EditorUtility.SetDirty(text);
             return text;
         }

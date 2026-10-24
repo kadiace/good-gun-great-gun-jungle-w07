@@ -62,6 +62,8 @@ develop의 기능을 개편 구조로 옮겼다. 2560 기준 픽셀 값은 0.75�
 - 코어 배출기: 저장 슬롯은 장착 중 교체 허용, 지급 중 재진입 차단, 제작 실패 알림, 전시 무기 바라보며 가져가기(호버 상호작용 안내 포함).
 - Main 씬: develop의 커스텀 UI·휴지통 위치 오버라이드를 적용했다(UIManager 크기·위치는 0.75배).
 - NightRaid_Airport: 씬 안 목표 표시(ObjectiveStatus·ObjectiveMarkerTemplate) 크기·글자를 다른 습격 씬과 같은 1920 기준 값으로 맞췄고, 소스와 같은 UIManager 오버라이드를 정리했다(Main 20건 포함).
+- 모듈 상자 스캔 안내: `HoverOrder/Author`가 TextArea 설명 아래 `Text_ModuleCrateScanHint`(글자 21, 자동 16.5~21)를 저작해 `HoverTooltipView`에 연결하고, Presenter가 미획득 `ModuleUnlockCrate` 조준 때만 켠다. 브리지 `HoveringUI`에는 필드를 두지 않는다.
+- 사운드 곡 목록: `SoundSettingsPresenter`가 표의 `selectableInMain`이 꺼진 곡(DaySecond) 행을 초기화·갱신 때 숨기고 선택도 받지 않는다. 프리팹은 DaySecond 비활성·라벨 재배치·목록 높이 121.5(develop 162의 0.75배), 탐색 체인은 비활성 행을 건너뛴다.
 - `SceneOverrides` 정리는 에디터 메모리의 빌드 씬 목록에 `ProjectSettings/EditorBuildSettings.asset` 파일 목록을 더해 돈다. git 병합으로 바뀐 빌드 목록은 에디터를 재시작해야 메모리에 반영된다.
 
 ## 남은 범위

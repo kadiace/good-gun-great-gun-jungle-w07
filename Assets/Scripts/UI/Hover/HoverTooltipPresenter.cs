@@ -446,7 +446,7 @@ namespace WeaponWorkshop
             }
 
             m_view.Show(label.Title, (tutorialBlocked && !slotMachine) || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
-                retire || slotMachine);
+                retire || slotMachine, target is ModuleUnlockCrate crate && !crate.IsClaimed);
             m_view.SetInteractVisible(CanInteract());
             m_view.SetTitleColor(Color.white);
             return true;
