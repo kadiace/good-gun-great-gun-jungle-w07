@@ -58,6 +58,7 @@ MonoBehaviour:
   warningTurnDuration: 0.25
   blockedInteractionMessage: "\uD29C\uD1A0\uB9AC\uC5BC \uC911\uC5D0\uB294 \uC548\uB0B4\uB41C
     \uB300\uC0C1\uACFC\uB9CC \uC0C1\uD638\uC791\uC6A9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+  _shutterLightGuide: {fileID: 0}
   practiceMoney: 5000
   practiceModuleCredits: 200
 --- !u!114 &1929462466736166469

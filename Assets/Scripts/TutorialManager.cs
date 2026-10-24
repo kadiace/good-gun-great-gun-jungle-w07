@@ -29,6 +29,8 @@ namespace WeaponWorkshop
         private Coroutine warningTurn;
         [SerializeField, Min(.01f)] private float warningTurnDuration = .25f;
         [SerializeField] private string blockedInteractionMessage = "튜토리얼 중에는 안내된 대상과만 상호작용할 수 있습니다.";
+        [Header("셔터 라이트 가이드")]
+        [SerializeField] private GameObject _shutterLightGuide;
         [Header("야간 습격 준비")]
         [SerializeField] private WeaponDisposal _raidDisposal;
         [SerializeField] private Transform _raidDisposalPoint;
@@ -182,6 +184,7 @@ namespace WeaponWorkshop
         {
             if (Instance != null && Instance != this) { Destroy(this); return; }
             Instance = this; current = null; StepIndex = 0; ownsDialogue = false; stepIntroductionOpen = false; dayZeroOwner = null;
+            SetShutterLightGuideActive(false);
             if (shutter == null) shutter = FindFirstObjectByType<NextDayInteractable>();
             if (customerBell == null) customerBell = FindFirstObjectByType<Bell>();
             if (workbench == null) workbench = FindFirstObjectByType<Workbench>();
@@ -242,6 +245,7 @@ namespace WeaponWorkshop
         private void CompleteDayZero()
         {
             RestoreRetirementPresentation();
+            SetShutterLightGuideActive(false);
             ClearShootingTarget(); pendingWarnings.Clear();
             if (endingTransition != null)
             {
@@ -278,6 +282,19 @@ namespace WeaponWorkshop
         /// <summary>
         /// 현재 단계의 준비·대사·은퇴 소개 연출을 표시합니다.
         /// </summary>
+        /// <summary>
+        /// 셔터 열기 단계용 라이트 가이드의 활성화 상태를 변경합니다.
+        /// 대상 오브젝트가 연결되어 있을 때만 활성 여부를 갱신합니다.
+        /// </summary>
+        /// <param name="active">라이트 가이드를 켤지 여부입니다.</param>
+        private void SetShutterLightGuideActive(bool active)
+        {
+            if (_shutterLightGuide != null)
+            {
+                _shutterLightGuide.SetActive(active);
+            }
+        }
+
         private void ShowStep()
         {
             stepIntroductionOpen = false;
@@ -286,6 +303,7 @@ namespace WeaponWorkshop
             while (CurrentSequence != null && StepIndex < CurrentSequence.steps.Length && CurrentSequence.steps[StepIndex] == null) StepIndex++;
             var step = CurrentStep;
             if (step == null) { Finish(); return; }
+            SetShutterLightGuideActive(step.id == "open-shutter");
             LogStepStarted(step);
             PrepareStep(step);
             if (step.target == TutorialTarget.ShootingTarget && shootingTarget == null &&
@@ -647,7 +665,7 @@ namespace WeaponWorkshop
             LogTutorialEnded(reason);
             var done = current?.done;
             var completed = current?.completed;
-            ReleaseDialogue(); current = null; StepIndex = 0; Changed?.Invoke();
+            ReleaseDialogue(); SetShutterLightGuideActive(false); current = null; StepIndex = 0; Changed?.Invoke();
             completed?.Invoke(reason == "completed");
             done?.Invoke(); BeginNext();
         }
@@ -660,7 +678,7 @@ namespace WeaponWorkshop
             for (int i = 0; i < count; i++) { var request = waiting.Dequeue(); if (request.owner != owner) waiting.Enqueue(request); }
             if (current == null || current.owner != owner) return;
             LogTutorialEnded("cancelled");
-            ReleaseDialogue(); RestoreRetirementPresentation(); current = null; StepIndex = 0; Changed?.Invoke(); BeginNext();
+            ReleaseDialogue(); RestoreRetirementPresentation(); SetShutterLightGuideActive(false); current = null; StepIndex = 0; Changed?.Invoke(); BeginNext();
         }
 #if UNITY_EDITOR
         public void DebugEndTutorial()
@@ -934,6 +952,7 @@ namespace WeaponWorkshop
             warningTurn = null;
             waiting.Clear(); ReleaseDialogue();
             RestoreRetirementPresentation();
+            SetShutterLightGuideActive(false);
             if (warningOpen && dialogue != null) dialogue.Hide();
             if (warningOpen && GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
             warningOpen = false; current = null; StepIndex = 0; CompleteDayZero();
