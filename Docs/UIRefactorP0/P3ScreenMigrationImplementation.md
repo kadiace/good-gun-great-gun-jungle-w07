@@ -48,7 +48,7 @@
 - 탐색: `Tools/UI/Authoring/Navigation/Author`가 화면별 버튼을 끝에서 순환하지 않는 Explicit Navigation으로 저작한다. View는 열 때 기본 선택, 닫을 때 `UIRoot` 포커스 복원을 쓴다. 저장 삭제 확인은 취소가 기본이다. 매 프레임 갱신되는 HUD(커스텀 화면 등)는 표시 상태가 바뀔 때만 포커스를 옮기고, 작업대 무기 이름 입력칸은 기본 선택하지 않는다(입력칸이 선택되면 텍스트 입력 중으로 작업대 조작 전체가 막힘).
 - 입력 정책: `UI/Common/UIInputPolicy`가 커서·일시정지/야간 시간 배율·Game/Workshop 액션맵을 모은다. 시간 배율은 일시정지·야간·초기화·로비 전환 때만 바꾼다. Build·대화·확인창 액션맵은 각 화면(`WorkshopSession.SetEditing`, `DialogueView`, `FeedbackChoiceView`)이 기존처럼 직접 켜고 끈다. 일시정지 위 이탈 확인창(D03)·Suspend 대출 안내 입력이 정책에 덮이지 않게 하기 위한 경계다. 확인창 열림 여부는 별도 플래그 없이 UI 상태를 읽는다.
 - 월드 상호작용: 코어 배출기·다음 날 셔터는 표시 요청 Presenter, 해금 알림은 View/Presenter로 나눴다. 마감 버튼·주문 외형 가이드는 표시 UI가 없어 기존 구조를 유지한다.
-- 씬 정리: `Tools/UI/Authoring/SceneOverrides/Clean`이 빌드 씬의 UIManager·StartUI 인스턴스에서 프리팹 값과 같은 오버라이드만 제거한다(1084건 제거, 활성 상태·다른 값·씬 참조·추가 오브젝트는 유지). 추출된 엔드 상자 화면 스케일러도 1920×1080 match 1이다.
+- 씬 정리: `Tools/UI/Authoring/SceneOverrides/Clean`이 빌드 씬의 UIManager·StartUI 인스턴스에서 프리팹 값과 같은 오버라이드만 제거한다(1084건 제거, 활성 상태·다른 값·씬 참조·추가 오브젝트는 유지). 추출된 엔드 상자 화면 스케일러도 1920×1080 match 1이다. `DryRunDangling`·`CleanDangling`은 프리팹에서 대상이 사라진 오버라이드(target 누락·fileID 0)를 빌드 씬 + Assets/Scenes 전체 .unity에서 찾아 제거한다.
 - 저작 명령 전체를 두 번 연속 실행해도 프리팹·씬이 바뀌지 않는다.
 
 ## develop 병합 반영

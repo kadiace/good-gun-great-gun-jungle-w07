@@ -80,7 +80,7 @@ namespace WeaponWorkshop
             foreach (StatType type in AllTypes) Add(type, other.Get(type));
         }
 
-        // 머지: Scripts/WeaponStats.cs 쪽 멤버 합침 (PlacedBlock, WorkshopStatsUI가 사용).
+        // 머지: Scripts/WeaponStats.cs 쪽 멤버 합침 (PlacedBlock가 사용).
         // 현재 규칙: 관통력과 폭발력이 반동에 같은 비중으로 기여.
         public float Recoil => penetration + explosion;
 
