@@ -6,6 +6,14 @@
 
 **불변 조건**: UIManager.prefab 루트 GameObject(`5513238841504740859`)·루트 RectTransform(`4338719179332918583`)·EventSystem의 fileID는 바꾸지 않는다. 씬의 `player`/`builder`/`gameManager` 연결, 씬에서 루트에 추가한 오브젝트(Main의 SlotMachineCostPopup·RetirePanel·RetireUI, 습격 7씬의 RaidObjectivePanel), 17씬의 EventSystem 입력 연결이 전부 여기에 걸려 있다(⑤ §4·§5-1).
 
+## 0. 진행 상태 (feature/uimanager-split)
+
+- P0·P1 코드 경계, P2 브리지 이동, P3 중첩 프리팹 추출, P4 씬 재연결, P5 습격 변형까지 적용했다. 플레이 확인은 없다.
+- 실제 구조는 아래 §2 안과 다르다. 그리기 순서를 바꾸지 않으려고 묶음을 합치지 않고 레이어 직속 오브젝트를 하나씩 중첩 프리팹(32개)으로 뽑았다. 브리지가 있는 화면만 항상 켜진 화면 묶음(`*Screen`, UIScreenRoot)으로 감쌌다(15개). PresetChoicePanel은 PopupLayer에 그대로 두고 Hud의 PresetPanelScreen이 참조한다.
+- 추출 때 Unity가 fileID를 유지해 씬 재연결은 옮긴 컴포넌트 38개(씬 참조 13건)만 필요했다.
+- P5는 공통+공방+사격장을 담은 UIManager.prefab(Main·테스트 씬)과, 공방 편집·프리셋·무기 코드·사격장 14개를 뺀 UIManager_Raid 변형(습격 9씬) 두 가지다. 정산·날짜 전환·튜토리얼·대화·지도는 두 쪽 모두에 남는다.
+- 남은 것: 기존 저작 명령이 중첩 프리팹을 직접 열도록 바꾸기, StartUI_Manager와 Feedback 화면 공유, DaySettlementUI의 재화 HUD 대체 경로 정리.
+
 ## 1. 현재 UIManager가 맡은 역할
 
 UIManager는 클래스(371줄)와 프리팹(921개 오브젝트, 루트 컴포넌트 44개) 두 층에서 모두 과적재다.

@@ -10,7 +10,6 @@ namespace WeaponWorkshop
         [SerializeField] private TMPro.TMP_Text title;
         [SerializeField] private TMPro.TMP_Text description;
         [SerializeField] private GameObject interact;
-        [SerializeField] private ModulePaletteUI palette;
         [SerializeField] private RectTransform textArea;
         [SerializeField] private RectTransform point1;
         [SerializeField] private RectTransform point2;

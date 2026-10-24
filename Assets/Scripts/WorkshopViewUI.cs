@@ -13,7 +13,6 @@ namespace WeaponWorkshop
     [DefaultExecutionOrder(100)]
     public sealed class WorkshopViewUI : MonoBehaviour
     {
-        [SerializeField] private UIManager owner;
         // 아래 직렬화 필드는 씬 오버라이드를 포함한 실효 참조 원본이다(FormerlySerializedAs extentUI 포함).
         // Awake에서 m_view.Configure로 View에 옮겨지고, 그리드·방향·층 표시는 브리지가 계속 직접 갱신한다.
         [SerializeField] private GameObject controlsRoot;
