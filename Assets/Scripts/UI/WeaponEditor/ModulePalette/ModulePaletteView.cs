@@ -211,6 +211,22 @@ namespace WeaponWorkshop
             return m_paletteSlotById.TryGetValue(_moduleId, out ModuleSlotUI slot) ? slot : null;
         }
 
+        public bool FocusHotbarSlot(int _index)
+        {
+            if (m_hotbarSlots == null || _index < 0 || _index >= m_hotbarSlots.Length)
+            {
+                return false;
+            }
+
+            ModuleSlotUI slot = m_hotbarSlots[_index];
+            if (slot == null || slot.Button == null)
+            {
+                return false;
+            }
+
+            return UIRoot.SetFocus(slot.Button);
+        }
+
         /// <summary>
         /// 브리지의 레이아웃 설정을 현재 RectTransform 크기에 맞춰 다시 적용합니다.
         /// 창 크기가 실제로 바뀔 때만 OnRectTransformDimensionsChange에서 호출됩니다.

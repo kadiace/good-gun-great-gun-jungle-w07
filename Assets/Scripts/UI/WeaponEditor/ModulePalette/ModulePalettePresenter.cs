@@ -63,6 +63,11 @@ namespace WeaponWorkshop
             }
 
             m_builder = _builder;
+            if (m_builder != null)
+            {
+                m_builder.FavoriteSelected += OnFavoriteSelected;
+            }
+
             m_isInitialized = true;
             EnsureModuleList();
             return true;
@@ -70,6 +75,11 @@ namespace WeaponWorkshop
 
         public void Dispose()
         {
+            if (m_builder != null)
+            {
+                m_builder.FavoriteSelected -= OnFavoriteSelected;
+            }
+
             ClearHover();
             CancelDrag();
             m_view?.HideDragGhost();
@@ -83,7 +93,17 @@ namespace WeaponWorkshop
                 return;
             }
 
+            if (m_builder != null)
+            {
+                m_builder.FavoriteSelected -= OnFavoriteSelected;
+            }
+
             m_builder = _builder;
+            if (m_builder != null)
+            {
+                m_builder.FavoriteSelected += OnFavoriteSelected;
+            }
+
             m_lastState = int.MinValue;
             EnsureModuleList();
         }
@@ -151,7 +171,23 @@ namespace WeaponWorkshop
                 return;
             }
 
-            m_builder.SelectModule(_slot.ModuleId);
+            if (m_builder.SelectModule(_slot.ModuleId))
+            {
+                if (_slot.FavoriteIndex >= 0)
+                {
+                    m_view?.FocusHotbarSlot(_slot.FavoriteIndex);
+                }
+            }
+        }
+
+        private void OnFavoriteSelected(int _index)
+        {
+            if (m_view == null)
+            {
+                return;
+            }
+
+            m_view.FocusHotbarSlot(_index);
         }
 
         public void BeginDrag(ModuleSlotUI _slot, PointerEventData _eventData)
