@@ -427,6 +427,8 @@ namespace WeaponWorkshop
                 return;
             }
 
+            OnboardingManager.NotifyCustomOpened();
+
             Camera listenerCamera = Camera.main;
             WorkshopSoundEffects.RaiseAssemblyCompleted(listenerCamera != null
                 ? listenerCamera.transform.position

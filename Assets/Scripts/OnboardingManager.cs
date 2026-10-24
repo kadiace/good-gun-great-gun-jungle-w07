@@ -19,7 +19,6 @@ namespace WeaponWorkshop
 
         private static OnboardingManager instance;
         private static readonly HashSet<int> shownModules = new HashSet<int>();
-        private static bool customReceived;
         private static bool customStarted;
         private readonly Queue<Prompt> waiting = new Queue<Prompt>();
         private TutorialSequence runningSequence;
@@ -62,8 +61,30 @@ namespace WeaponWorkshop
         public static void NotifyCustomOrder()
         {
             if (!Application.isPlaying || customStarted) return;
-            customReceived = true;
             EnsureInstance();
+        }
+
+        private static bool HasCurrentCustomOrder()
+        {
+            var bell = FindFirstObjectByType<Bell>();
+            var customer = bell != null ? bell.Current : null;
+            if (customer == null || !customer.HasActiveOrder || customer.Profile == null) return false;
+
+            var onboarding = TableManager.Instance.Onboarding;
+            var requests = TableManager.Instance.CustomerRequest;
+            foreach (string requestId in customer.Profile.RequestIds)
+            {
+                string canonical = requests.FindRequest(requestId)?.id;
+                if (System.Array.IndexOf(onboarding.customRequestIds, canonical) >= 0) return true;
+            }
+            return false;
+        }
+
+        public static void NotifyCustomOpened()
+        {
+            if (!Application.isPlaying) return;
+            if (instance != null) instance.RemovePrompts(true);
+            customStarted = true;
         }
 
         public static void ResetModuleOnboarding()
@@ -105,13 +126,22 @@ namespace WeaponWorkshop
 
             if (current != null || waiting.Count == 0 || TutorialManager.Instance == null ||
                 TutorialManager.Instance.IsTutorialActive || GameManager.GameplayBlocked) return;
-            if (waiting.Peek().IsCustom && (session == null || !session.IsEditing)) return;
+            if (waiting.Peek().IsCustom)
+            {
+                if (!HasCurrentCustomOrder())
+                {
+                    RemovePrompts(true);
+                    customStarted = false;
+                    return;
+                }
+                if (session == null || !session.IsEditing) return;
+            }
             StartNext();
         }
 
         private void OnWorkbenchEntered()
         {
-            if (!customReceived || customStarted) return;
+            if (customStarted || !HasCurrentCustomOrder()) return;
             var steps = new List<OnboardingData.CustomStep>();
             foreach (var step in TableManager.Instance.Onboarding.customSteps)
                 if (step != null) steps.Add(step);
@@ -238,7 +268,6 @@ namespace WeaponWorkshop
         {
             instance = null;
             shownModules.Clear();
-            customReceived = false;
             customStarted = false;
         }
     }
