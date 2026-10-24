@@ -28,6 +28,7 @@ namespace WeaponWorkshop
             StopAllCoroutines();
             transform.position = state.position;
             HasTalked = state.talked; SaleSatisfied = state.satisfied; soldPrice = state.price;
+            if (HasTalked && state.stage == 1) NotifyIfCustomOrder();
             saveStage = state.stage; dialogueIndex = state.line; atCounter = state.stage == 1 || state.stage == 2;
             if (state.stage == 0) StartCoroutine(WalkTo(counter, () => { atCounter = true; saveStage = 1; }));
             else if (state.stage == 2) { talking = true; ShowLine(state.line); }
@@ -71,6 +72,20 @@ namespace WeaponWorkshop
             saveStage = 0;
             exitPoint = exit;
             StartCoroutine(WalkTo(counterPoint, () => { atCounter = true; saveStage = 1; }));
+        }
+
+        private void NotifyIfCustomOrder()
+        {
+            if (profile == null) return;
+            var onboarding = TableManager.Instance.Onboarding;
+            var requests = TableManager.Instance.CustomerRequest;
+            foreach (string requestId in profile.RequestIds)
+            {
+                string canonical = requests.FindRequest(requestId)?.id;
+                if (System.Array.IndexOf(onboarding.customRequestIds, canonical) < 0) continue;
+                OnboardingManager.NotifyCustomOrder();
+                break;
+            }
         }
 
         public bool CanInteract(Interaction interactor) => atCounter;
@@ -275,6 +290,7 @@ namespace WeaponWorkshop
                     HasTalked = true;
                     saveStage = 1;
                     DialogueUI.Instance.Hide();
+                    NotifyIfCustomOrder();
                     if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
                 });
             });

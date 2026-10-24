@@ -92,9 +92,24 @@ namespace WeaponWorkshop
             RebuildStrokePlan();
             if (!strokePlan.Valid)
             { GameManager.Instance?.UI?.ShowNotification(strokePlan.Error); CancelStroke(); return; }
+            if (OnboardingManager.NotifyModuleStrokeAttempt(strokeSlot, this))
+            {
+                strokeActive = strokeReleased = false;
+                return;
+            }
             try { CommitStroke(); }
             finally { CancelStroke(); }
         }
+
+        public bool CompleteOnboardingStroke(int slot)
+        {
+            if (strokeAssembly == null || strokeSlot != slot || GameManager.GameplayBlocked)
+            { CancelStroke(); return false; }
+            try { return CommitStroke(); }
+            finally { CancelStroke(); }
+        }
+
+        public void CancelOnboardingStroke() => CancelStroke();
         private void ExtendStroke(Vector3Int target)
         {
             Vector3Int start = strokeLastCell;
@@ -157,13 +172,13 @@ namespace WeaponWorkshop
             finally { assembly.EndPlacementBatch(); }
             if (removed) WorkshopSoundEffects.RaiseBlockRemoved(soundPosition);
         }
-        private void CommitStroke()
+        private bool CommitStroke()
         {
-            if (IsModuleLocked(strokeSlot) || !TutorialManager.ActionAllowed("attach")) return;
+            if (IsModuleLocked(strokeSlot) || !TutorialManager.ActionAllowed("attach")) return false;
             foreach (var part in strokePlan.Parts)
                 if (IsModuleLocked(part.slot) || (TutorialManager.Instance != null &&
-                    !TutorialManager.Instance.TryAuthorizePlacement(strokeAssembly, part.cell, part.slot, part.direction))) return;
-            if (!strokeAssembly.TryCaptureLayout(out var snapshot)) return;
+                    !TutorialManager.Instance.TryAuthorizePlacement(strokeAssembly, part.cell, part.slot, part.direction))) return false;
+            if (!strokeAssembly.TryCaptureLayout(out var snapshot)) return false;
             var assembly = strokeAssembly;
             bool completed = false, layoutChanged = false;
             assembly.BeginPlacementBatch();
@@ -196,7 +211,7 @@ namespace WeaponWorkshop
                 if (!completed && layoutChanged) assembly.RestoreLayout(snapshot);
                 assembly.EndPlacementBatch();
             }
-            if (!completed) return;
+            if (!completed) return false;
             // 선택 모듈과 자동 연장의 구매 기록/알림도 실제 설치 종류별로 합산한다.
             var purchases = new Dictionary<int, (int dollars, int credits)>();
             foreach (var part in strokePlan.Parts)
@@ -207,6 +222,7 @@ namespace WeaponWorkshop
             foreach (var purchase in purchases)
                 wallet.NotifyPartPurchased(PartLogName(assembly, purchase.Key), purchase.Value.dollars, purchase.Value.credits);
             WorkshopSoundEffects.RaiseBlockInstalled(assembly.transform.TransformPoint(strokePlan.Parts[strokePlan.Parts.Count - 1].cell));
+            return true;
         }
     }
 }

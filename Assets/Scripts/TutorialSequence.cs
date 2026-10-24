@@ -6,7 +6,7 @@ namespace WeaponWorkshop
     public enum TutorialCompletion { Confirmation, Signal, FiveCoreFacesBlocked, ModuleInstalled, CellEmpty, CustomerWeaponReady, WorkshopExited, WeaponHeld, SettlementClosed, CustomerSold, CustomerKilled, TargetNearby, TargetScanned, RaidTankSpawned, RetirementIntroduction, RaidTicketCollected, RaidMaterialCollected, WeaponTagged }
     public enum TutorialTarget { None, Shutter, Customer, MainCoreDispenser, Workbench, ShootingTarget, WorkbenchWeapon, CloseShop, RaidEntrance, RaidLoot, RaidExit, RaidMaterialCrate, RaidTank }
     public enum TutorialRotationGuide { None, Tilt, Roll }
-    public enum TutorialButtonGuide { None, Recipe, PresetFirst, RaidHouse, LoanConfirm }
+    public enum TutorialButtonGuide { None, Recipe, PresetFirst, RaidHouse, LoanConfirm, CustomButton, CustomPaint, CustomSticker, CustomKeyring, CustomRemove }
 
     [Serializable]
     public sealed class TutorialStep
@@ -16,6 +16,7 @@ namespace WeaponWorkshop
         public bool restoreWithheldBalanceOnComplete;
         public string title = "튜토리얼";
         [TextArea(2, 6)] public string description;
+        public bool confirmOnBackgroundClick;
         [TextArea, Tooltip("좌상단 행동 목표. 비우면 해당 단계의 목표 패널을 숨깁니다.")] public string objective;
         [Tooltip("Signal 단계에서 설명을 먼저 확인한 뒤, 같은 단계의 행동 목표를 시작합니다.")]
         public bool showDescriptionBeforeObjective;

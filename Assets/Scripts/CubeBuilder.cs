@@ -447,6 +447,12 @@ namespace WeaponWorkshop
             if (GameManager.GameplayBlocked)
             {
                 paintPointerHeld = false;
+                if (preview != null && OnboardingManager.IsChoosingModuleDirection(this))
+                {
+                    if (pendingAssembly == null || !pendingAssembly.gameObject.activeInHierarchy ||
+                        !pendingAssembly.CanAttach(pendingCell, pendingSlot)) CancelPreview();
+                    else UpdatePreview();
+                }
                 return;
             }
             if (paintingMode && !stickerToolActive && paintPointerHeld)
@@ -714,6 +720,17 @@ namespace WeaponWorkshop
             PlaceAtCell(assembly, cell, face);
         }
 
+        public bool CompleteOnboardingPlacement(int slot)
+        {
+            if (preview == null || pendingAssembly == null || pendingSlot != slot || GameManager.GameplayBlocked) return false;
+            if (!CanSelectDirection(pendingDirection)) return false;
+            if (!ExecuteUndoableEdit(pendingAssembly,
+                    () => TryPurchaseAttach(pendingAssembly, pendingCell, pendingSlot,
+                        pendingDirection, -pendingAttachmentDirection))) return false;
+            CancelPreview();
+            return true;
+        }
+
         // 3D 표면 선택과 2D 그리드 선택은 같은 설치·결제·되돌리기 경로를 사용한다.
         private void PlaceAtCell(CubeAssembly assembly, Vector3Int cell, Vector3Int face)
         {
@@ -775,6 +792,7 @@ namespace WeaponWorkshop
                 renderer.SetPropertyBlock(tint);
             }
             UpdatePreview();
+            OnboardingManager.NotifyModulePlacementAttempt(selectedSlot, this);
         }
 
         public int GetNextModuleCreditCost(int slot)
