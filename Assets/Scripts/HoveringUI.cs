@@ -13,6 +13,7 @@ namespace WeaponWorkshop
         [SerializeField] private GameObject panel;
         [SerializeField] private TMP_Text title;
         [SerializeField] private TMP_Text description;
+        [SerializeField] private TMP_Text moduleCrateScanHint;
         [SerializeField] private GameObject interact;
         [SerializeField] private ModulePaletteUI palette;
         [SerializeField] private RectTransform textArea;
@@ -48,7 +49,7 @@ namespace WeaponWorkshop
         public void Initialize(CubeBuilder source, Interaction interactionSource) { interaction = interactionSource; builder = source; if (tagTemplate != null) tagTemplate.gameObject.SetActive(false); if (tagGrid != null) tagGrid.gameObject.SetActive(false); bodyColor = description != null ? description.color : Color.white; Hide(); }
         private void Awake() { Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
         private void OnDisable() { muzzleTooltipObserved = false; ClearResultModule(); Hide(); if (scanModeText != null) scanModeText.gameObject.SetActive(false); }
-        private void Hide() { if (interact != null) interact.SetActive(false); if (panel != null) panel.SetActive(false); if (scanLoading != null) scanLoading.gameObject.SetActive(false); }
+        private void Hide() { if (moduleCrateScanHint != null) moduleCrateScanHint.gameObject.SetActive(false); if (interact != null) interact.SetActive(false); if (panel != null) panel.SetActive(false); if (scanLoading != null) scanLoading.gameObject.SetActive(false); }
         public void ShowResultModule(ModuleData data, Vector2 position)
         {
             if (data == null || panel == null) return;
@@ -295,7 +296,7 @@ namespace WeaponWorkshop
                 condition = condition.Replace("{RETIRE_COST}", shownAmount);
             }
             Show(label.Title, (tutorialBlocked && !slotMachine) || (!slotMachine && !retire && !manual && available) ? string.Empty : condition,
-                retire || slotMachine);
+                retire || slotMachine, target is ModuleUnlockCrate crate && !crate.IsClaimed);
             ShowInteract();
             if (title != null) title.color = Color.white;
             return true;
@@ -377,14 +378,16 @@ namespace WeaponWorkshop
             if (title != null) title.color = Color.white;
             if (description != null) description.color = Color.white;
         }
-        private void Show(string heading, string body, bool richText = false)
+        private void Show(string heading, string body, bool richText = false, bool showModuleCrateScanHint = false)
         {
             if (title != null) title.maxVisibleCharacters = int.MaxValue;
             if (description != null) description.maxVisibleCharacters = int.MaxValue;
             if (interact != null) interact.SetActive(false);
             if (panel == null || title == null || description == null) return;
+            bool hintChanged = moduleCrateScanHint != null && moduleCrateScanHint.gameObject.activeSelf != showModuleCrateScanHint;
+            if (hintChanged) moduleCrateScanHint.gameObject.SetActive(showModuleCrateScanHint);
             description.richText = richText;
-            bool changed = title.text != heading || description.text != body;
+            bool changed = title.text != heading || description.text != body || hintChanged;
             if (title.text != heading) title.text = heading;
             if (description.text != body) description.text = body;
             if (!panel.activeSelf) panel.SetActive(true);

@@ -150,7 +150,7 @@
 
 - 영업 시작 셔터는 흰색/검은 글자 양면 판넬이 공방 쪽으로 전진→Y180 회전(CLOSE 앞면/OPEN 뒷면)→복귀한 후 상승. Panel Push Distance·Panel Move Duration·Panel Flip Duration 인스펙터 조절, 정산 일시정지에서도 unscaled 진행. 영업 종료 시 CLOSE 방향으로 복원 후 하강.
 
-- 상호작용 가능 대상은 InteractionLabel.Title을 HoveringUI 제목만으로 표시(설명/태그 숨김). 프리팹에서 명칭 편집, 문 야간 습격·셔터 다음날로. 기존 무기 태그·편집 모듈/총구 정보 우선 유지. Interaction.AimedTarget 사용, 별도 시선 판정 없음.
+- 상호작용 대상의 HoveringUI는 InteractionLabel을 읽는다. 모듈 해금 상자(군사기지 변형 포함)는 기존 설명 아래 UIManager 원본의 Text_ModuleCrateScanHint로 하늘색 “Q키를 눌러 스캔하기”를 추가 표시한다. 안내는 미획득 상자를 조준하고 스캔하지 않을 때만 켜며, 시작·숨김·다른 대상·스캔 화면에서는 끈다. 다른 상호작용·모듈 픽업에는 표시하지 않는다. 무기 태그·편집 모듈/총구 정보 우선 유지. Interaction.AimedTarget 사용, 별도 시선 판정 없음. 플레이 미확인.
 
 - 작업대 편집 중 F 또는 Esc로 퇴장. Esc는 기존 Game/Pause 액션에서 공통 확인/선택 닫기를 우선한 뒤 WorkshopSession.Leave 호출하며, 작업대 퇴장과 일시정지를 동시에 실행하지 않음. 일반 플레이 Esc 일시정지 유지.
 
