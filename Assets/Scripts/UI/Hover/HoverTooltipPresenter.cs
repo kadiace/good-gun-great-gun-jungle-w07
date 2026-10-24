@@ -15,7 +15,6 @@ namespace WeaponWorkshop
         private static readonly string[] LABELS = { "관통력", "연사력", "폭발력", "반사 횟수", "차지", "중력", "발열", "회전", "물", "유도", "산탄", "무게", "스코프", "가속", "컬러", "탄퍼짐" };
 
         private readonly HoverTooltipView m_view;
-        private readonly ModulePaletteUI m_palette;
         private readonly WorkshopTagsUI m_tagSource;
         private readonly StringBuilder m_text = new StringBuilder();
         private readonly Dictionary<ModuleData, int> m_counts = new Dictionary<ModuleData, int>();
@@ -29,11 +28,16 @@ namespace WeaponWorkshop
         private bool m_isInitialized;
         private bool m_hasLoggedDependencyError;
 
-        public HoverTooltipPresenter(HoverTooltipView _view, ModulePaletteUI _palette, WorkshopTagsUI _tagSource)
+        public HoverTooltipPresenter(HoverTooltipView _view, WorkshopTagsUI _tagSource)
         {
             m_view = _view;
-            m_palette = _palette;
             m_tagSource = _tagSource;
+        }
+
+        [System.Obsolete("ModulePaletteUI 의존은 제거되었습니다. HoverTooltipPresenter(HoverTooltipView, WorkshopTagsUI)를 사용하세요.")]
+        public HoverTooltipPresenter(HoverTooltipView _view, ModulePaletteUI _palette, WorkshopTagsUI _tagSource)
+            : this(_view, _tagSource)
+        {
         }
 
         public bool Initialize()
@@ -204,25 +208,34 @@ namespace WeaponWorkshop
                     return;
                 }
 
-                m_view.SetPointerPosition(m_builder.PointerPosition);
-                int id = m_palette != null ? m_palette.HoveredModuleId : 0;
-                if (id > 0 && m_builder.Catalog != null && m_builder.Catalog.TryGet(id, out var entry))
+                // 팔레트가 열려 있으면 3D 호버를 숨기고, 팔레트 슬롯을 가리키고 있을 때만 해당 모듈 정보를 표시한다.
+                if (m_builder.PaletteOpen)
                 {
-                    var unlocks = m_interaction != null && m_interaction.Player != null
-                        ? m_interaction.Player.GetComponent<PlayerModuleUnlocks>() : null;
-                    if (unlocks != null && !unlocks.IsUnlocked(id))
+                    int id = m_builder.HoveredPaletteModule;
+                    if (id > 0 && m_builder.Catalog != null && m_builder.Catalog.TryGet(id, out var entry))
                     {
-                        m_view.Show(entry.displayName, "잠긴 모듈\n" + TableManager.Instance.RaidMap.Locations(entry.data));
-                        m_view.SetTitleColor(entry.color);
-                        m_view.SetDescriptionColor(m_view.BodyColor);
-                    }
-                    else
-                    {
-                        ShowModule(entry.data);
+                        m_view.SetPointerPosition(m_builder.PointerPosition);
+                        var unlocks = m_interaction != null && m_interaction.Player != null
+                            ? m_interaction.Player.GetComponent<PlayerModuleUnlocks>() : null;
+                        if (unlocks != null && !unlocks.IsUnlocked(id))
+                        {
+                            m_view.Show(entry.displayName, "잠긴 모듈\n" + TableManager.Instance.RaidMap.Locations(entry.data));
+                            m_view.SetTitleColor(entry.color);
+                            m_view.SetDescriptionColor(m_view.BodyColor);
+                        }
+                        else
+                        {
+                            ShowModule(entry.data);
+                        }
+
+                        return;
                     }
 
+                    Hide();
                     return;
                 }
+
+                m_view.SetPointerPosition(m_builder.PointerPosition);
 
                 if (!m_builder.TryGetHoveredModule(out RaycastHit hit))
                 {
