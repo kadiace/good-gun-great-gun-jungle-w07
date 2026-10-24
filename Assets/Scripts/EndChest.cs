@@ -91,7 +91,7 @@ namespace WeaponWorkshop
             if (endCamera != null) endCamera.enabled = false;
             var manager = GameManager.Instance;
             if (manager == null) return;
-            var hud = manager.UI != null ? manager.UI.GetComponent<Canvas>() : null;
+            var hud = manager.UI != null ? manager.UI.Screen<Canvas>() : null;
             if (hud != null) hud.enabled = true;
             manager.SetDialogue(false);
         }
@@ -161,7 +161,7 @@ namespace WeaponWorkshop
             var manager = GameManager.Instance;
             if (manager == null) return;
             manager.SetDialogue(true);
-            var hud = manager.UI != null ? manager.UI.GetComponent<Canvas>() : null;
+            var hud = manager.UI != null ? manager.UI.Screen<Canvas>() : null;
             if (hud != null) hud.enabled = false;
         }
 
