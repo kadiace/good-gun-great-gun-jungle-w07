@@ -42,12 +42,16 @@ namespace WeaponWorkshop
         private bool paletteOpen;
         private int hoveredPaletteModule;
         private bool favoriteDragActive;
+        public event System.Action<int> FavoriteSelected;
         public void SetHoveredPaletteModule(int moduleId) => hoveredPaletteModule = moduleId;
         private void HandleFavoriteKey(int index)
         {
             if (GameManager.GameplayBlocked || favoriteDragActive || !TutorialManager.TryAction("select-module")) return;
             if (PaletteOpen && hoveredPaletteModule > 0) { SetFavorite(index, hoveredPaletteModule); return; }
-            SelectModule(GetFavorite(index));
+            if (SelectModule(GetFavorite(index)))
+            {
+                FavoriteSelected?.Invoke(index);
+            }
         }
         private InputActionMap controls;
         private Camera view;
@@ -249,12 +253,12 @@ namespace WeaponWorkshop
             if (active) CancelPreview();
         }
 
-        public void SelectModule(int moduleId)
+        public bool SelectModule(int moduleId)
         {
-            if (GameManager.GameplayBlocked || paintingMode || !TutorialManager.TryAction("select-module")) return;
+            if (GameManager.GameplayBlocked || paintingMode || !TutorialManager.TryAction("select-module")) return false;
             CancelPreview();
             int slot = ValidModuleOrBlocker(moduleId);
-            if (IsModuleLocked(slot)) return;
+            if (IsModuleLocked(slot)) return false;
             // Color module: pick the color first (ColorPickerUI shows while ColorPickerOpen); placing waits.
             if (IsColorModule(slot))
             {
@@ -265,6 +269,7 @@ namespace WeaponWorkshop
             selectedSlot = slot;
             deleteMode = false;
             UpdateEraseModeUI();
+            return true;
         }
 
         // Every color module placed after this gets the confirmed color, until it is picked again.
