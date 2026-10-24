@@ -88,7 +88,13 @@ namespace WeaponWorkshop
             exit.performed += _ => { if (GameManager.Instance == null) Leave(); };
             controls.FindAction("Interact", true).performed += _ =>
             {
-                if (IsInWorkshop && !IsTransitioning && !GameManager.GameplayBlocked) Leave();
+                if (!IsInWorkshop || IsTransitioning || GameManager.GameplayBlocked) return;
+                if (builder != null && builder.PaletteOpen)
+                {
+                    builder.ClosePalette();
+                    return;
+                }
+                Leave();
             };
             UIInputPolicy.RegisterWorkshopMaps(controls, editingControls);
         }
