@@ -1,19 +1,25 @@
 {
   "sale": {
-    "tagBonusRatio": 0.5,
-    "dissatisfiedRatio": 0.8
+    "difficultCustomerRatio": 0.5
   },
   "pools": [
     {
       "id": "4ed43104870c3e24f89f81d6ec6fd1bd",
       "minRequests": 1,
       "maxRequests": 3,
-      "basePrice": 200,
-      "pricePerRequest": 200,
       "requests": [
-        {"id": "construction/cost-1500", "unlockDay": 2},
-        {"id": "shape/cat", "unlockDay": 20},
-        {"id": "color/crimson-3", "unlockDay": 2},
+        {
+          "id": "construction/cost-1500",
+          "unlockDay": 2
+        },
+        {
+          "id": "shape/cat",
+          "unlockDay": 20
+        },
+        {
+          "id": "color/crimson-3",
+          "unlockDay": 2
+        },
         {
           "id": "module/scope/min-1",
           "unlockDay": 1
@@ -200,14 +206,16 @@
       "name": "D0_1_TutorialCustomer",
       "tutorialRejectionLine": "이대로는 나무판을 뚫기 어렵겠어요. 관통 모듈을 하나 달아서 다시 가져와 주세요.",
       "tutorialFollowupRequestIds": ["module/penetration/min-1"],
-      "requestIds": [],
-      "price": 300,
+      "requestIds": [
+        "weapon/basic"
+      ],
       "lines": [
         "제가 잘 몰라서 그러는데, 적당히 만들어 주세요."
       ],
       "endsClear": true,
       "happyLine": "오, 좋네요! 감사합니다.",
-      "angryLine": ""
+      "angryLine": "",
+      "isDifficult": false
     },
     {
       "id": "f6afb57651235a649a138ba28b86b8b3",
@@ -215,13 +223,13 @@
       "requestIds": [
         "module/penetration/min-1"
       ],
-      "price": 200,
       "lines": [
         "관통 모듈을 하나 이상 달아주세요."
       ],
       "endsClear": true,
       "happyLine": "관통 모듈 딱 붙어있네요. 감사합니다!",
-      "angryLine": "관통 모듈... 어디 있어요?"
+      "angryLine": "관통 모듈... 어디 있어요?",
+      "isDifficult": false
     },
     {
       "id": "8e45417c50eb84d45bc816c2ce4aba9a",
@@ -229,13 +237,13 @@
       "requestIds": [
         "module/penetration/min-1"
       ],
-      "price": 300,
       "lines": [
         "나무판을 뚫을 수 있게, 관통 모듈을 하나 넣어 주세요."
       ],
       "endsClear": true,
       "happyLine": "딱 제가 부탁한 기능이네요. 감사합니다!",
-      "angryLine": "관통 모듈... 어디 있어요?"
+      "angryLine": "관통 모듈... 어디 있어요?",
+      "isDifficult": false
     },
     {
       "id": "e3726adb0bb965747ae2a14bdd32852b",
@@ -243,13 +251,13 @@
       "requestIds": [
         "module/fire-rate/min-1"
       ],
-      "price": 200,
       "lines": [
         "연사 모듈이 들어간 총이요."
       ],
       "endsClear": true,
       "happyLine": "드르륵! 이거예요 이거!",
-      "angryLine": "연사 모듈이 안 보이는데요...?"
+      "angryLine": "연사 모듈이 안 보이는데요...?",
+      "isDifficult": false
     },
     {
       "id": "c2e5e67315c2e684bb468481f9a2bc5b",
@@ -257,25 +265,25 @@
       "requestIds": [
         "tag/assault-rifle"
       ],
-      "price": 300,
       "lines": [
         "돌격소총 태그가 붙은 총을 만들어 주세요."
       ],
       "endsClear": true,
       "happyLine": "돌격소총이 잘 나왔네요. 잘 쓰겠습니다!",
-      "angryLine": "부탁드린 돌격소총이 아닌 것 같은데요."
+      "angryLine": "부탁드린 돌격소총이 아닌 것 같은데요.",
+      "isDifficult": false
     },
     {
       "id": "6f6cf35ea746e344a93b1587938c685b",
       "name": "D0_4_DifficultCustomer",
       "requestIds": [],
-      "price": 0,
       "lines": [
         "따뜻한 아이스 아메리카노 한 잔이요."
       ],
       "endsClear": false,
       "happyLine": "…",
-      "angryLine": "…"
+      "angryLine": "…",
+      "isDifficult": true
     },
     {
       "id": "1353401e1a4304d4d9e377490fe26882",
@@ -283,13 +291,13 @@
       "requestIds": [
         "module/split-four/min-2"
       ],
-      "price": 200,
       "lines": [
         "총구가 8개 이상인 총 부탁드려요. 방사 모듈 말고, 4방향 분할로요!"
       ],
       "endsClear": true,
       "happyLine": "총구가 우수수! 마음에 들어요.",
-      "angryLine": "총구가 모자라잖아..!!! 더 많은 총알.!!!!"
+      "angryLine": "총구가 모자라잖아..!!! 더 많은 총알.!!!!",
+      "isDifficult": false
     },
     {
       "id": "8df14042c9325de4e9e896078ddebfc2",
@@ -298,16 +306,13 @@
         "module/penetration/min-1",
         "module/split-four/min-1"
       ],
-      "price": 240,
       "lines": [
         "관통 모듈이랑 4방향 분할 모듈, 둘 다 써서 만들어주세요."
       ],
       "endsClear": true,
       "happyLine": "둘 다 들어갔네요. 완벽한 조합!",
       "angryLine": "이런것도 못하는건가?",
-      "noBonusRequestIds": [
-        "module/split-four/min-1"
-      ]
+      "isDifficult": false
     },
     {
       "id": "25b5381ef8e155343bbafe08fae3af6d",
@@ -315,13 +320,13 @@
       "requestIds": [
         "module/stat-modules/exact-0"
       ],
-      "price": 200,
       "lines": [
         "처음이라 잘 몰라서요. 개조 안 한 기본 코어 그대로 주세요."
       ],
       "endsClear": true,
       "happyLine": "오, 깔끔하네요. 처음엔 기본이 최고죠!",
-      "angryLine": "에으으....뇌가 녹느다.....어렵다,..."
+      "angryLine": "에으으....뇌가 녹느다.....어렵다,...",
+      "isDifficult": false
     },
     {
       "id": "f350a20ea1c6a314b9a2ebfd39e192be",
@@ -329,13 +334,13 @@
       "requestIds": [
         "module/penetration/min-1"
       ],
-      "price": 200,
       "lines": [
         "관통 모듈을 하나 이상 달아주세요."
       ],
       "endsClear": true,
       "happyLine": "관통 모듈 딱 붙어있네요. 감사합니다!",
-      "angryLine": "관통 모듈... 어디 있어요?"
+      "angryLine": "관통 모듈... 어디 있어요?",
+      "isDifficult": false
     },
     {
       "id": "a660428af7905aa49a0c3400753fd0ae",
@@ -343,13 +348,13 @@
       "requestIds": [
         "module/fire-rate/min-1"
       ],
-      "price": 200,
       "lines": [
         "연사 모듈이 들어간 총이요."
       ],
       "endsClear": true,
       "happyLine": "드르륵! 이거예요 이거!",
-      "angryLine": "연사 모듈이 안 보이는데요...?"
+      "angryLine": "연사 모듈이 안 보이는데요...?",
+      "isDifficult": false
     },
     {
       "id": "19eb28f21e576bd40bdd9363439fb11a",
@@ -357,13 +362,13 @@
       "requestIds": [
         "module/split-four/min-2"
       ],
-      "price": 200,
       "lines": [
         "총구가 8개 이상인 총 부탁드려요. 방사 모듈 말고, 4방향 분할로요!"
       ],
       "endsClear": true,
       "happyLine": "총구가 우수수! 마음에 들어요.",
-      "angryLine": "총구가 모자라잖아..!!! 더 많은 총알.!!!!"
+      "angryLine": "총구가 모자라잖아..!!! 더 많은 총알.!!!!",
+      "isDifficult": false
     },
     {
       "id": "30f765269e0d71446a935b0c88492228",
@@ -372,16 +377,13 @@
         "module/penetration/min-1",
         "module/split-four/min-1"
       ],
-      "price": 240,
       "lines": [
         "관통 모듈이랑 4방향 분할 모듈, 둘 다 써서 만들어주세요."
       ],
       "endsClear": true,
       "happyLine": "둘 다 들어갔네요. 완벽한 조합!",
       "angryLine": "이런것도 못하는건가?",
-      "noBonusRequestIds": [
-        "module/split-four/min-1"
-      ]
+      "isDifficult": false
     },
     {
       "id": "a00ebe5381d81494ba1d532eaa55a166",
@@ -389,14 +391,14 @@
       "requestIds": [
         "module/shotgun/min-1"
       ],
-      "price": 400,
       "lines": [
         "방사 모듈이 연결된 총 하나요.",
         "방사 모듈을 발사 경로에 하나 이상 달아주세요."
       ],
       "endsClear": true,
       "happyLine": "방사 모듈이 잘 연결됐네요!",
-      "angryLine": "방사 모듈이 연결되지 않은 것 같은데요?"
+      "angryLine": "방사 모듈이 연결되지 않은 것 같은데요?",
+      "isDifficult": false
     },
     {
       "id": "d5398f48369de9044b8afcc0e73edc0d",
@@ -404,14 +406,14 @@
       "requestIds": [
         "tag/sniper-rifle"
       ],
-      "price": 400,
       "lines": [
         "저격총 주세요.",
         "저격총 태그가 붙은 총이어야 해요."
       ],
       "endsClear": true,
       "happyLine": "...곧고 조용하군. 좋아.",
-      "angryLine": "관통이 안 되잖아요. 이걸로 뭘 저격해요?"
+      "angryLine": "관통이 안 되잖아요. 이걸로 뭘 저격해요?",
+      "isDifficult": false
     },
     {
       "id": "54d26364e40dd1b489519863487c0c76",
@@ -419,13 +421,13 @@
       "requestIds": [
         "tag/assault-rifle"
       ],
-      "price": 300,
       "lines": [
         "평범한 자동소총이요. 돌격소총 태그 붙은 걸로 부탁해요."
       ],
       "endsClear": true,
       "happyLine": "하아.. 이 서늘한 감각.... 12년만이구만",
-      "angryLine": "평범한 게 제일 어려운 거 아시죠? "
+      "angryLine": "평범한 게 제일 어려운 거 아시죠? ",
+      "isDifficult": false
     },
     {
       "id": "d29f7a9b9e4256f449ba2276cf0fa0e4",
@@ -433,26 +435,26 @@
       "requestIds": [
         "tag/handgun"
       ],
-      "price": 300,
       "lines": [
         "권총 태그 붙은 걸로 부탁해요."
       ],
       "endsClear": true,
       "happyLine": "주머니에 쏙 들어가겠네요!",
-      "angryLine": "이것은 권총이라기엔 너무 컸다."
+      "angryLine": "이것은 권총이라기엔 너무 컸다.",
+      "isDifficult": false
     },
     {
       "id": "a56c9fc6df6bc184ebb69d9092b8562e",
       "name": "D2_5_BigMac",
       "requestIds": [],
-      "price": 0,
       "lines": [
         "여기 빅맥 세트 하나요.",
         "감자튀김은 라지로요. 콜라는 제로로."
       ],
       "endsClear": false,
       "happyLine": "!! 바로 이 테이스트야!!",
-      "angryLine": "피클 빼달라고 했잖아요!"
+      "angryLine": "피클 빼달라고 했잖아요!",
+      "isDifficult": true
     },
     {
       "id": "a657c8e6daaac0640b26135bf3b0e940",
@@ -460,25 +462,25 @@
       "requestIds": [
         "tag/grenade-launcher"
       ],
-      "price": 400,
       "lines": [
         "유탄 태그가 붙은 총으로 맞춰주세요."
       ],
       "endsClear": true,
       "happyLine": "예술은 폭발이다!!!",
-      "angryLine": "혹시 만들다가 양심이 같이 터지셨나요?"
+      "angryLine": "혹시 만들다가 양심이 같이 터지셨나요?",
+      "isDifficult": false
     },
     {
       "id": "e8726eef5e281a241935acf0d3110b60",
       "name": "D2_7_Ricochet 1",
       "requestIds": [],
-      "price": 400,
       "lines": [
         "난 경기도 안양의 이준영이다!"
       ],
       "endsClear": false,
       "happyLine": "난 경기도 안양의 이준영이다!",
-      "angryLine": "난 경기도 안양의 이준영이다!"
+      "angryLine": "난 경기도 안양의 이준영이다!",
+      "isDifficult": true
     },
     {
       "id": "6a41b8901ebccb14a9bea905b5e759ab",
@@ -486,14 +488,14 @@
       "requestIds": [
         "tag/ricochet"
       ],
-      "price": 400,
       "lines": [
         "당구 좋아하세요?",
         "도탄 태그가 붙은 총이요. 벽에 튕겨 맞히는 총이요!"
       ],
       "endsClear": true,
       "happyLine": "쓰리쿠션 각 나왔다!",
-      "angryLine": "300이하 맛세이 금지!"
+      "angryLine": "300이하 맛세이 금지!",
+      "isDifficult": false
     },
     {
       "id": "2ba099eab2272d940ae22970ff7731f3",
@@ -502,7 +504,6 @@
         "tag/assault-rifle",
         "module/split-two/min-1"
       ],
-      "price": 500,
       "lines": [
         "더블배럴 돌격소총이요.",
         "돌격소총 태그에 2방향 분할도 달아주세요."
@@ -510,9 +511,7 @@
       "endsClear": true,
       "happyLine": "두 줄기! 이게 바로 더블배럴 돌격소총!",
       "angryLine": "이건 더블도, 배럴도, 돌격도 아니잖아요.",
-      "noBonusRequestIds": [
-        "module/split-two/min-1"
-      ]
+      "isDifficult": false
     },
     {
       "id": "d8d88852c4557604ebef499f6d5ceda1",
@@ -521,16 +520,13 @@
         "tag/shotgun",
         "module/split-four/min-1"
       ],
-      "price": 400,
       "lines": [
         "산탄총 태그에, 4방향 분할로 네 갈래를 내주세요!"
       ],
       "endsClear": true,
       "happyLine": "꿈이... 이루어졌어요...!",
       "angryLine": "이게 아니란 말이다앗!!!!",
-      "noBonusRequestIds": [
-        "module/split-four/min-1"
-      ]
+      "isDifficult": false
     },
     {
       "id": "e09ace2d9e03a6d4b9c5163bfb793a27",
@@ -539,14 +535,14 @@
         "tag/shotgun",
         "tag/assault-rifle"
       ],
-      "price": 500,
       "lines": [
         "일반사격이 연발사격에 샷건사격인 총을 쏘는 엄마는 좋아하시나요?",
         "돌격소총 태그와 산탄총 태그를 모두 만족하는 총 주세요."
       ],
       "endsClear": true,
       "happyLine": "일반사격이 연발사격에 샷건사격인 총을 쏘는 엄마라.... 어흐",
-      "angryLine": "이 제목이 아니였나봐요...."
+      "angryLine": "이 제목이 아니였나봐요....",
+      "isDifficult": false
     },
     {
       "id": "e58d71f88d4f876438bf7acace814a9b",
@@ -555,27 +551,27 @@
         "tag/grenade-launcher",
         "stat/weight/min-4"
       ],
-      "price": 500,
       "lines": [
         "여기 소믈리에 있나요?",
         "유탄 태그에, 스탯 모듈은 4개 이상 부탁합니다."
       ],
       "endsClear": true,
       "happyLine": "훌륭한 빈티지군요. 바디감이 묵직해.",
-      "angryLine": "이건... 하우스 와인 수준이군요."
+      "angryLine": "이건... 하우스 와인 수준이군요.",
+      "isDifficult": false
     },
     {
       "id": "f2b056418a5de7349942f08879971a6f",
       "name": "D3_5_LakePark",
       "requestIds": [],
-      "price": 0,
       "lines": [
         "안녕하세요 어머니, 비감입니다. 상동호수공원 가려면 어디로 가요?",
         "오케이 감사드리고~ 달달달달달"
       ],
       "endsClear": false,
       "happyLine": "오케이 감사드리고~ 달달달달달",
-      "angryLine": "오케이 감사드리고~ 달달달달달"
+      "angryLine": "오케이 감사드리고~ 달달달달달",
+      "isDifficult": true
     },
     {
       "id": "2d9480eb51c562c4c92a1421ea5770da",
@@ -583,14 +579,14 @@
       "requestIds": [
         "tag/charge"
       ],
-      "price": 500,
       "lines": [
         "\"황혼보다 어두운 자여 내 몸에 흐르는 피보다 더 붉은 자여\n시간의 흐름 속에 파묻힌 위대한 그대의 이름을 걸고\n나 여기서 어둠에 맹세하노라\n우리 앞을 가로막고 있는 모든 어리석은 자들에게\n나와 그대의 힘을, 위대한 파멸의 힘을 보여줄 것을!\"",
         "차지 태그가 붙은 총으로 해주세요. 모아서 쏘는 거요."
       ],
       "endsClear": true,
       "happyLine": "드래곤 슬레이브!!!!",
-      "angryLine": "아 부끄러워...."
+      "angryLine": "아 부끄러워....",
+      "isDifficult": false
     },
     {
       "id": "1117dd03e64b32a43b93b4a15b89a4c2",
@@ -598,14 +594,14 @@
       "requestIds": [
         "tag/gravity-gun"
       ],
-      "price": 500,
       "lines": [
         "아돈 빠가돈나스키!(Огонь по готовности!)",
         "중력건 태그가 붙는 총이요."
       ],
       "endsClear": true,
       "happyLine": "모두 발사!",
-      "angryLine": "아 겐지 너프 하라고;;"
+      "angryLine": "아 겐지 너프 하라고;;",
+      "isDifficult": false
     },
     {
       "id": "0c575dbccf9fbcb40a50aa5bf6e458fb",
@@ -614,7 +610,6 @@
         "tag/flamethrower",
         "module/split-two/min-1"
       ],
-      "price": 500,
       "lines": [
         "3 - 2 - 1, fire!",
         "화염방사 태그가 붙은 총으로 해주세요. 두 갈래로요!"
@@ -622,22 +617,20 @@
       "endsClear": true,
       "happyLine": "Gonna watch it burn!",
       "angryLine": "재미없어!!!",
-      "noBonusRequestIds": [
-        "module/split-two/min-1"
-      ]
+      "isDifficult": false
     },
     {
       "id": "038a4f4f9f79c204a9087f7ce969d7f5",
       "name": "D3_9_christ",
       "requestIds": [],
-      "price": 0,
       "lines": [
         "저는 종교적 이유로 총기를 사용할 수 없습니다.",
         "왜왔나구요? ##님 믿으실래요?"
       ],
       "endsClear": false,
       "happyLine": "천벌있으라!!",
-      "angryLine": "천벌있으라!!"
+      "angryLine": "천벌있으라!!",
+      "isDifficult": true
     },
     {
       "id": "d22429fd957afa44483eb23d1c989306",
@@ -645,14 +638,14 @@
       "requestIds": [
         "tag/handgun"
       ],
-      "price": 600,
       "lines": [
         "격납고 내부 CQC다.",
         "권총 태그 붙여서 작게 만들어."
       ],
       "endsClear": true,
       "happyLine": "...이 정도면 격납고에서 써도 되겠군. (담배 연기)",
-      "angryLine": "거 총 한번 뒤지게 초짜같네...."
+      "angryLine": "거 총 한번 뒤지게 초짜같네....",
+      "isDifficult": false
     },
     {
       "id": "caed71048059fb84ea75dbd3fa5def6d",
@@ -660,26 +653,26 @@
       "requestIds": [
         "tag/handgun"
       ],
-      "price": 500,
       "lines": [
         "권총 태그가 붙은 총으로 부탁드려요."
       ],
       "endsClear": true,
       "happyLine": "감사합니다! 좋은 하루 보내세요?",
-      "angryLine": "안녕히 계세요...?"
+      "angryLine": "안녕히 계세요...?",
+      "isDifficult": false
     },
     {
       "id": "f88c397ed1f539f4a961604044e93feb",
       "name": "D4_3_Robber",
       "requestIds": [],
-      "price": 0,
       "lines": [
         "안녕하세요? 강도입니다.",
         "돈을 주세요."
       ],
       "endsClear": false,
       "happyLine": "감사합니다. 강도였습니다.",
-      "angryLine": "감사합니다. 강도였습니다."
+      "angryLine": "감사합니다. 강도였습니다.",
+      "isDifficult": true
     },
     {
       "id": "fd770da102b6f294191f246f9ca975f5",
@@ -691,14 +684,14 @@
         "module/scope/min-1",
         "module/scope/min-2"
       ],
-      "price": 600,
       "lines": [
         "여기서 가장 프로다운 총 한 정만 줘.",
         "돌격소총·저격총·유탄 태그를 모두 붙이고 스코프 모듈도 두 개 달아줘."
       ],
       "endsClear": true,
       "happyLine": "좋아. 프로의 물건이야.",
-      "angryLine": "아마추어 같은 물건이군."
+      "angryLine": "아마추어 같은 물건이군.",
+      "isDifficult": false
     },
     {
       "id": "d388b03377bb04d4097c8992aa687d9e",
@@ -707,7 +700,6 @@
         "tag/shotgun",
         "module/split-two/min-1"
       ],
-      "price": 600,
       "lines": [
         "강한 화력...... 강한 총기..... 찢고 뜯는다..",
         "산탄총 태그에, 2방향 분할도 달아줘..."
@@ -715,9 +707,7 @@
       "endsClear": true,
       "happyLine": "찢고... 뜯는다...!!",
       "angryLine": "찢기지도... 뜯기지도... 않는다...",
-      "noBonusRequestIds": [
-        "module/split-two/min-1"
-      ]
+      "isDifficult": false
     },
     {
       "id": "d5629a5fb5df7874ebefe9e24bd959af",
@@ -725,14 +715,14 @@
       "requestIds": [
         "tag/spin"
       ],
-      "price": 600,
       "lines": [
         "돌려 돌려 돌림판~",
         "회전 태그가 붙으면 좋겠어요!"
       ],
       "endsClear": true,
       "happyLine": "아~ 마와레 마와레 마와레 마와레 마와레 카레-니 카벤 치라스요-니",
-      "angryLine": "총알이 안도니 사장님이라도 돌려드릴까요? 제 돈이나 돌려주세요"
+      "angryLine": "총알이 안도니 사장님이라도 돌려드릴까요? 제 돈이나 돌려주세요",
+      "isDifficult": false
     },
     {
       "id": "89a6e2464d2d3824c92a161cb4ac7990",
@@ -740,14 +730,14 @@
       "requestIds": [
         "tag/water-gun"
       ],
-      "price": 500,
       "lines": [
         "...",
         "물총 태그가 붙는 총이면 돼요. 여름이잖아요!"
       ],
       "endsClear": true,
       "happyLine": "하 하 하! 촉촉하게 만들어주지!",
-      "angryLine": "놀러가서 살인사건 나게 생겼잖아요!!"
+      "angryLine": "놀러가서 살인사건 나게 생겼잖아요!!",
+      "isDifficult": false
     },
     {
       "id": "2d9afc0f00161344c98c8238201fb8ca",
@@ -755,14 +745,14 @@
       "requestIds": [
         "tag/homing"
       ],
-      "price": 600,
       "lines": [
         "알아서 따라가는 총 있어요? 제가 에임이 좀...",
         "유도 태그가 붙게 해주세요. 끝까지 따라가도록요."
       ],
       "endsClear": true,
       "happyLine": "다이야 달리기 두가티~~",
-      "angryLine": "이건 제 에임이랑 똑같이 안 맞잖아요."
+      "angryLine": "이건 제 에임이랑 똑같이 안 맞잖아요.",
+      "isDifficult": false
     },
     {
       "id": "8ca54d168454a8a4bbf7e11f5964cca1",
@@ -771,7 +761,6 @@
         "tag/sniper-rifle",
         "tag/homing"
       ],
-      "price": 600,
       "lines": [
         "저를 2차원? 4차원? 의 저격수로 만들어주세요!",
         "저격총 태그와 유도 태그를 함께 원해요!"
@@ -779,7 +768,8 @@
       "endsClear": true,
       "happyLine": "백숙을 삶아먹으라~[Personne n'échappe à mon regard]",
       "angryLine": "아 이게 안맞네;",
-      "unlockDay": 5
+      "unlockDay": 5,
+      "isDifficult": false
     },
     {
       "id": "5867799c1021bd247bdc32c3246d757f",
@@ -788,27 +778,27 @@
         "tag/handgun",
         "tag/grenade-launcher"
       ],
-      "price": 700,
       "lines": [
         "여기서는 점프로 캔슬하면서 총을 쏘면서 떨어집니다.\r\n\r앞에있는 모덴군 제거하신 다음에 점프 폭탄 차를 제거하죠\r\n\r어때요 정말 쉬입 죠?",
         "유탄 태그랑 권총 태그를 둘 다 맞춰주세요."
       ],
       "endsClear": true,
       "happyLine": "어때요, 정말 쉽죠?",
-      "angryLine": "여기서는 점프로 캔슬하면서 총을 쏘면서 떨어집니다\r\n\r앞에 있는 모덴군 제거하신 다음에 점프 폭탄\r\n\r차를 제거하죠 여기서 총쏘면서 쭉 전진하시다 보면 앞에 포병이 포를 쏴요 점프로 피해줍니다 되써\r\n\r오른쪽 위에 있는 포병을 칼질로 제거 점프 폭탄 세개\r\n\r내려와서 폭탄 하나 점프 총 위에있는 포병제거하시고 점프 폭탄으로 위에 있는 헤비 머신건 먹고 위쪽에 있는 헬기 제거 그 다음에 점프 폭탄 세개 퐈퐈퐈\r\n\r오른쪽에 택시가 있어요 택시에서 폭탄 나옵니다 폭탄 먹고 뒤쪽에 있는 포병 두마리 제거 그 다음에 오른쪽에 있는 트럭 제거하신 다음에 여기서 점프 폭탄 세개 퐉퐉\r\n\r이렇게 하시면 되요 어때요 정말 쉽죠?\r\n\r그냥 다 외우세요"
+      "angryLine": "여기서는 점프로 캔슬하면서 총을 쏘면서 떨어집니다\r\n\r앞에 있는 모덴군 제거하신 다음에 점프 폭탄\r\n\r차를 제거하죠 여기서 총쏘면서 쭉 전진하시다 보면 앞에 포병이 포를 쏴요 점프로 피해줍니다 되써\r\n\r오른쪽 위에 있는 포병을 칼질로 제거 점프 폭탄 세개\r\n\r내려와서 폭탄 하나 점프 총 위에있는 포병제거하시고 점프 폭탄으로 위에 있는 헤비 머신건 먹고 위쪽에 있는 헬기 제거 그 다음에 점프 폭탄 세개 퐈퐈퐈\r\n\r오른쪽에 택시가 있어요 택시에서 폭탄 나옵니다 폭탄 먹고 뒤쪽에 있는 포병 두마리 제거 그 다음에 오른쪽에 있는 트럭 제거하신 다음에 여기서 점프 폭탄 세개 퐉퐉\r\n\r이렇게 하시면 되요 어때요 정말 쉽죠?\r\n\r그냥 다 외우세요",
+      "isDifficult": false
     },
     {
       "id": "bb35f40bd3aa17e4f831ca8946978d4b",
       "name": "D5_11_RicsMonkey",
       "requestIds": [],
-      "price": 700,
       "lines": [
         "우 우 우 쌀쌀쌀",
         "식당으로 비유하자면 앱솔칼리버를 4개월 대여해달라는거임"
       ],
       "endsClear": false,
       "happyLine": "이해가 쏙쏙 되잖아",
-      "angryLine": "식당으로 비유하자면 진상이 행패 부리는 거\r\n옆에 있던 손님이 식당 주인 가면 쓰고 대신 욕해줬더니\r\n그 손님을 고소하는 거임"
+      "angryLine": "식당으로 비유하자면 진상이 행패 부리는 거\r\n옆에 있던 손님이 식당 주인 가면 쓰고 대신 욕해줬더니\r\n그 손님을 고소하는 거임",
+      "isDifficult": true
     },
     {
       "id": "f4e6e6c50ca7d574f8fe2e7cd530a4f6",
@@ -817,14 +807,14 @@
         "tag/handgun",
         "tag/assault-rifle"
       ],
-      "price": 700,
       "lines": [
         "짜장면으로 맞아볼래?",
         "권총 태그와 돌격소총 태그를 맞춰주세요."
       ],
       "endsClear": true,
       "happyLine": "자동권총! 짜장면보다 낫네요.",
-      "angryLine": "차라리 짜장면을 주시지..."
+      "angryLine": "차라리 짜장면을 주시지...",
+      "isDifficult": false
     },
     {
       "id": "1cd9be92bac19b246923e91f6cf077e7",
@@ -833,14 +823,14 @@
         "tag/handgun",
         "tag/ricochet"
       ],
-      "price": 700,
       "lines": [
         "페르소나를 소환할 수 있는 총 만들어주세요.",
         "권총 태그에 도탄 태그도 붙여주세요."
       ],
       "endsClear": true,
       "happyLine": "쯔아아아앗 오르페우스!    (다행이도 머리에 대기만 한다.)",
-      "angryLine": "아무것도 소환되지 않았다..."
+      "angryLine": "아무것도 소환되지 않았다...",
+      "isDifficult": false
     },
     {
       "id": "3fe84f1ef3ba7c645b20fad83564cada",
@@ -848,13 +838,13 @@
       "requestIds": [
         "module/explosion/min-2"
       ],
-      "price": 600,
       "lines": [
         "선생님! 엄청 강한 총 만들어주세요! 폭발 모듈 2개는 달아야 세다고 들었어요!"
       ],
       "endsClear": true,
       "happyLine": "우와! 선생님 최고예요! 바로 써볼게요!",
-      "angryLine": "선생님... 이걸로는 아무도 못 지켜요..."
+      "angryLine": "선생님... 이걸로는 아무도 못 지켜요...",
+      "isDifficult": false
     },
     {
       "id": "a0a2b26fb940de64c88d341032fefb96",
@@ -862,14 +852,14 @@
       "requestIds": [
         "module/shotgun/min-3"
       ],
-      "price": 700,
       "lines": [
         "방사 모듈에 방사 모듈을 달고, 거기에 다시 방사 모듈을 달아서 드셔보시겠습니까?",
         "방사 모듈 3개 이상 이어 붙여서요."
       ],
       "endsClear": true,
       "happyLine": "방사 모듈 속에 방사 모듈 속에 방사 모듈! 잘 먹겠습니다.",
-      "angryLine": "방사 모듈이 빠졌잖아!"
+      "angryLine": "방사 모듈이 빠졌잖아!",
+      "isDifficult": false
     },
     {
       "id": "9f6cc4a608cdb4e4bbe4dcd2b1d6167d",
@@ -878,7 +868,6 @@
         "tag/shotgun",
         "module/split-two/min-1"
       ],
-      "price": 700,
       "lines": [
         "탕! 이게 진짜 총이었으면 당신은 죽었습니다.",
         "산탄총 태그에, 2방향 분할도 장착해주세요."
@@ -886,9 +875,7 @@
       "endsClear": true,
       "happyLine": "탕! 이번엔 진짜군요. 완벽하게 작동합니다.",
       "angryLine": "이것도 진짜 총은 아니네요.  제가 들고있는 총이 진짜 총이였다면 당신은 죽었습니다.",
-      "noBonusRequestIds": [
-        "module/split-two/min-1"
-      ]
+      "isDifficult": false
     },
     {
       "id": "0a8af4ee73848804a9693aa05665fb80",
@@ -897,14 +884,14 @@
         "tag/flamethrower",
         "tag/spin"
       ],
-      "price": 700,
       "lines": [
         "내게 축구는... 살인이다... 파이어 토네이도!!",
         "화염방사 태그에 회전 태그까지 부탁해요!"
       ],
       "endsClear": true,
       "happyLine": "파이어 토네이도~!!!",
-      "angryLine": "끝났다."
+      "angryLine": "끝났다.",
+      "isDifficult": false
     },
     {
       "id": "346ffc96cc977c64a8a3730e146a6ad0",
@@ -913,14 +900,14 @@
         "tag/homing",
         "tag/grenade-launcher"
       ],
-      "price": 800,
       "lines": [
         "에너미 체이서~!",
         "유도 태그와 유탄 태그를 함께 원해요."
       ],
       "endsClear": true,
       "happyLine": "철컥. 땡큐~!",
-      "angryLine": "아으악!(모덴군 죽는소리)"
+      "angryLine": "아으악!(모덴군 죽는소리)",
+      "isDifficult": false
     },
     {
       "id": "c2bdd0ee67e738841a3edca181024144",
@@ -929,14 +916,14 @@
         "tag/gravity-gun",
         "tag/grenade-launcher"
       ],
-      "price": 800,
       "lines": [
         "우주가→ 내게에↗ 노↗래↗한다아아↗↗아악↘! 이 선율은 대체 뭐야?!",
         "중력건 태그와 유탄 태그를 함께 붙여보자..."
       ],
       "endsClear": true,
       "happyLine": "(만족한듯이 돌아갔는데 뭐하는놈이였지..?)",
-      "angryLine": "(귓청이 터질것같다.)"
+      "angryLine": "(귓청이 터질것같다.)",
+      "isDifficult": false
     },
     {
       "id": "52c56089bff6c5341966c99523742ef5",
@@ -945,13 +932,13 @@
         "tag/water-gun",
         "tag/charge"
       ],
-      "price": 700,
       "lines": [
         "물총 태그에 차지 태그까지 부탁해요!"
       ],
       "endsClear": true,
       "happyLine": "긴급출동!",
-      "angryLine": "차라리 입으로 불어서 끄는게 낫겠어"
+      "angryLine": "차라리 입으로 불어서 끄는게 낫겠어",
+      "isDifficult": false
     },
     {
       "id": "d5a59221e412b7b4bb5188f1953c12d2",
@@ -960,14 +947,14 @@
         "tag/ricochet",
         "tag/sniper-rifle"
       ],
-      "price": 800,
       "lines": [
         "도탄되었습니다.",
         "도탄 태그와 저격총 태그를 함께 원해."
       ],
       "endsClear": true,
       "happyLine": "숨을곳은 없다!",
-      "angryLine": "하 씁 내가 못하는건가?"
+      "angryLine": "하 씁 내가 못하는건가?",
+      "isDifficult": false
     },
     {
       "id": "949c287f545cef84eb20c1f31f8eba01",
@@ -976,14 +963,14 @@
         "tag/charge",
         "tag/sniper-rifle"
       ],
-      "price": 900,
       "lines": [
         "빛의검 : 슈퍼노바 한자루 주세요!",
         "차지 태그와 저격총 태그를 붙여주세요. 모아 쏘는 레일건으로요!"
       ],
       "endsClear": true,
       "happyLine": "빛이여-----------!!!!!",
-      "angryLine": "끄앙...."
+      "angryLine": "끄앙....",
+      "isDifficult": false
     },
     {
       "id": "0c5e735d8c860654eb79844236b27b63",
@@ -992,13 +979,13 @@
         "tag/homing",
         "tag/shotgun"
       ],
-      "price": 800,
       "lines": [
         "산탄총 태그와 유도 태그가 둘 다 붙으면 좋겠어요. 친구 선물이에요."
       ],
       "endsClear": true,
       "happyLine": "이제 걔도 플래티넘 가겠네요!",
-      "angryLine": "친구가 더 못 맞힐 것 같은데요..."
+      "angryLine": "친구가 더 못 맞힐 것 같은데요...",
+      "isDifficult": false
     },
     {
       "id": "8f30edea593b9824c88aaa4606b9c50b",
@@ -1007,14 +994,14 @@
         "tag/water-gun",
         "tag/grenade-launcher"
       ],
-      "price": 800,
       "lines": [
         "워터밤때 쓸 물총 만들어주세요",
         "물총 태그랑 유탄 태그를 같이 맞춰주세요!"
       ],
       "endsClear": true,
       "happyLine": "사장님이 맛있고 총이 친절해요!",
-      "angryLine": "이걸 워터밤에 들고가면 뉴스에 나오겠는데요..."
+      "angryLine": "이걸 워터밤에 들고가면 뉴스에 나오겠는데요...",
+      "isDifficult": false
     },
     {
       "id": "c13e2f3309d85a942a71852dc0edb95d",
@@ -1023,14 +1010,14 @@
         "tag/spin",
         "tag/assault-rifle"
       ],
-      "price": 900,
       "lines": [
         "터미네이터2에서 슈왈제네거가 미니건 들고 쏘는 장면 알아요? 너무 멋있어서 저도 하나 살려구요",
         "회전 태그와 돌격소총 태그를 함께 원해요!"
       ],
       "endsClear": true,
       "happyLine": "하!하!하!하! 신난다!!!!!",
-      "angryLine": "이건 안멋있어요"
+      "angryLine": "이건 안멋있어요",
+      "isDifficult": false
     },
     {
       "id": "64bbf60094050bb4492d018a6e417617",
@@ -1043,40 +1030,40 @@
         "tag/homing",
         "tag/charge"
       ],
-      "price": 1000,
       "lines": [
         "이 가게에서 제일 좋은 거 다 넣어주세요.",
         "화염방사·물총·중력건·회전·유도·차지 태그를 전부 붙여주세요."
       ],
       "endsClear": true,
       "happyLine": "이게 바로 궁극의 총...!",
-      "angryLine": "하나라도 빠지면 안 된다고 했잖아요!"
+      "angryLine": "하나라도 빠지면 안 된다고 했잖아요!",
+      "isDifficult": false
     },
     {
       "id": "4dbebd0100c6bc24db1270af6d2e8600",
       "name": "D6_7_RobberAgain",
       "requestIds": [],
-      "price": 0,
       "lines": [
         "안녕하세요?  강도입니다. ",
         "어? 여기 뭔가 기억이 나는데? 혹시 저 아세요?"
       ],
       "endsClear": false,
       "happyLine": "감사합니다 강도였습니다.",
-      "angryLine": "감사합니다 강도였습니다."
+      "angryLine": "감사합니다 강도였습니다.",
+      "isDifficult": true
     },
     {
       "id": "78f7371a5c003d44393acb6a85257afb",
       "name": "D6_8_Bbotto",
       "requestIds": [],
-      "price": 0,
       "lines": [
         "나 인간 김인직 일한번 저질러 보리라",
         "뽀또 개레전드방송 땅콩샌드 아까 샀다니까 야 뽀또 아 뽀또 한번만 진짜 뽀또 한번만"
       ],
       "endsClear": false,
       "happyLine": "너 개새끼열매 먹었어?",
-      "angryLine": "너 개새끼열매 먹었어?"
+      "angryLine": "너 개새끼열매 먹었어?",
+      "isDifficult": true
     }
   ]
 }

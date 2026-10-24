@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+
 using UnityEngine;
 
 namespace WeaponWorkshop
@@ -11,156 +11,118 @@ namespace WeaponWorkshop
         [SerializeField] private TMPro.TextMeshProUGUI resultTitle;
         [SerializeField] private TMPro.TextMeshProUGUI resultBody;
         [SerializeField] private UnityEngine.UI.Button resultConfirm;
-        private Coroutine resultRoutine;
-        private Action resultDone;
-        private readonly System.Collections.Generic.List<UnityEngine.UI.Image> resultModuleIcons = new System.Collections.Generic.List<UnityEngine.UI.Image>();
-        private RectTransform resultIconRow;
-        private HoveringUI resultModuleTooltip;
-        private Vector2 resultBodyPosition;
-        private Vector2 resultBodySize;
+        [SerializeField] private ResultView m_resultView;
+        [SerializeField] private ResultModuleRowView m_resultModuleRow;
+        private ResultPresenter m_resultPresenter;
+        private bool m_hasLoggedResultReferenceError;
+
         private void InitializeResult()
         {
-            if (resultBackdrop != null) { resultBackdrop.alpha = 0f; resultBackdrop.gameObject.SetActive(false); }
-            if (resultContent != null) resultContent.alpha = 0f;
-            if (resultIconRow != null) resultIconRow.gameObject.SetActive(false);
-            resultModuleTooltip?.ClearResultModule();
-            if (resultBody != null)
+            if (m_resultPresenter != null)
             {
-                var rect = resultBody.rectTransform;
-                resultBodyPosition = rect.anchoredPosition;
-                resultBodySize = rect.sizeDelta;
-            }
-            if (resultConfirm != null) resultConfirm.onClick.AddListener(ConfirmResult);
-        }
-        public void ShowRaidResult(bool died, string summary, System.Collections.Generic.IReadOnlyList<int> modules, Action confirmed)
-        {
-            ShowResult(died, died ? "당신은 죽었습니다" : "귀환 성공",
-                died ? new Color(1f,.22f,.18f) : new Color(.2f,1f,.45f),
-                died ? "이번 습격에서 획득한 모든 재화는 가져갈 수 없습니다." : summary, confirmed);
-            ShowResultModules(died ? null : modules);
-        }
-        private void ShowResultModules(System.Collections.Generic.IReadOnlyList<int> modules)
-        {
-            int count = modules != null ? modules.Count : 0;
-            var bodyRect = resultBody.rectTransform;
-            bodyRect.anchoredPosition = count > 0 ? resultBodyPosition + new Vector2(0f, 48f) : resultBodyPosition;
-            bodyRect.sizeDelta = count > 0 ? new Vector2(resultBodySize.x, resultBodySize.y - 96f) : resultBodySize;
-            if (count == 0)
-            {
-                if (resultIconRow != null) resultIconRow.gameObject.SetActive(false);
-                resultModuleTooltip?.ClearResultModule();
                 return;
             }
-            if (resultIconRow == null)
+
+            if (m_resultView == null)
             {
-                var row = new GameObject("ResultModuleIcons", typeof(RectTransform));
-                resultIconRow = (RectTransform)row.transform;
-                resultIconRow.SetParent(resultContent.transform, false);
-                resultIconRow.anchorMin = resultIconRow.anchorMax = new Vector2(.5f, .5f);
-                resultIconRow.anchoredPosition = new Vector2(0f, -110f);
-                resultIconRow.sizeDelta = new Vector2(660f, 64f);
+                if (!m_hasLoggedResultReferenceError)
+                {
+                    m_hasLoggedResultReferenceError = true;
+                    Debug.LogError(
+                        "[NightRaidUI] 결과 화면 초기화 실패: m_resultView 참조가 없습니다. " +
+                        "ResultView 컴포넌트를 NightRaidUI 프리팹에 추가하고 연결하세요.");
+                }
+
+                return;
             }
-            var icons = GetComponentInParent<WorkshopTagsUI>(true);
-            if (icons == null) icons = transform.root.GetComponentInChildren<WorkshopTagsUI>(true);
-            if (resultModuleTooltip == null) resultModuleTooltip = GetComponentInParent<HoveringUI>(true);
-            if (resultModuleTooltip == null) resultModuleTooltip = transform.root.GetComponentInChildren<HoveringUI>(true);
-            while (resultModuleIcons.Count < count)
+
+            m_resultView.Configure(transform, resultBackdrop, resultContent, resultTitle, resultBody, resultConfirm);
+            ResultPresenter presenter = new ResultPresenter(
+                m_resultView,
+                () => GameManager.Instance,
+                HideResultExtraction);
+            if (!presenter.Initialize())
             {
-                var image = new GameObject("ModuleIcon", typeof(RectTransform), typeof(UnityEngine.UI.Image)).GetComponent<UnityEngine.UI.Image>();
-                image.transform.SetParent(resultIconRow, false);
-                image.raycastTarget = true;
-                image.preserveAspect = true;
-                image.gameObject.AddComponent<ResultModuleIconHover>();
-                resultModuleIcons.Add(image);
+                presenter.Dispose();
+                return;
             }
-            float spacing = Mathf.Min(72f, 650f / count);
-            float size = Mathf.Min(60f, spacing - 8f);
-            for (int i = 0; i < resultModuleIcons.Count; i++)
-            {
-                var image = resultModuleIcons[i];
-                image.gameObject.SetActive(i < count);
-                if (i >= count) continue;
-                image.sprite = icons != null ? icons.GetRaidModuleIcon(modules[i]) : null;
-                image.color = Color.white;
-                ModuleData data = moduleCatalog != null && moduleCatalog.TryGet(modules[i], out var entry) ? entry.data : null;
-                image.GetComponent<ResultModuleIconHover>().Bind(resultModuleTooltip, data);
-                var rect = (RectTransform)image.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
-                rect.anchoredPosition = new Vector2((i - (count - 1) * .5f) * spacing, 0f);
-                rect.sizeDelta = new Vector2(size, size);
-            }
-            resultIconRow.gameObject.SetActive(true);
+
+            m_resultPresenter = presenter;
         }
-        public void ShowBankruptcyResult(Action confirmed)
+
+        private void DisposeResult()
         {
-            ShowResult(true, "가게를 내놓았습니다", new Color(1f,.22f,.18f),
-                "자릿세를 내지 못해 가게를 내놓게 되었습니다.", confirmed);
+            m_resultPresenter?.Dispose();
+            m_resultPresenter = null;
+            if (m_resultView != null)
+            {
+                m_resultView.Dispose();
+            }
         }
-        private void ShowResult(bool failure, string title, Color titleColor, string body, Action confirmed)
+
+        private void HideResultExtraction()
+        {
+            SetExtraction(false, 0f, 0f);
+        }
+
+        // 생존 결과에는 이번 습격에서 얻은 모듈을 아이콘 줄로 보여 주고, 아이콘에 포인터를 올리면 모듈 상세를 띄운다.
+        public void ShowRaidResult(bool _died, string _summary, System.Collections.Generic.IReadOnlyList<int> _modules, Action _confirmed)
+        {
+            ShowRaidResult(_died, _summary, () =>
+            {
+                if (m_resultModuleRow != null)
+                {
+                    m_resultModuleRow.Hide();
+                }
+
+                _confirmed?.Invoke();
+            });
+            if (m_resultPresenter == null || m_resultModuleRow == null)
+            {
+                return;
+            }
+
+            WorkshopTagsUI icons = GetComponentInParent<WorkshopTagsUI>(true);
+            if (icons == null)
+            {
+                icons = transform.root.GetComponentInChildren<WorkshopTagsUI>(true);
+            }
+
+            HoveringUI tooltip = GetComponentInParent<HoveringUI>(true);
+            if (tooltip == null)
+            {
+                tooltip = transform.root.GetComponentInChildren<HoveringUI>(true);
+            }
+
+            m_resultModuleRow.Show(
+                _died ? null : _modules,
+                _id => icons != null ? icons.GetRaidModuleIcon(_id) : null,
+                _id => moduleCatalog != null && moduleCatalog.TryGet(_id, out ModuleCatalog.Entry entry) ? entry.data : null,
+                tooltip);
+        }
+
+        public void ShowRaidResult(bool _died, string _summary, Action _confirmed)
         {
             Initialize();
-            if (failure) SetExtraction(false, 0f, 0f);
-            if (resultBackdrop == null) { confirmed?.Invoke(); return; }
-            if (resultRoutine != null)
+            InitializeResult();
+            if (m_resultPresenter == null)
             {
-                if (!failure) return;
-                StopCoroutine(resultRoutine);
-                resultRoutine = null;
+                return;
             }
-            resultDone = confirmed;
-            resultContent.alpha = 0f;
-            GameManager.Instance?.SetDialogue(true);
-            resultTitle.text = title;
-            resultTitle.color = titleColor;
-            resultBody.text = body;
-            resultBody.color = Color.white;
-            resultBody.rectTransform.anchoredPosition = resultBodyPosition;
-            resultBody.rectTransform.sizeDelta = resultBodySize;
-            if (resultIconRow != null) resultIconRow.gameObject.SetActive(false);
-            resultModuleTooltip?.ClearResultModule();
-            resultConfirm.interactable = false;
-            resultBackdrop.gameObject.SetActive(true);
-            transform.SetAsLastSibling();
-            resultBackdrop.transform.SetAsLastSibling();
-            resultRoutine = StartCoroutine(RevealResult());
-        }
-        private IEnumerator RevealResult()
-        {
-            yield return FadeResult(resultBackdrop, 0f, 1f);
-            SetExtraction(false, 0f, 0f);
-            yield return FadeResult(resultContent, 0f, 1f);
-            resultConfirm.interactable = true; resultRoutine = null;
-        }
-        private void ConfirmResult()
-        {
-            if (resultRoutine != null || resultDone == null) return;
-            resultConfirm.interactable = false;
-            resultModuleTooltip?.ClearResultModule();
-            resultRoutine = StartCoroutine(LeaveResult());
-        }
-        private IEnumerator LeaveResult()
-        {
-            yield return FadeResult(resultContent, 1f, 0f);
-            var done = resultDone; resultDone = null; resultRoutine = null;
-            done?.Invoke();
-        }
-        private static IEnumerator FadeResult(CanvasGroup group, float from, float to)
-        {
-            for (float time = 0; time < .45f; time += Time.unscaledDeltaTime)
-            { group.alpha = Mathf.Lerp(from, to, Mathf.SmoothStep(0, 1, time / .45f)); yield return null; }
-            group.alpha = to;
-        }
-    }
 
-    public sealed class ResultModuleIconHover : MonoBehaviour, UnityEngine.EventSystems.IPointerEnterHandler,
-        UnityEngine.EventSystems.IPointerMoveHandler, UnityEngine.EventSystems.IPointerExitHandler
-    {
-        private HoveringUI tooltip;
-        private ModuleData module;
-        public void Bind(HoveringUI target, ModuleData data) { tooltip = target; module = data; }
-        public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData) => tooltip?.ShowResultModule(module, eventData.position);
-        public void OnPointerMove(UnityEngine.EventSystems.PointerEventData eventData) => tooltip?.ShowResultModule(module, eventData.position);
-        public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData) => tooltip?.ClearResultModule();
-        private void OnDisable() => tooltip?.ClearResultModule();
+            m_resultPresenter.ShowRaidResult(_died, _summary, _confirmed);
+        }
+
+        public void ShowBankruptcyResult(Action _confirmed)
+        {
+            Initialize();
+            InitializeResult();
+            if (m_resultPresenter == null)
+            {
+                return;
+            }
+
+            m_resultPresenter.ShowBankruptcyResult(_confirmed);
+        }
     }
 }

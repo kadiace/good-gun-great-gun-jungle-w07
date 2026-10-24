@@ -1,10 +1,12 @@
 using TMPro;
+
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
+    // 은퇴 화면의 기존 연결점(브리지). 직렬화 필드·Cost·IsOpen·씬 오버라이드 호환을 유지한다.
+    // 표시·기본 선택은 RetireView, 로그·씬 이동은 RetirePresenter가 담당하며 실행 시 실효 참조를 View로 전달한다.
     public sealed class RetireUI : MonoBehaviour
     {
         public const int Cost = 250000;
@@ -13,57 +15,57 @@ namespace WeaponWorkshop
         [SerializeField] private Button lobbyButton;
         [SerializeField] private Button continueButton;
         [SerializeField] private _DayManager dayManager;
+        [SerializeField] private RetireView m_view;
+
+        private RetirePresenter m_presenter;
+
         public bool IsOpen => panel != null && panel.activeSelf;
         public _DayManager DayManager => dayManager;
-        private float openedAt;
-        private bool firstEnding, leaving;
 
         private void Awake()
         {
-            panel.SetActive(false);
-            lobbyButton.onClick.AddListener(ReturnToLobby);
-            continueButton.onClick.AddListener(Continue);
+            // 씬에 저장된 활성 상태와 무관하게 닫힌 상태로 시작한다.
+            if (panel != null)
+            {
+                panel.SetActive(false);
+            }
+
+            RetireView view = ResolveView();
+            if (view == null)
+            {
+                Debug.LogError(
+                    "[RetireUI] Awake 실패: RetireView 참조가 없습니다. " +
+                    "Tools/UI/Authoring/Ending/Author 실행 결과를 확인하세요.", this);
+                return;
+            }
+
+            view.Configure(panel, continueText, lobbyButton, continueButton);
+            m_presenter = new RetirePresenter(view, dayManager);
+            if (!m_presenter.Initialize())
+            {
+                m_presenter = null;
+            }
         }
 
         private void OnDestroy()
         {
-            lobbyButton.onClick.RemoveListener(ReturnToLobby);
-            continueButton.onClick.RemoveListener(Continue);
+            m_presenter?.Dispose();
+            m_presenter = null;
         }
 
         public void Open(bool firstEnding)
         {
-            this.firstEnding = firstEnding;
-            openedAt = Time.unscaledTime;
-            continueText.text = $"{dayManager.DayNumber}일차부터 계속";
-            panel.SetActive(true);
-            panel.transform.SetAsLastSibling();
-            GameManager.Instance?.SetDialogue(true);
+            if (m_presenter == null)
+            {
+                return;
+            }
+
+            m_presenter.Open(firstEnding);
         }
 
-        private void LogChoice(string choice) => EndingLog.Choice(EndingLog.Retire, choice,
-            dayManager != null ? dayManager.DayNumber : 0, Time.unscaledTime - openedAt, firstEnding);
-
-        private void Continue()
+        private RetireView ResolveView()
         {
-            if (!IsOpen) return;
-            LogChoice("continue");
-            panel.SetActive(false);
-            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-            GameManager.Instance?.SetDialogue(false);
-        }
-
-        private void ReturnToLobby()
-        {
-            if (leaving || !IsOpen || !Application.CanStreamedLevelBeLoaded("Intro")) return;
-            leaving = true;
-            LogChoice("lobby");
-            SoundManager.RestoreBeforeRaidMusic(true);
-            NightRaidTransfer.Abandon();
-            TutorialManager.AbandonTraining();
-            GameSaveFiles.PendingLoad = null;
-            Time.timeScale = 1f;
-            SceneManager.LoadSceneAsync("Intro");
+            return m_view != null ? m_view : GetComponentInChildren<RetireView>(true);
         }
     }
 }

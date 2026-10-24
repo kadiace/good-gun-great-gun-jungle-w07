@@ -10,9 +10,8 @@ namespace WeaponWorkshop
     {
         [Serializable] public sealed class Sale
         {
-            // 만족 판매: 제작비 × (1 + tagBonusRatio × 보너스 요청 수) + 손님 보상. 불만족: 제작비 × dissatisfiedRatio.
-            public float tagBonusRatio = 0.2f;
-            public float dissatisfiedRatio = 0.8f;
+            // 진상에게 총을 제출할 때의 제작비 회수 비율. 일반 주문은 요청별 정액을 합산한다.
+            public float difficultCustomerRatio = 0.5f;
         }
         [Serializable] public sealed class PoolRequest
         {
@@ -24,7 +23,6 @@ namespace WeaponWorkshop
         {
             public string id;
             public int minRequests = 1, maxRequests = 3;
-            public int basePrice, pricePerRequest;
             public PoolRequest[] requests = Array.Empty<PoolRequest>();
             public string[] orderTemplates = Array.Empty<string>();
             public string[] multiRequestTemplates = Array.Empty<string>();
@@ -44,9 +42,7 @@ namespace WeaponWorkshop
             // 손님 SO의 profileId(에셋 GUID).
             public string id, name;
             public string[] requestIds = Array.Empty<string>();
-            public string[] noBonusRequestIds = Array.Empty<string>();
-            public string[] bonusRequestIds = Array.Empty<string>();
-            public int price;
+            public bool isDifficult;
             public string[] lines = Array.Empty<string>();
             public bool endsClear = true;
             public string happyLine, angryLine;

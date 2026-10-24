@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Profiling;
-using System.Diagnostics;
 
 namespace WeaponWorkshop
 {
@@ -139,41 +138,6 @@ namespace WeaponWorkshop
         private static readonly ProfilerMarker collisionMarker = new ProfilerMarker("DestructibleTarget.UpdateCollisionRuns");
         private static readonly ProfilerMarker subdivideMarker = new ProfilerMarker("DestructibleTarget.Subdivide");
         private static readonly ProfilerMarker explosionFinishMarker = new ProfilerMarker("DestructibleTarget.FinishExplosionStep");
-        private static readonly ProfilerMarker subdivisionBudgetMarker = new ProfilerMarker("DestructibleTarget.SubdivisionBudget");
-        public static float SubdivisionBudgetMilliseconds { get; set; } = 4f;
-        private static int subdivisionBudgetFrame = -1;
-        private static int subdivisionsThisFrame;
-        private static long subdivisionElapsedTicks;
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetSubdivisionBudget()
-        {
-            subdivisionBudgetFrame = -1;
-            subdivisionsThisFrame = 0; subdivisionElapsedTicks = 0;
-            SubdivisionBudgetMilliseconds = 4f;
-        }
-
-        private static bool IsSubdivisionBudgetAvailable()
-        {
-            using (subdivisionBudgetMarker.Auto())
-            {
-                ResetSubdivisionFrameIfNeeded();
-                return subdivisionsThisFrame == 0 || subdivisionElapsedTicks < SubdivisionBudgetTicks;
-            }
-        }
-
-        private static long SubdivisionBudgetTicks => (long)(Mathf.Max(0f, SubdivisionBudgetMilliseconds) * Stopwatch.Frequency / 1000f);
-        private static void ResetSubdivisionFrameIfNeeded()
-        {
-            if (subdivisionBudgetFrame == Time.frameCount) return;
-            subdivisionBudgetFrame = Time.frameCount; subdivisionsThisFrame = 0; subdivisionElapsedTicks = 0;
-        }
-        private static void RecordSubdivisionTime(long elapsedTicks)
-        {
-            using (subdivisionBudgetMarker.Auto())
-            {
-                ResetSubdivisionFrameIfNeeded(); subdivisionsThisFrame++; subdivisionElapsedTicks += elapsedTicks;
-            }
-        }
         private static Vector3Int RenderKey(Vector3Int cell) => new Vector3Int(
             cell.x / RenderChunkWidth, cell.y / RenderChunkWidth, cell.z / RenderChunkWidth);
 
@@ -200,6 +164,8 @@ namespace WeaponWorkshop
         {
             if (renderDirty)
             {
+                bool rebuildStopped = false;
+                int rebuiltChunks = 0;
                 using (meshMarker.Auto())
                 {
                     if (renderChunks.Count == 0)
@@ -211,6 +177,9 @@ namespace WeaponWorkshop
                     {
                         var chunk = pair.Value;
                         if (!chunk.dirty) continue;
+                        // At least one chunk per call keeps progress; the rest wait for the next frame.
+                        if (rebuiltChunks > 0 && DestructionFrameBudget.IsExhausted) { rebuildStopped = true; break; }
+                        rebuiltChunks++;
                         if (SurfaceRendering) { RebuildSurfaceChunk(pair.Key, chunk); CacheChunkBounds(pair.Key, chunk); chunk.dirty = false; continue; }
                         var origin = pair.Key * RenderChunkWidth;
                         int count = 0;
@@ -241,7 +210,7 @@ namespace WeaponWorkshop
                         CacheChunkBounds(pair.Key, chunk);
                         chunk.dirty = false;
                     }
-                    renderDirty = false;
+                    renderDirty = rebuildStopped;
                     // 청크 경계가 새로 정해졌으니 월드 경계도 다시 만들어야 한다.
                     chunkBoundsCount = -1;
                 }
@@ -625,25 +594,50 @@ namespace WeaponWorkshop
         private bool localSupportInProgress;
         private bool localSupportSupported;
         private Vector3Int localSupportSeed;
-        private int localSuspendSeedCount;
-        private int localSupportBudgetFrame = -1, localSupportBudgetLeft;
-        private Quaternion localSupportRootRotation;
-        // 프레임당 탐사 칸 수 예산. 지연 상한은 3프레임으로, 예약이 시작된 뒤 3프레임이 지나면
-        // 예산을 무시하고 남은 판정을 한 번에 마쳐 잃은 지지가 그 이상 늦게 떨어지지 않게 한다.
+        // 탐색을 멈출 때의 외부 지지 캐시 키. 다음 호출에서 지지 입력이 바뀌었으면 방문 기록을 버린다.
+        private long localSuspendExternalSignature;
+        private bool localSuspendExternalKeyValid;
+        // 방문 예산은 표적마다 따로 잡지 않고 모든 표적이 한 프레임 분을 함께 쓴다. 표적 수만큼
+        // 곱해지면 폭발 한 번에 프레임이 통째로 막히므로 남은 예산이 없으면 최소 보장만 이어서 본다.
         private const int LocalSupportVisitBudget = 8192;
-        private const int LocalSupportMaxDelayFrames = 3;
-        // 시든 시드 거르는 조건자를 호출마다 새로 만들지 않게 하나만 캐시한다.
-        private System.Predicate<Vector3Int> staleBoundaryFilter;
-        private int supportPendingSinceFrame = -1;
+        private const int LocalSupportMinVisitsPerCall = 64;
+        // 30프레임 넘게 밀린 판정이 있으면 StructuralSupportGraph처럼 슬라이스를 3배로 올린다.
+        private const int LocalSupportMaxStarveFrames = 30;
+        private const int LocalSupportStarvedVisitBudget = LocalSupportVisitBudget * 3;
+        private const int LocalSupportStarvedMinVisitsPerCall = LocalSupportMinVisitsPerCall * 2;
+        private static int localSupportBudgetFrame = -1;
+        private static int localSupportBudgetLeft;
+        private static int localSupportPendingFrames;
+        private static bool localSupportWorkPending;
+        // 최소 보장은 표적마다 한 프레임에 한 번만 준다(중력 흡수 종료와 LateUpdate가 겹칠 때 두 배로 늘지 않게).
+        private int localSupportServedFrame = -1;
         private static readonly ProfilerMarker localSupportMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport.Local");
         private static readonly ProfilerMarker supportFallbackMarker = new ProfilerMarker("DestructibleTarget.ResolveSupport.FullFallback");
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetLocalSupportBudget()
+        {
+            localSupportBudgetFrame = -1;
+            localSupportBudgetLeft = 0;
+            localSupportPendingFrames = 0;
+            localSupportWorkPending = false;
+        }
+        // 프레임마다 한 번, 모든 표적이 함께 쓸 방문 예산을 푼다. 이전 프레임에 밀린 판정이
+        // 있었으면 굶은 프레임으로 세고, 30프레임을 넘으면 예산과 최소 보장을 함께 올린다.
+        private static void EnsureLocalSupportFrameBudget()
+        {
+            if (localSupportBudgetFrame == Time.frameCount) return;
+            localSupportBudgetFrame = Time.frameCount;
+            localSupportPendingFrames = localSupportWorkPending ? localSupportPendingFrames + 1 : 0;
+            localSupportWorkPending = false;
+            localSupportBudgetLeft = localSupportPendingFrames >= LocalSupportMaxStarveFrames
+                ? LocalSupportStarvedVisitBudget : LocalSupportVisitBudget;
+        }
         private void RecordSupportRemoval(Vector3Int coordinate)
         {
             if (!supportValidated || resolvingSupportDrop) return;
-            // 국소 판정이 진행 중이면 파괴 하나만으로도 방문 기록이 낡아진다(리셋으로 칸이
-            // 되살아나는 경우까지 포함). 기록을 버려 다시 탐색하지 않으면 끊긴 조각을 다시는
-            // 검사하지 않게 되므로 여기서는 정확성을 위해 보수적으로 초기화한다.
-            if (localSupportInProgress || localSupportVisited.Count > 0) ResetLocalSupportProgress();
+            // 이미 방문한 칸이 사라졌을 때만 방문 기록이 낡는다. 진행 중인 컴포넌트 밖의 제거는
+            // 탐색 결과에 영향을 주지 않으므로 폭발이 이어지는 동안 같은 컴포넌트를 다시 훑지 않는다.
+            if (localSupportVisited.Contains(coordinate)) ResetLocalSupportProgress();
             foreach (var direction in neighbors) changedBoundary.Add(coordinate + direction);
         }
         // 멈춰 둔 국소 탐색 상태를 버린다. 탐색 중이던 컴포넌트는 시작 시드를 예약 목록에 되돌려
@@ -671,53 +665,56 @@ namespace WeaponWorkshop
                     // 전체 재판정 뒤에는 국소 예약·방문 기록이 무의미하다.
                     ResetLocalSupportProgress();
                     changedBoundary.Clear();
-                    supportPendingSinceFrame = -1;
                 }
                 else if (changedBoundary.Count > 0 || localSupportInProgress)
                     using (localSupportMarker.Auto()) ResolveLocalSupportBudgeted();
                 supportValidated = true;
             }
         }
-        // 바뀐 경계에 붙은 연결 조각을 프레임 예산 안에서 검사한다. 컴포넌트는 판정이 "통과" 또는
-        // "통째로 낙하" 둘 중 하나로만 끝나므로 탐색을 여러 프레임에 나눠 봐도 한 번에 다 본 것과
-        // 붕괴 결과가 같다. 지연 상한(LocalSupportMaxDelayFrames) 안에는 반드시 마친다.
+        // 바뀐 경계에 붙은 연결 조각을 공용 프레임 예산 안에서 검사한다. 컴포넌트는 판정이 "통과"
+        // 또는 "통째로 낙하" 둘 중 하나로만 끝나므로 탐색을 여러 프레임에 나눠 봐도 한 번에 다 본
+        // 것과 붕괴 결과가 같다. 공용 예산이 바닥나도 표적마다 최소 보장만큼은 이어서 보므로
+        // 오래 기다린 판정도 결국 끝난다.
         private void ResolveLocalSupportBudgeted()
         {
-            if (localSupportBudgetFrame != Time.frameCount)
-            {
-                localSupportBudgetFrame = Time.frameCount;
-                localSupportBudgetLeft = LocalSupportVisitBudget;
-            }
-            bool finishNow = supportPendingSinceFrame >= 0 &&
-                Time.frameCount - supportPendingSinceFrame >= LocalSupportMaxDelayFrames;
-            if (staleBoundaryFilter == null) staleBoundaryFilter = coordinate => !HasCell(coordinate);
-            changedBoundary.RemoveWhere(staleBoundaryFilter);
-            // 멈춰 둔 탐색이 있을 때 새 시드가 끼어들었거나(이웃 파츠 지지 변화 등) 뿌리가 돌았으면
-            // 방문 기록이 낡아진다. 기록을 비우고 다시 본다.
-            if ((localSupportInProgress || localSupportVisited.Count > 0) &&
-                (changedBoundary.Count != localSuspendSeedCount || CellRoot.rotation != localSupportRootRotation))
-                ResetLocalSupportProgress();
+            EnsureLocalSupportFrameBudget();
+            // 시든 시드는 여기서 일괄로 거르지 않고 시드를 꺼낼 때 HasCell로 확인한다.
             if (!(localSupportInProgress || changedBoundary.Count > 0))
             {
                 // 남은 것이 시든 시드뿐이었다. 예약을 닫는다.
                 localSupportVisited.Clear();
-                localSuspendSeedCount = 0;
-                supportPendingSinceFrame = -1;
+                localSuspendExternalKeyValid = false;
                 return;
             }
-            if (!finishNow && localSupportBudgetLeft <= 0)
+
+            // 외부 지지 결과는 입력(이웃 충돌 형상 버전·지지 상태·연결·루트 자세)이 그대로면 캐시를 쓴다.
+            // 이 표적의 칸 제거만으로는 캐시가 낡지 않아 이미 본 컴포넌트를 다시 훑지 않는다.
+            RefreshExternalSupport();
+            long externalSignature = externalSupportCacheKey;
+            externallyHeld = externalSupportCacheHeld;
+            // 멈춰 둔 탐색 중에 외부 지지 입력이 바뀌었으면 방문 기록이 낡아진다.
+            // 그 밖의 새 시드는 이미 본 컴포넌트를 다시 훑을 필요가 없으므로 기록을 유지한다.
+            if ((localSupportInProgress || localSupportVisited.Count > 0) &&
+                (!localSuspendExternalKeyValid || externalSignature != localSuspendExternalSignature))
+                ResetLocalSupportProgress();
+            localSuspendExternalSignature = externalSignature;
+            localSuspendExternalKeyValid = true;
+
+            // 이번 호출은 남은 공용 예산을 이어서 쓴다. 공용 창이 이미 소진된 프레임에는 다음
+            // 프레임을 기다리지 않고 최소 보장만큼만 진행해 표적이 굶지 않게 한다.
+            bool sharedAvailable = !DestructionFrameBudget.IsExhausted;
+            bool firstCallThisFrame = localSupportServedFrame != Time.frameCount;
+            localSupportServedFrame = Time.frameCount;
+            int minVisits = localSupportPendingFrames >= LocalSupportMaxStarveFrames
+                ? LocalSupportStarvedMinVisitsPerCall : LocalSupportMinVisitsPerCall;
+            int visits = sharedAvailable
+                ? Mathf.Max(firstCallThisFrame ? minVisits : 0, localSupportBudgetLeft)
+                : firstCallThisFrame ? minVisits : 0;
+            if (visits == 0)
             {
-                // 같은 프레임의 두 번째 호출(중력 흡수 종료 뒤 LateUpdate)은 예산을 새로 쓰지 않는다.
                 SuspendLocalSupport();
                 return;
             }
-            int visits = finishNow ? int.MaxValue : localSupportBudgetLeft;
-
-            CollectExternalSupport();
-            externallyHeld = false;
-            foreach (int supportedIndex in externallySupportedCells)
-                if (supportedIndex >= 0 && supportedIndex < grid.Length && grid[supportedIndex])
-                { externallyHeld = true; break; }
 
             while (true)
             {
@@ -741,10 +738,10 @@ namespace WeaponWorkshop
                 {
                     if (visits-- == 0)
                     {
-                        localSupportBudgetLeft = 0;
                         SuspendLocalSupport();
                         return;
                     }
+                    if (sharedAvailable && localSupportBudgetLeft > 0) localSupportBudgetLeft--;
                     Vector3Int coordinate = localSupportQueue.Dequeue();
                     if (!TryGetCell(coordinate, out Cell cell)) continue;
                     int cellIndex = CellIndex(coordinate);
@@ -775,23 +772,20 @@ namespace WeaponWorkshop
                 if (cells.Count == 0) externallyHeld = false;
                 if (visits == 0 && changedBoundary.Count > 0)
                 {
-                    localSupportBudgetLeft = 0;
                     SuspendLocalSupport();
                     return;
                 }
             }
             // 예약을 모두 처리했다. 방문 기록은 다음 일괄 때 낡아지므로 비워 둔다.
             localSupportVisited.Clear();
-            localSuspendSeedCount = 0;
-            supportPendingSinceFrame = -1;
+            localSuspendExternalKeyValid = false;
         }
         // 예산을 다 썼다. 이어하기 상태(방문 기록·큐·시드·남은 예약)를 보존하고 예약이 남아 있는
-        // 동안 표적이 갱신 대상에서 빠지지 않게 structureDirty를 되살린다.
+        // 동안 표적이 갱신 대상에서 빠지지 않게 structureDirty를 되살린다. 다음 프레임에 밀린
+        // 판정이 있었음을 남겨 30프레임을 넘기면 예산을 올린다.
         private void SuspendLocalSupport()
         {
-            localSuspendSeedCount = changedBoundary.Count;
-            localSupportRootRotation = CellRoot.rotation;
-            if (supportPendingSinceFrame < 0) supportPendingSinceFrame = Time.frameCount;
+            localSupportWorkPending = true;
             MarkStructureDirty();
         }
     }

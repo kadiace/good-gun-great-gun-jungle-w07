@@ -1,10 +1,10 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
-    // 엔드 상자 연출용 전체 화면 UI: 하얀 화면, END 글자, 계속하기/그만하기 버튼. EndChest가 알파를 구동한다.
+    // 엔드 상자 엔딩 화면의 기존 연결점(브리지). EndChest가 구동하는 SetWhite/SetEnd 공개 API와 직렬화 필드 호환을 유지한다.
+    // 표시는 EndChestEndingView, 로그·계속/Intro 선택은 EndChestEndingPresenter가 담당한다.
     [DisallowMultipleComponent]
     public sealed class EndChestEndingUI : MonoBehaviour
     {
@@ -15,71 +15,48 @@ namespace WeaponWorkshop
         [SerializeField] private Button continueButton;
         [SerializeField] private Button quitButton;
         [SerializeField] private string mainMenuScene = "Intro";
-        private bool leaving;
-        // 버튼이 눌리기 시작한 시각(실시간). 엔딩 로그의 panelSeconds용.
-        private float buttonsShownAt = -1f;
+        [SerializeField] private EndChestEndingView m_view;
 
-        // 씬에 저장된 활성 상태와 무관하게 전부 숨긴 상태로 시작한다.
+        private EndChestEndingPresenter m_presenter;
+
         private void Awake()
         {
-            leaving = false;
-            SetWhite(0f); SetEnd(0f);
-            buttonsShownAt = -1f;
-            if (continueButton != null) continueButton.onClick.AddListener(Continue);
-            if (quitButton != null) quitButton.onClick.AddListener(ExitToMainMenu);
+            EndChestEndingView view = ResolveView();
+            if (view == null)
+            {
+                Debug.LogError(
+                    "[EndChestEndingUI] Awake 실패: EndChestEndingView 참조가 없습니다. " +
+                    "Tools/UI/Authoring/Ending/Author 실행 결과를 확인하세요.", this);
+                return;
+            }
+
+            view.Configure(whiteGroup, endGroup, buttonsGroup, continueButton, quitButton);
+            m_presenter = new EndChestEndingPresenter(view, chest, mainMenuScene);
+            if (!m_presenter.Initialize())
+            {
+                m_presenter = null;
+            }
         }
 
         private void OnDestroy()
         {
-            if (continueButton != null) continueButton.onClick.RemoveListener(Continue);
-            if (quitButton != null) quitButton.onClick.RemoveListener(ExitToMainMenu);
+            m_presenter?.Dispose();
+            m_presenter = null;
         }
 
-        public void SetWhite(float alpha) { if (whiteGroup != null) whiteGroup.alpha = Mathf.Clamp01(alpha); }
+        public void SetWhite(float alpha)
+        {
+            m_presenter?.SetWhite(alpha);
+        }
 
-        // END 글자가 완전히 나타난 뒤에만 버튼이 눌린다.
         public void SetEnd(float alpha)
         {
-            alpha = Mathf.Clamp01(alpha);
-            if (endGroup != null) endGroup.alpha = alpha;
-            if (buttonsGroup == null) return;
-            buttonsGroup.alpha = alpha;
-            buttonsGroup.interactable = buttonsGroup.blocksRaycasts = alpha >= 1f;
-            if (alpha >= 1f && buttonsShownAt < 0f) buttonsShownAt = Time.unscaledTime;
-            else if (alpha <= 0f) buttonsShownAt = -1f;
+            m_presenter?.SetEnd(alpha);
         }
 
-        private void LogChoice(string choice)
+        private EndChestEndingView ResolveView()
         {
-            var raid = NightRaidController.Instance;
-            var workshop = NightRaidTransfer.Workshop;
-            EndingLog.Choice(EndingLog.EndChest, choice, workshop != null ? workshop.day : -1,
-                buttonsShownAt >= 0f ? Time.unscaledTime - buttonsShownAt : 0f, raid != null && raid.EndChestFirstEnding);
-        }
-
-        private void Continue()
-        {
-            if (leaving || chest == null || !chest.AwaitingChoice) return;
-            LogChoice("continue");
-            chest.Continue();
-        }
-
-        // 일시정지 메뉴의 '메인 메뉴로 나가기'와 같은 정리(확인 창만 생략).
-        private void ExitToMainMenu()
-        {
-            if (leaving) return;
-            if (!Application.CanStreamedLevelBeLoaded(mainMenuScene))
-            {
-                Debug.LogError($"빌드 목록에 메인 메뉴 씬을 등록하세요: {mainMenuScene}", this);
-                return;
-            }
-            leaving = true;
-            LogChoice("lobby");
-            NightRaidController.Instance?.NotifyEndingQuit();
-            NightRaidTransfer.Abandon();
-            GameSaveFiles.PendingLoad = null;
-            Time.timeScale = 1f;
-            SceneManager.LoadSceneAsync(mainMenuScene);
+            return m_view != null ? m_view : GetComponent<EndChestEndingView>();
         }
     }
 }

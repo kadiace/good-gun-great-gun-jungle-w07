@@ -49,15 +49,10 @@ namespace WeaponWorkshop
 
         private const float MaximumMergedPowerMultiplier = 4f;
         // 한 레이어의 조각 8개마다 예산을 본다. 조각당 비용이 큰 구간에서 확인 사이에
-        // 몰리는 초과폭을 줄여 30ms 상한을 지킨다(Stopwatch 호출 비용은 무시할 수준).
+        // 몰리는 초과폭을 줄여 공유 프레임 상한을 지킨다(Stopwatch 호출 비용은 무시할 수준).
         private const int PieceBudgetCheckInterval = 8;
-        // Destruction work one frame may spend on all live waves when nothing is deferred.
-        // Tunable in one place only: these static fields, never the inspector or a tuning asset.
+        // Share of the shared destruction window one frame may spend on all live waves.
         internal static float StepBudgetMilliseconds = 4f;
-        // 적응형 프레임 예산의 상한. 큐 헤어가 대기하는 동안 예산을 StepBudgetMilliseconds에서
-        // StepMaxDeferredFrames프레임에 걸쳐 이 값까지 선형으로 올린다. 밀린 일을 예산 없이
-        // 한 프레임에 처리하던 과거 따라잡기 프레임 대신, 밀린 일이 상한 있는 여러 프레임에 나누인다.
-        internal static float StepBudgetMaxMilliseconds = 30f;
         // Extra slice the single most-deferred wave still gets on a frame whose budget is already
         // spent, so deferred waves rotate through the queue instead of starving in a large storm.
         internal static float StepWaveBudgetMilliseconds = 1f;
@@ -69,19 +64,14 @@ namespace WeaponWorkshop
         // Released or disabled waves leave dead tickets that are skipped lazily so the queue
         // cannot stall.
         private static long stepServeTicket = 1, stepTicketTail = 1;
-        // Live ticket -> frame it joined the queue.
-        private static readonly Dictionary<long, int> stepLiveTickets = new Dictionary<long, int>(1024);
+        // Live tickets, so a released or disabled wave cannot stall the head of the queue.
+        private static readonly HashSet<long> stepLiveTickets = new HashSet<long>();
         private static int stepSliceFrame = -1;
-        // 큐 헤어가 이만큼 대기하면 프레임 예산이 StepBudgetMaxMilliseconds에 도달한다. 헤어진
-        // 보장 슬라이스까지 매 턴을 놓지 않으므로, 예산이 상한에 닿기 전에도 파괴가 폭발에 눈에
-        // 보이게 뒤처지지는 않는다.
-        internal static int StepMaxDeferredFrames = 6;
         private static readonly List<ExplosionRequest> pending = new List<ExplosionRequest>(2048);
         private static readonly Dictionary<DestructibleTarget, float> collectTargetDistances = new Dictionary<DestructibleTarget, float>(256);
         private static readonly Dictionary<TargetHealth, float> collectNearest = new Dictionary<TargetHealth, float>(512);
         private static readonly Dictionary<SlotMachineReels, float> collectSlots = new Dictionary<SlotMachineReels, float>();
         private static readonly Stack<Layer> sharedLayerCache = new Stack<Layer>(8192);
-        private static int collectionBudgetFrame = -1;
         private static readonly List<ProjectileMotor> activeProjectileBuffer = new List<ProjectileMotor>(2048);
         // 체인 기폭 검사용 프레임 스냅샷. 프레임당 1회 활성 탄환 목록·위치·활성 여부를 배열로
         // 모아 웨이브마다 탄환 전체를 다시 조회하지 않고 배열 구 판정만 한다. 탄환은 웨이브
@@ -177,7 +167,6 @@ namespace WeaponWorkshop
             chainAlive = Array.Empty<bool>();
             chainLaunchIds = Array.Empty<int>();
             chainProjectileCount = 0;
-            collectionBudgetFrame = -1;
             activeProjectileFrame = -1;
             pendingFrame = -1;
             stepBudgetFrame = -1;
@@ -192,27 +181,25 @@ namespace WeaponWorkshop
             (long)(Mathf.Max(0f, milliseconds) * System.Diagnostics.Stopwatch.Frequency / 1000f);
 
         // Opens one frame's budget window: retires dead tickets (a released wave cannot stall the
-        // queue) and sizes the frame budget by how long the queue head has waited. Deep deferral
-        // therefore drains over several capped frames instead of one unbudgeted catch-up frame.
+        // queue) and sizes the frame budget inside the shared destruction window.
         private static void BeginStepFrame()
         {
             if (stepBudgetFrame == Time.frameCount) return;
             stepBudgetFrame = Time.frameCount;
             stepFrameUsedTicks = 0;
             // Skip tickets whose wave was released or disabled before its turn came up.
-            while (stepServeTicket < stepTicketTail && !stepLiveTickets.ContainsKey(stepServeTicket)) stepServeTicket++;
-            int deferredFrames = stepLiveTickets.TryGetValue(stepServeTicket, out int queuedFrame)
-                ? Mathf.Max(0, Time.frameCount - queuedFrame) : 0;
-            stepFrameBudgetTicks = BudgetTicks(Mathf.Lerp(StepBudgetMilliseconds, StepBudgetMaxMilliseconds,
-                Mathf.Clamp01(deferredFrames / (float)Mathf.Max(1, StepMaxDeferredFrames))));
+            while (stepServeTicket < stepTicketTail && !stepLiveTickets.Contains(stepServeTicket)) stepServeTicket++;
+            // Leave the presentation reserve for support, mesh, and log work that runs later.
+            float sharedBudget = DestructionFrameBudget.RemainingMilliseconds -
+                DestructionFrameBudget.PresentationReserveMilliseconds;
+            stepFrameBudgetTicks = BudgetTicks(Mathf.Min(StepBudgetMilliseconds, Mathf.Max(0f, sharedBudget)));
         }
 
         // Decides whether this wave may start heavy work now. Any wave — fresh or queued — starts
         // while the frame budget remains, so leftover budget is spent on waiting waves instead of
         // being thrown away while they age in the queue. The FIFO order only breaks ties once the
-        // budget is spent: the queue head alone still gets one guaranteed wave slice per frame,
-        // and the head's wait length drives the adaptive budget. The ticket dictionary is touched
-        // once per frame here and on deferral, not on every Step.
+        // budget is spent: the queue head alone still gets one guaranteed wave slice per frame.
+        // The ticket set is touched once per frame here and on deferral, not on every Step.
         private bool BeginStepTurn(out bool sliceTurn)
         {
             sliceTurn = false;
@@ -221,7 +208,10 @@ namespace WeaponWorkshop
             if (budgetLeft) return true;
             if (stepTicket == 0) return false;
             if (stepTicket != stepServeTicket) return false;
-            if (stepSliceFrame != Time.frameCount)
+            // The guaranteed slice only runs while the shared budget still has room beyond the
+            // reserve, so a big storm cannot consume the whole frame.
+            if (stepSliceFrame != Time.frameCount &&
+                DestructionFrameBudget.RemainingMilliseconds > DestructionFrameBudget.PresentationReserveMilliseconds)
             {
                 stepSliceFrame = Time.frameCount;
                 sliceTurn = true;
@@ -231,8 +221,7 @@ namespace WeaponWorkshop
         }
 
         // Charges the time since the previous check to the frame budget and to the running turn.
-        // A budget-paid turn stops at the (adaptive) frame budget; a guaranteed slice stops at the
-        // wave share.
+        // A budget-paid turn stops at the frame budget; a guaranteed slice stops at the wave share.
         private bool StepBudgetExhausted()
         {
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -258,20 +247,8 @@ namespace WeaponWorkshop
             if (workPending)
             {
                 stepTicket = stepTicketTail++;
-                stepLiveTickets[stepTicket] = Time.frameCount;
+                stepLiveTickets.Add(stepTicket);
             }
-        }
-
-        private static void BeginCollectionBudget(float timeBudgetMilliseconds)
-        {
-            float requested = Mathf.Max(0f, timeBudgetMilliseconds);
-            if (collectionBudgetFrame != Time.frameCount)
-            {
-                collectionBudgetFrame = Time.frameCount;
-                DestructibleTarget.SubdivisionBudgetMilliseconds = requested;
-            }
-            else DestructibleTarget.SubdivisionBudgetMilliseconds =
-                Mathf.Min(DestructibleTarget.SubdivisionBudgetMilliseconds, requested);
         }
 
         // Fixed angular bins, independent of target dimensions and voxel size.
@@ -476,7 +453,6 @@ namespace WeaponWorkshop
                 // first budget check charges real time against the frame budget.
                 BeginStepFrame();
                 if (stepTurnMarkTicks == 0) stepTurnMarkTicks = System.Diagnostics.Stopwatch.GetTimestamp();
-                BeginCollectionBudget(tuning != null ? tuning.subdivisionBudgetMilliseconds : 4f);
                 using (collectMarker.Auto())
                 {
                     while (nextTargetCandidate < targetCandidates.Count)
@@ -664,9 +640,9 @@ namespace WeaponWorkshop
                 if (stepTicket == 0)
                 {
                     stepTicket = stepTicketTail++;
-                    stepLiveTickets[stepTicket] = Time.frameCount;
+                    stepLiveTickets.Add(stepTicket);
                 }
-                // 라이트 경로가 쓴 실제 시간도 프레임 예산에 가산해 30ms 상한이 프레임 비용을
+                // 라이트 경로가 쓴 실제 시간도 프레임 예산에 가산해 공유 상한이 프레임 비용을
                 // 반영하게 한다. 가산해도 라이트 작업(반경 확장·체인 검사) 자체는 예산과 무관하게
                 // 항상 돈다.
                 long lightStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();

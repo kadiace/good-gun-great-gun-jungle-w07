@@ -1,0 +1,49 @@
+# UI 개편 코드에 적용한다. 기존 게임 코드·패키지·생성 입력 코드는 일괄 정렬하지 않는다.
+[Assets/Scripts/UI/**/*.cs]
+charset = utf-8
+indent_style = space
+indent_size = 4
+tab_width = 4
+insert_final_newline = true
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_preserve_single_line_blocks = false
+csharp_preserve_single_line_statements = false
+csharp_prefer_braces = true:suggestion
+dotnet_sort_system_directives_first = true
+
+dotnet_naming_rule.parameters.symbols = parameters
+dotnet_naming_rule.parameters.style = parameter_style
+dotnet_naming_rule.parameters.severity = suggestion
+dotnet_naming_symbols.parameters.applicable_kinds = parameter
+dotnet_naming_style.parameter_style.required_prefix = _
+dotnet_naming_style.parameter_style.capitalization = camel_case
+
+dotnet_naming_rule.instance_fields.symbols = instance_fields
+dotnet_naming_rule.instance_fields.style = member_style
+dotnet_naming_rule.instance_fields.severity = suggestion
+dotnet_naming_symbols.instance_fields.applicable_kinds = field
+dotnet_naming_style.member_style.required_prefix = m_
+dotnet_naming_style.member_style.capitalization = camel_case
+
+dotnet_naming_rule.static_fields.symbols = static_fields
+dotnet_naming_rule.static_fields.style = uppercase_style
+dotnet_naming_rule.static_fields.severity = suggestion
+dotnet_naming_symbols.static_fields.applicable_kinds = field
+dotnet_naming_symbols.static_fields.required_modifiers = static
+
+dotnet_naming_rule.constants.symbols = constants
+dotnet_naming_rule.constants.style = uppercase_style
+dotnet_naming_rule.constants.severity = suggestion
+dotnet_naming_symbols.constants.applicable_kinds = field, local
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_style.uppercase_style.word_separator = _
+dotnet_naming_style.uppercase_style.capitalization = all_upper
+
+dotnet_naming_rule.methods_and_types.symbols = methods_and_types
+dotnet_naming_rule.methods_and_types.style = pascal_style
+dotnet_naming_rule.methods_and_types.severity = suggestion
+dotnet_naming_symbols.methods_and_types.applicable_kinds = method, class, struct, enum, delegate
+dotnet_naming_style.pascal_style.capitalization = pascal_case

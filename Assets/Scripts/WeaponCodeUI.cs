@@ -1,94 +1,75 @@
 using System;
-using System.Linq;
-using TMPro;
+
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
+    /// <summary>
+    /// 무기 코드 공유 브리지. 기존 public API·직렬화 필드·씬 오버라이드 호환을 유지하며,
+    /// 실질적인 View/Presenter 연결은 Initialize 전에 씬 오버라이드가 적용된 참조를 View로 전달한다.
+    /// </summary>
     public sealed class WeaponCodeUI : MonoBehaviour
     {
         [SerializeField] private GameObject panel;
         [SerializeField] private Button openButton, closeButton, copyButton, importButton;
-        [SerializeField] private TMP_InputField codeInput;
-        private UIManager ui;
-        private EquipableWeapon weapon;
-        private bool ownsDialogue;
-        public bool IsOpen => panel != null && panel.activeSelf;
-        private WorkshopSession Session => ui != null && ui.Player != null ? ui.Player.GetComponent<WorkshopSession>() : null;
-        private void Awake()
-        {
-            ui = GetComponent<UIManager>(); panel.SetActive(false); openButton.gameObject.SetActive(false); ownsDialogue = false;
-            openButton.onClick.AddListener(Open); closeButton.onClick.AddListener(Close);
-            copyButton.onClick.AddListener(Copy); importButton.onClick.AddListener(Import);
-        }
-        private void OnDisable() => Close();
-        private void LateUpdate()
-        {
-            var session = Session;
-            bool available = session != null && session.IsEditing;
-            openButton.gameObject.SetActive(available);
-            if (IsOpen && (!available || weapon == null || session.ActiveWorkbench.CurrentWeapon != weapon)) Close();
-        }
-        private void Open()
-        {
-            if (!TutorialManager.TryAction("share")) return;
-            if (GameManager.GameplayBlocked || Session == null || !Session.IsEditing) return;
-            weapon = Session.ActiveWorkbench.CurrentWeapon;
-            if (weapon == null) return;
-            codeInput.SetTextWithoutNotify("");
-            try { codeInput.SetTextWithoutNotify(WeaponShareCode.Export(weapon)); }
-            catch (Exception e) { ui.ShowNotification(e.Message); }
-            panel.SetActive(true); panel.transform.SetAsLastSibling();
-            ownsDialogue = GameManager.Instance != null;
-            if (ownsDialogue) GameManager.Instance.SetDialogue(true);
-        }
+        [SerializeField] private TMPro.TMP_InputField codeInput;
+        [SerializeField] private WeaponCodeView m_view;
+
+        private WeaponCodePresenter m_presenter;
+        private bool m_isInitialized;
+
+        public bool IsOpen => m_view != null && m_view.IsOpen;
+
+        // UICancelRouter 등 기존 호출부 호환. 닫기 처리는 Presenter가 소유한다.
         public void Close()
         {
-            bool inspected = IsOpen;
-            panel.SetActive(false); weapon = null;
-            if (ownsDialogue && GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
-            ownsDialogue = false;
-            if (inspected && TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("share-inspected");
+            m_presenter?.Close();
         }
-        private void Copy()
+
+        private void Awake()
         {
-            try
-            {
-                string code = WeaponShareCode.Export(weapon);
-                codeInput.SetTextWithoutNotify(code); GUIUtility.systemCopyBuffer = code;
-                ui.ShowNotification("무기 코드를 복사했습니다.");
-            }
-            catch (Exception e) { ui.ShowNotification(e.Message); }
+            Initialize();
         }
-        private void Import()
+
+        private void OnDisable()
         {
-            if (!TutorialManager.TryAction("share-import")) return;
-            try
+            m_presenter?.HandleDisabled();
+        }
+
+        private void OnDestroy()
+        {
+            m_presenter?.Dispose();
+        }
+
+        private void LateUpdate()
+        {
+            m_presenter?.Tick();
+        }
+
+        /// <summary>
+        /// View에 씬 오버라이드 참조를 주입하고 Presenter를 초기화합니다. 중복 호출에 안전합니다.
+        /// </summary>
+        public void Initialize()
+        {
+            if (m_isInitialized)
             {
-                if (weapon == null || weapon.ConstructionLocked) throw new ArgumentException("커스텀을 제거한 후 코드를 가져와 주세요.");
-                var blueprint = WeaponShareCode.Decode(codeInput.text);
-                var assembly = weapon.GetComponentInChildren<CubeAssembly>();
-                if (!assembly.TryCaptureLayout(out var old)) throw new ArgumentException("현재 조립을 읽을 수 없습니다.");
-                int oldMoney = old.blocks.Sum(b => b.paidPurchaseCost), oldMaterials = old.blocks.Sum(b => b.paidModuleCreditCost);
-                var plan = WeaponShareCode.Resolve(blueprint, assembly, ui.Player.GetComponent<PlayerModuleUnlocks>(),
-                    Mathf.Max(0, old.paidConstructionCost - oldMoney), out int money, out int materials);
-                var current = weapon;
-                ui.Feedback.ShowChoice(this, $"현재 조립을 '{blueprint.name}'으로 교체할까요?\n차액: ${money - oldMoney:N0} / 재료 {materials - oldMaterials:N0}\n음수는 기존 모듈 구매비 환불입니다.", () =>
-                {
-                    if (current == null || current != weapon || current.ConstructionLocked) return;
-                    var wallet = ui.Player.GetComponent<PlayerWallet>();
-                    if (wallet.TryPurchaseModule(Mathf.Max(0, money - oldMoney), Mathf.Max(0, materials - oldMaterials),
-                        () => assembly.RestoreLayout(plan)))
-                    {
-                        wallet.RefundConstruction(Mathf.Max(0, oldMoney - money)); wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
-                        current.SetWeaponName(blueprint.name); GetComponent<WeaponNameUI>()?.RefreshName();
-                        current.GetComponentInChildren<StatCollector>()?.Recalculate();
-                        ui.ShowNotification("무기 코드를 적용했습니다.");
-                    }
-                }, () => { });
+                return;
             }
-            catch (Exception e) { ui.ShowNotification(e.Message); }
+
+            if (m_view == null)
+            {
+                m_view = GetComponent<WeaponCodeView>();
+            }
+
+            if (m_view != null)
+            {
+                m_view.BindReferences(panel, openButton, closeButton, copyButton, importButton, codeInput);
+            }
+
+            m_presenter = new WeaponCodePresenter(m_view, GetComponent<UIManager>(), this);
+            m_presenter.Initialize();
+            m_isInitialized = true;
         }
     }
 }

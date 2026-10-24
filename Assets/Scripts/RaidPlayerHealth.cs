@@ -16,6 +16,8 @@ namespace WeaponWorkshop
         public float CurrentHealth { get; private set; }
         public float MaximumHealth => maximumHealth;
         public bool IsDead => CurrentHealth <= 0f;
+        private bool RaidResultFinalized =>
+            NightRaidController.Instance != null && NightRaidController.Instance.IsResultFinalizedFor(this);
         public event System.Action Changed;
         public event System.Action<Vector3> HitReceived;
         public event System.Action Died;
@@ -29,7 +31,10 @@ namespace WeaponWorkshop
         {
             bool training = TutorialManager.TrainingRaidPending && NightRaidController.Instance != null &&
                 NightRaidController.Instance.IsInRaid;
-            if (IsDead || Time.time < nextDamageTime || damage <= 0f) return;
+            if (RaidResultFinalized || IsDead || Time.time < nextDamageTime || damage <= 0f)
+            {
+                return;
+            }
             nextDamageTime = Time.time + invulnerabilitySeconds;
             float previousHealth = CurrentHealth;
             if (!training) CurrentHealth = Mathf.Max(0f, CurrentHealth - damage);
@@ -44,7 +49,10 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
-            if (knockbackRemaining <= 0f || controller == null || !controller.enabled || GameManager.GameplayBlocked) return;
+            if (knockbackRemaining <= 0f || controller == null || !controller.enabled || GameManager.GameplayBlocked || RaidResultFinalized)
+            {
+                return;
+            }
             float step = Mathf.Min(Time.deltaTime, knockbackRemaining);
             controller.Move(knockback * step); knockbackRemaining -= step;
         }

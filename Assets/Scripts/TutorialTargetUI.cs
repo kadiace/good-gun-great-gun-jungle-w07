@@ -1,84 +1,83 @@
 using TMPro;
+
 using UnityEngine;
 
 namespace WeaponWorkshop
 {
+    // 튜토리얼 대상 표식의 기존 연결점(브리지). 직렬화 필드와 씬 오버라이드 호환을 유지한다.
+    // 표시는 TutorialTargetView, 대상 선택은 TutorialTargetPresenter가 담당하며 실행 시 원본 참조는 이 컴포넌트가 전달한다.
     public sealed class TutorialTargetUI : MonoBehaviour
     {
         [SerializeField] private RectTransform panel;
         [SerializeField] private TextMeshProUGUI marker;
         [SerializeField] private Camera viewCamera;
-        [SerializeField, Min(0f)] private float bounceHeight = 8f;
+        [SerializeField, Min(0f)] private float bounceHeight = 6f;
         [SerializeField, Min(0f)] private float bounceSpeed = 2f;
-        [SerializeField, Min(1f)] private float arrowSize = 48f;
+        [SerializeField, Min(1f)] private float arrowSize = 36f;
+        [SerializeField] private TutorialTargetView m_view;
+
+        private TutorialTargetPresenter m_presenter;
 
         private void Awake()
         {
-            Hide();
-            if (viewCamera == null) viewCamera = Camera.main;
+            if (viewCamera == null)
+            {
+                viewCamera = Camera.main;
+            }
+
+            if (m_view == null)
+            {
+                Debug.LogError(
+                    "[TutorialTargetUI] Awake 실패: m_view에 TutorialTargetView 참조가 필요합니다. " +
+                    "Tools/UI/Authoring/TutorialHud/Author 실행 결과를 확인하세요.",
+                    this);
+                HidePanel();
+                return;
+            }
+
+            m_view.Configure(panel, marker, viewCamera, bounceHeight, bounceSpeed, arrowSize);
+            m_presenter = new TutorialTargetPresenter(m_view);
+            if (m_presenter.Initialize())
+            {
+                return;
+            }
+
+            m_presenter = null;
         }
+
         private void LateUpdate()
         {
-            var tutorial = TutorialManager.Instance;
-            var step = tutorial != null ? tutorial.CurrentStep : null;
-            var target = tutorial != null ? tutorial.CurrentInteractionTarget : null;
-            if (tutorial != null && tutorial.IsEditingTutorialWorkbench) { Hide(); return; }
-            if (step == null || target == null ||
-                viewCamera == null || panel == null || marker == null || GameManager.GameplayBlocked)
-            { Hide(); return; }
-            panel.gameObject.SetActive(true);
-            var guide = target.GetComponent<InteractionGuidePoints>();
-            Vector3 world = target.transform.position;
-            Vector3 topWorld = world + Vector3.up;
-            if (guide != null) { world = guide.Center; topWorld = guide.Top; }
-            else
-            {
-                // Customers change portrait size by profile; follow their actual visible bounds.
-                bool found = false;
-                Bounds bounds = default;
-                foreach (var renderer in target.GetComponentsInChildren<Renderer>())
-                {
-                    if (!renderer.enabled || renderer.GetComponent<TMP_Text>() != null) continue;
-                    if (!found) { bounds = renderer.bounds; found = true; }
-                    else bounds.Encapsulate(renderer.bounds);
-                }
-                if (found) { world = bounds.center; topWorld = new Vector3(world.x, bounds.max.y + .1f, world.z); }
-            }
-            Vector3 viewport = viewCamera.WorldToViewportPoint(world);
-            Vector2 direction = new Vector2(viewport.x - .5f, viewport.y - .5f);
-            bool behind = viewport.z <= 0f;
-            if (behind)
-            {
-                direction = -direction;
-                if (direction.sqrMagnitude < .001f) direction = Vector2.down;
-            }
-            Vector2 half = panel.rect.size * .5f;
-            Vector2 limit = new Vector2(Mathf.Max(1f, half.x - 155f), Mathf.Max(1f, half.y - 105f));
-            Vector2 point = Vector2.Scale(direction, panel.rect.size);
-            float edge = Mathf.Max(Mathf.Abs(point.x) / limit.x, Mathf.Abs(point.y) / limit.y);
-            bool offscreen = behind || viewport.x < 0f || viewport.x > 1f || viewport.y < 0f || viewport.y > 1f;
-            float bounce = Mathf.Abs(Mathf.Sin(Time.unscaledTime * Mathf.PI * bounceSpeed)) * bounceHeight;
-            if (offscreen)
-            {
-                point /= Mathf.Max(edge, .001f);
-            }
-            else
-            {
-                Vector3 top = viewCamera.WorldToViewportPoint(topWorld);
-                point = Vector2.Scale(new Vector2(top.x - .5f, top.y - .5f), panel.rect.size);
-                point.y += bounce;
-                point.x = Mathf.Clamp(point.x, -half.x + arrowSize, half.x - arrowSize);
-                point.y = Mathf.Clamp(point.y, -half.y + arrowSize, half.y - arrowSize);
-            }
-            marker.rectTransform.anchoredPosition = point;
-            string arrow = offscreen ? (Mathf.Abs(direction.x) > Mathf.Abs(direction.y)
-                ? (direction.x > 0 ? "→ " : "← ") : (direction.y > 0 ? "↑ " : "↓ ")) : "";
-            string title = target is Customer ? "손님" : (string.IsNullOrEmpty(step.targetLabel) ? step.title : step.targetLabel);
-            marker.text = offscreen
-                ? $"<size={arrowSize:0}>{arrow}</size>{title}\n{Vector3.Distance(viewCamera.transform.position, world):0}m"
-                : $"<size={arrowSize:0}>▼</size>";
+            m_presenter?.Tick();
         }
-        private void Hide() { if (panel != null) panel.gameObject.SetActive(false); }
-        private void OnDisable() => Hide();
+
+        private void OnDisable()
+        {
+            if (m_presenter != null)
+            {
+                m_presenter.OnDisabled();
+                return;
+            }
+
+            HidePanel();
+        }
+
+        private void OnDestroy()
+        {
+            if (m_presenter == null)
+            {
+                return;
+            }
+
+            m_presenter.Dispose();
+            m_presenter = null;
+        }
+
+        private void HidePanel()
+        {
+            if (panel != null)
+            {
+                panel.gameObject.SetActive(false);
+            }
+        }
     }
 }

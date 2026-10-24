@@ -117,7 +117,8 @@ namespace WeaponWorkshop
             var entry = new ShopOrderLinkLogEvent
             {
                 profileId = order.ProfileId ?? "",
-                requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(order.RequestIds) ?? Array.Empty<string>()
+                requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(order.RequestIds) ?? Array.Empty<string>(),
+                generatedDay = state.generatedDay, requestRewards = state.rewards, schemaVersion = 2
             };
             if (Write(entry, state.restored ? "order_restored" : "order_created", order, day)) state.creationLogged = true;
         }
@@ -199,8 +200,13 @@ namespace WeaponWorkshop
             var capturedWeapon = CaptureWeapon(weapon);
             int basePrice = weapon != null ? weapon.PaidConstructionCost : 0;
             CaptureRequests(order, weapon, out string[] met, out string[] failed);
+            var quote = CustomerRewardInfo.Calculate(order, weapon,
+                CustomerRewardInfo.SaleMultiplier(FindFirstObjectByType<GameSaveController>()));
             Write(new ShopSaleLogEvent
             {
+                schemaVersion = 2, generatedDay = order.OrderState?.generatedDay ?? dayManager.DayNumber,
+                rewardBeforeMultiplier = quote.baseReward, saleMultiplier = quote.multiplier,
+                difficultCustomer = order.IsDifficult,
                 price = price, satisfied = satisfied, tagCount = tagCount, basePrice = basePrice, bonus = price - basePrice,
                 metRequestIds = met, failedRequestIds = failed,
                 weaponCode = capturedWeapon.weaponCode, weaponCodeStatus = capturedWeapon.weaponCodeStatus

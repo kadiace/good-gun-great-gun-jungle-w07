@@ -23,6 +23,14 @@ namespace WeaponWorkshop
             public int walletModuleCredits;
         }
 
+        private enum PlacementLoanOfferResult
+        {
+            NotNeeded,
+            Offered,
+            DailyLimit,
+            Unavailable
+        }
+
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField] private int selectedSlot = 1;
         [SerializeField] private bool deleteMode;
@@ -34,12 +42,16 @@ namespace WeaponWorkshop
         private bool paletteOpen;
         private int hoveredPaletteModule;
         private bool favoriteDragActive;
+        public event System.Action<int> FavoriteSelected;
         public void SetHoveredPaletteModule(int moduleId) => hoveredPaletteModule = moduleId;
         private void HandleFavoriteKey(int index)
         {
             if (GameManager.GameplayBlocked || favoriteDragActive || !TutorialManager.TryAction("select-module")) return;
             if (PaletteOpen && hoveredPaletteModule > 0) { SetFavorite(index, hoveredPaletteModule); return; }
-            SelectModule(GetFavorite(index));
+            if (SelectModule(GetFavorite(index)))
+            {
+                FavoriteSelected?.Invoke(index);
+            }
         }
         private InputActionMap controls;
         private Camera view;
@@ -234,18 +246,19 @@ namespace WeaponWorkshop
                 TutorialManager.Instance?.NotifySignal($"quickslot-{index + 1}-module-{moduleId}", this);
         }
 
+        public bool IsFavoriteDragging => favoriteDragActive;
         public void SetFavoriteDrag(bool active)
         {
             favoriteDragActive = active;
             if (active) CancelPreview();
         }
 
-        public void SelectModule(int moduleId)
+        public bool SelectModule(int moduleId)
         {
-            if (GameManager.GameplayBlocked || paintingMode || !TutorialManager.TryAction("select-module")) return;
+            if (GameManager.GameplayBlocked || paintingMode || !TutorialManager.TryAction("select-module")) return false;
             CancelPreview();
             int slot = ValidModuleOrBlocker(moduleId);
-            if (IsModuleLocked(slot)) return;
+            if (IsModuleLocked(slot)) return false;
             // Color module: pick the color first (ColorPickerUI shows while ColorPickerOpen); placing waits.
             if (IsColorModule(slot))
             {
@@ -256,6 +269,7 @@ namespace WeaponWorkshop
             selectedSlot = slot;
             deleteMode = false;
             UpdateEraseModeUI();
+            return true;
         }
 
         // Every color module placed after this gets the confirmed color, until it is picked again.
@@ -447,6 +461,12 @@ namespace WeaponWorkshop
             if (GameManager.GameplayBlocked)
             {
                 paintPointerHeld = false;
+                if (preview != null && OnboardingManager.IsChoosingModuleDirection(this))
+                {
+                    if (pendingAssembly == null || !pendingAssembly.gameObject.activeInHierarchy ||
+                        !pendingAssembly.CanAttach(pendingCell, pendingSlot)) CancelPreview();
+                    else UpdatePreview();
+                }
                 return;
             }
             if (paintingMode && !stickerToolActive && paintPointerHeld)
@@ -622,6 +642,70 @@ namespace WeaponWorkshop
                 WorkshopSoundEffects.RaiseBlockRemoved(soundPosition);
         }
 
+        private PlacementLoanOfferResult TryOfferPlacementLoan(int _dollars, int _credits, out string _unavailableReason)
+        {
+            _unavailableReason = null;
+            if (wallet == null)
+            {
+                _unavailableReason = "지갑을 사용할 수 없습니다";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.Balance >= _dollars)
+            {
+                return PlacementLoanOfferResult.NotNeeded;
+            }
+            if (!wallet.isActiveAndEnabled)
+            {
+                _unavailableReason = "지갑을 사용할 수 없습니다";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.ModuleCredits < _credits)
+            {
+                _unavailableReason = "부품이 부족합니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            FeedbackUI feedback = FeedbackUI.For(this);
+            _DayManager dayManager = FindFirstObjectByType<_DayManager>();
+            if (dayManager == null)
+            {
+                _unavailableReason = "대출을 받을 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (dayManager.DayNumber < 0 ||
+                wallet.OutstandingLoans == int.MaxValue ||
+                wallet.Balance > int.MaxValue - PlayerWallet.LoanAmount)
+            {
+                _unavailableReason = "대출을 받을 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.LastLoanDay == dayManager.DayNumber)
+            {
+                _unavailableReason = "대출은 하루에 한 번만 받을 수 있습니다.";
+                return PlacementLoanOfferResult.DailyLimit;
+            }
+            int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
+            TutorialManager tutorial = TutorialManager.Instance;
+            bool offered = feedback != null && feedback.ShowChoice(this, $"${PlayerWallet.LoanAmount:N0} 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
+                () =>
+                {
+                    if (wallet.TryTakeLoan(dayManager.DayNumber))
+                    {
+                        TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench);
+                    }
+                },
+                null, "대출받기", "취소");
+            if (!offered)
+            {
+                _unavailableReason = "대출 안내를 표시할 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (tutorial != null && tutorial.CurrentStep?.requiredSignal == "loan-taken")
+            {
+                tutorial.ShowLoanGuide(feedback);
+            }
+            return PlacementLoanOfferResult.Offered;
+        }
+
         private bool TryPurchaseAttach(CubeAssembly assembly, Vector3Int cell, int slot,
             Vector3Int direction, Vector3Int normal)
         {
@@ -640,22 +724,9 @@ namespace WeaponWorkshop
             string partKind = PartLogName(assembly, slot);
             if (wallet.Balance < dollars)
             {
-                if (wallet.CanAffordModuleCredits(materials))
+                if (TryOfferPlacementLoan(dollars, materials, out string reason) == PlacementLoanOfferResult.DailyLimit)
                 {
-                    var feedback = FeedbackUI.For(this);
-                    var dayManager = FindFirstObjectByType<_DayManager>();
-                    if (dayManager != null && wallet.LastLoanDay != dayManager.DayNumber)
-                    {
-                        int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
-                        var tutorial = TutorialManager.Instance;
-                        if (feedback != null && feedback.ShowChoice(this, $"$3,000 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
-                            () => { if (wallet.TryTakeLoan(dayManager.DayNumber))
-                                TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench); },
-                            null, "대출받기", "취소") && tutorial != null &&
-                            tutorial.CurrentStep?.requiredSignal == "loan-taken")
-                            tutorial.ShowLoanGuide(feedback);
-                    }
-                    else if (dayManager != null) feedback?.ShowNotification("대출은 하루에 한 번만 받을 수 있습니다.");
+                    FeedbackUI.For(this)?.ShowNotification(reason);
                 }
                 return false;
             }
@@ -712,6 +783,17 @@ namespace WeaponWorkshop
                 if (assembly == null || !assembly.TryGetAttachCell(hit, out cell, out face)) return;
             }
             PlaceAtCell(assembly, cell, face);
+        }
+
+        public bool CompleteOnboardingPlacement(int slot)
+        {
+            if (preview == null || pendingAssembly == null || pendingSlot != slot || GameManager.GameplayBlocked) return false;
+            if (!CanSelectDirection(pendingDirection)) return false;
+            if (!ExecuteUndoableEdit(pendingAssembly,
+                    () => TryPurchaseAttach(pendingAssembly, pendingCell, pendingSlot,
+                        pendingDirection, -pendingAttachmentDirection))) return false;
+            CancelPreview();
+            return true;
         }
 
         // 3D 표면 선택과 2D 그리드 선택은 같은 설치·결제·되돌리기 경로를 사용한다.
@@ -775,6 +857,7 @@ namespace WeaponWorkshop
                 renderer.SetPropertyBlock(tint);
             }
             UpdatePreview();
+            OnboardingManager.NotifyModulePlacementAttempt(selectedSlot, this);
         }
 
         public int GetNextModuleCreditCost(int slot)

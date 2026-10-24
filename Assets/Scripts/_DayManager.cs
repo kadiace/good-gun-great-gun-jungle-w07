@@ -307,9 +307,7 @@ public class _DayManager : MonoBehaviour
         GameSaveFiles.PendingLoad = null;
         GameSaveFiles.ClearRaidRecovery();
         PoolManager.ClearActive();
-        Time.timeScale = 1f;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        WeaponWorkshop.UIInputPolicy.ApplyLobbyPolicy();
         SceneManager.LoadSceneAsync("Intro", LoadSceneMode.Single);
     }
     // Explicit hook for the authored tutorial's eventual completion; an empty day never auto-advances.
@@ -370,9 +368,7 @@ public class _DayManager : MonoBehaviour
             GameSaveFiles.PendingLoad = null;
             GameSaveFiles.ClearRaidRecovery();
             PoolManager.ClearActive();
-            Time.timeScale = 1f;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            WeaponWorkshop.UIInputPolicy.ApplyLobbyPolicy();
             Changed?.Invoke();
             SceneManager.LoadSceneAsync("Intro", LoadSceneMode.Single);
             return;
@@ -510,7 +506,7 @@ public class _DayManager : MonoBehaviour
             foreach (var order in data.deferredCustomers)
             {
                 if (FindSavedProfile(order) == null) continue;
-                var profile = RestoreOrder(order);
+                var profile = RestoreOrder(order, data.day);
                 if (!IsDeferred(profile)) deferredCustomers.Add(profile);
             }
         CustomerDay restoredDay;
@@ -519,7 +515,7 @@ public class _DayManager : MonoBehaviour
             restoredDay = ScriptableObject.CreateInstance<CustomerDay>();
             restoredDay.day = data.day;
             restoredDay.Rent = data.dailyRent;
-            restoredDay.customers = Array.ConvertAll(data.dailyOrders, RestoreOrder);
+            restoredDay.customers = Array.ConvertAll(data.dailyOrders, order => RestoreOrder(order, data.day));
         }
         else
         {
@@ -528,7 +524,7 @@ public class _DayManager : MonoBehaviour
             restoredDay.CopyRuntimeFrom(sourceDay);
             restoredDay.customers = (CustomerProfile[])restoredDay.customers.Clone();
             for (int i = 0; i < restoredDay.customers.Length; i++)
-                restoredDay.customers[i] = CreateRuntimeOrder(restoredDay.customers[i], restored: true);
+                restoredDay.customers[i] = CreateRuntimeOrder(restoredDay.customers[i], data.day, restored: true);
         }
         for (int i = 0; i < restoredDay.customers.Length; i++)
         {
@@ -618,7 +614,7 @@ public class _DayManager : MonoBehaviour
         if (TryFindProfile(profile, out int sourceDay, out int slot))
             return new CustomerOrderSave { profileId = profile.ProfileId, orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.RequestIds) };
         return new CustomerOrderSave { orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.RequestIds), lines = profile.Lines,
-            happyLine = profile.HappyLine, angryLine = profile.AngryLine, price = profile.Price,
+            happyLine = profile.HappyLine, angryLine = profile.AngryLine,
             portrait = endlessRequests != null && endlessRequests.portraits != null
                 ? Array.IndexOf(endlessRequests.portraits, profile.portrait) : -1 };
     }
@@ -628,6 +624,8 @@ public class _DayManager : MonoBehaviour
         if (order == null) return false;
         if (order.orderState != null && !string.IsNullOrEmpty(order.orderState.orderId) &&
             !Guid.TryParseExact(order.orderState.orderId, "N", out _)) return false;
+        string[] rewardIds = order.requestIds ?? FindSavedProfile(order)?.RequestIds ?? SavedRequestIds(order);
+        if (!CustomerRewardInfo.ValidSavedRewards(order.orderState, rewardIds)) return false;
         if (!string.IsNullOrEmpty(order.profileId) || order.sourceSlot >= 0)
             return FindSavedProfile(order) != null && (order.requestIds == null || TableManager.Instance.CustomerRequest.ContainsOrder(order.requestIds));
         return order.lines != null && order.lines.Length > 0 && order.price >= 0 &&
@@ -638,15 +636,16 @@ public class _DayManager : MonoBehaviour
         ? TableManager.Instance.CustomerRequest.CanonicalRequestIds(order.requestIds)
         : TableManager.Instance.CustomerRequest.RestoreLegacyOrder(endlessRequests != null ? endlessRequests.PoolId : null, order.requests);
 
-    private CustomerProfile RestoreOrder(CustomerOrderSave order)
+    private CustomerProfile RestoreOrder(CustomerOrderSave order, int savedDay)
     {
         var authored = FindSavedProfile(order);
         if (authored != null)
         {
-            var restored = CreateRuntimeOrder(authored, restored: true);
+            var restored = CreateRuntimeOrder(authored, savedDay, restored: true);
             if (order.requestIds != null) restored.RequestIds = SavedRequestIds(order);
             restored.OrderState = !string.IsNullOrEmpty(order.orderState?.orderId)
                 ? order.orderState.Copy(fromSave: true) : CustomerOrderState.Create(restored: true);
+            CustomerRewardInfo.InitializeOrder(restored, savedDay);
             return restored;
         }
         var profile = ScriptableObject.CreateInstance<CustomerProfile>();
@@ -656,7 +655,8 @@ public class _DayManager : MonoBehaviour
         ownedOrders.Add(profile);
         profile.Lines = order.lines;
         profile.RequestIds = (string[])SavedRequestIds(order).Clone();
-        profile.HappyLine = order.happyLine; profile.AngryLine = order.angryLine; profile.Price = order.price;
+        profile.HappyLine = order.happyLine; profile.AngryLine = order.angryLine;
+        CustomerRewardInfo.InitializeOrder(profile, savedDay);
         if (endlessRequests != null && endlessRequests.portraits != null && order.portrait >= 0 &&
             order.portrait < endlessRequests.portraits.Length) profile.portrait = endlessRequests.portraits[order.portrait];
         return profile;
@@ -691,6 +691,10 @@ public class _DayManager : MonoBehaviour
     private CustomerDay PrepareDay(int dayNumber)
     {
         var day = PrepareFixedDay(FindCustomerDay(dayNumber)) ?? BuildEndlessDay(dayNumber);
+        // 연기되기 전의 생성 일차와 요청 정액을 먼저 계약한다.
+        if (day?.customers != null)
+            for (int i = 0; i < day.customers.Length; i++)
+                day.customers[i] = CreateRuntimeOrder(day.customers[i], dayNumber);
         if (dayNumber != 0 && day != null && day.customers != null) ApplyDeferrals(day, dayNumber, CanServe);
         return day;
     }
@@ -705,7 +709,7 @@ public class _DayManager : MonoBehaviour
             if (profile == null || canServe(profile, dayNumber)) continue;
             if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile))
             {
-                var deferred = CreateRuntimeOrder(profile);
+                var deferred = CreateRuntimeOrder(profile, dayNumber);
                 deferredCustomers.Add(deferred);
                 OrderDeferred?.Invoke(deferred, dayNumber, CanServe(profile, dayNumber) ? "money" : "module_locked");
             }
@@ -860,20 +864,26 @@ public class _DayManager : MonoBehaviour
     }
     private bool IsDeferred(CustomerProfile profile) => ContainsProfile(deferredCustomers, profile);
 
-    private CustomerProfile CreateRuntimeOrder(CustomerProfile profile, bool restored = false)
+    private CustomerProfile CreateRuntimeOrder(CustomerProfile profile, int day, bool restored = false)
     {
-        if (profile == null || profile.OrderState != null) return profile;
+        if (profile == null) return null;
+        if (profile.OrderState != null)
+        {
+            CustomerRewardInfo.InitializeOrder(profile, day);
+            return profile;
+        }
         var copy = Instantiate(profile);
         copy.CopyRuntimeOrderFrom(profile);
         copy.hideFlags = HideFlags.DontSave;
         copy.OrderState = CustomerOrderState.Create(restored);
+        CustomerRewardInfo.InitializeOrder(copy, day);
         ownedOrders.Add(copy);
         return copy;
     }
 
     private void PrepareRuntimeOrders(CustomerDay day)
     {
-        for (int i = 0; i < day.customers.Length; i++) day.customers[i] = CreateRuntimeOrder(day.customers[i]);
+        for (int i = 0; i < day.customers.Length; i++) day.customers[i] = CreateRuntimeOrder(day.customers[i], day.day);
         PublishOrderLinks(day);
     }
     private void PublishOrderLinks(CustomerDay day)
