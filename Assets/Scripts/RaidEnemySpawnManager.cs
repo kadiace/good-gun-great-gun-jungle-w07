@@ -30,6 +30,8 @@ namespace WeaponWorkshop
             if (alerted || target == null || target.gameObject.scene != gameObject.scene ||
                 RaidEnemyCore.FindForPart(target.transform) != null || player == null ||
                 ((helicopterPrefab == null || !helicopterEnabled) && tankTransportPrefab == null)) return;
+            if (TutorialManager.TrainingRaidPending && gameObject.scene.name == TutorialManager.TrainingScene &&
+                (TutorialManager.Instance == null || !TutorialManager.Instance.TrainingTankStageReached)) return;
             // 공격과 연쇄 붕괴 알림이 겹쳐도 최초 출격은 한 번만 시작한다.
             alerted = true;
             spawnRemaining = Mathf.Max(1f, spawnInterval);

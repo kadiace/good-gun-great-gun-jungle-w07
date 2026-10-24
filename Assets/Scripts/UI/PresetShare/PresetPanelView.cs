@@ -183,9 +183,13 @@ namespace WeaponWorkshop
         /// <summary>
         /// 선택창을 열고 안내 문구를 표시합니다. 열기 전 선택을 기억해 닫을 때 되돌립니다.
         /// </summary>
-        public void ShowChoice(string _message)
+        public void ShowChoice(string _message, bool _canLoad = true)
         {
             UIRoot.SaveFocus(ref m_restoredFocus, m_choicePanel != null ? m_choicePanel.transform : null);
+            if (m_loadButton != null)
+            {
+                m_loadButton.interactable = _canLoad;
+            }
 
             if (m_choiceMessage != null)
             {
