@@ -34,6 +34,7 @@ namespace WeaponWorkshop
         [SerializeField] private string standaloneWorkshopScene = "Main";
         public static NightRaidController Instance { get; private set; }
         public bool IsBusy => mapOpen || transitioning || inRaid;
+        public bool IsMapOpen => mapOpen;
         public bool IsInRaid => inRaid;
         private bool mapOpen, transitioning, inRaid, returnOpen, openedFromPreparation, entryRestoreFailed;
         private bool returningAfterDeath;

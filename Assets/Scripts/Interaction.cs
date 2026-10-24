@@ -19,6 +19,7 @@ namespace WeaponWorkshop
         private InputAction point;
         private IInteractable aimedTarget;
         public FirstPersonPlayer Player => player;
+        public float InteractionDistance => interactionDistance;
         public IInteractable AimedTarget => aimedTarget;
         public bool CanInteractTarget => aimedTarget is MonoBehaviour component && component.isActiveAndEnabled &&
             (TutorialManager.Instance == null || TutorialManager.Instance.AllowsInteraction(aimedTarget)) && aimedTarget.CanInteract(this);
