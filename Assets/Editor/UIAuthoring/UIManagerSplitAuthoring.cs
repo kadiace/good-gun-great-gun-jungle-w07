@@ -33,6 +33,28 @@ namespace WeaponWorkshop.EditorTools
         private const string STEP_REMAP = "Split/RemapScenes";
         private const string MENU_VERIFY = "Tools/UI/Authoring/Split/VerifySceneReferences";
         private const string STEP_VERIFY = "Split/VerifySceneReferences";
+        private const string MENU_RAID_VARIANT = "Tools/UI/Authoring/Split/CreateRaidVariant";
+        private const string STEP_RAID_VARIANT = "Split/CreateRaidVariant";
+        private const string RAID_SCENES_ROOT = "Assets/Scenes/NightRaid";
+
+        // 습격 씬에서 구동 주체(WorkshopSession·사격장·프리셋)가 없는 화면. 남는 화면은 이들을 null 검사 후에만 쓴다.
+        private static readonly string[] S_RAID_REMOVED_SCREENS =
+        {
+            "HudLayer/WorkshopPlanarGrid",
+            "HudLayer/WorkshopPlanarDirectionsOverlay",
+            "HudLayer/EraseMode",
+            "HudLayer/WorkshopDirectionMarksScreen",
+            "HudLayer/WeaponCodeButton",
+            "HudLayer/WeaponNameScreen",
+            "HudLayer/PresetPanelScreen",
+            "HudLayer/WorkshopViewOverlay",
+            "HudLayer/ShootingTestScreen",
+            "ScreenLayer/TargetSelectionScreen",
+            "ScreenLayer/WeaponCodeScreen",
+            "ScreenLayer/ModulePalette",
+            "ScreenLayer/ColorPicker",
+            "PopupLayer/PresetChoicePanel",
+        };
 
         private const string RELOCATE_MAP_PATH = "Library/UIManagerSplit_Relocate.map";
         private const string EXTRACT_MAP_PATH = "Library/UIManagerSplit_Extract.map";
@@ -385,6 +407,105 @@ namespace WeaponWorkshop.EditorTools
                       string.Join(", ", summaries));
         }
 
+        /// <summary>
+        /// 습격 씬용 UIManager_Raid 변형을 만들고(공방 편집·프리셋·사격장 화면 제거), 습격 씬의 UIManager 인스턴스를 변형으로 바꾼다.
+        /// 오버라이드는 계층 대응으로 유지하고, 제거한 화면을 가리키던 오버라이드만 사라진다.
+        /// </summary>
+        [MenuItem(MENU_RAID_VARIANT)]
+        public static void CreateRaidVariant()
+        {
+            if (!CheckRunnableEnvironment(STEP_RAID_VARIANT))
+            {
+                return;
+            }
+
+            string variantPath = UIAuthoringPaths.UI_MANAGER_RAID_PREFAB;
+            GameObject basePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UIAuthoringPaths.UI_MANAGER_PREFAB);
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            int removed = 0;
+            if (!File.Exists(variantPath))
+            {
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(basePrefab);
+                try
+                {
+                    foreach (string screenPath in S_RAID_REMOVED_SCREENS)
+                    {
+                        Transform screen = instance.transform.Find(screenPath);
+                        if (screen == null)
+                        {
+                            Debug.LogError("[UIAuthoring] FAIL " + STEP_RAID_VARIANT + ": 뺄 화면을 찾지 못했습니다: " + screenPath);
+                            return;
+                        }
+
+                        Object.DestroyImmediate(screen.gameObject);
+                        removed++;
+                    }
+
+                    PrefabUtility.SaveAsPrefabAsset(instance, variantPath, out bool saved);
+                    if (!saved)
+                    {
+                        Debug.LogError("[UIAuthoring] FAIL " + STEP_RAID_VARIANT + ": 변형 저장 실패: " + variantPath);
+                        return;
+                    }
+                }
+                finally
+                {
+                    Object.DestroyImmediate(instance);
+                }
+            }
+
+            GameObject variant = AssetDatabase.LoadAssetAtPath<GameObject>(variantPath);
+            var settings = new PrefabReplacingSettings
+            {
+                objectMatchMode = ObjectMatchMode.ByHierarchy,
+                prefabOverridesOptions = PrefabOverridesOptions.KeepAllPossibleOverrides,
+            };
+
+            var swapped = new List<string>();
+            foreach (string scenePath in Directory.GetFiles(RAID_SCENES_ROOT, "*.unity", SearchOption.TopDirectoryOnly)
+                         .Select(_path => _path.Replace('\\', '/')).OrderBy(_path => _path, StringComparer.Ordinal))
+            {
+                Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                // 교체하면 인스턴스 하위 오브젝트가 다시 만들어지므로 대상 루트를 먼저 모은 뒤 바꾼다.
+                var instanceRoots = new List<GameObject>();
+                foreach (GameObject sceneRoot in scene.GetRootGameObjects())
+                {
+                    foreach (Transform transform in sceneRoot.GetComponentsInChildren<Transform>(true))
+                    {
+                        GameObject candidate = transform.gameObject;
+                        if (PrefabUtility.IsOutermostPrefabInstanceRoot(candidate) &&
+                            PrefabUtility.GetCorrespondingObjectFromSource(candidate) == basePrefab)
+                        {
+                            instanceRoots.Add(candidate);
+                        }
+                    }
+                }
+
+                foreach (GameObject instanceRoot in instanceRoots)
+                {
+                    PrefabUtility.ReplacePrefabAssetOfPrefabInstance(instanceRoot, variant, settings, InteractionMode.AutomatedAction);
+                }
+
+                int count = instanceRoots.Count;
+                if (count > 0)
+                {
+                    EditorSceneManager.MarkSceneDirty(scene);
+                    if (!EditorSceneManager.SaveScene(scene))
+                    {
+                        Debug.LogError("[UIAuthoring] FAIL " + STEP_RAID_VARIANT + ": 씬 저장 실패: " + scenePath);
+                        return;
+                    }
+
+                    swapped.Add(Path.GetFileName(scenePath));
+                }
+            }
+
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            Debug.Log("[UIAuthoring] OK " + STEP_RAID_VARIANT + ": 변형에서 뺀 화면 " + removed + "개, 변형으로 바꾼 씬 " + swapped.Count +
+                      "개 -> " + string.Join(", ", swapped));
+        }
+
         /// <summary>UIManager 인스턴스가 있는 씬을 차례로 열어, 대상을 잃은 객체 참조(끊긴 참조)를 씬별로 센다. 저장하지 않는다.</summary>
         [MenuItem(MENU_VERIFY)]
         public static void VerifySceneReferences()
@@ -395,12 +516,14 @@ namespace WeaponWorkshop.EditorTools
             }
 
             string guid = AssetDatabase.AssetPathToGUID(UIAuthoringPaths.UI_MANAGER_PREFAB);
+            string raidGuid = AssetDatabase.AssetPathToGUID(UIAuthoringPaths.UI_MANAGER_RAID_PREFAB);
             var summaries = new List<string>();
             int total = 0;
             foreach (string scenePath in Directory.GetFiles(SCENES_ROOT, "*.unity", SearchOption.AllDirectories)
                          .Select(_path => _path.Replace('\\', '/')).OrderBy(_path => _path, StringComparer.Ordinal))
             {
-                if (!File.ReadAllText(scenePath).Contains(guid))
+                string sceneText = File.ReadAllText(scenePath);
+                if (!sceneText.Contains(guid) && (string.IsNullOrEmpty(raidGuid) || !sceneText.Contains(raidGuid)))
                 {
                     continue;
                 }

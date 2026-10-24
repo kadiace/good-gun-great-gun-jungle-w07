@@ -365,7 +365,8 @@ namespace WeaponWorkshop.EditorTools
                     }
 
                     string sourcePath = GetSourcePrefabPath(instanceRoot);
-                    if (sourcePath == UI_MANAGER_PATH || sourcePath == START_UI_PATH)
+                    if (sourcePath == UI_MANAGER_PATH || sourcePath == START_UI_PATH ||
+                        sourcePath == UIAuthoringPaths.UI_MANAGER_RAID_PREFAB)
                     {
                         instances.Add(instanceRoot);
                     }
