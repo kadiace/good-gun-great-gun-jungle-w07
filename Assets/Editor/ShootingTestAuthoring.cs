@@ -108,7 +108,7 @@ internal static class ShootingTestAuthoring
             for (int i = 0; i < definitions.Length; i++) tests.GetArrayElementAtIndex(i).objectReferenceValue = definitions[i];
             var button = data.FindProperty("buttonTemplate").objectReferenceValue as UnityEngine.UI.Button;
             var ui = root.GetComponentInChildren<UIManager>(true);
-            var hud = ui.GetComponent<ShootingTestHUD>() ?? ui.gameObject.AddComponent<ShootingTestHUD>();
+            var hud = ui.Screen<ShootingTestHUD>() ?? ui.gameObject.AddComponent<ShootingTestHUD>();
             var hudData = new SerializedObject(hud);
             if (button != null) hudData.FindProperty("font").objectReferenceValue = button.GetComponentInChildren<TMP_Text>(true)?.font;
             hudData.ApplyModifiedPropertiesWithoutUndo(); data.ApplyModifiedPropertiesWithoutUndo();

@@ -113,7 +113,11 @@ namespace WeaponWorkshop
         public bool Interact(Interaction interactor)
         {
             if (!CanInteract(interactor)) return false;
-            if (selectionUI == null) selectionUI = FindFirstObjectByType<TargetSelectionUI>();
+            if (selectionUI == null)
+            {
+                UIManager ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
+                if (ui != null) selectionUI = ui.Screen<TargetSelectionUI>();
+            }
             return selectionUI != null && selectionUI.Open(this);
         }
         public bool Spawn(GameObject prefab) => Spawn(prefab, selectionUI != null ? selectionUI.GetSavePrefabIndex(prefab) : -1);

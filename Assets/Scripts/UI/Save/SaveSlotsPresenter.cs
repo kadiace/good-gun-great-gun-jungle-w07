@@ -320,7 +320,7 @@ namespace WeaponWorkshop
             }
 
             PauseView pause = GameManager.Instance != null && GameManager.Instance.UI != null
-                ? GameManager.Instance.UI.PauseView
+                ? GameManager.Instance.UI.Screen<PauseUI>()?.View
                 : null;
             if (pause != null && pause.DefaultSelectable != null)
             {

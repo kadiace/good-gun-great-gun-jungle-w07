@@ -3,7 +3,7 @@ using UnityEngine;
 namespace WeaponWorkshop
 {
     /// <summary>
-    /// 모듈 해금 알림을 UIManager 또는 FeedbackUI 경로로 표시하는 View 컴포넌트입니다.
+    /// 모듈 해금 알림을 FeedbackUI 경로로 표시하는 View 컴포넌트입니다.
     /// 자체 캔버스는 없으며 알림 문자열 표시를 담당합니다.
     /// </summary>
     public sealed class ModuleUnlockNoticeView : MonoBehaviour
@@ -24,7 +24,7 @@ namespace WeaponWorkshop
 
             if (m_uiManager != null)
             {
-                m_uiManager.ShowNotification(_message);
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification(_message);
                 return;
             }
 

@@ -197,9 +197,9 @@ namespace WeaponWorkshop
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
             if (ui == null) ui = FindFirstObjectByType<UIManager>(FindObjectsInactive.Include);
             if (ui == null) return;
-            if (dialogue == null) dialogue = ui.GetComponentInChildren<DialogueUI>(true);
-            if (selection == null) selection = ui.GetComponent<TutorialSkipUI>();
-            if (dayTransition == null) dayTransition = ui.GetComponent<DayTransitionUI>();
+            if (dialogue == null) dialogue = ui.Screen<DialogueUI>();
+            if (selection == null) selection = ui.Screen<TutorialSkipUI>();
+            if (dayTransition == null) dayTransition = ui.Screen<DayTransitionUI>();
         }
         public void BeginDayZero(_DayManager day)
         {

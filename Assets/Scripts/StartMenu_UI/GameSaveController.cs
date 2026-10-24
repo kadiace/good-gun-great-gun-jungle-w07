@@ -315,7 +315,7 @@ namespace WeaponWorkshop
             }
             if (!dayManager.CanStartNextDay) { dayManager.ShowSettlement(); return; }
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            var transition = ui != null ? ui.GetComponent<DayTransitionUI>() : null;
+            var transition = ui != null ? ui.Screen<DayTransitionUI>() : null;
             if (showFade && transition != null && transition.BeginReturn(dayManager)) return;
             dayManager.StartNextDay();
         }
