@@ -57,6 +57,7 @@ namespace WeaponWorkshop
         private readonly Dictionary<GravityField, AudioSource> gravityLoops = new Dictionary<GravityField, AudioSource>();
         private readonly Dictionary<Transform, AudioSource> helicopterLoops = new Dictionary<Transform, AudioSource>();
         private readonly Dictionary<Transform, AudioSource> tankMoveLoops = new Dictionary<Transform, AudioSource>();
+        private readonly HashSet<AudioSource> pausedRaidEnemyLoops = new HashSet<AudioSource>();
         private AudioSource backgroundMusicSource;
         private AudioSource uiSoundSource;
         private _DayManager subscribedDayManager;
@@ -142,6 +143,39 @@ namespace WeaponWorkshop
             nextButtonScanTime = Time.unscaledTime + 1f;
             AttachButtonClickSounds();
             ApplyChannelVolumes();
+        }
+
+        // Time.timeScale이 0이어도 실행한다. 적의 정지/파괴 이벤트가 목록에서 제거한 루프는 재개하지 않는다.
+        private void LateUpdate()
+        {
+            bool paused = IsRaidMenuPaused;
+            foreach (AudioSource source in helicopterLoops.Values) SetRaidEnemyLoopPaused(source, paused);
+            foreach (AudioSource source in tankMoveLoops.Values) SetRaidEnemyLoopPaused(source, paused);
+        }
+
+        private static bool IsRaidMenuPaused => GameManager.Instance != null && GameManager.Instance.IsPaused &&
+            NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid;
+
+        private void SetRaidEnemyLoopPaused(AudioSource source, bool paused)
+        {
+            if (source == null)
+            {
+                pausedRaidEnemyLoops.Remove(source);
+                return;
+            }
+            if (paused)
+            {
+                if (pausedRaidEnemyLoops.Add(source)) source.Pause();
+            }
+            else if (pausedRaidEnemyLoops.Remove(source)) source.UnPause();
+        }
+
+        private AudioSource CreateRaidEnemyLoop(string clipName, Transform target, float volume, float minDistance, float maxDistance)
+        {
+            AudioSource source = CreateLoop(clipName, target, volume, minDistance, maxDistance);
+            // 메뉴 중에 시작 이벤트가 들어와도 즉시 일시정지한다.
+            SetRaidEnemyLoopPaused(source, IsRaidMenuPaused);
+            return source;
         }
 
         /// <summary>
@@ -335,7 +369,7 @@ namespace WeaponWorkshop
         private void OnTankMovementStarted(Transform tank)
         {
             if (tank == null || tankMoveLoops.ContainsKey(tank)) return;
-            AudioSource loop = CreateLoop("TankMove", tank, tankMoveVolume * enemySoundVolumeMultiplier, 5f, 50f);
+            AudioSource loop = CreateRaidEnemyLoop("TankMove", tank, tankMoveVolume * enemySoundVolumeMultiplier, 5f, 50f);
             if (loop != null) tankMoveLoops.Add(tank, loop);
         }
 
@@ -355,7 +389,7 @@ namespace WeaponWorkshop
         private void OnHelicopterAmbientStarted(Transform helicopter)
         {
             if (helicopter == null || helicopterLoops.ContainsKey(helicopter)) return;
-            AudioSource loop = CreateLoop("Helicopter", helicopter, HelicopterVolume(helicopterAmbientVolume),
+            AudioSource loop = CreateRaidEnemyLoop("Helicopter", helicopter, HelicopterVolume(helicopterAmbientVolume),
                 helicopterAmbientMinDistance, helicopterAmbientMaxDistance);
             if (loop != null) helicopterLoops.Add(helicopter, loop);
         }
@@ -615,6 +649,7 @@ namespace WeaponWorkshop
             gravityLoops.Clear();
             helicopterLoops.Clear();
             tankMoveLoops.Clear();
+            pausedRaidEnemyLoops.Clear();
         }
 
         /// <summary>
@@ -623,6 +658,7 @@ namespace WeaponWorkshop
         /// </summary>
         internal void StopLoop(AudioSource source)
         {
+            pausedRaidEnemyLoops.Remove(source);
             if (source == null) return;
             sfxBaseVolumes.Remove(source);
             source.Stop();
