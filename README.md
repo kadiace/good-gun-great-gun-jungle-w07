@@ -434,3 +434,4 @@
 - 0일차 야간 무기 제작 도입 단계(
 aid-retry): description 대사를 "이제 작업대에서 나만의 무기를 만들 시간입니다."로 변경했다. 플레이 미확인.
 - 0일차 튜토리얼 삭제 모드 안내(delete-introduction, disable-delete-introduction): 안내 대사 표시 중 E(ToggleDelete)를 누르면 대사를 닫고 명시적 목표 모드(켜기: SetDeleteMode(true), 끄기: SetDeleteMode(false))를 적용한 뒤 각각 enable-delete-mode/disable-delete-mode를 거쳐 remove-basic-block/palette-introduction으로 바로 진행한다. 이미 목표 상태인 모드는 반대로 토글하지 않고 유지하며, 동일 입력으로 블록 삭제나 재토글·다음 대사 넘김을 방지했다. 기존 확인 버튼/F/Space/Z/클릭 경로와 Pause/선택창 차단은 유지했다. 플레이 미확인.
+- 목조주택 랜덤 재료 상자: NightRaid_WoodenHouse·Tutorial_WoodenHouse의 point_1~4를 바닥 중심으로 전체 X3×Y2×Z3 월드 축 영역 안(경계 포함)의 생성 중심 후보를 제외한다. RaidCrateSpawner의 Material Exclusion Points/Size로 조정하며 모듈 대체 재료상자·지정 상자는 유지한다. 후보 수 정적 확인: Tutorial_WoodenHouse.unity: 19개 중 5개 제외, 14개 잔여; NightRaid_WoodenHouse.unity: 19개 중 5개 제외, 14개 잔여. Play 미확인.
