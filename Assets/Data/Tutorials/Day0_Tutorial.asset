@@ -1307,7 +1307,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 010000000800000007000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: palette-opened
@@ -1359,7 +1359,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 010000000800000007000000
+    allowedModuleIds: 010000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -1415,7 +1415,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000
+    allowedModuleIds: 010000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -1466,7 +1466,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: first-sale-rejected
@@ -1523,7 +1523,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000008000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -1576,7 +1576,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000008000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -1788,7 +1788,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 010000000800000007000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: core-picked-up
@@ -1838,7 +1838,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 010000000800000007000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -1889,7 +1889,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 010000000800000007000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -1941,7 +1941,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 1
-    allowedModuleIds: 010000000800000007000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -1994,7 +1994,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 010000000800000007000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -2047,7 +2047,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000005000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -2098,7 +2098,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000005000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: core-picked-up
@@ -2149,7 +2149,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000005000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: core-placed-on-workbench
@@ -2201,7 +2201,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000005000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -2276,7 +2276,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000005000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: preset-two-loaded
@@ -2348,7 +2348,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000005000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -2420,7 +2420,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000005000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: raid-weapon-disposed
@@ -2470,7 +2470,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 0100000002000000080000000700000005000000
+    allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: raid-preset-one-equipped
