@@ -9,6 +9,7 @@ namespace WeaponWorkshop
         [SerializeField] private UnityEngine.UI.Image cover;
         private readonly List<UnityEngine.UI.Image> covers = new List<UnityEngine.UI.Image>();
         private readonly List<RectTransform> targets = new List<RectTransform>();
+        private ModulePaletteUI modulePalette;
         private void Awake()
         {
             if (cover == null) return;
@@ -36,6 +37,12 @@ namespace WeaponWorkshop
                 if (feedback != null && feedback.IsChoiceOpen && !feedback.IsChoiceInputSuspended &&
                     step != null && step.buttonGuide == TutorialButtonGuide.LoanConfirm)
                     Add(feedback.TutorialConfirmButton);
+                else if (step != null && IsCustomGuide(step.buttonGuide) &&
+                    (feedback == null || !feedback.IsChoiceOpen))
+                {
+                    if (modulePalette == null) modulePalette = GetComponentInChildren<ModulePaletteUI>(true);
+                    Add(modulePalette != null ? modulePalette.GetCustomTutorialTarget(step.buttonGuide) : null);
+                }
                 else if ((selection != null && selection.IsOpen) || (dialogue != null && dialogue.IsOpen) ||
                     (feedback != null && feedback.IsChoiceOpen))
                 {
@@ -97,6 +104,10 @@ namespace WeaponWorkshop
             }
             image.color = new Color(1f, .82f, .12f, .12f + .22f * (.5f + .5f * Mathf.Sin(Time.unscaledTime * Mathf.PI)));
         }
+        private static bool IsCustomGuide(TutorialButtonGuide guide) =>
+            guide == TutorialButtonGuide.CustomButton || guide == TutorialButtonGuide.CustomPaint ||
+            guide == TutorialButtonGuide.CustomSticker || guide == TutorialButtonGuide.CustomKeyring ||
+            guide == TutorialButtonGuide.CustomRemove;
         private void OnDisable()
         {
             foreach (var image in covers)

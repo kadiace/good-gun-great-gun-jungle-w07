@@ -1707,6 +1707,7 @@ namespace WeaponWorkshop
 
         public bool TryPerformCustomOnboardingAction(string stepId)
         {
+            if (stepId == "intro") return true;
             if (!isActiveAndEnabled || builder == null || !builder.isActiveAndEnabled ||
                 GameManager.GameplayBlocked) return false;
 
@@ -1750,6 +1751,65 @@ namespace WeaponWorkshop
                     return true;
                 }
             return false;
+        }
+
+        public bool ShowCustomOnboardingStep(string stepId)
+        {
+            if (!isActiveAndEnabled || builder == null || !builder.isActiveAndEnabled) return false;
+            switch (stepId)
+            {
+                case "button":
+                    return customButtonRoot != null;
+                case "paint":
+                    return TryShowCustomPanel(paintPanel);
+                case "sticker":
+                    return TryShowCustomPanel(stickerPanel);
+                case "keyring":
+                    return TryShowCustomPanel(keyringPanel);
+                case "removal":
+                    return builder.IsCustomMode && customRemoveButton != null;
+                default:
+                    return false;
+            }
+        }
+
+        public RectTransform GetCustomTutorialTarget(TutorialButtonGuide guide)
+        {
+            switch (guide)
+            {
+                case TutorialButtonGuide.CustomButton:
+                    return customButtonRoot;
+                case TutorialButtonGuide.CustomPaint:
+                    return FindCustomPanelButton(paintPanel);
+                case TutorialButtonGuide.CustomSticker:
+                    return FindCustomPanelButton(stickerPanel);
+                case TutorialButtonGuide.CustomKeyring:
+                    return FindCustomPanelButton(keyringPanel);
+                case TutorialButtonGuide.CustomRemove:
+                    return customRemoveButton != null ? customRemoveButton.transform as RectTransform : null;
+                default:
+                    return null;
+            }
+        }
+
+        private bool TryShowCustomPanel(RectTransform panel)
+        {
+            if (panel == null || builder == null || !builder.IsCustomMode) return false;
+            foreach (CustomPanelEntry entry in customPanels)
+                if (entry.Panel == panel)
+                {
+                    SelectCustomPanel(entry);
+                    return true;
+                }
+            return false;
+        }
+
+        private RectTransform FindCustomPanelButton(RectTransform panel)
+        {
+            foreach (CustomPanelEntry entry in customPanels)
+                if (entry.Panel == panel && entry.Button != null)
+                    return entry.Button.transform as RectTransform;
+            return null;
         }
 
         private void OpenCustomConfirmation()

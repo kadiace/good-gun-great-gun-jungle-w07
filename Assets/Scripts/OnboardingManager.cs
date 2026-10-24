@@ -137,9 +137,34 @@ namespace WeaponWorkshop
                 title = "튜토리얼",
                 description = current.Description,
                 completion = TutorialCompletion.Confirmation,
-                confirmOnBackgroundClick = true
+                confirmOnBackgroundClick = true,
+                buttonGuide = CustomButtonGuide(current.Id)
             } };
+            if (current.IsCustom)
+            {
+                var palette = FindPalette();
+                if (palette != null) palette.ShowCustomOnboardingStep(current.Id);
+            }
             TutorialManager.Run(runningSequence, this, completed: CompleteCurrent);
+        }
+
+        private static ModulePaletteUI FindPalette()
+        {
+            return GameManager.Instance != null && GameManager.Instance.UI != null
+                ? GameManager.Instance.UI.GetComponentInChildren<ModulePaletteUI>(true) : null;
+        }
+
+        private static TutorialButtonGuide CustomButtonGuide(string stepId)
+        {
+            switch (stepId)
+            {
+                case "button": return TutorialButtonGuide.CustomButton;
+                case "paint": return TutorialButtonGuide.CustomPaint;
+                case "sticker": return TutorialButtonGuide.CustomSticker;
+                case "keyring": return TutorialButtonGuide.CustomKeyring;
+                case "removal": return TutorialButtonGuide.CustomRemove;
+                default: return TutorialButtonGuide.None;
+            }
         }
 
         private void CompleteCurrent(bool succeeded)
@@ -165,8 +190,7 @@ namespace WeaponWorkshop
             }
             if (completed.IsCustom)
             {
-                var palette = GameManager.Instance != null && GameManager.Instance.UI != null
-                    ? GameManager.Instance.UI.GetComponentInChildren<ModulePaletteUI>(true) : null;
+                var palette = FindPalette();
                 if (palette == null || !palette.TryPerformCustomOnboardingAction(completed.Id))
                     Debug.LogWarning("커스텀 온보딩 동작을 완료하지 못했습니다: " + completed.Id, this);
             }

@@ -6,7 +6,7 @@ namespace WeaponWorkshop
     public enum TutorialCompletion { Confirmation, Signal, FiveCoreFacesBlocked, ModuleInstalled, CellEmpty, CustomerWeaponReady, WorkshopExited, WeaponHeld, SettlementClosed, CustomerSold, CustomerKilled, TargetNearby, TargetScanned, RaidTankSpawned, RetirementIntroduction, RaidTicketCollected, RaidMaterialCollected, WeaponTagged }
     public enum TutorialTarget { None, Shutter, Customer, MainCoreDispenser, Workbench, ShootingTarget, WorkbenchWeapon, CloseShop, RaidEntrance, RaidLoot, RaidExit, RaidMaterialCrate, RaidTank }
     public enum TutorialRotationGuide { None, Tilt, Roll }
-    public enum TutorialButtonGuide { None, Recipe, PresetFirst, RaidHouse, LoanConfirm }
+    public enum TutorialButtonGuide { None, Recipe, PresetFirst, RaidHouse, LoanConfirm, CustomButton, CustomPaint, CustomSticker, CustomKeyring, CustomRemove }
 
     [Serializable]
     public sealed class TutorialStep
