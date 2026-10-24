@@ -31,6 +31,8 @@ namespace WeaponWorkshop.EditorTools
         private const string STEP_RELOCATE = "Split/RelocateBridges";
         private const string STEP_EXTRACT = "Split/ExtractScreens";
         private const string STEP_REMAP = "Split/RemapScenes";
+        private const string MENU_VERIFY = "Tools/UI/Authoring/Split/VerifySceneReferences";
+        private const string STEP_VERIFY = "Split/VerifySceneReferences";
 
         private const string RELOCATE_MAP_PATH = "Library/UIManagerSplit_Relocate.map";
         private const string EXTRACT_MAP_PATH = "Library/UIManagerSplit_Extract.map";
@@ -381,6 +383,74 @@ namespace WeaponWorkshop.EditorTools
 
             Debug.Log("[UIAuthoring] OK " + STEP_REMAP + ": 대응표 " + composed.Count + "건, 씬 참조 " + total + "건 재연결 -> " +
                       string.Join(", ", summaries));
+        }
+
+        /// <summary>UIManager 인스턴스가 있는 씬을 차례로 열어, 대상을 잃은 객체 참조(끊긴 참조)를 씬별로 센다. 저장하지 않는다.</summary>
+        [MenuItem(MENU_VERIFY)]
+        public static void VerifySceneReferences()
+        {
+            if (!CheckRunnableEnvironment(STEP_VERIFY))
+            {
+                return;
+            }
+
+            string guid = AssetDatabase.AssetPathToGUID(UIAuthoringPaths.UI_MANAGER_PREFAB);
+            var summaries = new List<string>();
+            int total = 0;
+            foreach (string scenePath in Directory.GetFiles(SCENES_ROOT, "*.unity", SearchOption.AllDirectories)
+                         .Select(_path => _path.Replace('\\', '/')).OrderBy(_path => _path, StringComparer.Ordinal))
+            {
+                if (!File.ReadAllText(scenePath).Contains(guid))
+                {
+                    continue;
+                }
+
+                Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                int missing = 0;
+                foreach (GameObject sceneRoot in scene.GetRootGameObjects())
+                {
+                    foreach (Component component in sceneRoot.GetComponentsInChildren<Component>(true))
+                    {
+                        if (component == null)
+                        {
+                            continue;
+                        }
+
+                        SerializedProperty iterator = new SerializedObject(component).GetIterator();
+                        while (iterator.Next(true))
+                        {
+                            if (iterator.propertyType == SerializedPropertyType.ObjectReference &&
+                                iterator.objectReferenceValue == null && iterator.objectReferenceInstanceIDValue != 0)
+                            {
+                                missing++;
+                                if (missing <= 10)
+                                {
+                                    Debug.LogWarning("[UIAuthoring] " + STEP_VERIFY + " 끊긴 참조: " + Path.GetFileName(scenePath) + " " +
+                                                     GetHierarchyPath(component.transform) + " " + component.GetType().Name + "." + iterator.propertyPath);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                total += missing;
+                summaries.Add(Path.GetFileName(scenePath) + "(" + missing + ")");
+            }
+
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            Debug.Log("[UIAuthoring] OK " + STEP_VERIFY + ": 끊긴 참조 " + total + "건 -> " + string.Join(", ", summaries));
+        }
+
+        private static string GetHierarchyPath(Transform _transform)
+        {
+            var names = new List<string>();
+            for (Transform current = _transform; current != null; current = current.parent)
+            {
+                names.Add(current.name);
+            }
+
+            names.Reverse();
+            return string.Join("/", names);
         }
 
         private static Transform EnsureScreenRoot(Transform _root, ScreenSpec _spec, ref int _created)
