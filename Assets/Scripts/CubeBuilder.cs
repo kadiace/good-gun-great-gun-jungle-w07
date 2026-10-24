@@ -44,6 +44,7 @@ namespace WeaponWorkshop
         private bool favoriteDragActive;
         public event System.Action<int> FavoriteSelected;
         public void SetHoveredPaletteModule(int moduleId) => hoveredPaletteModule = moduleId;
+        public int HoveredPaletteModule => hoveredPaletteModule;
         private void HandleFavoriteKey(int index)
         {
             if (GameManager.GameplayBlocked || favoriteDragActive || !TutorialManager.TryAction("select-module")) return;
