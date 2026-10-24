@@ -56,6 +56,8 @@ namespace WeaponWorkshop
                 m_presenter = null;
                 EnsureInitialized();
             }
+
+            Initialize();
         }
 
         private void ResolveSaveController(UIContext _context = null)
@@ -67,8 +69,7 @@ namespace WeaponWorkshop
 
             if (_context != null && _context.Game != null)
             {
-                saveController = _context.Game.GetComponent<GameSaveController>() ??
-                                 _context.Game.GetComponentInChildren<GameSaveController>();
+                saveController = _context.Game.GetComponentInChildren<GameSaveController>(true);
             }
 
             if (saveController == null)
@@ -113,8 +114,7 @@ namespace WeaponWorkshop
             }
         }
 
-        /// <summary>UIManager가 비활성 패널까지 포함해 호출하는 초기 연결점이다. 기존과 같이 닫힌 화면으로 시작한다.</summary>
-        public void InitializeScreen(UIContext _context) => Initialize();
+        /// <summary>기존과 같이 닫힌 화면으로 시작한다.</summary>
 
         public void Initialize()
         {
