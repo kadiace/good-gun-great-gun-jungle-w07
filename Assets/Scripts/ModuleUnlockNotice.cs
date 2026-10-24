@@ -67,9 +67,9 @@ namespace WeaponWorkshop
                 return;
             }
 
-            if (m_unlocks == null && uiManager != null && uiManager.Player != null)
+            if (m_unlocks == null && GameManager.Instance != null && GameManager.Instance.Player != null)
             {
-                m_unlocks = uiManager.Player.GetComponent<PlayerModuleUnlocks>();
+                m_unlocks = GameManager.Instance.Player.GetComponent<PlayerModuleUnlocks>();
             }
 
             if (m_presenter == null)

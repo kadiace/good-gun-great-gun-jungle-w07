@@ -574,7 +574,7 @@ namespace WeaponWorkshop
         {
             var area = Object.FindFirstObjectByType<NightRaidArea>();
             if (area == null) return;
-            player = uiManager.Player;
+            player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             playerWeaponHolder = player != null ? player.GetComponent<WeaponHolder>() : null;
             raidCamera = playerWeaponHolder != null ? playerWeaponHolder.AimCamera : null;
             playerHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
@@ -641,7 +641,7 @@ namespace WeaponWorkshop
             var tutorial = TutorialManager.Instance;
             if (tutorial != null && !tutorial.AllowsRaidRegion(index)) return;
             if (!IsRegionUnlocked(index)) return;
-            player = uiManager.Player;
+            player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             var weapon = holder != null ? holder.EquippedWeapon : null;
             if (weapon == null || !weapon.IsEquipped || weapon.IsMoving)

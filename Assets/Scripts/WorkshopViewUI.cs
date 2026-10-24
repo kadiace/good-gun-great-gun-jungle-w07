@@ -75,10 +75,10 @@ namespace WeaponWorkshop
 
         private void LateUpdate()
         {
-            if (session == null && owner != null && owner.Player != null)
+            if (session == null && GameManager.Instance != null && GameManager.Instance.Player != null)
             {
-                session = owner.Player.GetComponent<WorkshopSession>();
-                builder = owner.Player.GetComponentInChildren<CubeBuilder>(true);
+                session = GameManager.Instance.Player.GetComponent<WorkshopSession>();
+                builder = GameManager.Instance.Player.GetComponentInChildren<CubeBuilder>(true);
             }
 
             WorkshopPlanarView planarView = session != null ? session.PlanarView : null;

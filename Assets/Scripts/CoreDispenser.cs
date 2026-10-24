@@ -19,8 +19,8 @@ namespace WeaponWorkshop
         private bool dispensing;
         private const int CorePrice = WeaponPurchasePrices.Core;
 
-        private WeaponPresets Presets => GameManager.Instance != null && GameManager.Instance.UI != null && GameManager.Instance.UI.Player != null
-            ? GameManager.Instance.UI.Player.GetComponent<WeaponPresets>()
+        private WeaponPresets Presets => GameManager.Instance != null && GameManager.Instance.Player != null
+            ? GameManager.Instance.Player.GetComponent<WeaponPresets>()
             : null;
 
         public Transform OutlineRoot => drawRoot != null ? drawRoot : transform;
@@ -65,7 +65,7 @@ namespace WeaponWorkshop
             {
                 var blueprint = WeaponShareCode.Decode(code);
                 var assembly = weaponPreview.GetComponent<CubeAssembly>();
-                var player = GameManager.Instance.UI.Player;
+                var player = GameManager.Instance.Player;
                 var plan = WeaponShareCode.Resolve(blueprint, assembly, player.GetComponent<PlayerModuleUnlocks>(), CorePrice, out _, out _);
                 if (!assembly.RestoreLayout(plan))
                 {

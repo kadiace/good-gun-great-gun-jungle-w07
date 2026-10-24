@@ -236,8 +236,8 @@ namespace WeaponWorkshop
             }
 
             TargetBell source = m_bell;
-            FirstPersonPlayer player = GameManager.Instance != null && GameManager.Instance.UI != null
-                ? GameManager.Instance.UI.Player
+            FirstPersonPlayer player = GameManager.Instance != null
+                ? GameManager.Instance.Player
                 : null;
             if (!source.PrepareTest(m_timedTests[_index], player))
             {

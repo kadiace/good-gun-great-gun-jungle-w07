@@ -32,7 +32,8 @@ namespace WeaponWorkshop
                 return;
             }
 
-            WeaponHolder holder = m_uiManager != null ? m_uiManager.PlayerWeaponHolder : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
+            WeaponHolder holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             EquipableWeapon weapon = holder != null ? holder.EquippedWeapon : null;
             bool visible = weapon != null && weapon.IsCharging && weapon.MaxChargeLevel > 0;
             m_view.SetCharge(visible,

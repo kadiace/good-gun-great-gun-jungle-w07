@@ -110,7 +110,7 @@ namespace WeaponWorkshop
                 return;
             }
 
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             RaidPlayerHealth nextHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
             if (m_health != nextHealth)
             {
@@ -157,7 +157,7 @@ namespace WeaponWorkshop
 
             GameManager.Instance?.SetDialogue(true);
             GameManager.Instance?.SetNight(true);
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             player?.GetComponent<WeaponHolder>()?.EquippedWeapon?.CancelCharge();
             if (m_view != null)
             {

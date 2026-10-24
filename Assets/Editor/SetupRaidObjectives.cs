@@ -39,7 +39,7 @@ public static class SetupRaidObjectives
                 var area = roots.SelectMany(r => r.GetComponentsInChildren<NightRaidArea>(true)).Single();
                 var ui = roots.SelectMany(r => r.GetComponentsInChildren<UIManager>(true)).Single();
                 if (area.GetComponent<RaidObjectiveUI>() != null) continue;
-                var player = ui.Player;
+                var player = Object.FindFirstObjectByType<FirstPersonPlayer>();
                 var areaData = new SerializedObject(area);
                 Vector2 size = areaData.FindProperty("mapSize").vector2Value;
                 Vector3 center = areaData.FindProperty("mapCenter").vector3Value;
