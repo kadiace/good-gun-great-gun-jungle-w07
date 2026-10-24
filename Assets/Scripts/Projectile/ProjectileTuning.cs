@@ -25,8 +25,10 @@ namespace WeaponWorkshop
 
         // 차지: 누르고 있으면 충전, 떼면 발사. 단계 배율을 총구의 거의 모든 수치에 곱함.
         [Header("Charge")]
-        [Min(0.01f), Tooltip("충전 1단계에 걸리는 시간(초).")]
-        public float chargeSecondsPerLevel = 0.5f;
+        [Min(0.01f), Tooltip("기본 최대 단계까지의 단계당 시간(초). 기본 3단계 × 1초 = 완충 3초이며, 실제 단계 시간은 총 완충 시간을 최대 단계 수로 균등 분배합니다.")]
+        public float chargeSecondsPerLevel = 1f;
+        [Min(0.01f), Tooltip("기본 최대 단계를 넘는 1단계마다 추가하는 총 완충 시간(초). 기본 1/3초: 3단계 3초, 12단계 6초.")]
+        public float chargeSecondsPerExtraStage = 1f / 3f;
         [Min(1), Tooltip("차지 모듈 1개일 때 최대 단계.")]
         public int chargeBaseStages = 3;
         [Min(0), Tooltip("차지 모듈 1개 추가마다 늘어나는 최대 단계.")]
@@ -39,6 +41,10 @@ namespace WeaponWorkshop
         public float chargeMultiplierPerExtraModule = 0.1f;
         [Min(0f), Tooltip("최대 단계에서 추가로 더해지는 배율.")]
         public float chargeMaxStageBonus = 0.3f;
+        [Min(0f), Tooltip("첫 충전 단계부터 적용하는 충전 1초당 투사체 크기 증가량. 총구별 최대 충전 시간에서 제한합니다.")]
+        public float chargeScaleGrowthPerSecond = 0.6f;
+        [Min(0.001f), Tooltip("차지 + 연사 점사의 발사 회차 사이 간격(초).")]
+        public float chargeBurstInterval = 0.1f;
         [Tooltip("충전 중 코어에 붙는 연출(빨려 드는 파티클 + 빛). 진행도에 따라 세기 조절.")]
         public ParticleSystem chargeEffect;
         [Min(0f), Tooltip("최대 충전 시 무기 떨림 크기(m).")]

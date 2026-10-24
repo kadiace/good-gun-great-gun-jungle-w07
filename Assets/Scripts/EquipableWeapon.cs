@@ -257,6 +257,7 @@ namespace WeaponWorkshop
 
         // Charge weapons fire on release instead of while held.
         public bool UsesCharge => statsSource != null && statsSource.UsesCharge;
+        public bool IsBursting => powerCore != null && powerCore.IsBursting;
         public void HoldCharge(float deltaTime)
         {
             if (IsEquipped && !IsMoving && statsSource != null) statsSource.HoldCharge(deltaTime);
@@ -264,10 +265,14 @@ namespace WeaponWorkshop
         public bool ReleaseCharge()
         {
             if (statsSource == null) return false;
-            if (!IsEquipped || IsMoving) { statsSource.ResetCharge(); return false; }
+            if (!IsEquipped || IsMoving) { CancelCharge(); return false; }
             return statsSource.ReleaseCharge();
         }
-        public void CancelCharge() => statsSource?.ResetCharge();
+        public void CancelCharge()
+        {
+            if (statsSource != null) statsSource.ResetCharge();
+            else if (powerCore != null) powerCore.CancelCharge();
+        }
         public bool IsCharging => IsEquipped && statsSource != null && statsSource.IsCharging;
         public float ChargeProgress => statsSource != null ? statsSource.ChargeProgress : 0f;
         public int ChargeLevel => statsSource != null ? statsSource.CurrentChargeLevel : 0;
@@ -467,6 +472,7 @@ namespace WeaponWorkshop
         public void ReturnToWorkbench()
         {
             if (!IsEquipped) return;
+            CancelCharge();
             if (workbench != null && workbench.CurrentWeapon != null && workbench.CurrentWeapon != this)
             {
                 // A swapped weapon must not return on top of the weapon now occupying its old bench.
@@ -485,6 +491,7 @@ namespace WeaponWorkshop
 
         public void PlaceOnWorkbench(Transform parent)
         {
+            CancelCharge();
             SetDroppedCollisionLayer(false);
             Vector3 scale = IsEquipped || colliderStates.Count > 0 ? originalScale : transform.localScale;
             IsEquipped = false;
@@ -502,6 +509,7 @@ namespace WeaponWorkshop
         public bool Drop(Vector3 aimPoint, float speed)
         {
             if (!IsEquipped || IsMoving) return false;
+            CancelCharge();
             IsEquipped = false;
             equippedGripPoint = null;
             dropped = true;
@@ -562,6 +570,7 @@ namespace WeaponWorkshop
         public bool MoveToPoint(Transform destination)
         {
             if (IsMoving || destination == null || destination.IsChildOf(transform)) return false;
+            CancelCharge();
             SetDroppedCollisionLayer(false);
             if (originalWorldScale == Vector3.zero) originalWorldScale = transform.lossyScale;
             if (originalScale == Vector3.zero) originalScale = transform.localScale;
@@ -597,6 +606,7 @@ namespace WeaponWorkshop
         public bool DisposeTo(Transform destination, PlayerWallet refundWallet = null)
         {
             if (IsMoving || destination == null || destination.IsChildOf(transform)) return false;
+            CancelCharge();
             IsEquipped = false;
             equippedGripPoint = null;
             disposing = true;
@@ -631,6 +641,7 @@ namespace WeaponWorkshop
         /// <param name="refundWallet">지정할 경우 기존 환불 지갑을 갱신할 플레이어 지갑입니다.</param>
         private void FinalizeDisposal(PlayerWallet refundWallet = null)
         {
+            CancelCharge();
             if (refundWallet != null) disposalRefundWallet = refundWallet;
             disposing = false;
             RefundConstructionCost();
@@ -685,6 +696,7 @@ namespace WeaponWorkshop
 
         private void OnDisable()
         {
+            CancelCharge();
             if (!IsMoving) return;
             if (movement != null) StopCoroutine(movement);
             FinishMovement();

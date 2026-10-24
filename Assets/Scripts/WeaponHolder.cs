@@ -60,15 +60,21 @@ namespace WeaponWorkshop
         private void OnEnable() { attack?.Enable(); drop?.Enable(); }
         private void OnDisable()
         {
+            // Cancel before disabling Attack: its canceled callback must not release a charged shot.
+            EquippedWeapon?.CancelCharge();
             attack?.Disable();
             drop?.Disable();
             _attackStartedWhileBlocked = false;
-            EquippedWeapon?.CancelCharge();
             ResetRecoil();
         }
         private void OnDestroy() => controls?.Dispose();
         private void Update()
         {
+            if (!HasFocus || player == null || !player.isActiveAndEnabled)
+            {
+                EquippedWeapon?.CancelCharge();
+                return;
+            }
             if (GameManager.GameplayBlocked)
             {
                 if (attack != null && attack.IsPressed()) _attackStartedWhileBlocked = true;
@@ -85,7 +91,8 @@ namespace WeaponWorkshop
             if (attack == null || !attack.IsPressed()) return;
             // Normal muzzles keep firing while held; charge muzzles charge until release.
             TryAttack();
-            if (EquippedWeapon != null && EquippedWeapon.UsesCharge) EquippedWeapon.HoldCharge(Time.deltaTime);
+            if (TutorialManager.ActionAllowed("fire") && EquippedWeapon != null && EquippedWeapon.UsesCharge)
+                EquippedWeapon.HoldCharge(Time.deltaTime);
         }
 
         private void UpdateAim()
@@ -175,6 +182,8 @@ namespace WeaponWorkshop
             if (_attackStartedWhileBlocked) return;
             if (!TutorialManager.TryAction("fire")) return;
             AttackInput?.Invoke(EquippedWeapon);
+            // Register even sub-frame taps. Locked charge muzzles are ignored inside PowerCore.
+            if (EquippedWeapon != null && EquippedWeapon.UsesCharge) EquippedWeapon.HoldCharge(0f);
             TryAttack();
         }
 
@@ -193,7 +202,8 @@ namespace WeaponWorkshop
         private void ReleaseCharge()
         {
             if (EquippedWeapon == null || !EquippedWeapon.UsesCharge) return;
-            if (GameManager.GameplayBlocked || !HasFocus || player == null || !player.isActiveAndEnabled)
+            if (!isActiveAndEnabled || _attackStartedWhileBlocked || !TutorialManager.ActionAllowed("fire") ||
+                GameManager.GameplayBlocked || !HasFocus || player == null || !player.isActiveAndEnabled)
             {
                 EquippedWeapon.CancelCharge();
                 return;
@@ -202,6 +212,7 @@ namespace WeaponWorkshop
             EquipableWeapon weapon = EquippedWeapon;
             if (weapon.ReleaseCharge())
             {
+                // One notification/hand kick for the release; deferred burst rounds do not repeat it.
                 ShotFired?.Invoke(weapon);
                 recoilOffset = recoilDistance;
                 ApplyRecoil();

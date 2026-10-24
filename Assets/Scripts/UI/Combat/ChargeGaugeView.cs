@@ -109,7 +109,10 @@ namespace WeaponWorkshop
                 int last = m_backgrounds.Count - 1;
                 if (m_backgrounds[last] != null)
                 {
-                    Destroy(m_backgrounds[last].transform.parent.gameObject);
+                    // Background is the cloned segment root; its parent owns every segment and the template.
+                    GameObject segment = m_backgrounds[last].gameObject;
+                    segment.SetActive(false);
+                    Destroy(segment);
                 }
 
                 m_backgrounds.RemoveAt(last);

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,6 +15,42 @@ namespace WeaponWorkshop
         private SpinRotor spinRotor;
         private readonly Dictionary<string, double> lastEmissionTimes = new Dictionary<string, double>();
         private List<(Vector3 origin, Vector3Int direction, PlacedBlock[] path)> muzzles;
+        private readonly Dictionary<(Vector3, Vector3Int, PlacedBlock[]), string> muzzleKeys
+            = new Dictionary<(Vector3, Vector3Int, PlacedBlock[]), string>();
+        private readonly Dictionary<string, float> muzzleChargeTimes = new Dictionary<string, float>();
+        private readonly HashSet<string> lockedChargeMuzzles = new HashSet<string>();
+        private readonly List<ChargeBurstGroup> chargeBursts = new List<ChargeBurstGroup>();
+        private Coroutine chargeBurstRoutine;
+        private int chargeGeneration;
+
+        private sealed class ChargeShot
+        {
+            public string Key;
+            public Vector3 Origin;
+            public Vector3Int Direction;
+            public PlacedBlock[] Path;
+            public WeaponStats BaseStats;
+            public ProjectileStatsSource.ShotSnapshot Snapshot;
+            public int Remaining;
+            public double NextEmissionTime;
+        }
+
+        private sealed class ChargeBurstGroup
+        {
+            public readonly List<ChargeShot> Shots = new List<ChargeShot>();
+            public float Interval;
+        }
+
+        public bool IsBursting => chargeBursts.Count > 0;
+        public float ChargeTime
+        {
+            get
+            {
+                float max = 0f;
+                foreach (float seconds in muzzleChargeTimes.Values) max = Mathf.Max(max, seconds);
+                return max;
+            }
+        }
 
         // Raised after Initialize and before activation so listeners can attach stats/effects.
         public event System.Action<GameObject> ProjectileSpawned;
@@ -22,6 +59,7 @@ namespace WeaponWorkshop
         public WeaponStats SpawningStats { get; private set; }
         // Spread cone (degrees) for the projectile being spawned; valid only during ProjectileSpawned.
         public float SpawningSpread { get; private set; }
+        public ProjectileStatsSource.ShotSnapshot? SpawningShot { get; private set; }
         private readonly Dictionary<string, (float bloom, double time)> blooms = new Dictionary<string, (float, double)>();
         public float EmissionsPerSecond
         {
@@ -46,8 +84,14 @@ namespace WeaponWorkshop
                 PoolManager.EnsurePrefabPrewarm(motor.ImpactEffectPrefab.gameObject, ImpactEffectPrewarm);
         }
 
+        private void OnDisable() => CancelCharge();
+
         // Blocks attach as children of this object (CubeAssembly), so rebuild muzzles on change.
-        private void OnTransformChildrenChanged() => muzzles = null;
+        private void OnTransformChildrenChanged()
+        {
+            muzzles = null;
+            muzzleKeys.Clear();
+        }
 
         private List<(Vector3 origin, Vector3Int direction, PlacedBlock[] path)> Muzzles
         {
@@ -89,18 +133,19 @@ namespace WeaponWorkshop
 
         public bool HasChargeMuzzle => MaxMuzzleCharge > 0f;
 
-        public float MaxMuzzleCharge
+        public float MaxMuzzleCharge => MaximumCharge(false);
+        public float MaxAvailableMuzzleCharge => MaximumCharge(true);
+
+        private float MaximumCharge(bool availableOnly)
         {
-            get
+            float max = 0f;
+            foreach (var muzzle in Muzzles)
             {
-                float max = 0f;
-                foreach (var muzzle in Muzzles)
-                {
-                    WeaponStats stats = GetMuzzleStats(muzzle.path);
-                    if (IsCharge(stats)) max = Mathf.Max(max, stats.charge);
-                }
-                return max;
+                if (availableOnly && lockedChargeMuzzles.Contains(MuzzleKey(muzzle.origin, muzzle.direction, muzzle.path))) continue;
+                WeaponStats stats = GetMuzzleStats(muzzle.path);
+                if (IsCharge(stats)) max = Mathf.Max(max, stats.charge);
             }
+            return max;
         }
 
         // Widest current spread among muzzles that shoot projectiles (crosshair size). Steam muzzles have no shots.
@@ -149,12 +194,189 @@ namespace WeaponWorkshop
             : Mathf.Min(statsSource.BaseSpread + CurrentBloom(key, now), statsSource.Tuning.spreadMaxDegrees);
 
         /// <summary>Fires every non-charge muzzle whose own cooldown has elapsed.</summary>
-        public bool TryFire() => Fire(false);
+        public bool TryFire() => Fire();
 
-        /// <summary>Fires every charge muzzle once (charge release ignores the fire-rate cooldown).</summary>
-        public bool FireChargeMuzzles() => Fire(true);
+        public bool HoldCharge(float deltaTime)
+        {
+            if (!CanEmit || statsSource == null) return false;
+            bool available = false;
+            foreach (var muzzle in Muzzles)
+            {
+                string key = MuzzleKey(muzzle.origin, muzzle.direction, muzzle.path);
+                if (lockedChargeMuzzles.Contains(key)) continue;
+                WeaponStats stats = GetMuzzleStats(muzzle.path);
+                if (!IsCharge(stats)) continue;
+                muzzleChargeTimes.TryGetValue(key, out float seconds);
+                // Keep zero-second presses too: a very quick tap still emits the basic pattern once.
+                muzzleChargeTimes[key] = Mathf.Min(statsSource.MaxChargeTime(stats.charge), seconds + Mathf.Max(0f, deltaTime));
+                available = true;
+            }
+            return available;
+        }
 
-        private bool Fire(bool chargeRelease)
+        private bool CanEmit => !GameManager.GameplayBlocked && isActiveAndEnabled
+            && energyTemplate != null && projectileSpeed > 0f;
+
+        private static int FireRateModuleCount(PlacedBlock[] path)
+        {
+            int count = 0;
+            foreach (PlacedBlock block in path)
+                if (block != null && block.TryGetComponent<ModuleStats>(out var module)
+                    && module.Data != null && module.Data.ModuleType == StatType.FireRate) count++;
+            return count;
+        }
+
+        /// <summary>Emits ready charge paths now and schedules their remaining rounds from value snapshots.</summary>
+        public bool FireChargeMuzzles()
+        {
+            if (!CanEmit || statsSource == null) return false;
+            int generation = chargeGeneration;
+            double now = Time.timeAsDouble;
+            var shots = new List<ChargeShot>();
+            var group = new ChargeBurstGroup { Interval = Mathf.Max(0.001f, statsSource.Tuning.chargeBurstInterval) };
+            foreach (var muzzle in Muzzles)
+            {
+                string key = MuzzleKey(muzzle.origin, muzzle.direction, muzzle.path);
+                if (lockedChargeMuzzles.Contains(key) || !muzzleChargeTimes.TryGetValue(key, out float seconds)) continue;
+                muzzleChargeTimes.Remove(key);
+                WeaponStats stats = GetMuzzleStats(muzzle.path);
+                if (!IsCharge(stats)) continue;
+                var shot = new ChargeShot
+                {
+                    Key = key, Origin = muzzle.origin, Direction = muzzle.direction,
+                    Path = (PlacedBlock[])muzzle.path.Clone(), BaseStats = stats,
+                    Snapshot = statsSource.CaptureShot(stats, muzzle.path, seconds, MuzzleSpread(key, now), true),
+                    Remaining = statsSource.GetChargeLevel(stats.charge, seconds) > 0 ? 1 + FireRateModuleCount(muzzle.path) : 1
+                };
+                shots.Add(shot);
+                if (shot.Remaining > 1)
+                {
+                    group.Shots.Add(shot);
+                }
+            }
+            // Install all locks before spawning; spawn listeners may call back into weapon input.
+            if (group.Shots.Count > 0)
+            {
+                foreach (ChargeShot shot in group.Shots) lockedChargeMuzzles.Add(shot.Key);
+                chargeBursts.Add(group);
+            }
+            bool fired = false, soundRaised = false;
+            float recoilSquared = 0f;
+            FirstPersonPlayer owner = GetComponentInParent<FirstPersonPlayer>();
+            try
+            {
+                foreach (ChargeShot shot in shots)
+                {
+                    if (generation != chargeGeneration) break;
+                    if (!EmitChargeShot(shot, owner)) { shot.Remaining = 0; continue; }
+                    fired = true;
+                    shot.Remaining--;
+                    shot.NextEmissionTime = Time.timeAsDouble + group.Interval;
+                    lastEmissionTimes[shot.Key] = now;
+                    recoilSquared += shot.Snapshot.Recoil * shot.Snapshot.Recoil;
+                    blooms[shot.Key] = (Mathf.Min(CurrentBloom(shot.Key, now) + statsSource.SpreadPerShot(shot.BaseStats),
+                        statsSource.MaxBloom), now);
+                    if (!soundRaised)
+                    {
+                        RaiseShotSound(shot.BaseStats, transform.TransformPoint(shot.Origin), true);
+                        soundRaised = true;
+                    }
+                }
+                if (generation == chargeGeneration)
+                {
+                    ReleaseCompletedBurstGroups();
+                    if (IsBursting && chargeBurstRoutine == null) chargeBurstRoutine = StartCoroutine(ChargeBurstRoutine());
+                }
+                if (fired && owner != null)
+                    owner.AddVerticalRecoil(Mathf.Sqrt(recoilSquared), statsSource.Tuning.verticalRecoilMaximumDegrees,
+                        statsSource.Tuning.verticalRecoilSmoothTime);
+                return fired;
+            }
+            catch
+            {
+                CancelCharge();
+                throw;
+            }
+        }
+
+        private bool EmitChargeShot(ChargeShot shot, FirstPersonPlayer owner)
+        {
+            if (!CanEmit || statsSource == null || !statsSource.isActiveAndEnabled) return false;
+            bool exists = false;
+            foreach (var muzzle in Muzzles)
+                if (MuzzleKey(muzzle.origin, muzzle.direction, muzzle.path) == shot.Key) { exists = true; break; }
+            if (!exists) return false;
+            Vector3 origin = shot.Origin, direction = shot.Direction;
+            if (spinRotor != null) spinRotor.TransformMuzzle(shot.Path, ref origin, ref direction);
+            return Spawn(origin, direction, shot.Path, shot.BaseStats, owner, shot.Snapshot);
+        }
+
+        private IEnumerator ChargeBurstRoutine()
+        {
+            int generation = chargeGeneration;
+            while (IsBursting)
+            {
+                // At most one round per path per frame; hitch recovery must not dump a burst at once.
+                yield return null;
+                if (generation != chargeGeneration) yield break;
+                if (GameManager.GameplayBlocked || Time.deltaTime <= 0f) continue;
+                FirstPersonPlayer owner = GetComponentInParent<FirstPersonPlayer>();
+                for (int i = 0; i < chargeBursts.Count; i++)
+                {
+                    ChargeBurstGroup group = chargeBursts[i];
+                    foreach (ChargeShot shot in group.Shots)
+                    {
+                        if (shot.Remaining <= 0 || Time.timeAsDouble < shot.NextEmissionTime) continue;
+                        bool emitted = false;
+                        try { emitted = EmitChargeShot(shot, owner); }
+                        catch (System.Exception exception) { Debug.LogException(exception, this); }
+                        if (generation != chargeGeneration) yield break;
+                        if (emitted)
+                        {
+                            shot.Remaining--;
+                            shot.NextEmissionTime = Time.timeAsDouble + group.Interval;
+                        }
+                        else shot.Remaining = 0;
+                    }
+                }
+                ReleaseCompletedBurstGroups();
+            }
+            chargeBurstRoutine = null;
+        }
+
+        private void ReleaseCompletedBurstGroups()
+        {
+            for (int i = chargeBursts.Count - 1; i >= 0; i--)
+            {
+                ChargeBurstGroup group = chargeBursts[i];
+                bool complete = true;
+                foreach (ChargeShot shot in group.Shots)
+                    if (shot.Remaining > 0) { complete = false; break; }
+                if (!complete) continue;
+                foreach (ChargeShot shot in group.Shots) lockedChargeMuzzles.Remove(shot.Key);
+                chargeBursts.RemoveAt(i);
+            }
+        }
+
+        public void CancelCharge()
+        {
+            chargeGeneration++;
+            if (chargeBurstRoutine != null) StopCoroutine(chargeBurstRoutine);
+            chargeBurstRoutine = null;
+            chargeBursts.Clear();
+            lockedChargeMuzzles.Clear();
+            muzzleChargeTimes.Clear();
+        }
+
+        private static void RaiseShotSound(WeaponStats stats, Vector3 position, bool charged)
+        {
+            if (charged) WorkshopSoundEffects.RaiseChargedShotFired(position);
+            if (stats.water > 0f) WorkshopSoundEffects.RaiseWaterFired(position);
+            else if (stats.shotgun > 0f) WorkshopSoundEffects.RaiseShotgunFired(position);
+            else if (!charged) WorkshopSoundEffects.RaiseBasicShotFired(position);
+        }
+
+        private bool Fire()
         {
             if (GameManager.GameplayBlocked || !isActiveAndEnabled || energyTemplate == null || projectileSpeed <= 0f)
                 return false;
@@ -172,22 +394,19 @@ namespace WeaponWorkshop
                 Vector3 origin = muzzle.origin;
                 Vector3 direction = muzzle.direction;
                 if (spinRotor != null) spinRotor.TransformMuzzle(muzzle.path, ref origin, ref direction);
-                if (IsCharge(stats) != chargeRelease) continue;
-                if (!chargeRelease)
-                {
-                    if (stats.fireRate <= 0f) continue;
-                    if (lastEmissionTimes.TryGetValue(key, out double last) && now - last < 1d / stats.fireRate) continue;
-                }
+                if (IsCharge(stats) || lockedChargeMuzzles.Contains(key)) continue;
+                if (stats.fireRate <= 0f) continue;
+                if (lastEmissionTimes.TryGetValue(key, out double last) && now - last < 1d / stats.fireRate) continue;
                 lastEmissionTimes[key] = now;
                 if (IsSteam(stats)) SpawnSteam(origin, direction);
                 else
                 {
                     // This round uses the spread built up so far, then adds its own kick.
                     SpawningSpread = MuzzleSpread(key, now);
-                    Spawn(origin, direction, muzzle.path, stats, owner);
+                    if (!Spawn(origin, direction, muzzle.path, stats, owner)) continue;
                     if (statsSource != null)
                     {
-                        float recoil = statsSource.VerticalRecoilForShot(stats, muzzle.path, chargeRelease);
+                        float recoil = statsSource.VerticalRecoilForShot(stats, muzzle.path, false);
                         recoilMagnitudeSquared += recoil * recoil;
                         recoilingMuzzles++;
                         blooms[key] = (Mathf.Min(CurrentBloom(key, now) + statsSource.SpreadPerShot(stats),
@@ -203,10 +422,7 @@ namespace WeaponWorkshop
                     }
                     else
                     {
-                        if (chargeRelease) WorkshopSoundEffects.RaiseChargedShotFired(soundPosition);
-                        if (stats.water > 0f) WorkshopSoundEffects.RaiseWaterFired(soundPosition);
-                        else if (stats.shotgun > 0f) WorkshopSoundEffects.RaiseShotgunFired(soundPosition);
-                        else if (!chargeRelease) WorkshopSoundEffects.RaiseBasicShotFired(soundPosition);
+                        RaiseShotSound(stats, soundPosition, false);
                     }
                     soundRaised = true;
                 }
@@ -221,23 +437,42 @@ namespace WeaponWorkshop
             return fired;
         }
 
-        private void Spawn(Vector3 origin, Vector3 localDirection, PlacedBlock[] path, WeaponStats stats,
-            FirstPersonPlayer owner)
+        private bool Spawn(Vector3 origin, Vector3 localDirection, PlacedBlock[] path, WeaponStats stats,
+            FirstPersonPlayer owner, ProjectileStatsSource.ShotSnapshot? shot = null)
         {
             SpawningPath = path;
             SpawningStats = stats;
+            SpawningShot = shot;
             Vector3 direction = transform.TransformDirection(localDirection).normalized;
-            GameObject projectile = PoolManager.RentPrefab(energyTemplate, transform.TransformPoint(origin), transform.rotation);
-            projectile.name = "Projectile";
-            EnergyCube movement = projectile.GetComponent<EnergyCube>();
-            if (movement == null) movement = projectile.AddComponent<EnergyCube>();
-            movement.enabled = true;
-            var pooledMotor = projectile.GetComponent<ProjectileMotor>();
-            if (pooledMotor != null) pooledMotor.enabled = false;
-            movement.Initialize(direction, projectileSpeed, owner != null ? owner.transform : null, transform);
-            ProjectileSpawned?.Invoke(projectile);
-            SpawnMuzzleFlash(origin, direction, path);
-            projectile.SetActive(true);
+            GameObject projectile = null;
+            try
+            {
+                projectile = PoolManager.RentPrefab(energyTemplate, transform.TransformPoint(origin), transform.rotation);
+                if (projectile == null) return false;
+                projectile.name = "Projectile";
+                EnergyCube movement = projectile.GetComponent<EnergyCube>();
+                if (movement == null) movement = projectile.AddComponent<EnergyCube>();
+                movement.enabled = true;
+                var pooledMotor = projectile.GetComponent<ProjectileMotor>();
+                if (pooledMotor != null) pooledMotor.enabled = false;
+                movement.Initialize(direction, projectileSpeed, owner != null ? owner.transform : null, transform);
+                ProjectileSpawned?.Invoke(projectile);
+                SpawnMuzzleFlash(origin, direction, path);
+                projectile.SetActive(true);
+                return true;
+            }
+            catch
+            {
+                if (projectile != null) PoolManager.Release(projectile);
+                throw;
+            }
+            finally
+            {
+                SpawningPath = System.Array.Empty<PlacedBlock>();
+                SpawningStats = default;
+                SpawningSpread = 0f;
+                SpawningShot = null;
+            }
         }
 
         private void SpawnMuzzleFlash(Vector3 origin, Vector3 direction, PlacedBlock[] path)
@@ -251,7 +486,8 @@ namespace WeaponWorkshop
             if (flash == null) return;
 
             Color flashColor = Color.white;
-            if (statsSource != null) statsSource.TryGetProjectileTint(path, SpawningStats, out flashColor);
+            if (SpawningShot.HasValue) flashColor = SpawningShot.Value.Tint;
+            else if (statsSource != null) statsSource.TryGetProjectileTint(path, SpawningStats, out flashColor);
             foreach (ParticleSystem particles in flash.GetComponentsInChildren<ParticleSystem>(true))
             {
                 var main = particles.main;
@@ -271,16 +507,22 @@ namespace WeaponWorkshop
             puff.GetComponent<PooledCombatObject>().PlayParticles(true);
         }
 
-        private static string MuzzleKey(Vector3 origin, Vector3Int direction, PlacedBlock[] path)
+        private string MuzzleKey(Vector3 origin, Vector3Int direction, PlacedBlock[] path)
         {
+            var identity = (origin, direction, path);
+            if (muzzleKeys.TryGetValue(identity, out string cached)) return cached;
             var key = new System.Text.StringBuilder();
             key.Append(origin).Append(direction);
             foreach (PlacedBlock block in path) key.Append('/').Append(block != null ? block.GetInstanceID() : 0);
-            return key.ToString();
+            string value = key.ToString();
+            muzzleKeys.Add(identity, value);
+            return value;
         }
 
         public void ResetFireCooldown()
         {
+            if (statsSource != null) statsSource.ResetCharge();
+            else CancelCharge();
             lastEmissionTimes.Clear();
             blooms.Clear();
         }

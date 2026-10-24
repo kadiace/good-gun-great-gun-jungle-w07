@@ -58,9 +58,6 @@ namespace WeaponWorkshop
 
                     int outside = 0;
                     int outsideMirror = 0;
-                    int minX = 0;
-                    int maxX = 0;
-
                     foreach (var cell in occupied)
                     {
                         if (!GunShapeInfo.Contains(shape, cell))
@@ -73,8 +70,6 @@ namespace WeaponWorkshop
                             outsideMirror++;
                         }
 
-                        minX = Mathf.Min(minX, cell.x);
-                        maxX = Mathf.Max(maxX, cell.x);
                     }
 
                     bool mirror = shape.allowMirrorZ && outsideMirror < outside;
@@ -103,8 +98,8 @@ namespace WeaponWorkshop
                                 {
                                     Show(
                                         assembly,
-                                        new Vector3((minX + maxX) * .5f, shape.anchorRow - row, (col - shape.anchorColumn) * (mirror ? -1 : 1)),
-                                        new Vector3(maxX - minX + 1, 1, 1));
+                                        new Vector3(0, shape.anchorRow - row, (col - shape.anchorColumn) * (mirror ? -1 : 1)),
+                                        Vector3.one);
                                 }
                             }
                         }
