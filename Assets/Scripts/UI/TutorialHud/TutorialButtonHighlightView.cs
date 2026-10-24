@@ -16,6 +16,9 @@ namespace WeaponWorkshop
 
         private Image m_cover;
         private readonly List<Image> m_covers = new List<Image>();
+        private readonly Image[] m_spotlight = new Image[4];
+        private readonly Image[] m_guides = new Image[5];
+        private readonly Vector3[] m_corners = new Vector3[4];
 
         private bool m_hasAppliedInitialState;
         private bool m_isInitialized;
@@ -37,6 +40,20 @@ namespace WeaponWorkshop
         private void OnDestroy()
         {
             Dispose();
+            foreach (Image image in m_spotlight)
+            {
+                if (image != null)
+                {
+                    Destroy(image.gameObject);
+                }
+            }
+            foreach (Image image in m_guides)
+            {
+                if (image != null)
+                {
+                    Destroy(image.gameObject);
+                }
+            }
         }
 
         /// <summary>
@@ -139,6 +156,152 @@ namespace WeaponWorkshop
                 if (image != null)
                 {
                     image.enabled = false;
+                }
+            }
+            HideSpotlight();
+        }
+
+        public void ShowSpotlight(RectTransform target)
+        {
+            if (target == null || !target.gameObject.activeInHierarchy)
+            {
+                HideSpotlight();
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null)
+            {
+                HideSpotlight();
+                return;
+            }
+
+            RectTransform surface = canvas.rootCanvas.transform as RectTransform;
+            if (surface == null)
+            {
+                HideSpotlight();
+                return;
+            }
+
+            target.GetWorldCorners(m_corners);
+            Vector3 first = surface.InverseTransformPoint(m_corners[0]);
+            float left = first.x;
+            float right = first.x;
+            float bottom = first.y;
+            float top = first.y;
+            for (int i = 1; i < m_corners.Length; i++)
+            {
+                Vector3 corner = surface.InverseTransformPoint(m_corners[i]);
+                left = Mathf.Min(left, corner.x);
+                right = Mathf.Max(right, corner.x);
+                bottom = Mathf.Min(bottom, corner.y);
+                top = Mathf.Max(top, corner.y);
+            }
+
+            Rect bounds = surface.rect;
+            left = Mathf.Clamp(left, bounds.xMin, bounds.xMax);
+            right = Mathf.Clamp(right, bounds.xMin, bounds.xMax);
+            bottom = Mathf.Clamp(bottom, bounds.yMin, bounds.yMax);
+            top = Mathf.Clamp(top, bounds.yMin, bounds.yMax);
+
+            SetSpotlightRect(0, surface, bounds.xMin, bounds.yMin, left, bounds.yMax);
+            SetSpotlightRect(1, surface, right, bounds.yMin, bounds.xMax, bounds.yMax);
+            SetSpotlightRect(2, surface, left, top, right, bounds.yMax);
+            SetSpotlightRect(3, surface, left, bounds.yMin, right, bottom);
+
+            const float width = 4f;
+            SetGuideRect(0, surface, left, bottom, right, bottom + width);
+            SetGuideRect(1, surface, left, top - width, right, top);
+            SetGuideRect(2, surface, left, bottom, left + width, top);
+            SetGuideRect(3, surface, right - width, bottom, right, top);
+
+            Vector2 center = bounds.center;
+            Vector2 destination = new Vector2((left + right) * .5f, (bottom + top) * .5f);
+            Vector2 direction = destination - center;
+            if (direction.sqrMagnitude < .01f ||
+                (center.x >= left && center.x <= right && center.y >= bottom && center.y <= top))
+            {
+                if (m_guides[4] != null)
+                {
+                    m_guides[4].gameObject.SetActive(false);
+                }
+                return;
+            }
+
+            float entry = 0f;
+            if (direction.x > 0f) entry = Mathf.Max(entry, (left - center.x) / direction.x);
+            else if (direction.x < 0f) entry = Mathf.Max(entry, (right - center.x) / direction.x);
+            if (direction.y > 0f) entry = Mathf.Max(entry, (bottom - center.y) / direction.y);
+            else if (direction.y < 0f) entry = Mathf.Max(entry, (top - center.y) / direction.y);
+            Vector2 endpoint = center + direction * entry;
+            Image line = GetGuide(4, surface);
+            RectTransform lineRect = line.rectTransform;
+            lineRect.anchoredPosition = (center + endpoint) * .5f - bounds.center;
+            lineRect.sizeDelta = new Vector2(Vector2.Distance(center, endpoint), width);
+            lineRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
+            line.gameObject.SetActive(true);
+        }
+
+        private Image GetGuide(int index, RectTransform surface)
+        {
+            if (m_guides[index] == null)
+            {
+                GameObject guide = new GameObject("TutorialSpotlightGuide", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                guide.transform.SetParent(surface, false);
+                m_guides[index] = guide.GetComponent<Image>();
+                m_guides[index].color = new Color(1f, .82f, .12f, 1f);
+                m_guides[index].raycastTarget = false;
+                m_guides[index].rectTransform.anchorMin = m_guides[index].rectTransform.anchorMax = new Vector2(.5f, .5f);
+            }
+
+            m_guides[index].rectTransform.SetAsLastSibling();
+            return m_guides[index];
+        }
+
+        private void SetGuideRect(int index, RectTransform surface, float left, float bottom, float right, float top)
+        {
+            Image image = GetGuide(index, surface);
+            RectTransform rect = image.rectTransform;
+            rect.anchoredPosition = new Vector2((left + right) * .5f, (bottom + top) * .5f) - surface.rect.center;
+            rect.sizeDelta = new Vector2(right - left, top - bottom);
+            image.gameObject.SetActive(right > left && top > bottom);
+        }
+
+        private void SetSpotlightRect(int index, RectTransform surface, float left, float bottom, float right, float top)
+        {
+            if (m_spotlight[index] == null)
+            {
+                GameObject panel = new GameObject("TutorialSpotlightShade", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panel.transform.SetParent(surface, false);
+                m_spotlight[index] = panel.GetComponent<Image>();
+                m_spotlight[index].color = new Color(0f, 0f, 0f, .65f);
+                m_spotlight[index].raycastTarget = false;
+            }
+
+            Image image = m_spotlight[index];
+            RectTransform rect = image.rectTransform;
+            rect.SetAsLastSibling();
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+            rect.pivot = new Vector2(.5f, .5f);
+            rect.anchoredPosition = new Vector2((left + right) * .5f, (bottom + top) * .5f) - surface.rect.center;
+            rect.sizeDelta = new Vector2(right - left, top - bottom);
+            image.gameObject.SetActive(right > left && top > bottom);
+        }
+
+        private void HideSpotlight()
+        {
+            foreach (Image image in m_spotlight)
+            {
+                if (image != null)
+                {
+                    image.gameObject.SetActive(false);
+                }
+            }
+            foreach (Image image in m_guides)
+            {
+                if (image != null)
+                {
+                    image.gameObject.SetActive(false);
                 }
             }
         }

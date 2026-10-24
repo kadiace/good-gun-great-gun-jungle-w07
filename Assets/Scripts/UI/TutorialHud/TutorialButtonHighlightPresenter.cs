@@ -180,6 +180,21 @@ namespace WeaponWorkshop
             }
 
             m_view.ShowTargets(m_targets);
+            RectTransform spotlight = null;
+            if (m_presets != null)
+            {
+                foreach (RectTransform target in m_targets)
+                {
+                    if (target == m_presets.TutorialFirstSlot || target == m_presets.TutorialSecondSlot ||
+                        target == m_presets.TutorialLoadButton || target == m_presets.TutorialSaveButton)
+                    {
+                        spotlight = target;
+                        break;
+                    }
+                }
+            }
+
+            m_view.ShowSpotlight(spotlight);
         }
 
         /// <summary>
