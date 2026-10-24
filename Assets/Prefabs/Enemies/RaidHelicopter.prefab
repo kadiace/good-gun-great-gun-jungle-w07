@@ -9683,7 +9683,7 @@ MonoBehaviour:
   enemyRoot: {fileID: 4593036630455093574}
   slotTicketReward: 1
   ticketPickupPrefab: {fileID: 114002, guid: 02731a79b24c457a8990d0c56fca2752, type: 3}
-  destroyAtLostRatio: 0.8
+  destroyAtLostRatio: 0.5
   breakBurstPrefab: {fileID: 0}
   breakBurstScale: 1.5
 --- !u!1 &7767733901148726638
