@@ -20,6 +20,12 @@ namespace WeaponWorkshop
         private readonly List<DestructibleTarget> renderTargets = new List<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> registeredRenderTargets = new HashSet<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> pendingRefresh = new HashSet<DestructibleTarget>();
+        private readonly List<DestructibleTarget> occupancyPrewarm = new List<DestructibleTarget>();
+        private readonly HashSet<DestructibleTarget> occupancyPrewarmSet = new HashSet<DestructibleTarget>();
+        private const double OccupancyPrewarmBudgetMilliseconds = 0.75;
+        // 공용 예산이 바닥난 프레임에도 지지 판정에 쓰는 최소 시간.
+        private const double SupportMinSliceMilliseconds = 1.0;
+        private int supportCursor;
         private bool updating;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -58,6 +64,12 @@ namespace WeaponWorkshop
         internal static void RefreshRegistration(DestructibleTarget target)
         {
             if (!Application.isPlaying || ReferenceEquals(target, null)) return;
+            // Build cell occupancy during load so the first hit only activates prebuilt state.
+            if (target.NeedsOccupancyPrewarm)
+            {
+                DestructibleTargetUpdater prewarmOwner = GetOrCreate();
+                prewarmOwner.QueueOccupancyPrewarm(target);
+            }
             if (!target.NeedsLateUpdate && !target.NeedsRenderUpdate)
             {
                 if (instance != null) instance.QueueRefresh(target);
@@ -102,6 +114,41 @@ namespace WeaponWorkshop
             else ApplyRefresh(target);
         }
 
+        private void QueueOccupancyPrewarm(DestructibleTarget target)
+        {
+            if (target == null || !target.NeedsOccupancyPrewarm) return;
+            if (occupancyPrewarmSet.Add(target)) occupancyPrewarm.Add(target);
+        }
+
+        // Spread cell-table construction across a few frames instead of one load spike.
+        private void ProcessOccupancyPrewarm()
+        {
+            if (occupancyPrewarm.Count == 0) return;
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            double budgetTicks = System.Diagnostics.Stopwatch.Frequency * OccupancyPrewarmBudgetMilliseconds / 1000d;
+            while (occupancyPrewarm.Count > 0)
+            {
+                DestructibleTarget target = occupancyPrewarm[0];
+                if (target == null || !target.NeedsOccupancyPrewarm)
+                {
+                    occupancyPrewarmSet.Remove(target);
+                    RemovePrewarmAt(0);
+                    continue;
+                }
+                target.PrepareOccupancyTemplate();
+                occupancyPrewarmSet.Remove(target);
+                RemovePrewarmAt(0);
+                if (System.Diagnostics.Stopwatch.GetTimestamp() - started >= budgetTicks) break;
+            }
+        }
+
+        private void RemovePrewarmAt(int index)
+        {
+            int last = occupancyPrewarm.Count - 1;
+            if (index != last) occupancyPrewarm[index] = occupancyPrewarm[last];
+            occupancyPrewarm.RemoveAt(last);
+        }
+
         private void ApplyRefresh(DestructibleTarget target)
         {
             bool active = target != null && target.NeedsLateUpdate;
@@ -137,17 +184,30 @@ namespace WeaponWorkshop
             registeredMovingTargets.Clear();
             renderTargets.Clear(); registeredRenderTargets.Clear();
             pendingRefresh.Clear();
+            occupancyPrewarm.Clear(); occupancyPrewarmSet.Clear();
         }
 
         private void LateUpdate()
         {
+            // 같은 프레임 이웃 파츠의 콜라이더 재빌드를 먼저 마쳐, 이미 사라진 이웃 셀이 지지를 붙들지 못하게 한다.
+            PoolManager.FlushExplosionFinish();
+            ProcessOccupancyPrewarm();
             using (updateMarker.Auto())
             {
                 updating = true;
                 try
                 {
-                    for (int i = 0; i < targets.Count; i++)
+                    // 지지 판정은 공용 파괴 예산을 따른다. 예산이 바닥나도 SupportMinSliceMilliseconds와
+                    // 표적 하나는 보장하고, 미룬 표적부터 다음 프레임에 시작해 뒤쪽 표적이 굶지 않게 한다.
+                    int count = targets.Count;
+                    int start = count > 0 ? supportCursor % count : 0;
+                    int deferredAt = -1;
+                    bool supportResolved = false;
+                    long supportStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                    long supportSliceTicks = (long)(System.Diagnostics.Stopwatch.Frequency * SupportMinSliceMilliseconds / 1000d);
+                    for (int n = 0; n < count; n++)
                     {
+                        int i = (start + n) % count;
                         DestructibleTarget target = targets[i];
                         if (target == null || !target.isActiveAndEnabled)
                         {
@@ -155,12 +215,21 @@ namespace WeaponWorkshop
                             continue;
                         }
 
+                        bool supportPending = target.SupportPending;
+                        bool allowSupport = !supportResolved || !DestructionFrameBudget.IsExhausted ||
+                            System.Diagnostics.Stopwatch.GetTimestamp() - supportStarted < supportSliceTicks;
+                        if (supportPending)
+                        {
+                            if (allowSupport) supportResolved = true;
+                            else if (deferredAt < 0) deferredAt = i;
+                        }
                         try
                         {
-                            using (targetUpdateMarker.Auto()) target.ProcessLateUpdate();
+                            using (targetUpdateMarker.Auto()) target.ProcessLateUpdate(allowSupport);
                         }
                         catch (System.Exception exception) { Debug.LogException(exception, target); }
                     }
+                    supportCursor = deferredAt >= 0 ? deferredAt : 0;
                     for (int i = 0; i < renderTargets.Count; i++)
                     {
                         DestructibleTarget target = renderTargets[i];

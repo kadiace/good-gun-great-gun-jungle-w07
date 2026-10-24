@@ -11,6 +11,88 @@ namespace WeaponWorkshop
         private readonly List<Collider> externalSupportColliders = new List<Collider>();
         private readonly List<Collider> neighborSupportColliders = new List<Collider>();
         private readonly HashSet<int> externallySupportedCells = new HashSet<int>();
+        // 충돌 콜라이더 구성(활성 여부·경계)이 바뀔 때마다 올린다. 이웃은 이 값으로 외부 지지 캐시를 검증한다.
+        private int collisionShapeVersion;
+        internal int CollisionShapeVersion => collisionShapeVersion;
+        // 외부 지지 결과는 이웃 콜라이더 bounds와 격자 순회가 비싸므로 입력이 그대로면 재사용한다.
+        // 키에는 bounds 대신 충돌 형상 버전·지지 상태·루트 자세·연결 집합만 넣는다.
+        private bool externalSupportCacheValid;
+        private long externalSupportCacheKey;
+        private bool externalSupportCacheHeld;
+
+        internal void InvalidateCollisionShape() => collisionShapeVersion++;
+
+        // 입력이 바뀌었을 때만 다시 계산한다. 반환값은 다시 계산했는지 여부.
+        private bool RefreshExternalSupport()
+        {
+            long key = ComputeExternalSupportKey();
+            if (externalSupportCacheValid && key == externalSupportCacheKey) return false;
+            CollectExternalSupport();
+            externalSupportCacheKey = key;
+            externalSupportCacheValid = true;
+            externalSupportCacheHeld = false;
+            foreach (int cellIndex in externallySupportedCells)
+                if (cellIndex >= 0 && cellIndex < grid.Length && grid[cellIndex])
+                { externalSupportCacheHeld = true; break; }
+            return true;
+        }
+
+        private void InvalidateExternalSupportCache()
+        {
+            externalSupportCacheValid = false;
+            externalSupportCacheKey = 0;
+        }
+
+        private static long MixSupportKey(long key, long value) => unchecked((key ^ value) * 1099511628211L);
+
+        // 자신·이웃의 루트 자세, 이웃의 충돌 형상 버전·지지 상태, 연결 집합을 순서대로 접는다.
+        private long ComputeExternalSupportKey()
+        {
+            long key = 1469598103934665603L;
+            Transform root = CellRoot;
+            Vector3 position = root.position, scale = root.lossyScale;
+            Quaternion rotation = root.rotation;
+            key = MixSupportKey(key, position.x.GetHashCode());
+            key = MixSupportKey(key, position.y.GetHashCode());
+            key = MixSupportKey(key, position.z.GetHashCode());
+            key = MixSupportKey(key, rotation.x.GetHashCode());
+            key = MixSupportKey(key, rotation.y.GetHashCode());
+            key = MixSupportKey(key, rotation.z.GetHashCode());
+            key = MixSupportKey(key, rotation.w.GetHashCode());
+            key = MixSupportKey(key, scale.x.GetHashCode());
+            key = MixSupportKey(key, scale.y.GetHashCode());
+            key = MixSupportKey(key, scale.z.GetHashCode());
+            key = MixSupportKey(key, BelowSupportOnly ? 1L : 0L);
+            key = MixSupportKey(key, pivotGrounded.HasValue ? (pivotGrounded.Value ? 2L : 3L) : 4L);
+            key = MixSupportKey(key, supportLinks.Count);
+            foreach (var neighbor in supportLinks)
+            {
+                long link = neighbor == null ? -1L : neighbor.GetInstanceID();
+                if (neighbor != null)
+                {
+                    link = MixSupportKey(link, neighbor.collisionShapeVersion);
+                    link = MixSupportKey(link, StructuralSupportGraph.IsSupported(neighbor) ? 1L : 0L);
+                    Transform neighborRoot = neighbor.targetMesh != null ? neighbor.targetMesh.transform : null;
+                    if (neighborRoot != null)
+                    {
+                        Vector3 neighborPosition = neighborRoot.position, neighborScale = neighborRoot.lossyScale;
+                        Quaternion neighborRotation = neighborRoot.rotation;
+                        link = MixSupportKey(link, neighborPosition.x.GetHashCode());
+                        link = MixSupportKey(link, neighborPosition.y.GetHashCode());
+                        link = MixSupportKey(link, neighborPosition.z.GetHashCode());
+                        link = MixSupportKey(link, neighborRotation.x.GetHashCode());
+                        link = MixSupportKey(link, neighborRotation.y.GetHashCode());
+                        link = MixSupportKey(link, neighborRotation.z.GetHashCode());
+                        link = MixSupportKey(link, neighborRotation.w.GetHashCode());
+                        link = MixSupportKey(link, neighborScale.x.GetHashCode());
+                        link = MixSupportKey(link, neighborScale.y.GetHashCode());
+                        link = MixSupportKey(link, neighborScale.z.GetHashCode());
+                    }
+                }
+                key = MixSupportKey(key, link);
+            }
+            return key;
+        }
 
         private void CollectExternalSupport()
         {

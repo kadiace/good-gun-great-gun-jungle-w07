@@ -3,18 +3,11 @@ using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
-    [DisallowMultipleComponent]
+    // 화면 중심 주위에 피격 방향을 호(arc)로 그리는 그래픽. 전달받은 방향·남은 시간만 화면에 반영한다.
+    // 피격 구독·시점 이력·표시 시간 계산은 DamageDirectionPresenter가 맡는다. UIManager 프리팹에 전체 화면으로 둔다.
     public sealed class DamageDirectionIndicator : Graphic
     {
         private const int ArcSegments = 24;
-        private const float DirectionLookbackSeconds = 0.5f;
-        private const int ViewHistoryCapacity = 128;
-
-        private struct ViewSample
-        {
-            public float time;
-            public Quaternion rotation;
-        }
 
         [SerializeField] private UIManager uiManager;
         [SerializeField, Min(1f)] private float radiusPixels = 54f;
@@ -23,27 +16,43 @@ namespace WeaponWorkshop
         [SerializeField, Min(0.1f)] private float displayDuration = 1.1f;
         [SerializeField] private Color indicatorColor = new Color(1f, 0.06f, 0.08f, 1f);
 
-        private RaidPlayerHealth health;
-        private readonly ViewSample[] viewHistory = new ViewSample[ViewHistoryCapacity];
-        private Quaternion referenceViewRotation = Quaternion.identity;
-        private Vector3 incomingDirectionInReferenceView;
         private Vector2 screenDirection = Vector2.up;
         private float remaining;
-        private int viewHistoryCount;
-        private int nextViewSample;
+
+        public UIManager Owner => uiManager;
+        public float DisplayDuration => displayDuration;
 
         public void Initialize(UIManager owner)
         {
             uiManager = owner;
             ClearIndicator();
-            if (!gameObject.activeSelf) gameObject.SetActive(true);
-            BindHealth();
+            if (!gameObject.activeSelf)
+            {
+                gameObject.SetActive(true);
+            }
         }
 
         public void Hide()
         {
             ClearIndicator();
-            if (gameObject.activeSelf) gameObject.SetActive(false);
+            if (gameObject.activeSelf)
+            {
+                gameObject.SetActive(false);
+            }
+        }
+
+        public void SetIndicator(Vector2 direction, float remainingSeconds)
+        {
+            screenDirection = direction;
+            remaining = remainingSeconds;
+            SetVerticesDirty();
+        }
+
+        public void ClearIndicator()
+        {
+            remaining = 0f;
+            screenDirection = Vector2.up;
+            SetVerticesDirty();
         }
 
         protected override void Awake()
@@ -56,43 +65,22 @@ namespace WeaponWorkshop
         protected override void OnEnable()
         {
             base.OnEnable();
-            BindHealth();
-            RecordViewSample();
+            ClearIndicator();
         }
 
         protected override void OnDisable()
         {
-            UnbindHealth();
             ClearIndicator();
             base.OnDisable();
-        }
-
-        private void LateUpdate()
-        {
-            RecordViewSample();
-            BindHealth();
-            if (remaining <= 0f) return;
-            if (GameManager.GameplayBlocked || health == null || health.IsDead)
-            {
-                ClearIndicator();
-                return;
-            }
-
-            remaining -= Time.unscaledDeltaTime;
-            if (remaining <= 0f)
-            {
-                ClearIndicator();
-                return;
-            }
-
-            UpdateScreenDirection();
-            SetVerticesDirty();
         }
 
         protected override void OnPopulateMesh(VertexHelper vertexHelper)
         {
             vertexHelper.Clear();
-            if (remaining <= 0f) return;
+            if (remaining <= 0f)
+            {
+                return;
+            }
 
             float fadeDuration = Mathf.Min(0.28f, displayDuration * 0.35f);
             float alpha = remaining < fadeDuration ? Mathf.Clamp01(remaining / fadeDuration) : 1f;
@@ -131,110 +119,6 @@ namespace WeaponWorkshop
 
         private static Vector2 PointOnArc(float angle, float radius)
             => new Vector2(Mathf.Sin(angle), Mathf.Cos(angle)) * radius;
-
-        private void BindHealth()
-        {
-            FirstPersonPlayer player = uiManager != null ? uiManager.Player : null;
-            RaidPlayerHealth nextHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
-            if (health == nextHealth) return;
-
-            UnbindHealth();
-            health = nextHealth;
-            if (isActiveAndEnabled && health != null)
-                health.HitReceived += OnHitReceived;
-        }
-
-        private void UnbindHealth()
-        {
-            if (health != null) health.HitReceived -= OnHitReceived;
-            health = null;
-        }
-
-        private void OnHitReceived(Vector3 sourceDirection)
-        {
-            if (!isActiveAndEnabled || GameManager.GameplayBlocked || uiManager == null) return;
-            FirstPersonPlayer player = uiManager.Player;
-            if (player == null) return;
-
-            Transform view = player.ViewPoint;
-            bool hasReference = TryGetReferenceView(out ViewSample reference);
-            referenceViewRotation = hasReference ? reference.rotation : view != null ? view.rotation : player.transform.rotation;
-            if (sourceDirection.sqrMagnitude < 0.001f) sourceDirection = -player.transform.forward;
-            incomingDirectionInReferenceView = Quaternion.Inverse(referenceViewRotation) * sourceDirection.normalized;
-            remaining = Mathf.Max(0.1f, displayDuration);
-            UpdateScreenDirection();
-            SetVerticesDirty();
-        }
-
-        private void UpdateScreenDirection()
-        {
-            FirstPersonPlayer player = uiManager != null ? uiManager.Player : null;
-            Transform view = player != null ? player.ViewPoint : null;
-            if (view == null || incomingDirectionInReferenceView.sqrMagnitude < 0.001f)
-            {
-                screenDirection = Vector2.up;
-                return;
-            }
-
-            Vector3 worldDirection = referenceViewRotation * incomingDirectionInReferenceView;
-            Vector3 localDirection = view.InverseTransformDirection(worldDirection);
-            Vector2 projected = new Vector2(localDirection.x, localDirection.y);
-            if (projected.sqrMagnitude < 0.001f)
-                projected = localDirection.z < 0f ? Vector2.down : Vector2.up;
-            screenDirection = projected.normalized;
-        }
-
-        private void ClearIndicator()
-        {
-            remaining = 0f;
-            referenceViewRotation = Quaternion.identity;
-            incomingDirectionInReferenceView = Vector3.zero;
-            screenDirection = Vector2.up;
-            SetVerticesDirty();
-        }
-
-        private void RecordViewSample()
-        {
-            FirstPersonPlayer player = uiManager != null ? uiManager.Player : null;
-            Transform view = player != null ? player.ViewPoint : null;
-            if (view == null) return;
-
-            ViewSample sample = new ViewSample
-            {
-                time = Time.unscaledTime,
-                rotation = view.rotation
-            };
-            int latest = (nextViewSample - 1 + ViewHistoryCapacity) % ViewHistoryCapacity;
-            if (viewHistoryCount > 0 && sample.time - viewHistory[latest].time < 0.001f)
-            {
-                viewHistory[latest] = sample;
-                return;
-            }
-
-            viewHistory[nextViewSample] = sample;
-            nextViewSample = (nextViewSample + 1) % ViewHistoryCapacity;
-            viewHistoryCount = Mathf.Min(viewHistoryCount + 1, ViewHistoryCapacity);
-        }
-
-        private bool TryGetReferenceView(out ViewSample reference)
-        {
-            reference = default;
-            if (viewHistoryCount == 0) return false;
-
-            float targetTime = Time.unscaledTime - DirectionLookbackSeconds;
-            float closestDifference = float.PositiveInfinity;
-            int oldest = (nextViewSample - viewHistoryCount + ViewHistoryCapacity) % ViewHistoryCapacity;
-            for (int i = 0; i < viewHistoryCount; i++)
-            {
-                ViewSample sample = viewHistory[(oldest + i) % ViewHistoryCapacity];
-                float difference = Mathf.Abs(sample.time - targetTime);
-                if (difference >= closestDifference) continue;
-                closestDifference = difference;
-                reference = sample;
-            }
-
-            return true;
-        }
 
 #if UNITY_EDITOR
         protected override void OnValidate()

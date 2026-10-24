@@ -23,6 +23,14 @@ namespace WeaponWorkshop
             public int walletModuleCredits;
         }
 
+        private enum PlacementLoanOfferResult
+        {
+            NotNeeded,
+            Offered,
+            DailyLimit,
+            Unavailable
+        }
+
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField] private int selectedSlot = 1;
         [SerializeField] private bool deleteMode;
@@ -234,6 +242,7 @@ namespace WeaponWorkshop
                 TutorialManager.Instance?.NotifySignal($"quickslot-{index + 1}-module-{moduleId}", this);
         }
 
+        public bool IsFavoriteDragging => favoriteDragActive;
         public void SetFavoriteDrag(bool active)
         {
             favoriteDragActive = active;
@@ -628,6 +637,70 @@ namespace WeaponWorkshop
                 WorkshopSoundEffects.RaiseBlockRemoved(soundPosition);
         }
 
+        private PlacementLoanOfferResult TryOfferPlacementLoan(int _dollars, int _credits, out string _unavailableReason)
+        {
+            _unavailableReason = null;
+            if (wallet == null)
+            {
+                _unavailableReason = "지갑을 사용할 수 없습니다";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.Balance >= _dollars)
+            {
+                return PlacementLoanOfferResult.NotNeeded;
+            }
+            if (!wallet.isActiveAndEnabled)
+            {
+                _unavailableReason = "지갑을 사용할 수 없습니다";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.ModuleCredits < _credits)
+            {
+                _unavailableReason = "부품이 부족합니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            FeedbackUI feedback = FeedbackUI.For(this);
+            _DayManager dayManager = FindFirstObjectByType<_DayManager>();
+            if (dayManager == null)
+            {
+                _unavailableReason = "대출을 받을 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (dayManager.DayNumber < 0 ||
+                wallet.OutstandingLoans == int.MaxValue ||
+                wallet.Balance > int.MaxValue - PlayerWallet.LoanAmount)
+            {
+                _unavailableReason = "대출을 받을 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.LastLoanDay == dayManager.DayNumber)
+            {
+                _unavailableReason = "대출은 하루에 한 번만 받을 수 있습니다.";
+                return PlacementLoanOfferResult.DailyLimit;
+            }
+            int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
+            TutorialManager tutorial = TutorialManager.Instance;
+            bool offered = feedback != null && feedback.ShowChoice(this, $"${PlayerWallet.LoanAmount:N0} 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
+                () =>
+                {
+                    if (wallet.TryTakeLoan(dayManager.DayNumber))
+                    {
+                        TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench);
+                    }
+                },
+                null, "대출받기", "취소");
+            if (!offered)
+            {
+                _unavailableReason = "대출 안내를 표시할 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (tutorial != null && tutorial.CurrentStep?.requiredSignal == "loan-taken")
+            {
+                tutorial.ShowLoanGuide(feedback);
+            }
+            return PlacementLoanOfferResult.Offered;
+        }
+
         private bool TryPurchaseAttach(CubeAssembly assembly, Vector3Int cell, int slot,
             Vector3Int direction, Vector3Int normal)
         {
@@ -646,22 +719,9 @@ namespace WeaponWorkshop
             string partKind = PartLogName(assembly, slot);
             if (wallet.Balance < dollars)
             {
-                if (wallet.CanAffordModuleCredits(materials))
+                if (TryOfferPlacementLoan(dollars, materials, out string reason) == PlacementLoanOfferResult.DailyLimit)
                 {
-                    var feedback = FeedbackUI.For(this);
-                    var dayManager = FindFirstObjectByType<_DayManager>();
-                    if (dayManager != null && wallet.LastLoanDay != dayManager.DayNumber)
-                    {
-                        int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
-                        var tutorial = TutorialManager.Instance;
-                        if (feedback != null && feedback.ShowChoice(this, $"$3,000 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
-                            () => { if (wallet.TryTakeLoan(dayManager.DayNumber))
-                                TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench); },
-                            null, "대출받기", "취소") && tutorial != null &&
-                            tutorial.CurrentStep?.requiredSignal == "loan-taken")
-                            tutorial.ShowLoanGuide(feedback);
-                    }
-                    else if (dayManager != null) feedback?.ShowNotification("대출은 하루에 한 번만 받을 수 있습니다.");
+                    FeedbackUI.For(this)?.ShowNotification(reason);
                 }
                 return false;
             }

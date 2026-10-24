@@ -1,49 +1,74 @@
-using System.Globalization;
 using TMPro;
+
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
+    // 일시정지 메인 패널 감도 행의 호환 브리지. 기존 직렬화 필드(slider, valueInput)와
+    // FirstPersonPlayer가 쓰는 정적 Multiplier API를 유지하고 표시·저장은 View/Presenter에 위임한다.
     public sealed class MouseSensitivityUI : MonoBehaviour
     {
-        private const string PreferenceKey = "MouseSensitivityMultiplier";
-        private static float? current;
-        public static float Multiplier => current ?? (current = Mathf.Clamp(PlayerPrefs.GetFloat(PreferenceKey, 1f), .1f, 3f)).Value;
         [SerializeField] private Slider slider;
         [SerializeField] private TMP_InputField valueInput;
+        [SerializeField] private MouseSensitivityView m_view;
+
+        private MouseSensitivityPresenter m_presenter;
+        private bool m_initialized;
+
+        public static float Multiplier => MouseSensitivitySettings.Multiplier;
+
         private void Awake()
         {
-            slider.minValue = .1f; slider.maxValue = 3f;
-            slider.wholeNumbers = false;
-            Sync();
-            slider.onValueChanged.AddListener(SetValue);
-            valueInput.onEndEdit.AddListener(ApplyText);
+            Initialize();
         }
-        private void OnEnable() { if (slider != null && valueInput != null) Sync(); }
+
+        private void OnEnable()
+        {
+            if (m_initialized && m_presenter != null)
+            {
+                m_presenter.Refresh();
+            }
+        }
+
         private void OnDestroy()
         {
-            slider.onValueChanged.RemoveListener(SetValue);
-            valueInput.onEndEdit.RemoveListener(ApplyText);
+            if (m_presenter != null)
+            {
+                m_presenter.Dispose();
+                m_presenter = null;
+            }
+
+            m_initialized = false;
         }
-        private void ApplyText(string text)
+
+        /// <summary>
+        /// 브리지의 실효 참조를 View에 전달하고 Presenter를 초기화합니다.
+        /// </summary>
+        public void Initialize()
         {
-            if ((float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ||
-                 float.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value)) && !float.IsNaN(value) && !float.IsInfinity(value))
-                SetValue(value);
-            else Sync();
-        }
-        private void SetValue(float value)
-        {
-            current = Mathf.Round(Mathf.Clamp(value, .1f, 3f) * 100f) / 100f;
-            PlayerPrefs.SetFloat(PreferenceKey, current.Value);
-            PlayerPrefs.Save();
-            Sync();
-        }
-        private void Sync()
-        {
-            slider.SetValueWithoutNotify(Multiplier);
-            valueInput.SetTextWithoutNotify(Multiplier.ToString("0.00", CultureInfo.InvariantCulture));
+            if (m_initialized)
+            {
+                return;
+            }
+
+            if (m_view == null)
+            {
+                Debug.LogError(
+                    "[MouseSensitivityUI] Initialize 실패: m_view에 MouseSensitivityView 참조가 필요합니다. " +
+                    "UIManager.prefab의 MouseSensitivity 오브젝트에 View를 추가하고 연결하세요.", this);
+                return;
+            }
+
+            m_view.BindReferences(slider, valueInput);
+            m_presenter = new MouseSensitivityPresenter(m_view);
+            if (!m_presenter.Initialize())
+            {
+                m_presenter = null;
+                return;
+            }
+
+            m_initialized = true;
         }
     }
 }

@@ -2,15 +2,16 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    // 화면 중앙 조준점 주위 4개의 눈금. 들고 있는 총의 탄퍼짐(가장 넓은 총구 기준)만큼 벌어진다.
+    // 화면 중앙 조준점 주위 4개의 눈금. 받은 탄퍼짐 각도(가장 넓은 총구 기준)만큼 벌어진다.
     // 퍼짐 각도를 카메라 시야각으로 화면 픽셀 반지름으로 바꿔, 눈금 안쪽이 실제로 탄이 퍼지는 범위와 같다.
-    // 총이 없거나 공방·입력 차단·스코프 조준 중에는 숨긴다(시작 시 숨김). UIManager 프리팹에 전체 화면으로 둔다.
+    // 무기 조회·숨김 판정은 AimHudPresenter가 맡고, 이 그래픽은 전달받은 각도만 화면 크기로 바꿔 그린다.
+    // UIManager 프리팹에 전체 화면으로 둔다.
     public sealed class SpreadCrosshair : UnityEngine.UI.MaskableGraphic
     {
-        [SerializeField, Min(1f)] private float tickLength = 8f;
-        [SerializeField, Min(0.5f)] private float tickWidth = 2f;
+        [SerializeField, Min(1f)] private float tickLength = 6f;
+        [SerializeField, Min(0.5f)] private float tickWidth = 1.5f;
         [SerializeField, Min(0f), Tooltip("퍼짐이 0이어도 남기는 중앙 점과의 간격(px).")]
-        private float minimumGap = 4f;
+        private float minimumGap = 3f;
         [SerializeField, Min(0.1f), Tooltip("벌어짐/좁혀짐 속도(1/초).")]
         private float followSpeed = 12f;
 
@@ -25,12 +26,12 @@ namespace WeaponWorkshop
             radius = minimumGap;
         }
 
-        public void SetState(bool show, EquipableWeapon weapon, Camera view)
+        public void SetState(bool show, float spreadDegrees, Camera view)
         {
             if (show)
             {
                 float halfView = Mathf.Tan(view.fieldOfView * 0.5f * Mathf.Deg2Rad);
-                float pixels = Mathf.Tan(weapon.SpreadDegrees * Mathf.Deg2Rad) / halfView * view.pixelHeight * 0.5f;
+                float pixels = Mathf.Tan(spreadDegrees * Mathf.Deg2Rad) / halfView * view.pixelHeight * 0.5f;
                 float scale = canvas != null ? Mathf.Max(canvas.scaleFactor, 0.001f) : 1f;
                 float target = minimumGap + pixels / scale;
                 radius = visible ? Mathf.Lerp(radius, target, 1f - Mathf.Exp(-followSpeed * Time.unscaledDeltaTime)) : target;

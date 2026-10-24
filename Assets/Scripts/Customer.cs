@@ -119,17 +119,12 @@ namespace WeaponWorkshop
             EquipableWeapon weapon = holder.TakeWeapon();
             bool satisfied = CheckWeapon(weapon);
             SaleSatisfied = satisfied;
-            // 만족은 실제 낸 제작비 × (1 + 태그비율 × 보너스 요청 수) + 손님 보상(Price), 불만족은 제작비 × 불만족 비율.
-            // 비율은 주문 표(CustomerOrderData.sale)에서 읽는다.
             int cost = weapon != null ? weapon.PaidConstructionCost : 0;
-            int tagCount = profile.SaleBonusCount();
-            var sale = TableManager.Instance.CustomerOrder.sale;
             var save = FindFirstObjectByType<GameSaveController>();
-            float bonusRatio = save != null ? save.SaleBonusRatio : sale.tagBonusRatio;
-            int price = satisfied ? Mathf.RoundToInt(cost * (1f + bonusRatio * tagCount)) + Mathf.Max(0, profile.Price)
-                : Mathf.RoundToInt(cost * sale.dissatisfiedRatio);
+            var reward = CustomerRewardInfo.Calculate(profile, weapon, CustomerRewardInfo.SaleMultiplier(save));
+            int price = reward.price;
             Debug.Log($"[Customer] 총 판매: {price} (조건 {(satisfied ? "만족" : "불만족")})");
-            WeaponSold?.Invoke(profile, weapon, price, satisfied, tagCount);
+            WeaponSold?.Invoke(profile, weapon, price, satisfied, reward.matchedRequests);
             GameLogger.Count("WeaponSold");
             GameLogger.Measure("SalePrice", price);
             Destroy(weapon.gameObject);

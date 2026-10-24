@@ -66,6 +66,15 @@ namespace WeaponWorkshop
             strokeDelete = false;
             strokeCells.Clear(); strokeRemovalCells.Clear();
         }
+        public bool TryCancelPlanarStroke()
+        {
+            if (!strokeActive)
+            {
+                return false;
+            }
+            CancelStroke();
+            return true;
+        }
         private void UpdatePlanarStroke()
         {
             if (!strokeActive) return;
@@ -91,7 +100,27 @@ namespace WeaponWorkshop
             if (!strokeMoved) { CancelStroke(); TryPlace(); return; }
             RebuildStrokePlan();
             if (!strokePlan.Valid)
-            { GameManager.Instance?.UI?.ShowNotification(strokePlan.Error); CancelStroke(); return; }
+            {
+                WorkshopPlacementFailureReason failure = strokePlan.FailureReason;
+                string error = strokePlan.Error;
+                int dollars = strokePlan.Dollars;
+                int credits = strokePlan.Credits;
+                CancelStroke();
+                if (failure == WorkshopPlacementFailureReason.DollarsInsufficient)
+                {
+                    PlacementLoanOfferResult offer = TryOfferPlacementLoan(dollars, credits, out string reason);
+                    if (offer != PlacementLoanOfferResult.Offered && offer != PlacementLoanOfferResult.NotNeeded &&
+                        !string.IsNullOrEmpty(reason))
+                    {
+                        GameManager.Instance?.UI?.ShowNotification(reason);
+                    }
+                }
+                else
+                {
+                    GameManager.Instance?.UI?.ShowNotification(error);
+                }
+                return;
+            }
             if (OnboardingManager.NotifyModuleStrokeAttempt(strokeSlot, this))
             {
                 strokeActive = strokeReleased = false;

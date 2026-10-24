@@ -1,101 +1,79 @@
 using System;
-using System.Linq;
+
 using UnityEngine;
 
 namespace WeaponWorkshop
 {
+    /// <summary>
+    /// 프리셋 패널 브리지. 기존 public API·직렬화 필드·씬 오버라이드 호환을 유지하며,
+    /// 실질적인 View/Presenter 연결은 Initialize 전에 씬 오버라이드가 적용된 참조를 View로 전달한다.
+    /// </summary>
     public sealed class PresetPanelUI : MonoBehaviour
     {
         [SerializeField] private GameObject panel, choicePanel;
         [SerializeField] private UnityEngine.UI.Button[] slots;
         [SerializeField] private UnityEngine.UI.Button saveButton, loadButton, closeButton;
         [SerializeField] private TMPro.TMP_Text choiceMessage;
-        private UIManager ui;
-        private EquipableWeapon selectedWeapon;
-        private int selectedSlot;
-        private bool ownsDialogue;
-        public bool IsOpen => choicePanel != null && choicePanel.activeSelf;
-        public RectTransform TutorialFirstSlot => slots != null && slots.Length > 0 && slots[0] != null ? slots[0].transform as RectTransform : null;
-        public RectTransform TutorialSaveButton => saveButton != null ? saveButton.transform as RectTransform : null;
-        private WorkshopSession Session => ui.Player != null ? ui.Player.GetComponent<WorkshopSession>() : null;
-        private WeaponPresets Presets => ui.Player != null ? ui.Player.GetComponent<WeaponPresets>() : null;
-        private void Awake()
-        {
-            ui = GetComponent<UIManager>();
-            panel.SetActive(false); choicePanel.SetActive(false); ownsDialogue = false;
-            for (int i = 0; i < slots.Length; i++) { int slot = i; slots[i].onClick.AddListener(() => Select(slot)); }
-            saveButton.onClick.AddListener(Save); loadButton.onClick.AddListener(Load); closeButton.onClick.AddListener(Close);
-        }
-        private void LateUpdate()
-        {
-            var session = Session;
-            bool available = session != null && session.IsEditing && session.ActiveWorkbench.CurrentWeapon != null;
-            panel.SetActive(available);
-            if (IsOpen && (!available || session.ActiveWorkbench.CurrentWeapon != selectedWeapon)) Close();
-            foreach (var slot in slots) slot.interactable = available && !GameManager.ModalBlocked;
-        }
-        private void Select(int slot)
-        {
-            if (TutorialManager.Instance != null && TutorialManager.Instance.CurrentStep != null &&
-                TutorialManager.Instance.CurrentStep.requiredSignal == "preset-saved" && slot != 0) return;
-            if (!TutorialManager.TryAction("preset-save")) return;
-            if (GameManager.GameplayBlocked || Session == null || !Session.IsEditing || Presets == null) return;
-            selectedSlot = slot; selectedWeapon = Session.ActiveWorkbench.CurrentWeapon;
-            if (selectedWeapon == null) return;
-            if (string.IsNullOrEmpty(Presets.GetCode(slot))) { Save(); return; }
-            try
-            {
-                var name = WeaponShareCode.Decode(Presets.GetCode(slot)).name;
-                choiceMessage.text = $"프리셋 {slot + 1} · {name}\n현재 무기를 저장하거나 저장된 무기를 불러오세요.\n불러오기는 현재 조립을 교체하며 제작비 차액을 결제/환불합니다.";
-                choicePanel.SetActive(true); choicePanel.transform.SetAsLastSibling();
-                ownsDialogue = GameManager.Instance != null;
-                if (ownsDialogue) GameManager.Instance.SetDialogue(true);
-            }
-            catch (Exception e) { ui.ShowNotification(e.Message); selectedWeapon = null; }
-        }
-        private bool StillEditing => selectedWeapon != null && Session != null && Session.IsEditing && Session.ActiveWorkbench.CurrentWeapon == selectedWeapon;
-        private void Save()
-        {
-            try
-            {
-                if (!StillEditing || Presets == null) return;
-                Presets.Store(selectedSlot, selectedWeapon);
-                ui.ShowNotification($"프리셋{selectedSlot + 1}에 저장되었습니다.");
-                Close();
-                if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("preset-saved");
-            }
-            catch (Exception e) { ui.ShowNotification(e.Message); }
-        }
-        private void Load()
-        {
-            if (!TutorialManager.TryAction("preset-load")) return;
-            try
-            {
-                if (!StillEditing || Presets == null) return;
-                if (selectedWeapon.ConstructionLocked) throw new ArgumentException("커스텀을 제거한 후 프리셋을 불러와 주세요.");
-                var blueprint = WeaponShareCode.Decode(Presets.GetCode(selectedSlot));
-                var assembly = selectedWeapon.GetComponentInChildren<CubeAssembly>();
-                if (!assembly.TryCaptureLayout(out var old)) throw new ArgumentException("현재 조립을 읽을 수 없습니다.");
-                int oldMoney = old.blocks.Sum(b => b.paidPurchaseCost), oldMaterials = old.blocks.Sum(b => b.paidModuleCreditCost);
-                var plan = WeaponShareCode.Resolve(blueprint, assembly, ui.Player.GetComponent<PlayerModuleUnlocks>(),
-                    Mathf.Max(0, old.paidConstructionCost - oldMoney), out int money, out int materials);
-                var wallet = ui.Player.GetComponent<PlayerWallet>();
-                if (!wallet.TryPurchaseModule(Mathf.Max(0, money - oldMoney), Mathf.Max(0, materials - oldMaterials), () => assembly.RestoreLayout(plan))) return;
-                wallet.RefundConstruction(Mathf.Max(0, oldMoney - money)); wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
-                selectedWeapon.SetWeaponName(blueprint.name);
-                selectedWeapon.GetComponentInChildren<StatCollector>()?.Recalculate();
-                GetComponent<WeaponNameUI>()?.RefreshName();
-                ui.ShowNotification($"프리셋{selectedSlot + 1}을 불러왔습니다.");
-                Close();
-            }
-            catch (Exception e) { ui.ShowNotification(e.Message); }
-        }
+        [SerializeField] private PresetPanelView m_view;
+
+        private PresetPanelPresenter m_presenter;
+        private bool m_isInitialized;
+
+        public bool IsOpen => m_view != null && m_view.IsOpen;
+
+        // UICancelRouter 등 기존 호출부 호환. 닫기 처리는 Presenter가 소유한다.
         public void Close()
         {
-            choicePanel.SetActive(false); selectedWeapon = null;
-            if (ownsDialogue && GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
-            ownsDialogue = false;
+            m_presenter?.Close();
         }
-        private void OnDisable() { Close(); panel.SetActive(false); }
+        public RectTransform TutorialFirstSlot => m_view != null ? m_view.TutorialFirstSlot : null;
+        public RectTransform TutorialSaveButton => m_view != null ? m_view.TutorialSaveButton : null;
+
+        private void Awake()
+        {
+            // 브리지가 먼저 Initialize하여 View에 씬 오버라이드 참조를 주입한다.
+            // 늦게 실행되는 View.Awake가 초기 상태를 다시 덮지 않게 가드한다.
+            Initialize();
+        }
+
+        private void OnDisable()
+        {
+            m_presenter?.HandleDisabled();
+        }
+
+        private void OnDestroy()
+        {
+            m_presenter?.Dispose();
+        }
+
+        private void LateUpdate()
+        {
+            m_presenter?.Tick();
+        }
+
+        /// <summary>
+        /// View에 씬 오버라이드 참조를 주입하고 Presenter를 초기화합니다. 중복 호출에 안전합니다.
+        /// </summary>
+        public void Initialize()
+        {
+            if (m_isInitialized)
+            {
+                return;
+            }
+
+            if (m_view == null)
+            {
+                m_view = GetComponent<PresetPanelView>();
+            }
+
+            if (m_view != null)
+            {
+                m_view.BindReferences(panel, choicePanel, slots, saveButton, loadButton, closeButton, choiceMessage);
+            }
+
+            m_presenter = new PresetPanelPresenter(m_view, GetComponent<UIManager>());
+            m_presenter.Initialize();
+            m_isInitialized = true;
+        }
     }
 }

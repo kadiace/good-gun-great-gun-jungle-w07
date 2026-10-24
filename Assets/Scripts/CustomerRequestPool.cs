@@ -63,11 +63,10 @@ namespace WeaponWorkshop
             profile.Lines = new[] { phrases.Count == 0 ? "기본 총 하나 주세요. 특별한 조건은 없어요."
                 : string.Format(Pick(templates, "{0} 주세요."), string.Join(", ", phrases)) };
             profile.EndsClear = true;
-            profile.RequestIds = picked.ToArray();
+            profile.RequestIds = picked.Count == 0 ? new[] { CustomerRewardInfo.BasicRequestId } : picked.ToArray();
             profile.HappyLine = Pick(pool.happyLines, null);
             profile.AngryLine = Pick(pool.angryLines, null);
             profile.portrait = Pick(portraits, null);
-            profile.Price = pool.basePrice + pool.pricePerRequest * picked.Count;
             return profile;
         }
 

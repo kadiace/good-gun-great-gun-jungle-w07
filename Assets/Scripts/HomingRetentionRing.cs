@@ -5,7 +5,7 @@ namespace WeaponWorkshop
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class HomingRetentionRing : UnityEngine.UI.MaskableGraphic
     {
-        private float radius = 100f;
+        private float radius = 75f;
         public void SetRadius(float value)
         {
             if (Mathf.Approximately(radius, value)) return;
@@ -15,7 +15,7 @@ namespace WeaponWorkshop
         {
             mesh.Clear();
             const int segments = 96;
-            const float thickness = 1.5f;
+            const float thickness = 1.125f;
             for (int i=0; i<segments; i++)
             {
                 float a=i*Mathf.PI*2f/segments, b=(i+1)*Mathf.PI*2f/segments;

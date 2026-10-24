@@ -11,8 +11,8 @@ namespace WeaponWorkshop
         {
             mesh.Clear();
             float eased = 1f - (1f-progress)*(1f-progress);
-            float radius = Mathf.Lerp(65f, 16f, eased);
-            const float length = 16f, thickness = 2f;
+            float radius = Mathf.Lerp(48.75f, 12f, eased);
+            const float length = 12f, thickness = 1.5f;
             Color tint = progress >= 1f ? new Color(0.3f,1f,0.5f) : new Color(1f,0.85f,0.25f);
             for (int i=0; i<4; i++)
             {

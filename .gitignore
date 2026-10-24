@@ -123,3 +123,4 @@ InitTestScene*.unity*
 # 로컬 프로파일링 도구와 녹화 (저장소 제외)
 Tools/Profiling/
 ProfilerCaptures/
+.orca/

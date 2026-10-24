@@ -49,8 +49,8 @@ namespace WeaponWorkshop
                 forwardLabel.color = forwardColor;
                 forwardLabel.raycastTarget = false;
                 forwardLabel.enableAutoSizing = true;
-                forwardLabel.fontSizeMin = 12f;
-                forwardLabel.fontSizeMax = 24f;
+                forwardLabel.fontSizeMin = 9f;
+                forwardLabel.fontSizeMax = 18f;
                 forwardLabel.gameObject.SetActive(false);
             }
             SetVerticesDirty();

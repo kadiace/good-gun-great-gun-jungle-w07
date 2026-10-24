@@ -185,12 +185,6 @@ namespace WeaponWorkshop
         private static bool ValidCondition(CustomerRequestData.Condition condition) => condition != null && condition.Parsed &&
             condition.min <= condition.max && !float.IsNaN(condition.min) && !float.IsNaN(condition.max) &&
             !float.IsInfinity(condition.min) && !float.IsInfinity(condition.max);
-        public static int SaleBonusCount(this CustomerRequestData table, string[] ids)
-        {
-            int count = 0;
-            foreach (string id in ids ?? Array.Empty<string>()) if (table.FindRequest(id)?.saleBonus == true) count++;
-            return count;
-        }
         public static string Phrase(this CustomerRequestData table, string id)
         {
             var row = table.FindRequest(id);
@@ -256,6 +250,7 @@ namespace WeaponWorkshop
             foreach (var row in table.requests ?? Array.Empty<CustomerRequestData.Request>())
             {
                 if (row == null || string.IsNullOrEmpty(row.id) || !ids.Add(row.id)) { Debug.LogError("요청 표에 빈/중복 요청 ID가 있습니다."); continue; }
+                if (row.reward < 0 || row.rewardPerDay < 0) Debug.LogError("요청 보상이 음수입니다: " + row.id);
                 if (!string.IsNullOrEmpty(row.tagId) && table.FindTag(row.tagId) == null) Debug.LogError("요청 표의 태그 ID가 없습니다: " + row.id);
                 foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
                     if (tests.Find(testId) == null) Debug.LogError("요청 표의 사격 테스트 ID가 없습니다: " + row.id);
