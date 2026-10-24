@@ -131,62 +131,13 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// Day0에서 저장한 작업대 무기를 쓰레기통 폐기 경로로 전달합니다. 연출 실패 시 즉시 폐기 후 단계를 진행합니다.
+        /// Day0에서 프리셋 1번 저장 후 작업대를 나가면 퇴장 완료 신호를 보냅니다. 무기는 작업대에 남고 쓰레기통 실습 단계에서 다룹니다.
         /// </summary>
-        /// <param name="session">퇴장을 시작한 플레이어 작업대 세션입니다.</param>
-        /// <param name="weapon">작업대에 있던 현재 무기입니다.</param>
-        public void NotifyTutorialWorkbenchExited(WorkshopSession session, EquipableWeapon weapon)
+        public void NotifyTutorialWorkbenchExited()
         {
             var step = CurrentStep;
-            if (!IsGuidedDayZero || step == null || step.id != "raid-exit-workbench" ||
-                !_trainingPresetOneSaved || session == null || weapon == null) return;
-
-            var player = session.GetComponent<FirstPersonPlayer>();
-            var wallet = player != null ? player.GetComponent<PlayerWallet>() : null;
-            bool signalSent = false;
-
-            void SendDisposedSignal()
-            {
-                if (signalSent) return;
-                signalSent = true;
-                NotifySignal("raid-weapon-disposed");
-            }
-
-            void FallbackImmediateDispose()
-            {
-                if (signalSent) return;
-                if (weapon != null)
-                {
-                    weapon.DisposeImmediately(wallet);
-                }
-                SendDisposedSignal();
-            }
-
-            if (_raidDisposal == null || _raidDisposalPoint == null || wallet == null)
-            {
-                if (_raidDisposal == null)
-                    Debug.LogWarning("튜토리얼 쓰레기통 참조(_raidDisposal)가 설정되지 않아 무기를 즉시 폐기합니다.", this);
-                else if (_raidDisposalPoint == null)
-                    Debug.LogWarning("튜토리얼 쓰레기통 경유 지점 참조(_raidDisposalPoint)가 설정되지 않아 무기를 즉시 폐기합니다.", this);
-                else if (wallet == null)
-                    Debug.LogWarning("플레이어 지갑을 찾을 수 없어 무기를 즉시 폐기합니다.", this);
-
-                FallbackImmediateDispose();
-                return;
-            }
-
-            bool accepted = _raidDisposal.DisposeTutorialWeapon(
-                weapon,
-                _raidDisposalPoint,
-                wallet,
-                onCompleted: () => SendDisposedSignal(),
-                onFailed: () => FallbackImmediateDispose());
-
-            if (!accepted)
-            {
-                Debug.LogWarning("튜토리얼 무기 폐기 요청이 쓰레기통에 의해 거절되어 무기를 즉시 폐기합니다.", this);
-                FallbackImmediateDispose();
-            }
+            if (!IsGuidedDayZero || step == null || step.id != "raid-exit-workbench" || !_trainingPresetOneSaved) return;
+            NotifySignal("raid-workbench-exited");
         }
         private void EndPractice()
         {

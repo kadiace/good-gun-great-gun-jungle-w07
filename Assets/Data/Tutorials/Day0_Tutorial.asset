@@ -2423,10 +2423,152 @@ MonoBehaviour:
     allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
-    requiredSignal: raid-weapon-disposed
+    requiredSignal: raid-workbench-exited
     strictAllowedActions: 0
     blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
       \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
+    allowedActions: []
+  - id: raid-trash-introduction
+    setBalanceOnStart: -1
+    restoreWithheldBalanceOnComplete: 0
+    title: "튜토리얼"
+    description: "작업대의 무기는 쓰레기통에 버리면 제작비를 돌려받을 수 있습니다. 무기를 들고 쓰레기통에 버려 보세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: 
+    showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
+    objectiveWhileChoiceOpen: 
+    choiceGuidance: 
+    completion: 0
+    target: 0
+    targetLabel: 
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showMovementKeycaps: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "안내된 위치와 방향에 모듈을 설치해 보세요."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "지금은 안내된 행동만 진행해 주세요."
+    allowedActions: 
+    - none
+  - id: raid-take-weapon
+    setBalanceOnStart: -1
+    restoreWithheldBalanceOnComplete: 0
+    title: "튜토리얼"
+    description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "작업대의 무기를 들어 올리세요."
+    showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
+    objectiveWhileChoiceOpen: 
+    choiceGuidance: 
+    completion: 7
+    target: 6
+    targetLabel: "무기"
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showMovementKeycaps: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "안내된 위치와 방향에 모듈을 설치해 보세요."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal: 
+    strictAllowedActions: 0
+    blockedActionMessage: "지금은 안내된 행동만 진행해 주세요."
+    allowedActions: []
+  - id: raid-trash-weapon
+    setBalanceOnStart: -1
+    restoreWithheldBalanceOnComplete: 0
+    title: "튜토리얼"
+    description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "무기를 쓰레기통에 버려 제작비를 회수하세요."
+    showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
+    objectiveWhileChoiceOpen: 
+    choiceGuidance: 
+    completion: 1
+    target: 14
+    targetLabel: "쓰레기통"
+    requiresWorkbenchEditing: 0
+    requiredRotationDegrees: 45
+    rotationGuide: 0
+    buttonGuide: 0
+    showMovementKeycaps: 0
+    showPlacementHints: 0
+    openCoreFace: {x: 0, y: 0, z: 1}
+    hintCells: []
+    requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
+    requiredCustomerCount: 0
+    requiredTargetDistance: 5
+    requiredCell: {x: 0, y: 0, z: 1}
+    requireOutputDirection: 0
+    excludeRequiredOutputDirection: 0
+    requiredOutputDirection: {x: 0, y: 0, z: 1}
+    restrictPlacement: 0
+    blockedPlacementMessage: "안내된 위치와 방향에 모듈을 설치해 보세요."
+    wrongModuleMessage: 
+    prepareBlockedCore: 0
+    preparedWeaponPrefab: {fileID: 0}
+    preparedWeaponOpenCells: []
+    discardHeldWeapon: 0
+    allowedModuleIds: 
+    restrictQuickslotChange: 0
+    requiredQuickslotNumber: 2
+    requiredSignal: raid-weapon-disposed
+    strictAllowedActions: 0
+    blockedActionMessage: "지금은 안내된 행동만 진행해 주세요."
     allowedActions: []
   - id: raid-pick-up
     setBalanceOnStart: -1

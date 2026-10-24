@@ -31,7 +31,6 @@ namespace WeaponWorkshop
         [SerializeField] private string blockedInteractionMessage = "튜토리얼 중에는 안내된 대상과만 상호작용할 수 있습니다.";
         [Header("야간 습격 준비")]
         [SerializeField] private WeaponDisposal _raidDisposal;
-        [SerializeField] private Transform _raidDisposalPoint;
         [Header("튜토리얼 은퇴 소개")]
         [SerializeField] private Transform _retirementShotPoint;
         [SerializeField] private GameObject[] _retirementHudElements = Array.Empty<GameObject>();
@@ -113,6 +112,7 @@ namespace WeaponWorkshop
                     case TutorialTarget.RaidMaterialCrate: return RaidMaterialCrateTarget();
                     case TutorialTarget.RaidTank: return RaidTankTarget();
                     case TutorialTarget.PresetDispenserOne: return PresetDispenserOneTarget();
+                    case TutorialTarget.RaidDisposal: return _raidDisposal;
                     default:
                         if (step.id == "raid-acquire-core") return mainCoreDispenser;
                         return null;

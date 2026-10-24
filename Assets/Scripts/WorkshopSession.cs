@@ -137,7 +137,7 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 작업대 편집 모드를 종료하고 튜토리얼 퇴장 허가 및 무기 폐기를 알립니다.
+        /// 작업대 편집 모드를 종료하고 튜토리얼 퇴장 허가를 알립니다.
         /// </summary>
         public void Leave()
         {
@@ -150,9 +150,8 @@ namespace WeaponWorkshop
             if (!TutorialManager.TryAction("exit")) return;
             if (!IsInWorkshop) return;
             if (tutorial != null && !tutorial.TryAuthorizeRaidWorkbenchExit()) return;
-            EquipableWeapon exitingWeapon = activeWorkbench != null ? activeWorkbench.CurrentWeapon : null;
             SetMode(false, true);
-            TutorialManager.Instance?.NotifyTutorialWorkbenchExited(this, exitingWeapon);
+            TutorialManager.Instance?.NotifyTutorialWorkbenchExited();
             if (cursorRestore != null) StopCoroutine(cursorRestore);
             cursorRestore = StartCoroutine(RestoreCursorAfterEscape());
         }

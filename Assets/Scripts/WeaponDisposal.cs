@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using UnityEngine;
 
@@ -13,7 +12,6 @@ namespace WeaponWorkshop
         private Quaternion closedLidRotation;
         private Coroutine lidMovement;
         private bool busy;
-        private Action tutorialFailedCallback;
         public Transform OutlineRoot => transform;
 
         private void Awake()
@@ -27,14 +25,6 @@ namespace WeaponWorkshop
             lidMovement = null;
             busy = false;
             if (lidPivot != null) lidPivot.localRotation = closedLidRotation;
-            TriggerTutorialFailed();
-        }
-
-        private void TriggerTutorialFailed()
-        {
-            Action callback = tutorialFailedCallback;
-            tutorialFailedCallback = null;
-            callback?.Invoke();
         }
 
         public bool CanInteract(Interaction interactor)
@@ -55,49 +45,10 @@ namespace WeaponWorkshop
             if (wallet == null || !weapon.DisposeTo(disposalPoint != null ? disposalPoint : transform, wallet)) return false;
             holder.TakeWeapon();
             WorkshopSoundEffects.RaiseWeaponDisposed(disposalPoint != null ? disposalPoint.position : transform.position);
+            TutorialManager.Instance?.NotifySignal("raid-weapon-disposed", this);
             busy = true;
             lidMovement = StartCoroutine(DisposeAnimation(weapon));
             return true;
-        }
-
-        /// <summary>
-        /// 튜토리얼 무기를 지정된 경유 지점을 거쳐 쓰레기통으로 이동시킨 뒤 폐기 및 정산합니다.
-        /// </summary>
-        /// <param name="weapon">폐기할 무기입니다.</param>
-        /// <param name="viaPoint">쓰레기통 돌진 전 거쳐 갈 경유 지점 Transform입니다.</param>
-        /// <param name="wallet">폐기 정산을 지급받을 플레이어 지갑입니다.</param>
-        /// <param name="onCompleted">실제 폐기 애니메이션과 정산이 모두 완료된 뒤 호출될 콜백입니다.</param>
-        /// <param name="onFailed">무기 소실, 폐기 실패 또는 도중 중단 시 호출될 실패 콜백입니다.</param>
-        /// <returns>폐기 시퀀스를 성공적으로 시작했으면 true, 이미 진행 중이거나 인자가 유효하지 않으면 false입니다.</returns>
-        public bool DisposeTutorialWeapon(EquipableWeapon weapon, Transform viaPoint, PlayerWallet wallet, Action onCompleted, Action onFailed = null)
-        {
-            if (!isActiveAndEnabled || busy || weapon == null || viaPoint == null || wallet == null) return false;
-            if (weapon.IsMoving) return false;
-            Transform destination = disposalPoint != null ? disposalPoint : transform;
-            if (destination == null || destination.IsChildOf(weapon.transform) || viaPoint.IsChildOf(weapon.transform)) return false;
-            if (!weapon.MoveToPoint(viaPoint)) return false;
-
-            busy = true;
-            tutorialFailedCallback = onFailed;
-            lidMovement = StartCoroutine(DisposeTutorialSequence(weapon, destination, wallet, onCompleted));
-            return true;
-        }
-
-        private IEnumerator DisposeTutorialSequence(EquipableWeapon weapon, Transform destination, PlayerWallet wallet, Action onCompleted)
-        {
-            while (weapon != null && weapon.IsMoving) yield return null;
-            if (weapon == null || !weapon.DisposeTo(destination, wallet))
-            {
-                busy = false;
-                lidMovement = null;
-                TriggerTutorialFailed();
-                yield break;
-            }
-
-            WorkshopSoundEffects.RaiseWeaponDisposed(destination.position);
-            yield return DisposeAnimation(weapon);
-            tutorialFailedCallback = null;
-            onCompleted?.Invoke();
         }
 
         private IEnumerator DisposeAnimation(EquipableWeapon weapon)
