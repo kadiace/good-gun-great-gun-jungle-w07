@@ -82,11 +82,11 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 기존 경로와 같은 세션 탐색(UIManager.Player의 WorkshopSession)을 유지합니다.
+        /// 기존 경로와 같은 세션 탐색(GameManager.Player의 WorkshopSession)을 유지합니다.
         /// </summary>
         private WorkshopSession ResolveSession()
         {
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             return player != null ? player.GetComponent<WorkshopSession>() : null;
         }
     }

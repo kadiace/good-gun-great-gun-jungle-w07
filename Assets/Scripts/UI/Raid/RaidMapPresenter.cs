@@ -170,8 +170,7 @@ namespace WeaponWorkshop
             }
 
             m_hoveredSlot = _slot;
-            UIManager ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            FirstPersonPlayer player = ui != null ? ui.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             RaidMapData.Region region = TableManager.Instance.RaidMap.Find(m_controller.RegionScene(index));
             GameSaveController save = UnityEngine.Object.FindFirstObjectByType<GameSaveController>();
             PlayerModuleUnlocks unlocks = player != null ? player.GetComponent<PlayerModuleUnlocks>() : null;

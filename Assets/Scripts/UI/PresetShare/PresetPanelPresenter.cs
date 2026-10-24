@@ -43,8 +43,8 @@ namespace WeaponWorkshop
         {
             get
             {
-                return m_uiManager != null && m_uiManager.Player != null
-                    ? m_uiManager.Player.GetComponent<WorkshopSession>() : null;
+                return GameManager.Instance != null && GameManager.Instance.Player != null
+                    ? GameManager.Instance.Player.GetComponent<WorkshopSession>() : null;
             }
         }
 
@@ -52,8 +52,8 @@ namespace WeaponWorkshop
         {
             get
             {
-                return m_uiManager != null && m_uiManager.Player != null
-                    ? m_uiManager.Player.GetComponent<WeaponPresets>() : null;
+                return GameManager.Instance != null && GameManager.Instance.Player != null
+                    ? GameManager.Instance.Player.GetComponent<WeaponPresets>() : null;
             }
         }
 
@@ -287,7 +287,7 @@ namespace WeaponWorkshop
 
                 int oldMoney = old.blocks.Sum(block => block.paidPurchaseCost);
                 int oldMaterials = old.blocks.Sum(block => block.paidModuleCreditCost);
-                FirstPersonPlayer player = m_uiManager.Player;
+                FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
                 var plan = WeaponShareCode.Resolve(blueprint, assembly, player.GetComponent<PlayerModuleUnlocks>(),
                     Mathf.Max(0, old.paidConstructionCost - oldMoney), out int money, out int materials);
                 var wallet = player.GetComponent<PlayerWallet>();

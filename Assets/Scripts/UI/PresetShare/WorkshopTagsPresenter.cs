@@ -116,10 +116,10 @@ namespace WeaponWorkshop
                 return;
             }
 
-            var player = m_uiManager.Player;
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             var session = player != null ? player.GetComponent<WorkshopSession>() : null;
             var bench = session != null && session.IsEditing ? session.ActiveWorkbench : null;
-            var holder = m_uiManager.PlayerWeaponHolder;
+            var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             var weapon = bench != null ? bench.CurrentWeapon : holder != null ? holder.EquippedWeapon : null;
             var core = weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null;
             bool visible = core != null;
