@@ -29,14 +29,15 @@ namespace WeaponWorkshop
             }
 
             m_view.Configure(cover);
+            UIManager ui = GetComponentInParent<UIManager>(true);
             m_presenter = new TutorialButtonHighlightPresenter(m_view,
-                GetComponentInChildren<TutorialSkipUI>(true),
-                GetComponentInChildren<DialogueUI>(true),
-                GetComponentInChildren<FeedbackUI>(true),
-                GetComponentInChildren<WeaponRecipeUI>(true),
-                GetComponentInChildren<PresetPanelUI>(true),
-                GetComponentInChildren<NightRaidUI>(true),
-                GetComponentInChildren<ModulePaletteUI>(true));
+                ui != null ? ui.Screen<TutorialSkipUI>() : null,
+                ui != null ? ui.Screen<DialogueUI>() : null,
+                ui != null ? ui.Screen<FeedbackUI>() : null,
+                ui != null ? ui.Screen<WeaponRecipeUI>() : null,
+                ui != null ? ui.Screen<PresetPanelUI>() : null,
+                ui != null ? ui.Screen<NightRaidUI>() : null,
+                ui != null ? ui.Screen<ModulePaletteUI>() : null);
             if (m_presenter.Initialize())
             {
                 return;

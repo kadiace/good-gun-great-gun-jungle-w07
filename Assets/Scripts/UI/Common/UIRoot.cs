@@ -112,12 +112,14 @@ namespace WeaponWorkshop
                 return;
             }
 
-            if (_expectedLayer != null && _target.parent != _expectedLayer)
+            UIScreenRoot screenRoot = _target.GetComponentInParent<UIScreenRoot>(true);
+            Transform layerChild = screenRoot != null ? screenRoot.transform : _target;
+            if (_expectedLayer != null && layerChild.parent != _expectedLayer)
             {
-                _target.SetParent(_expectedLayer, false);
+                layerChild.SetParent(_expectedLayer, false);
             }
 
-            _target.SetAsLastSibling();
+            UIScreenRoot.BringToFront(_target);
         }
 
         /// <summary>

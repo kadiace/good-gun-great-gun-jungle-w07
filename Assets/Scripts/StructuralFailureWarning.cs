@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    // UIManager 루트의 구조 경고 브리지. 기존 직렬화 필드(assembly, message)와 씬 오버라이드를 유지하고
+    // PopupLayer/FeedbackScreen의 구조 경고 브리지. 기존 직렬화 필드(assembly, message)와 씬 오버라이드를 유지하고
     // 상승 에지 알림 판정은 StructuralFailureWarningPresenter가 담당한다.
     public sealed class StructuralFailureWarning : MonoBehaviour
     {

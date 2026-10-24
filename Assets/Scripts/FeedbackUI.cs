@@ -30,6 +30,21 @@ namespace WeaponWorkshop
                 return local;
             }
 
+            // 알림 화면이 형제 화면 묶음에 있으면 같은 UIManager 또는 루트 캔버스 아래에서 찾는다.
+            UIManager ui = _caller != null ? _caller.GetComponentInParent<UIManager>(true) : null;
+            local = ui != null ? ui.Screen<FeedbackUI>() : null;
+            if (local != null)
+            {
+                return local;
+            }
+
+            Canvas canvas = _caller != null ? _caller.GetComponentInParent<Canvas>(true) : null;
+            local = canvas != null ? canvas.rootCanvas.GetComponentInChildren<FeedbackUI>(true) : null;
+            if (local != null)
+            {
+                return local;
+            }
+
             return GameManager.Instance != null ? GameManager.Instance.UI?.Screen<FeedbackUI>() : null;
         }
 

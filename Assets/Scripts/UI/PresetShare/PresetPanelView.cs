@@ -202,7 +202,7 @@ namespace WeaponWorkshop
             }
 
             m_choicePanel.SetActive(true);
-            m_choicePanel.transform.SetAsLastSibling();
+            UIScreenRoot.BringToFront(m_choicePanel.transform);
             UIRoot.SetFocus(m_saveButton, m_loadButton != null ? new Selectable[] { m_loadButton, m_closeButton } : null);
         }
 

@@ -112,7 +112,7 @@ namespace WeaponWorkshop
             m_notificationGroup.alpha = 0f;
             m_notificationGroup.transform.localScale = Vector3.one * .92f;
             m_notificationGroup.gameObject.SetActive(true);
-            m_notificationGroup.transform.SetAsLastSibling();
+            UIScreenRoot.BringToFront(m_notificationGroup.transform);
         }
 
         /// <summary>
