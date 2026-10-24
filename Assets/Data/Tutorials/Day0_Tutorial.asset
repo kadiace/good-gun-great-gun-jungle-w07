@@ -19,8 +19,11 @@ MonoBehaviour:
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uB2F9\uC2E0\uC740 \uBB34\uAE30 \uACF5\uBC29\uC758 \uC8FC\uC778\uC785\uB2C8\uB2E4.\n\uC154\uD130\uB97C
       \uC5F4\uACE0 \uC601\uC5C5\uC744 \uC2DC\uC791\uD574 \uBD05\uC2DC\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -30,10 +33,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -62,8 +69,11 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC154\uD130\uB97C \uC5F4\uACE0 \uC601\uC5C5\uC744 \uC2DC\uC791\uD558\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC154\uD130\uB97C \uC5F4\uC5B4\uC11C \uC601\uC5C5\uC744 \uAC1C\uC2DC\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -73,10 +83,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -107,8 +121,11 @@ MonoBehaviour:
     description: "\uC601\uC5C5\uC744 \uC2DC\uC791\uD558\uBA74 \uC190\uB2D8\uC774
       \uCC3E\uC544\uC635\uB2C8\uB2E4.\n\uC190\uB2D8\uC774 \uB3C4\uCC29\uD558\uBA74
       F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC \uBC18\uAC11\uAC8C \uB9DE\uC774\uD569\uC2DC\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -118,10 +135,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -150,8 +171,11 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC190\uB2D8\uC5D0\uAC8C \uB2E4\uAC00\uAC00 F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC190\uB2D8\uACFC \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC \uB300\uD654\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -161,10 +185,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -196,8 +224,11 @@ MonoBehaviour:
       \uCF54\uC5B4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4.\n\uBA54\uC778 \uCF54\uC5B4
       \uBC14\uAD6C\uB2C8\uC640 \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC \uCF54\uC5B4\uB97C
       \uC9D1\uC5B4 \uBD05\uC2DC\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -207,10 +238,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -239,9 +274,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uBA54\uC778 \uCF54\uC5B4\uB97C \uD68D\uB4DD\uD558\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uBA54\uC778 \uCF54\uC5B4 \uBC14\uAD6C\uB2C8\uC640 \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uBA54\uC778 \uCF54\uC5B4\uB97C \uD68D\uB4DD\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -251,10 +289,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -285,8 +327,11 @@ MonoBehaviour:
     description: "\uBA54\uC778 \uCF54\uC5B4\uB294 \uAE30\uBCF8\uC801\uC73C\uB85C
       6\uBC29\uD5A5\uC73C\uB85C \uBC1C\uC0AC\uD569\uB2C8\uB2E4.\n\uC0AC\uACA9\uC7A5\uC5D0
       \uB098\uC628 \uD45C\uC801\uC744 \uD5A5\uD574 \uD55C \uBC88 \uC3F4 \uBD05\uC2DC\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -296,10 +341,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -328,10 +377,13 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC0AC\uACA9\uC7A5 \uD45C\uC801\uC744 \uB9DE\uD788\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uBA54\uC778\uCF54\uC5B4\uB97C \uC0AC\uACA9\uD574\uC11C \uCD1D\uC54C\uC774
       \uC5B4\uB5A4 \uC2DD\uC73C\uB85C \uB098\uAC00\uB294\uC9C0 \uD655\uC778\uD574
       \uBCF4\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -341,10 +393,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -376,8 +432,11 @@ MonoBehaviour:
       \uC62C\uB824 \uBD05\uC2DC\uB2E4.\n\uCF54\uC5B4\uB97C \uB4E0 \uCC44 \uC791\uC5C5\uB300\uC640
       \uC0C1\uD638\uC791\uC6A9\uD558\uBA74 \uBB34\uAE30 \uC81C\uC791\uC744 \uC2DC\uC791\uD560
       \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -387,10 +446,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -419,9 +482,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uBA54\uC778 \uCF54\uC5B4\uB97C \uC791\uC5C5\uB300\uC5D0 \uC62C\uB9AC\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uBA54\uC778 \uCF54\uC5B4\uB97C \uB4E4\uACE0 \uC791\uC5C5\uB300\uC640
       \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC \uC791\uC5C5\uB300\uC5D0 \uC62C\uB9AC\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -431,10 +497,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -467,8 +537,11 @@ MonoBehaviour:
       \uB178\uB780 \uD654\uC0B4\uD45C\uB97C \uB530\uB77C \uB9C8\uC6B0\uC2A4 \uC624\uB978\uCABD
       \uBC84\uD2BC\uC744 \uB204\uB978 \uCC44 \uC6C0\uC9C1\uC5EC, \uCD1D\uC758 \uC606\uBA74\uACFC
       \uC717\uBA74\uC744 \uC0B4\uD3B4\uBCF4\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -478,10 +551,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 1
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -510,10 +587,13 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC6D0 \uC548\uC5D0\uC11C \uC624\uB978\uCABD \uBC84\uD2BC\uC744 \uB204\uB978
       \uCC44 \uCD1D\uC744 \uCDA9\uBD84\uD788 \uB3CC\uB824 \uC606\uBA74\uC774\uB098
       \uC717\uBA74\uC744 \uC0B4\uD3B4\uBCF4\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -523,10 +603,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 1
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -559,8 +643,11 @@ MonoBehaviour:
       \uD654\uC0B4\uD45C\uB97C \uB530\uB77C \uC624\uB978\uCABD \uBC84\uD2BC\uC744
       \uB204\uB978 \uCC44 \uC6C0\uC9C1\uC5EC \uBCF4\uC138\uC694.\n\uCD1D\uC774 \uD654\uBA74\uC744
       \uD5A5\uD55C \uCC44 \uC2DC\uACC4 \uBC14\uB298\uCC98\uB7FC \uB3CC\uC544\uAC11\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -570,10 +657,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 2
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -602,10 +693,13 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC6D0 \uBC16\uC5D0\uC11C \uC624\uB978\uCABD \uBC84\uD2BC\uC744 \uB204\uB978
       \uCC44 \uC6D0\uC744 \uB530\uB77C \uCD1D\uC744 \uCDA9\uBD84\uD788 \uB3CC\uB824
       \uBCF4\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -615,10 +709,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 2
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -649,8 +747,11 @@ MonoBehaviour:
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "R\uC744 \uB204\uB974\uBA74 \uCD1D\uC744 \uCC98\uC74C \uBCF4\uB358
       \uBC29\uD5A5\uC73C\uB85C \uB418\uB3CC\uB9B4 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -660,10 +761,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -692,8 +797,11 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "R\uC744 \uB20C\uB7EC \uCD1D\uC758 \uBC29\uD5A5\uC744 \uCD08\uAE30\uD654\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -703,10 +811,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -735,9 +847,15 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "기본 블록은 총알이 나가는 길을 막아 줍니다.\n노란색으로 깜빡이는 위치에 기본 블록 하나를 설치해 봅시다."
+    description: "\uAE30\uBCF8 \uBE14\uB85D\uC740 \uCD1D\uC54C\uC774 \uB098\uAC00\uB294
+      \uAE38\uC744 \uB9C9\uC544 \uC90D\uB2C8\uB2E4.\n\uB178\uB780\uC0C9\uC73C\uB85C
+      \uAE5C\uBE61\uC774\uB294 \uC704\uCE58\uC5D0 \uAE30\uBCF8 \uBE14\uB85D \uD558\uB098\uB97C
+      \uC124\uCE58\uD574 \uBD05\uC2DC\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -747,11 +865,15 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 1
     openCoreFace: {x: 0, y: 0, z: 1}
-    hintCells: 
+    hintCells:
     - {x: 0, y: 0, z: 1}
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -779,10 +901,14 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "안내된 위치에 기본 블록 하나를 설치하세요."
+    description: "\uC548\uB0B4\uB41C \uC704\uCE58\uC5D0 \uAE30\uBCF8 \uBE14\uB85D
+      \uD558\uB098\uB97C \uC124\uCE58\uD558\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uB178\uB780\uC0C9\uC73C\uB85C \uAE5C\uBE61\uC774\uB294 \uC704\uCE58\uC5D0
       \uAE30\uBCF8 \uBE14\uB85D\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 3
@@ -792,11 +918,15 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 1
     openCoreFace: {x: 0, y: 0, z: 1}
-    hintCells: 
+    hintCells:
     - {x: 0, y: 0, z: 1}
     requiredModuleId: 1
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -828,9 +958,14 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "방금 설치한 기본 블록을 지워 봅시다.\nE를 눌러 삭제 모드를 켜세요."
+    description: "\uBC29\uAE08 \uC124\uCE58\uD55C \uAE30\uBCF8 \uBE14\uB85D\uC744
+      \uC9C0\uC6CC \uBD05\uC2DC\uB2E4.\nE\uB97C \uB20C\uB7EC \uC0AD\uC81C \uBAA8\uB4DC\uB97C
+      \uCF1C\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -840,10 +975,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -872,8 +1011,11 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "E\uB97C \uB20C\uB7EC \uC0AD\uC81C \uBAA8\uB4DC\uB97C \uCF1C\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -883,10 +1025,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -916,8 +1062,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "삭제 모드로 방금 설치한 기본 블록을 지우세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uC0AD\uC81C \uBAA8\uB4DC\uB85C \uBC29\uAE08 \uC124\uCE58\uD55C \uAE30\uBCF8
+      \uBE14\uB85D\uC744 \uC9C0\uC6B0\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 4
@@ -927,10 +1077,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -961,9 +1115,14 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "E를 다시 누르면 삭제 모드를 끌 수 있습니다.\n삭제 모드를 끄고 모듈을 골라 봅시다."
+    description: "E\uB97C \uB2E4\uC2DC \uB204\uB974\uBA74 \uC0AD\uC81C \uBAA8\uB4DC\uB97C
+      \uB04C \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uC0AD\uC81C \uBAA8\uB4DC\uB97C \uB044\uACE0
+      \uBAA8\uB4C8\uC744 \uACE8\uB77C \uBD05\uC2DC\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -973,10 +1132,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1004,8 +1167,11 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "E를 눌러 삭제 모드를 끄세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "E\uB97C \uB20C\uB7EC \uC0AD\uC81C \uBAA8\uB4DC\uB97C \uB044\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -1015,10 +1181,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1047,9 +1217,15 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "Tab으로 모듈 선택창을 열고 원하는 모듈을 고를 수 있습니다.\n아래 슬롯이나 숫자키로도 모듈을 선택할 수 있습니다."
+    description: "Tab\uC73C\uB85C \uBAA8\uB4C8 \uC120\uD0DD\uCC3D\uC744 \uC5F4\uACE0
+      \uC6D0\uD558\uB294 \uBAA8\uB4C8\uC744 \uACE0\uB97C \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uC544\uB798
+      \uC2AC\uB86F\uC774\uB098 \uC22B\uC790\uD0A4\uB85C\uB3C4 \uBAA8\uB4C8\uC744
+      \uC120\uD0DD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1059,10 +1235,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1077,7 +1257,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000
+    allowedModuleIds: 010000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
@@ -1091,8 +1271,11 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "Tab\uC73C\uB85C \uBAA8\uB4C8 \uBAA9\uB85D\uC744 \uC5EC\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -1102,10 +1285,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1120,7 +1307,7 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000
+    allowedModuleIds: 010000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: palette-opened
@@ -1135,8 +1322,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "원하는 모듈로 무기를 만든 뒤 F 또는 Esc로 작업대에서 나가세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uC6D0\uD558\uB294 \uBAA8\uB4C8\uB85C \uBB34\uAE30\uB97C \uB9CC\uB4E0
+      \uB4A4 F \uB610\uB294 Esc\uB85C \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uAC00\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 6
@@ -1146,10 +1337,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1164,14 +1359,14 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 0
-    allowedModuleIds: 01000000
+    allowedModuleIds: 010000000800000007000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2
     requiredSignal: 
     strictAllowedActions: 0
     blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
       \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
-    allowedActions: 
+    allowedActions:
     - attach
     - delete
     - rotate
@@ -1183,9 +1378,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC791\uC5C5\uB300 \uC704\uC758 \uC644\uC131\uB41C \uBB34\uAE30\uB97C
       F\uB85C \uC9D1\uC73C\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 7
@@ -1195,10 +1393,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1227,9 +1429,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uBB34\uAE30\uB97C \uB4E0 \uCC44 \uC190\uB2D8\uACFC F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uACE0
       \uD310\uB9E4\uB97C \uD655\uC778\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 1
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -1239,10 +1444,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 1
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1264,7 +1473,6 @@ MonoBehaviour:
     strictAllowedActions: 0
     blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
       \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
-    allowWorkbenchReentry: 1
     allowedActions:
     - attach
     - delete
@@ -1276,9 +1484,17 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "손님이 관통 모듈을 원합니다.\n들고 있는 무기를 작업대로 가져가 관통 모듈을 달아 주세요.\n모듈을 옆에 붙이기만 해서는 기능하지 않습니다. 코어에서 총알이 나가는 길에 연결한 뒤 다시 판매하세요."
+    description: "\uC190\uB2D8\uC774 \uAD00\uD1B5 \uBAA8\uB4C8\uC744 \uC6D0\uD569\uB2C8\uB2E4.\n\uB4E4\uACE0
+      \uC788\uB294 \uBB34\uAE30\uB97C \uC791\uC5C5\uB300\uB85C \uAC00\uC838\uAC00
+      \uAD00\uD1B5 \uBAA8\uB4C8\uC744 \uB2EC\uC544 \uC8FC\uC138\uC694.\n\uBAA8\uB4C8\uC744
+      \uC606\uC5D0 \uBD99\uC774\uAE30\uB9CC \uD574\uC11C\uB294 \uAE30\uB2A5\uD558\uC9C0
+      \uC54A\uC2B5\uB2C8\uB2E4. \uCF54\uC5B4\uC5D0\uC11C \uCD1D\uC54C\uC774 \uB098\uAC00\uB294
+      \uAE38\uC5D0 \uC5F0\uACB0\uD55C \uB4A4 \uB2E4\uC2DC \uD310\uB9E4\uD558\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1288,10 +1504,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1320,8 +1540,14 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "기존 무기를 작업대로 가져가 총알 길에 관통 모듈을 달고, 작업대에서 나와 무기를 다시 집어 첫 손님에게 판매하세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uAE30\uC874 \uBB34\uAE30\uB97C \uC791\uC5C5\uB300\uB85C \uAC00\uC838\uAC00
+      \uCD1D\uC54C \uAE38\uC5D0 \uAD00\uD1B5 \uBAA8\uB4C8\uC744 \uB2EC\uACE0, \uC791\uC5C5\uB300\uC5D0\uC11C
+      \uB098\uC640 \uBB34\uAE30\uB97C \uB2E4\uC2DC \uC9D1\uC5B4 \uCCAB \uC190\uB2D8\uC5D0\uAC8C
+      \uD310\uB9E4\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 1
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 9
@@ -1331,10 +1557,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 1
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1356,21 +1586,25 @@ MonoBehaviour:
     strictAllowedActions: 0
     blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
       \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
-    allowedActions: 
+    allowedActions:
     - attach
     - delete
     - rotate
     - reset-rotation
     - palette
     - exit
-    allowWorkbenchReentry: 1
   - id: fourth-introduction
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "이번에는 조금 다른 두 번째 손님이 찾아왔습니다.\n다가가서 어떤 주문인지 들어 봅시다."
+    description: "\uC774\uBC88\uC5D0\uB294 \uC870\uAE08 \uB2E4\uB978 \uB450 \uBC88\uC9F8
+      \uC190\uB2D8\uC774 \uCC3E\uC544\uC654\uC2B5\uB2C8\uB2E4.\n\uB2E4\uAC00\uAC00\uC11C
+      \uC5B4\uB5A4 \uC8FC\uBB38\uC778\uC9C0 \uB4E4\uC5B4 \uBD05\uC2DC\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1380,10 +1614,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1411,8 +1649,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "두 번째 손님과 F로 상호작용하여 주문을 확인하세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uB450 \uBC88\uC9F8 \uC190\uB2D8\uACFC F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
+      \uC8FC\uBB38\uC744 \uD655\uC778\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -1422,10 +1664,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1453,9 +1699,17 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "두 번째 손님도 맞이했지만, 무기를 주문할 생각은 없는 것 같습니다.\n무기 이외의 주문을 하는 손님도 있습니다. 이번에는 새 메인 코어를 집어 손님을 향해 쏴 봅시다."
+    description: "\uB450 \uBC88\uC9F8 \uC190\uB2D8\uB3C4 \uB9DE\uC774\uD588\uC9C0\uB9CC,
+      \uBB34\uAE30\uB97C \uC8FC\uBB38\uD560 \uC0DD\uAC01\uC740 \uC5C6\uB294 \uAC83
+      \uAC19\uC2B5\uB2C8\uB2E4.\n\uBB34\uAE30 \uC774\uC678\uC758 \uC8FC\uBB38\uC744
+      \uD558\uB294 \uC190\uB2D8\uB3C4 \uC788\uC2B5\uB2C8\uB2E4. \uC774\uBC88\uC5D0\uB294
+      \uC0C8 \uBA54\uC778 \uCF54\uC5B4\uB97C \uC9D1\uC5B4 \uC190\uB2D8\uC744 \uD5A5\uD574
+      \uC3F4 \uBD05\uC2DC\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1465,10 +1719,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1496,9 +1754,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uBA54\uC778 \uCF54\uC5B4 \uBC14\uAD6C\uB2C8\uC640 \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uBA54\uC778 \uCF54\uC5B4\uB97C \uD68D\uB4DD\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -1508,10 +1769,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1540,8 +1805,11 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "두 번째 손님을 향해 사격하세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uB450 \uBC88\uC9F8 \uC190\uB2D8\uC744 \uD5A5\uD574 \uC0AC\uACA9\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 10
@@ -1551,10 +1819,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 2
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1583,9 +1855,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC601\uC5C5 \uC815\uC0B0\uC744 \uD655\uC778\uD558\uACE0 \uC815\uC0B0
       \uCC3D\uC744 \uB2EB\uC73C\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 8
@@ -1595,10 +1870,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1629,8 +1908,11 @@ MonoBehaviour:
     description: "\uC774\uCC98\uB7FC \uC190\uB2D8\uC740 \uC800\uB9C8\uB2E4 \uB2E4\uC591\uD55C
       \uC694\uAD6C\uB97C \uD569\uB2C8\uB2E4.\n\uC0C1\uD669\uC744 \uC0B4\uD53C\uBA70
       \uC720\uC5F0\uD558\uAC8C \uB300\uCC98\uD558\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1640,10 +1922,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1675,8 +1961,11 @@ MonoBehaviour:
       \uC624\uBC84\uAC00 \uB429\uB2C8\uB2E4.\n\uC774\uC81C \uBC24\uC744 \uC900\uBE44\uD560
       \uCC28\uB840\uC785\uB2C8\uB2E4. \uC57C\uAC04 \uC2B5\uACA9\uC744 \uB5A0\uB098\uAC70\uB098
       \uB2E4\uC74C \uB0A0 \uC544\uCE68\uC744 \uC120\uD0DD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1686,10 +1975,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1717,9 +2010,15 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "영업 정산을 마쳤습니다. 이제 야간 습격에 가져갈 무기를 준비합니다. 준비가 끝난 뒤에만 습격 입구로 이동할 수 있습니다."
+    description: "\uC601\uC5C5 \uC815\uC0B0\uC744 \uB9C8\uCCE4\uC2B5\uB2C8\uB2E4.
+      \uC774\uC81C \uC57C\uAC04 \uC2B5\uACA9\uC5D0 \uAC00\uC838\uAC08 \uBB34\uAE30\uB97C
+      \uC900\uBE44\uD569\uB2C8\uB2E4. \uC900\uBE44\uAC00 \uB05D\uB09C \uB4A4\uC5D0\uB9CC
+      \uC2B5\uACA9 \uC785\uAD6C\uB85C \uC774\uB3D9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1729,10 +2028,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1761,9 +2064,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uBA54\uC778 \uCF54\uC5B4\uB97C \uD68D\uB4DD\uD558\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uBA54\uC778 \uCF54\uC5B4 \uBC14\uAD6C\uB2C8\uC640 \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uBA54\uC778 \uCF54\uC5B4\uB97C \uD68D\uB4DD\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -1773,10 +2079,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1805,9 +2115,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC791\uC5C5\uB300\uC640 F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uC2B5\uACA9\uC6A9 \uBB34\uAE30\uB97C \uB9CC\uB4DC\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -1817,10 +2130,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1848,9 +2165,14 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "왼쪽에 돌격소총 요청 조건이 표시됩니다. 레시피 버튼에서 다른 무기 조건도 확인할 수 있습니다."
+    description: "\uC67C\uCABD\uC5D0 \uB3CC\uACA9\uC18C\uCD1D \uC694\uCCAD \uC870\uAC74\uC774
+      \uD45C\uC2DC\uB429\uB2C8\uB2E4. \uB808\uC2DC\uD53C \uBC84\uD2BC\uC5D0\uC11C
+      \uB2E4\uB978 \uBB34\uAE30 \uC870\uAC74\uB3C4 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1860,13 +2182,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 1
-    requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
-    showTagRequirement: 1
-    keepRecipeHighlight: 1
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
+    showTagRequirement: 1
+    keepRecipeHighlight: 1
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1886,7 +2209,8 @@ MonoBehaviour:
     requiredQuickslotNumber: 2
     requiredSignal: 
     strictAllowedActions: 1
-    blockedActionMessage: "지금은 작업대에서 나갈 수 없습니다."
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uAC08
+      \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."
     allowedActions:
     - preset-load
     - preset-save
@@ -1914,9 +2238,16 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "2번 슬롯의 기본 프리셋은 돌격소총입니다. 슬롯을 선택한 뒤 불러오기를 눌러 작업대에 가져오세요."
-    objective: "프리셋 2번의 돌격소총을 선택하고 실제로 불러오세요."
+    description: "2\uBC88 \uC2AC\uB86F\uC758 \uAE30\uBCF8 \uD504\uB9AC\uC14B\uC740
+      \uB3CC\uACA9\uC18C\uCD1D\uC785\uB2C8\uB2E4. \uC2AC\uB86F\uC744 \uC120\uD0DD\uD55C
+      \uB4A4 \uBD88\uB7EC\uC624\uAE30\uB97C \uB20C\uB7EC \uC791\uC5C5\uB300\uC5D0
+      \uAC00\uC838\uC624\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uD504\uB9AC\uC14B 2\uBC88\uC758 \uB3CC\uACA9\uC18C\uCD1D\uC744 \uC120\uD0DD\uD558\uACE0
+      \uC2E4\uC81C\uB85C \uBD88\uB7EC\uC624\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -1926,13 +2257,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 10
-    requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
-    showTagRequirement: 1
-    keepRecipeHighlight: 1
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
+    showTagRequirement: 1
+    keepRecipeHighlight: 1
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -1952,7 +2284,8 @@ MonoBehaviour:
     requiredQuickslotNumber: 2
     requiredSignal: preset-two-loaded
     strictAllowedActions: 1
-    blockedActionMessage: "지금은 작업대에서 나갈 수 없습니다."
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uAC08
+      \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."
     allowedActions:
     - preset-load
     - preset-save
@@ -1980,9 +2313,13 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "불러온 무기를 원하는 대로 편집해 보세요."
-    objective: ""
+    description: "\uBD88\uB7EC\uC628 \uBB34\uAE30\uB97C \uC6D0\uD558\uB294 \uB300\uB85C
+      \uD3B8\uC9D1\uD574 \uBCF4\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -1992,12 +2329,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
-    requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
-    showTagRequirement: 1
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
+    showTagRequirement: 1
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2017,7 +2356,8 @@ MonoBehaviour:
     requiredQuickslotNumber: 2
     requiredSignal: 
     strictAllowedActions: 1
-    blockedActionMessage: "지금은 작업대에서 나갈 수 없습니다."
+    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uAC08
+      \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."
     allowedActions:
     - preset-load
     - preset-save
@@ -2046,8 +2386,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "편집한 무기를 작업대에 둔 채 F 또는 Esc로 나가세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uD3B8\uC9D1\uD55C \uBB34\uAE30\uB97C \uC791\uC5C5\uB300\uC5D0 \uB454
+      \uCC44 F \uB610\uB294 Esc\uB85C \uB098\uAC00\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -2057,12 +2401,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 2
-    requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
-    showTagRequirement: 1
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
+    showTagRequirement: 1
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2090,21 +2436,29 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "프리셋 1번 디스펜서에서 방금 저장한 무기를 실제로 꺼내 장착하세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uD504\uB9AC\uC14B 1\uBC88 \uB514\uC2A4\uD39C\uC11C\uC5D0\uC11C \uBC29\uAE08
+      \uC800\uC7A5\uD55C \uBB34\uAE30\uB97C \uC2E4\uC81C\uB85C \uAEBC\uB0B4 \uC7A5\uCC29\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
     target: 13
-    targetLabel: "프리셋 1번"
+    targetLabel: "\uD504\uB9AC\uC14B 1\uBC88"
     requiresWorkbenchEditing: 0
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2133,9 +2487,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC57C\uAC04 \uC2B5\uACA9 \uC785\uAD6C\uC640 F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uC5EC
       \uC9C0\uB3C4\uB97C \uC5EC\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -2145,10 +2502,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2177,9 +2538,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC9C0\uB3C4\uC5D0\uC11C \uB178\uB780\uC0C9\uC73C\uB85C \uAE5C\uBE61\uC774\uB294
       \uBAA9\uC870\uC8FC\uD0DD\uC744 \uC120\uD0DD\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -2189,10 +2553,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 3
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2220,9 +2588,17 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "목조주택에 도착했습니다. Shift를 누르면 달리고 Space로 점프할 수 있습니다. 적이 나타나면 사격으로 맞서 싸우세요. 이번 연습에서는 피해를 받지 않으니 차근차근 진행해 보세요."
+    description: "\uBAA9\uC870\uC8FC\uD0DD\uC5D0 \uB3C4\uCC29\uD588\uC2B5\uB2C8\uB2E4.
+      Shift\uB97C \uB204\uB974\uBA74 \uB2EC\uB9AC\uACE0 Space\uB85C \uC810\uD504\uD560
+      \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC801\uC774 \uB098\uD0C0\uB098\uBA74 \uC0AC\uACA9\uC73C\uB85C
+      \uB9DE\uC11C \uC2F8\uC6B0\uC138\uC694. \uC774\uBC88 \uC5F0\uC2B5\uC5D0\uC11C\uB294
+      \uD53C\uD574\uB97C \uBC1B\uC9C0 \uC54A\uC73C\uB2C8 \uCC28\uADFC\uCC28\uADFC
+      \uC9C4\uD589\uD574 \uBCF4\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -2237,6 +2613,9 @@ MonoBehaviour:
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2268,8 +2647,11 @@ MonoBehaviour:
       \uC54A\uACE0, \uC7AC\uC2DC\uB3C4\uAC00 \uAC00\uB2A5\uD569\uB2C8\uB2E4.\n\uC785\uC7A5\uB8CC\uAC00
       \uC788\uB294 \uACBD\uC6B0, \uC7AC\uC785\uC7A5\uC744 \uC704\uD574\uC11C\uB294
       \uBE44\uC6A9\uC744 \uB0B4\uC57C\uB9CC\uD569\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -2279,10 +2661,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2311,8 +2697,11 @@ MonoBehaviour:
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uBA3C\uC800 \uC548\uB0B4 \uD45C\uC2DC\uB97C \uB530\uB77C \uBAA8\uB4C8
       \uC0C1\uC790 \uAC00\uAE4C\uC774 \uC774\uB3D9\uD574 \uBCF4\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uC548\uB0B4\uB41C \uBAA8\uB4C8 \uC0C1\uC790 \uAC00\uAE4C\uC774 \uC774\uB3D9\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 11
@@ -2322,10 +2711,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 10
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2354,10 +2747,13 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uBAA8\uB4C8 \uC0C1\uC790\uB97C \uC0AC\uACA9\uC73C\uB85C \uBD80\uC218\uACE0,
       \uB5A8\uC5B4\uC9C4 \uBAA8\uB4C8\uC744 \uC870\uC900\uD574 F\uB85C \uC8FC\uC6CC
       \uBCF4\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -2367,10 +2763,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 10
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2398,9 +2798,15 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "곧 탱크가 출격합니다. 탱크를 파괴하면 티켓이 자동으로 날아와 획득됩니다. 엔딩 후 사용 가능한 티켓이니 틈틈이 모아보세요."
+    description: "\uACE7 \uD0F1\uD06C\uAC00 \uCD9C\uACA9\uD569\uB2C8\uB2E4. \uD0F1\uD06C\uB97C
+      \uD30C\uAD34\uD558\uBA74 \uD2F0\uCF13\uC774 \uC790\uB3D9\uC73C\uB85C \uB0A0\uC544\uC640
+      \uD68D\uB4DD\uB429\uB2C8\uB2E4. \uC5D4\uB529 \uD6C4 \uC0AC\uC6A9 \uAC00\uB2A5\uD55C
+      \uD2F0\uCF13\uC774\uB2C8 \uD2C8\uD2C8\uC774 \uBAA8\uC544\uBCF4\uC138\uC694."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -2410,10 +2816,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2442,9 +2852,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uD0F1\uD06C\uB97C \uD30C\uAD34\uD558\uACE0 \uD2F0\uCF13\uC774 \uC790\uB3D9\uC73C\uB85C
       \uB4E4\uC5B4\uC624\uB294 \uAC83\uC744 \uD655\uC778\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 15
@@ -2454,10 +2867,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2485,9 +2902,15 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "이번에는 안내 표시를 따라 재료 상자로 이동하세요. 상자를 부수면 달러가 플레이어에게 자동으로 날아옵니다."
+    description: "\uC774\uBC88\uC5D0\uB294 \uC548\uB0B4 \uD45C\uC2DC\uB97C \uB530\uB77C
+      \uC7AC\uB8CC \uC0C1\uC790\uB85C \uC774\uB3D9\uD558\uC138\uC694. \uC0C1\uC790\uB97C
+      \uBD80\uC218\uBA74 \uB2EC\uB7EC\uAC00 \uD50C\uB808\uC774\uC5B4\uC5D0\uAC8C
+      \uC790\uB3D9\uC73C\uB85C \uB0A0\uC544\uC635\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -2497,10 +2920,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2529,8 +2956,13 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
-    objective: "안내된 재료 상자를 사격으로 부수고, 떨어진 달러가 자동으로 들어오는 것을 확인하세요."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
+    objective: "\uC548\uB0B4\uB41C \uC7AC\uB8CC \uC0C1\uC790\uB97C \uC0AC\uACA9\uC73C\uB85C
+      \uBD80\uC218\uACE0, \uB5A8\uC5B4\uC9C4 \uB2EC\uB7EC\uAC00 \uC790\uB3D9\uC73C\uB85C
+      \uB4E4\uC5B4\uC624\uB294 \uAC83\uC744 \uD655\uC778\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 16
@@ -2540,10 +2972,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2571,9 +3007,17 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "모듈과 달러를 획득했습니다. 이제 탈출 발판으로 이동하세요. 발판 위에서 5초간 버티면 자동으로 탈출합니다. 실제 습격에서는 무사히 귀환해야 획득한 모듈과 재료를 가져갈 수 있습니다."
+    description: "\uBAA8\uB4C8\uACFC \uB2EC\uB7EC\uB97C \uD68D\uB4DD\uD588\uC2B5\uB2C8\uB2E4.
+      \uC774\uC81C \uD0C8\uCD9C \uBC1C\uD310\uC73C\uB85C \uC774\uB3D9\uD558\uC138\uC694.
+      \uBC1C\uD310 \uC704\uC5D0\uC11C 5\uCD08\uAC04 \uBC84\uD2F0\uBA74 \uC790\uB3D9\uC73C\uB85C
+      \uD0C8\uCD9C\uD569\uB2C8\uB2E4. \uC2E4\uC81C \uC2B5\uACA9\uC5D0\uC11C\uB294
+      \uBB34\uC0AC\uD788 \uADC0\uD658\uD574\uC57C \uD68D\uB4DD\uD55C \uBAA8\uB4C8\uACFC
+      \uC7AC\uB8CC\uB97C \uAC00\uC838\uAC08 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -2583,10 +3027,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2615,9 +3063,12 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: 
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: "\uD0C8\uCD9C \uBC1C\uD310 \uC704\uC5D0\uC11C 5\uCD08\uAC04 \uBC84\uD2F0\uACE0,
       \uADC0\uD658 \uC815\uC0B0\uC744 \uD655\uC778\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 1
@@ -2627,10 +3078,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2664,8 +3119,11 @@ MonoBehaviour:
       \uB3CC\uC544\uC624\uB294 \uD558\uB8E8\uB97C \uC2A4\uC2A4\uB85C \uC6B4\uC601\uD560
       \uC218 \uC788\uC2B5\uB2C8\uB2E4.\n\uC5F0\uC2B5\uC6A9 \uC9C4\uD589\uC744 \uC815\uB9AC\uD558\uACE0
       \uCCAB \uC601\uC5C5\uC744 \uC2DC\uC791\uD558\uACA0\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -2675,10 +3133,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2709,8 +3171,11 @@ MonoBehaviour:
     description: "\uC601\uC5C5 \uC885\uB8CC\uC2DC \uD604\uC7AC \uBCF4\uC720 \uAE08\uC561\uBCF4\uB2E4
       \uCD5C\uC885 \uC815\uC0B0\uC561\uC774 \uB354 \uB9CE\uC73C\uBA74 \uAC8C\uC784\uC624\uBC84
       \uB429\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -2720,10 +3185,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2755,8 +3224,11 @@ MonoBehaviour:
     description: "\uC5B8\uC81C\uAE4C\uC9C0\uACE0 \uCD1D\uB9CC \uB9CC\uB4E4 \uC21C
       \uC5C6\uACA0\uC8E0. {\uC740\uD1F4\uC790\uAE08} \uBAA8\uC73C\uBA74 \uC740\uD1F4\uD560
       \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 14
@@ -2766,10 +3238,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2800,8 +3276,11 @@ MonoBehaviour:
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
     description: "\uC774\uC81C\uB294 \uB2F9\uC2E0 \uCC28\uB840\uC785\uB2C8\uB2E4"
+    confirmOnBackgroundClick: 0
+    dialogueInputLockSeconds: 0
     objective: 
     showDescriptionBeforeObjective: 0
+    allowWorkbenchReentry: 0
     objectiveWhileChoiceOpen: 
     choiceGuidance: 
     completion: 0
@@ -2811,10 +3290,14 @@ MonoBehaviour:
     requiredRotationDegrees: 45
     rotationGuide: 0
     buttonGuide: 0
+    showMovementKeycaps: 0
     showPlacementHints: 0
     openCoreFace: {x: 0, y: 0, z: 1}
     hintCells: []
     requiredModuleId: 0
+    requiredTagId: 
+    showTagRequirement: 0
+    keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
     requiredCell: {x: 0, y: 0, z: 1}
@@ -2838,4 +3321,3 @@ MonoBehaviour:
       \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
-    -
