@@ -45,7 +45,7 @@
 
 - 레이어: 모듈 목록·탄색 피커를 HudLayer에서 ScreenLayer로 옮겼다. 정산의 중첩 Canvas·CanvasScaler·GraphicRaycaster를 제거해 팝업이 정산 위에 그려진다. 일시정지(200)·확인창(150) Canvas는 D03 중첩 순서 때문에 유지한다. `Tools/UI/Authoring/Layout/Author`.
 - 중앙 최대 너비: `UI/Common/CenterMaxWidth`가 실행 중에만 주요 조작 화면을 1920 폭으로 제한한다(에디트 모드에서는 오프셋을 바꾸지 않는다). 확인창 카드·알림 문구는 비율 앵커 대신 1920×1080에서 같은 크기의 중앙 고정 앵커다.
-- 탐색: `Tools/UI/Authoring/Navigation/Author`가 화면별 버튼을 끝에서 순환하지 않는 Explicit Navigation으로 저작한다. View는 열 때 기본 선택, 닫을 때 `UIRoot` 포커스 복원을 쓴다. 저장 삭제 확인은 취소가 기본이다.
+- 탐색: `Tools/UI/Authoring/Navigation/Author`가 화면별 버튼을 끝에서 순환하지 않는 Explicit Navigation으로 저작한다. View는 열 때 기본 선택, 닫을 때 `UIRoot` 포커스 복원을 쓴다. 저장 삭제 확인은 취소가 기본이다. 매 프레임 갱신되는 HUD(커스텀 화면 등)는 표시 상태가 바뀔 때만 포커스를 옮기고, 작업대 무기 이름 입력칸은 기본 선택하지 않는다(입력칸이 선택되면 텍스트 입력 중으로 작업대 조작 전체가 막힘).
 - 입력 정책: `UI/Common/UIInputPolicy`가 커서·일시정지/야간 시간 배율·Game/Workshop 액션맵을 모은다. 시간 배율은 일시정지·야간·초기화·로비 전환 때만 바꾼다. Build·대화·확인창 액션맵은 각 화면(`WorkshopSession.SetEditing`, `DialogueView`, `FeedbackChoiceView`)이 기존처럼 직접 켜고 끈다. 일시정지 위 이탈 확인창(D03)·Suspend 대출 안내 입력이 정책에 덮이지 않게 하기 위한 경계다. 확인창 열림 여부는 별도 플래그 없이 UI 상태를 읽는다.
 - 월드 상호작용: 코어 배출기·다음 날 셔터는 표시 요청 Presenter, 해금 알림은 View/Presenter로 나눴다. 마감 버튼·주문 외형 가이드는 표시 UI가 없어 기존 구조를 유지한다.
 - 씬 정리: `Tools/UI/Authoring/SceneOverrides/Clean`이 빌드 씬의 UIManager·StartUI 인스턴스에서 프리팹 값과 같은 오버라이드만 제거한다(1084건 제거, 활성 상태·다른 값·씬 참조·추가 오브젝트는 유지). 추출된 엔드 상자 화면 스케일러도 1920×1080 match 1이다.

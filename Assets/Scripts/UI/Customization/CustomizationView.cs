@@ -25,6 +25,7 @@ namespace WeaponWorkshop
 
         private readonly List<PanelBinding> m_panelBindings = new List<PanelBinding>();
         private GameObject m_savedFocus;
+        private bool m_isShown;
         private bool m_isInitialized;
         private bool m_hasLoggedReferenceError;
 
@@ -117,9 +118,12 @@ namespace WeaponWorkshop
         }
 
         // 커스텀 모드 표시 여부와 선택 패널을 저작된 오브젝트에 적용한다.
+        // 매 프레임 호출되므로 포커스는 표시 상태가 바뀔 때만 옮긴다(입력칸 선택을 덮어쓰지 않게).
         public void Render(bool _visible, int _selectedIndex)
         {
-            if (_visible)
+            bool shownChanged = _visible != m_isShown;
+            m_isShown = _visible;
+            if (_visible && shownChanged)
             {
                 UIRoot.SaveFocus(ref m_savedFocus, transform);
             }
@@ -137,6 +141,11 @@ namespace WeaponWorkshop
             }
 
             RenderTabs(_selectedIndex);
+
+            if (!shownChanged)
+            {
+                return;
+            }
 
             if (_visible)
             {

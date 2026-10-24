@@ -20,7 +20,6 @@ namespace WeaponWorkshop
         [SerializeField] private TMP_InputField m_input;
         [SerializeField] private Button m_confirm;
 
-        private GameObject m_savedFocus;
         private bool m_isInitialized;
         private bool m_isBound;
         private bool m_hasLoggedReferenceError;
@@ -90,25 +89,12 @@ namespace WeaponWorkshop
             m_isInitialized = false;
         }
 
+        // 작업대에 있는 동안 계속 보이는 HUD라 기본 선택을 주지 않는다. 입력칸이 선택되면 텍스트 입력 중으로 판정돼 작업대 조작 전체가 막힌다.
         public void SetVisible(bool _visible)
         {
-            if (_visible)
-            {
-                UIRoot.SaveFocus(ref m_savedFocus, transform);
-            }
-
             if (m_panel != null)
             {
                 m_panel.SetActive(_visible);
-            }
-
-            if (_visible)
-            {
-                UIRoot.SetFocus(m_input, m_confirm != null ? new Selectable[] { m_confirm } : null);
-            }
-            else
-            {
-                UIRoot.RestoreFocus(ref m_savedFocus);
             }
         }
 
