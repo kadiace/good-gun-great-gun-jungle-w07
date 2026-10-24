@@ -37,10 +37,13 @@ public class _DayManager : MonoBehaviour
     public int TodayLoanRepayment { get; private set; }
     public int TodayLoanInterest { get; private set; }
     public int TodayLoanIncome { get; private set; }
+    public bool SettlementCostsWaived => DayNumber == 0 ||
+        (TutorialManager.Instance != null && TutorialManager.Instance.IsTutorialActive);
     public int NextSettlementRent
     {
         get
         {
+            if (SettlementCostsWaived) return 0;
             if (!IsNight) return CurrentCustomerDay != null ? CurrentCustomerDay.Rent : 0;
             int nextDay = DayNumber + 1;
             var fixedDay = FindCustomerDay(nextDay);
@@ -237,16 +240,17 @@ public class _DayManager : MonoBehaviour
         dayNightStartedAt = Time.time;
         WorkshopSoundEffects.RaiseBusinessEnded();
         customerBell?.EndDay();
-        TodayRent = CurrentCustomerDay != null ? CurrentCustomerDay.Rent : 0;
+        bool tutorial = SettlementCostsWaived;
+        TodayRent = !tutorial && CurrentCustomerDay != null ? CurrentCustomerDay.Rent : 0;
         int balanceBefore = Money;
-        int loans = wallet != null ? wallet.OutstandingLoans : 0;
+        int loans = !tutorial && wallet != null ? wallet.OutstandingLoans : 0;
         long principal = (long)loans * PlayerWallet.LoanAmount;
         long interest = (long)TodayRent * loans / 5;
         long due = (long)TodayRent + principal + interest;
         TodayLoanRepayment = (int)Math.Min(int.MaxValue, principal);
         TodayLoanIncome = TodayLoanRepayment;
         TodayLoanInterest = (int)Math.Min(int.MaxValue, interest);
-        if (wallet != null && (due > int.MaxValue || wallet.Balance < due))
+        if (!tutorial && wallet != null && (due > int.MaxValue || wallet.Balance < due))
         {
             IsBankrupt = true;
             LogDaySettled(balanceBefore);
@@ -258,8 +262,9 @@ public class _DayManager : MonoBehaviour
             Changed?.Invoke();
             return;
         }
-        wallet?.Debit((int)due);
+        wallet?.Debit((int)Math.Min(int.MaxValue, due));
         wallet?.RestoreLoans(0);
+        if (tutorial) wallet?.RestoreBalance(5000);
         LogDaySettled(balanceBefore);
         IsSettlementOpen = true;
         gameManager.SetNight(true);
@@ -549,10 +554,11 @@ public class _DayManager : MonoBehaviour
         dayNightStartedAt = Time.time;
         startedDayInDebt = data.startedDayInDebt;
         // The saved wallet already includes rent; restore its display without charging again.
-        TodayRent = IsNight ? CurrentCustomerDay.Rent : 0;
-        TodayLoanRepayment = IsNight ? data.todayLoanRepayment : 0;
-        TodayLoanInterest = IsNight ? data.todayLoanInterest : 0;
-        TodayLoanIncome = data.todayLoanIncome;
+        bool chargeSettlement = IsNight && !SettlementCostsWaived;
+        TodayRent = chargeSettlement ? CurrentCustomerDay.Rent : 0;
+        TodayLoanRepayment = chargeSettlement ? data.todayLoanRepayment : 0;
+        TodayLoanInterest = chargeSettlement ? data.todayLoanInterest : 0;
+        TodayLoanIncome = SettlementCostsWaived ? 0 : data.todayLoanIncome;
         CanStartNextDay = IsNight && HasNextDay;
         timerController.RestoreSave(data.timer);
         gameManager.SetNight(data.night && data.settlement);

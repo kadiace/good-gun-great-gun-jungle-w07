@@ -171,7 +171,7 @@ namespace WeaponWorkshop
             {
                 bool settledToday = m_day.IsNight && m_day.IsSettlementOpen;
                 int rent = settledToday ? m_day.TodayRent : m_day.NextSettlementRent;
-                int loans = m_wallet.OutstandingLoans;
+                int loans = m_day.SettlementCostsWaived ? 0 : m_wallet.OutstandingLoans;
                 long principal = settledToday ? m_day.TodayLoanRepayment : (long)loans * PlayerWallet.LoanAmount;
                 long interest = settledToday ? m_day.TodayLoanInterest : (long)rent * loans / 5;
                 m_view.ShowDailyRent(rent, principal, interest);
@@ -184,10 +184,12 @@ namespace WeaponWorkshop
             if (m_wallet != null)
             {
                 m_view.SetModuleCredits(m_wallet.ModuleCredits);
-                long due = m_day != null && !m_day.IsNight
+                long due = m_day != null && !m_day.SettlementCostsWaived && !m_day.IsNight
                     ? (long)m_day.NextSettlementRent * (5L + m_wallet.OutstandingLoans) / 5
                         + (long)m_wallet.OutstandingLoans * PlayerWallet.LoanAmount : 0;
-                m_view.SetMoneyBalance(m_wallet.Balance, (long)m_wallet.Balance - due <= 0);
+                bool warnInsufficientFunds = (m_day == null || !m_day.SettlementCostsWaived) &&
+                    (long)m_wallet.Balance - due <= 0;
+                m_view.SetMoneyBalance(m_wallet.Balance, warnInsufficientFunds);
             }
 
             m_view.SetTodayIncomeVisible(show);
