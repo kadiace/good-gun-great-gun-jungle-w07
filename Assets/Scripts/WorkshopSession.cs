@@ -142,9 +142,14 @@ namespace WeaponWorkshop
         public void Leave()
         {
             if (IsTransitioning) return;
+            var tutorial = TutorialManager.Instance;
+            if (tutorial != null && tutorial.IsGuidedDayZero && tutorial.IsEditingTutorialWorkbench &&
+                tutorial.CurrentStep != null && tutorial.CurrentStep.id != "first-exit" &&
+                tutorial.CurrentStep.id != "first-sell" && tutorial.CurrentStep.id != "first-resell" &&
+                tutorial.CurrentStep.id != "raid-exit-workbench") return;
             if (!TutorialManager.TryAction("exit")) return;
             if (!IsInWorkshop) return;
-            if (TutorialManager.Instance != null && !TutorialManager.Instance.TryAuthorizeRaidWorkbenchExit()) return;
+            if (tutorial != null && !tutorial.TryAuthorizeRaidWorkbenchExit()) return;
             EquipableWeapon exitingWeapon = activeWorkbench != null ? activeWorkbench.CurrentWeapon : null;
             SetMode(false, true);
             TutorialManager.Instance?.NotifyTutorialWorkbenchExited(this, exitingWeapon);

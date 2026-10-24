@@ -50,6 +50,7 @@ namespace WeaponWorkshop
         public static bool TrainingRaidPending => trainingSequence != null && !trainingReturning;
         public static bool TrainingReturnPending => trainingSequence != null && trainingReturning;
         public bool RaidPresetSaveRequested => _raidExitSaveRequested;
+        public bool TrainingTankStageReached { get; private set; }
         public static void AbandonTraining() { LogAbandoned(); ResetTraining(); }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetTraining()
@@ -119,8 +120,13 @@ namespace WeaponWorkshop
             {
                 _raidExitSaveRequested = true;
                 Changed?.Invoke();
+                ResolvePresentation();
+                if (dialogue != null)
+                {
+                    ownsDialogue = dialogue.Show("작업대를 나가기 전에 현재 무기를 프리셋 1번에 저장하세요.", "확인",
+                        ReleaseDialogue, "튜토리얼");
+                }
             }
-            FeedbackUI.For(this)?.ShowNotification("작업대를 나가기 전에 프리셋 1번에 현재 무기를 저장하세요.");
             return false;
         }
 
@@ -206,7 +212,10 @@ namespace WeaponWorkshop
         {
             // 티켓 단계는 경보나 웨이브 타이머를 기다리지 않고 연습 습격에 탱크를 최소 1대 즉시 출격시킨다.
             if (step.completion == TutorialCompletion.RaidTicketCollected && TrainingRaidPending)
+            {
+                TrainingTankStageReached = true;
                 FindFirstObjectByType<RaidEnemySpawnManager>()?.EnsureTrainingTankSpawned();
+            }
             if (step.setBalanceOnStart >= 0)
             {
                 var wallet = TutorialPlayer != null ? TutorialPlayer.GetComponent<PlayerWallet>() : null;
@@ -281,6 +290,8 @@ namespace WeaponWorkshop
                 case TutorialCompletion.TargetNearby:
                     // 강제 스캔 교육은 제거됐다. TargetScanned는 직렬화 정수 보존용으로만 남기며 어떤 단계도 기다리지 않는다.
                     var target = CurrentInteractionTarget;
+                    if (step.id == "raid-approach-crate" && target != null &&
+                        target.GetComponent<ModuleUnlockPickup>() != null) return true;
                     if (player == null || target == null || target.GetComponentInParent<ModuleUnlockCrate>() == null) return false;
                     return (player.transform.position - target.transform.position).sqrMagnitude <=
                         step.requiredTargetDistance * step.requiredTargetDistance;

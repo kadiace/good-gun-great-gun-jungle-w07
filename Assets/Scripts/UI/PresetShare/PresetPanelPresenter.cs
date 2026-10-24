@@ -193,7 +193,8 @@ namespace WeaponWorkshop
                 return;
             }
 
-            if (string.IsNullOrEmpty(Presets.GetCode(_slot)))
+            bool empty = string.IsNullOrEmpty(Presets.GetCode(_slot));
+            if (empty && !(TutorialManager.Instance != null && TutorialManager.Instance.RaidPresetSaveRequested && _slot == 0))
             {
                 Save();
                 return;
@@ -201,9 +202,11 @@ namespace WeaponWorkshop
 
             try
             {
-                var name = WeaponShareCode.Decode(Presets.GetCode(_slot)).name;
-                m_view.ShowChoice($"프리셋 {_slot + 1} · {name}\n현재 무기를 저장하거나 저장된 무기를 불러오세요.\n" +
-                    "불러오기는 현재 조립을 교체하며 제작비 차액을 결제/환불합니다.");
+                var name = empty ? "빈 슬롯" : WeaponShareCode.Decode(Presets.GetCode(_slot)).name;
+                m_view.ShowChoice(empty
+                    ? $"프리셋 {_slot + 1} · {name}\n현재 무기를 저장하세요."
+                    : $"프리셋 {_slot + 1} · {name}\n현재 무기를 저장하거나 저장된 무기를 불러오세요.\n" +
+                      "불러오기는 현재 조립을 교체하며 제작비 차액을 결제/환불합니다.", !empty);
                 m_ownsDialogue = GameManager.Instance != null;
                 if (m_ownsDialogue)
                 {
