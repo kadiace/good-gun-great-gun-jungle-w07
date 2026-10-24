@@ -58,7 +58,7 @@ namespace WeaponWorkshop
             m_weaponCodeUI = _uiManager.GetComponent<WeaponCodeUI>();
             m_weaponNameUI = _uiManager.GetComponent<WeaponNameUI>();
             m_paletteUI = _uiManager.GetComponentInChildren<ModulePaletteUI>(true);
-            FirstPersonPlayer player = _uiManager.Player;
+            FirstPersonPlayer player = _gameManager != null ? _gameManager.Player : null;
             m_cubeBuilder = player != null ? player.GetComponentInChildren<CubeBuilder>(true) : null;
         }
 
@@ -217,7 +217,7 @@ namespace WeaponWorkshop
                 return m_workshopSession;
             }
 
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = m_gameManager != null ? m_gameManager.Player : null;
             return player != null ? player.GetComponent<WorkshopSession>() : null;
         }
     }

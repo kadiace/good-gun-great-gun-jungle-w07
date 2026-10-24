@@ -40,7 +40,7 @@ namespace WeaponWorkshop
                 return false;
             }
 
-            FirstPersonPlayer player = m_uiManager.Player;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             m_health = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
             if (m_health != null)
             {

@@ -11,6 +11,17 @@ namespace WeaponWorkshop
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField] private UIManager uiManager;
         public UIManager UI => uiManager;
+        // 플레이어 찾기 창구는 UIManager가 아니라 GameManager의 소유다.
+        // 인스펙터 연결이 비어 있으면 씬에서 한 번 찾아 캐시한다.
+        [SerializeField] private FirstPersonPlayer player;
+        public FirstPersonPlayer Player
+        {
+            get
+            {
+                if (player == null) player = FindFirstObjectByType<FirstPersonPlayer>();
+                return player;
+            }
+        }
         [SerializeField] private WorkshopSession workshopSession;
         private InputActionMap controls;
         private Coroutine cursorRestore;
