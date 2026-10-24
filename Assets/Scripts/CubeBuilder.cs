@@ -381,6 +381,13 @@ namespace WeaponWorkshop
             };
             controls.FindAction("ToggleDelete", true).performed += _ =>
             {
+                if (TutorialManager.Instance != null && TutorialManager.Instance.CanShortcutDeleteModeGuide(out bool targetDeleteMode))
+                {
+                    if (paintingMode) return;
+                    TutorialManager.Instance.CompleteDeleteModeGuideShortcut(this, targetDeleteMode);
+                    return;
+                }
+
                 if (GameManager.GameplayBlocked || paintingMode) return;
                 // 기존 단계에서는 켜진 삭제 모드를 끌 수 있지만, 엄격 제한 단계는 이 예외도 적용하지 않는다.
                 if (!TutorialManager.ActionAllowed("delete") &&
@@ -429,6 +436,22 @@ namespace WeaponWorkshop
             controls?.Disable();
             UpdateEraseModeUI();
         }
+        /// <summary>
+        /// 작업대의 삭제 모드 활성화 상태를 명시적으로 설정합니다.
+        /// 미리보기를 정리하고 지우기 모드 안내 UI를 갱신합니다.
+        /// </summary>
+        /// <param name="enabled">삭제 모드 활성화 여부입니다.</param>
+        public void SetDeleteMode(bool enabled)
+        {
+            if (deleteMode == enabled) return;
+            CancelPreview();
+            CancelModuleColor();
+            deleteMode = enabled;
+            UpdateEraseModeUI();
+            if (TutorialManager.Instance != null)
+                TutorialManager.Instance.NotifySignal(deleteMode ? "delete-mode-enabled" : "delete-mode-disabled");
+        }
+
         private void UpdateEraseModeUI()
         {
             if (eraseModeUI != null) eraseModeUI.SetActive(isActiveAndEnabled && deleteMode);

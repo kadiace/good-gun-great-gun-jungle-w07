@@ -433,3 +433,4 @@
 - 0일차 튜토리얼 다양한 손님 요구 안내(customer-variety): close-and-settle(영업 정산 확인) 단계 완료 후 나오던 확인 대사("이처럼 손님은 저마다 다양한 요구를 합니다...") 단계를 제거하고 settlement-introduction으로 바로 연결했다. 연습 무기 정리(discardHeldWeapon: 1) 동작은 settlement-introduction으로 이관해 보존했다. 플레이 미확인.
 - 0일차 야간 무기 제작 도입 단계(
 aid-retry): description 대사를 "이제 작업대에서 나만의 무기를 만들 시간입니다."로 변경했다. 플레이 미확인.
+- 0일차 튜토리얼 삭제 모드 안내(delete-introduction, disable-delete-introduction): 안내 대사 표시 중 E(ToggleDelete)를 누르면 대사를 닫고 명시적 목표 모드(켜기: SetDeleteMode(true), 끄기: SetDeleteMode(false))를 적용한 뒤 각각 enable-delete-mode/disable-delete-mode를 거쳐 remove-basic-block/palette-introduction으로 바로 진행한다. 이미 목표 상태인 모드는 반대로 토글하지 않고 유지하며, 동일 입력으로 블록 삭제나 재토글·다음 대사 넘김을 방지했다. 기존 확인 버튼/F/Space/Z/클릭 경로와 Pause/선택창 차단은 유지했다. 플레이 미확인.
