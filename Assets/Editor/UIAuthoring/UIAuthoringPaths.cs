@@ -6,6 +6,8 @@ namespace WeaponWorkshop.EditorTools
     public static class UIAuthoringPaths
     {
         public const string UI_MANAGER_PREFAB = "Assets/Prefabs/Managers/UIManager.prefab";
+        /// <summary>습격 씬용 UIManager 변형. 공방 편집·사격장 화면을 뺀다.</summary>
+        public const string UI_MANAGER_RAID_PREFAB = "Assets/Prefabs/Managers/UIManager_Raid.prefab";
         public const string START_UI_PREFAB = "Assets/Prefabs/UI/StartUI_Manager.prefab";
 
         public const string HUD_FOLDER = "Assets/Prefabs/UI/Hud";
