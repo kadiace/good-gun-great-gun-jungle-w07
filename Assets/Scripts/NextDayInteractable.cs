@@ -269,7 +269,7 @@ namespace WeaponWorkshop
             }
 
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            var transition = ui != null ? ui.GetComponent<DayTransitionUI>() : null;
+            var transition = ui != null ? ui.Screen<DayTransitionUI>() : null;
             if (transition == null)
             {
                 return false;

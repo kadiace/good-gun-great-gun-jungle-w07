@@ -121,7 +121,7 @@ namespace WeaponWorkshop
             {
                 TutorialStep step = tutorial.CurrentStep;
                 GameManager game = GameManager.Instance;
-                bool choiceOpen = game != null && game.UI != null && game.UI.IsChoiceOpen;
+                bool choiceOpen = game != null && game.UI != null && UIInputPolicy.IsChoiceOpen;
                 if (step != null && step.completion != TutorialCompletion.Confirmation &&
                     (game == null || (!game.InDialogue && !game.IsPaused && !game.InManual &&
                         !game.InTargetSelection && (!choiceOpen || !string.IsNullOrEmpty(step.objectiveWhileChoiceOpen)))))

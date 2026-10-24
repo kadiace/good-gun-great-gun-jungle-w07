@@ -276,7 +276,7 @@ namespace WeaponWorkshop
             return m_view.IsPanelOpen && m_view.IsConfirmInputReady && Time.frameCount > m_view.OpenedFrame &&
                 (DialogueUI.Instance == null || !DialogueUI.Instance.IsOpen) &&
                 (GameManager.Instance == null || (!GameManager.Instance.IsPaused &&
-                    !GameManager.Instance.InDialogue && !GameManager.Instance.UI.IsChoiceOpen));
+                    !GameManager.Instance.InDialogue && !UIInputPolicy.IsChoiceOpen));
         }
 
         private void RequestNextDay()
@@ -300,7 +300,7 @@ namespace WeaponWorkshop
 
             GameManager gameManager = GameManager.Instance;
             UIManager ui = gameManager != null ? gameManager.UI : null;
-            DayTransitionUI transition = ui != null ? ui.GetComponent<DayTransitionUI>() : null;
+            DayTransitionUI transition = ui != null ? ui.Screen<DayTransitionUI>() : null;
             if (transition == null)
             {
                 return;

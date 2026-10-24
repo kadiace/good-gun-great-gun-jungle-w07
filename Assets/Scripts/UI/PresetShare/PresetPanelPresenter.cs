@@ -215,7 +215,7 @@ namespace WeaponWorkshop
             }
             catch (Exception exception)
             {
-                m_uiManager.ShowNotification(exception.Message);
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification(exception.Message);
                 m_selectedWeapon = null;
             }
         }
@@ -240,7 +240,7 @@ namespace WeaponWorkshop
                 }
 
                 Presets.Store(m_selectedSlot, m_selectedWeapon);
-                m_uiManager.ShowNotification($"프리셋{m_selectedSlot + 1}에 저장되었습니다.");
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification($"프리셋{m_selectedSlot + 1}에 저장되었습니다.");
                 Close();
                 if (TutorialManager.Instance != null)
                 {
@@ -250,7 +250,7 @@ namespace WeaponWorkshop
             }
             catch (Exception exception)
             {
-                m_uiManager.ShowNotification(exception.Message);
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification(exception.Message);
             }
         }
 
@@ -301,8 +301,8 @@ namespace WeaponWorkshop
                 wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
                 m_selectedWeapon.SetWeaponName(blueprint.name);
                 m_selectedWeapon.GetComponentInChildren<StatCollector>()?.Recalculate();
-                m_uiManager.GetComponent<WeaponNameUI>()?.RefreshName();
-                m_uiManager.ShowNotification($"프리셋{m_selectedSlot + 1}을 불러왔습니다.");
+                m_uiManager.Screen<WeaponNameUI>()?.RefreshName();
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification($"프리셋{m_selectedSlot + 1}을 불러왔습니다.");
                 int loadedSlot = m_selectedSlot;
                 Close();
                 var tutorial = TutorialManager.Instance;
@@ -314,7 +314,7 @@ namespace WeaponWorkshop
             }
             catch (Exception exception)
             {
-                m_uiManager.ShowNotification(exception.Message);
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification(exception.Message);
             }
         }
 

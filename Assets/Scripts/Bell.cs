@@ -58,7 +58,7 @@ namespace WeaponWorkshop
         private bool emptyTutorialStarted;
         public bool DayStarted => emptyTutorialStarted || waiting.Count < customers.Count;
         private void Awake() => BeginDay();
-        private void Start() => GameManager.Instance?.UI?.GetComponent<CustomerRequirementsUI>()?.Bind(this);
+        private void Start() => GameManager.Instance?.UI?.Screen<CustomerRequirementsUI>()?.Bind(this);
 
         public void EndDay()
         {

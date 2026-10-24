@@ -813,7 +813,7 @@ namespace WeaponWorkshop
             Vector3Int feed = face;
             if (followsFeed && !assembly.TryGetFeedDirection(cell, out feed))
             {
-                GameManager.Instance?.UI?.ShowNotification("총구에만 설치할 수 있습니다.");
+                FeedbackUI.For(this)?.ShowNotification("총구에만 설치할 수 있습니다.");
                 return;
             }
             if (!singleOutput && selectedSlot != 3)
@@ -1216,13 +1216,13 @@ namespace WeaponWorkshop
         {
             if (target.GetComponentInParent<PlacedBlock>() != null ||
                 target.GetComponentInParent<PowerCore>() == null) return false;
-            GameManager.Instance?.UI?.ShowNotification("코어는 커스텀할 수 없습니다");
+            FeedbackUI.For(this)?.ShowNotification("코어는 커스텀할 수 없습니다");
             return true;
         }
 
         private void ShowCustomLimitMessage(string message)
         {
-            GameManager.Instance?.UI?.ShowNotification(message);
+            FeedbackUI.For(this)?.ShowNotification(message);
             WorkshopSoundEffects.RaiseCustomLimitReached(view != null ? view.transform.position : transform.position);
         }
 

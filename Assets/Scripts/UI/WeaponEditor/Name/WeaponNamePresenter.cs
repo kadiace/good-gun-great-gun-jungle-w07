@@ -206,7 +206,7 @@ namespace WeaponWorkshop
             RefreshName();
             ReleaseFocus();
             m_view.ClearSelection();
-            m_uiManager.ShowNotification(SAVE_MESSAGE);
+            m_uiManager.Screen<FeedbackUI>()?.ShowNotification(SAVE_MESSAGE);
             if (TutorialManager.Instance != null)
             {
                 TutorialManager.Instance.NotifySignal(WEAPON_RENAMED_SIGNAL);
