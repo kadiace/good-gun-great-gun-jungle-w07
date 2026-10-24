@@ -137,6 +137,7 @@ namespace WeaponWorkshop
             dayManager?.CompletedGuest(0, dissatisfied: dissatisfied);
             SaleCompleted?.Invoke(price);
             dayManager?.RefreshRemainingCustomers();
+            dayManager?.RefillCustomers();
             SpawnNext();
             if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-sold");
         }
@@ -147,6 +148,7 @@ namespace WeaponWorkshop
             dayManager?.CompletedGuest(0, killed: true);
             CustomerKilled?.Invoke();
             dayManager?.RefreshRemainingCustomers();
+            dayManager?.RefillCustomers();
             SpawnNext();
         }
 

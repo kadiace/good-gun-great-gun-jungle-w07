@@ -10,6 +10,12 @@ public class _DayManager : MonoBehaviour
     [SerializeField] private SetTimer timerController;
     [SerializeField] private GameManager gameManager;
     [SerializeField] private Bell customerBell;
+    [SerializeField, Min(1f), Tooltip("영업 시작 후 낮 운영 시간(초)")] private float businessDuration = 180f;
+    private float businessRemaining;
+    private bool businessRunning;
+    public float BusinessRemaining => businessRemaining;
+    public float BusinessDuration => businessDuration;
+    public bool BusinessRunning => businessRunning;
     [SerializeField, Tooltip("일차 번호로 조회할 CustomerDay 에셋 목록")] private CustomerDay[] customerDays;
     [SerializeField] private CustomerDay tutorialDay;
     [SerializeField, Min(0), Tooltip("0은 튜토리얼 일차. 내용 작성 전에는 기존 1일차 시작을 유지합니다.")]
@@ -112,6 +118,14 @@ public class _DayManager : MonoBehaviour
         CurrentCustomerDay = null;
         dailyGuestCount = 0;
         CurrentPeriod = setTimer.morning;
+        businessRemaining = businessDuration;
+        businessRunning = false;
+    }
+    private void Update()
+    {
+        if (!businessRunning || IsNight) return;
+        businessRemaining = Mathf.Max(0f, businessRemaining - Time.deltaTime);
+        if (businessRemaining <= 0f) CloseShop();
     }
     private void OnEnable()
     {
@@ -155,6 +169,8 @@ public class _DayManager : MonoBehaviour
         CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodaySoldConstructionCost = TodayRent = 0;
         TodayLoanIncome = 0;
         isSettled = IsNight = IsSettlementOpen = CanStartNextDay = false;
+        businessRunning = false;
+        businessRemaining = businessDuration;
         startedDayInDebt = wallet != null && Money < 0;
         ApplyMorning(); gameManager.SetNight(false); Changed?.Invoke();
         DayAdvanced?.Invoke(DayNumber);
@@ -183,7 +199,6 @@ public class _DayManager : MonoBehaviour
         int income = Mathf.Max(0, payment);
         TodayIncome += income;
         wallet?.Credit(income);
-        if (dailyGuestCount > 0 && CompletedGuests >= dailyGuestCount) { CloseShop(); return; }
         UpdatePeriod();
         if (!IsNight) Changed?.Invoke();
     }
@@ -210,7 +225,7 @@ public class _DayManager : MonoBehaviour
         SetTimerData selected = null;
         if (settings.timing == null) return null;
         // 일차별 마지막 손님을 처리했을 때 밤 정산을 시작합니다.
-        if (CurrentCustomerDay != null && CurrentCustomerDay.day != 0 && guestCount >= dailyGuestCount)
+        if (CurrentCustomerDay != null && CurrentCustomerDay.day != 0 && guestCount >= dailyGuestCount && !businessRunning)
             return settings.timing.Find(t => t != null && t.period == setTimer.night);
         foreach (SetTimerData timing in settings.timing)
             if (timing != null && (CurrentCustomerDay == null || timing.period != setTimer.night) &&
@@ -224,6 +239,7 @@ public class _DayManager : MonoBehaviour
     {
         if (IsNight || IsAwaitingOpening || isSettled || !HasRequiredReferences()) return;
         if (manual) ManualCloseRequested?.Invoke(DayNumber, Money);
+        businessRunning = false;
         ShopClosing?.Invoke(manual);
         CurrentPeriod = setTimer.night;
         hasCurrentPeriod = true;
@@ -236,6 +252,7 @@ public class _DayManager : MonoBehaviour
     {
         if (isSettled || CurrentPeriod != setTimer.night) return;
         isSettled = true;
+        businessRunning = false;
         IsNight = true;
         dayNightStartedAt = Time.time;
         WorkshopSoundEffects.RaiseBusinessEnded();
@@ -334,6 +351,8 @@ public class _DayManager : MonoBehaviour
             if (!ApplyCustomerDay(CurrentCustomerDay)) return false;
         }
         if (!customerBell.StartBusiness()) return false;
+        businessRemaining = businessDuration;
+        businessRunning = DayNumber != 0;
         BusinessOpened?.Invoke(DayNumber, Money);
         Changed?.Invoke();
         return true;
@@ -397,6 +416,8 @@ public class _DayManager : MonoBehaviour
         TodayLoanIncome = 0;
         isSettled = false;
         IsNight = false;
+        businessRunning = false;
+        businessRemaining = businessDuration;
         IsSettlementOpen = false;
         CanStartNextDay = false;
         // 임시 지원: 습격 대신 다음 날 아침을 선택한 경우에만 지급합니다.
@@ -432,6 +453,8 @@ public class _DayManager : MonoBehaviour
         CompletedGuests = DissatisfiedGuests = KilledGuests = TodayIncome = TodaySoldConstructionCost = TodayRent = 0;
         TodayLoanIncome = 0;
         isSettled = IsNight = night;
+        businessRunning = false;
+        businessRemaining = businessDuration;
         dayNightStartedAt = Time.time;
         IsSettlementOpen = IsBankrupt = bankruptcyResultOpen = returningToStart = startedDayInDebt = false;
         CanStartNextDay = night && HasNextDay;
@@ -458,6 +481,7 @@ public class _DayManager : MonoBehaviour
         data.soldConstructionCost = TodaySoldConstructionCost;
         data.period = (int)CurrentPeriod; data.night = IsNight;
         data.settlement = IsSettlementOpen; data.timer = timerController.CaptureSave();
+        data.businessRemaining = businessRemaining;
         data.startedDayInDebt = startedDayInDebt;
         data.todayLoanRepayment = TodayLoanRepayment;
         data.todayLoanInterest = TodayLoanInterest;
@@ -563,6 +587,10 @@ public class _DayManager : MonoBehaviour
         timerController.RestoreSave(data.timer);
         gameManager.SetNight(data.night && data.settlement);
         customerBell.RestoreSave(data);
+        businessRemaining = data.businessRemaining > 0f ? data.businessRemaining : businessDuration;
+        businessRunning = !IsNight && data.day != 0 && customerBell.DayStarted;
+        if (businessRunning && data.businessRemaining <= 0f && data.version >= 10)
+            businessRemaining = 0f;
         if (data.confirmation && customerBell.Current != null && SaleConfirmationUI.Instance != null)
             SaleConfirmationUI.Instance.UseCustomer(customerBell.Current, wallet.GetComponent<WeaponHolder>());
         Changed?.Invoke();
@@ -679,6 +707,20 @@ public class _DayManager : MonoBehaviour
         ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday, customerBell.NextCustomerIndex);
         PrepareRuntimeOrders(CurrentCustomerDay);
         customerBell.ReplaceRemaining(CurrentCustomerDay.customers);
+    }
+
+    public void RefillCustomers()
+    {
+        if (!businessRunning || IsNight || CurrentCustomerDay == null || customerBell == null ||
+            customerBell.RemainingCustomers > 0) return;
+        var orders = new CustomerProfile[CurrentCustomerDay.customers.Length + 1];
+        Array.Copy(CurrentCustomerDay.customers, orders, orders.Length - 1);
+        orders[orders.Length - 1] = CreateRuntimeOrder(CreateCombination(DayNumber,
+            CurrentCustomerDay.MinRequests, CurrentCustomerDay.MaxRequests), DayNumber);
+        CurrentCustomerDay.customers = orders;
+        dailyGuestCount = orders.Length;
+        customerBell.ReplaceRemaining(orders);
+        OrderRegistered?.Invoke(orders[orders.Length - 1], DayNumber);
     }
 
     // 모듈 해금은 필수. 잔액이 부족해도 오늘 대출을 사용할 수 있으면 주문을 허용한다.
