@@ -24,6 +24,7 @@ namespace WeaponWorkshop
 
         private readonly List<(Image image, TMP_Text label)> m_tagBadges =
             new List<(Image, TMP_Text)>();
+        private readonly List<Image> m_raidIcons = new List<Image>();
 
         private bool m_isInitialized;
         private bool m_isListenerBound;
@@ -143,6 +144,14 @@ namespace WeaponWorkshop
                 return;
             }
 
+            for (int i = 0; i < m_raidIcons.Count; i++)
+            {
+                if (m_raidIcons[i] != null)
+                {
+                    m_raidIcons[i].gameObject.SetActive(false);
+                }
+            }
+
             int used = 0;
             if (_tags != null)
             {
@@ -213,10 +222,17 @@ namespace WeaponWorkshop
                 return;
             }
 
-            int count = _modules != null ? _modules.Count : 0;
-            var raidIcons = new List<Image>();
+            for (int i = 0; i < m_tagBadges.Count; i++)
+            {
+                if (m_tagBadges[i].image != null)
+                {
+                    m_tagBadges[i].image.gameObject.SetActive(false);
+                }
+            }
 
-            while (raidIcons.Count < count)
+            int count = _modules != null ? _modules.Count : 0;
+
+            while (m_raidIcons.Count < count)
             {
                 Image icon = Instantiate(m_tagTemplate, m_tagContainer);
                 TMP_Text label = icon.GetComponentInChildren<TMP_Text>(true);
@@ -229,12 +245,17 @@ namespace WeaponWorkshop
                 }
 
                 icon.raycastTarget = false;
-                raidIcons.Add(icon);
+                m_raidIcons.Add(icon);
             }
 
-            for (int i = 0; i < raidIcons.Count; i++)
+            for (int i = 0; i < m_raidIcons.Count; i++)
             {
-                Image icon = raidIcons[i];
+                Image icon = m_raidIcons[i];
+                if (icon == null)
+                {
+                    continue;
+                }
+
                 bool visible = i < count;
                 icon.gameObject.SetActive(visible);
                 if (!visible)
@@ -286,6 +307,14 @@ namespace WeaponWorkshop
             {
                 m_tagsHeaderText.text = "활성 태그";
             }
+
+            for (int i = 0; i < m_raidIcons.Count; i++)
+            {
+                if (m_raidIcons[i] != null)
+                {
+                    m_raidIcons[i].gameObject.SetActive(false);
+                }
+            }
         }
 
         private void ApplyInitialHiddenState()
@@ -313,6 +342,14 @@ namespace WeaponWorkshop
             if (m_noTagsText != null)
             {
                 m_noTagsText.gameObject.SetActive(false);
+            }
+
+            for (int i = 0; i < m_raidIcons.Count; i++)
+            {
+                if (m_raidIcons[i] != null)
+                {
+                    m_raidIcons[i].gameObject.SetActive(false);
+                }
             }
         }
 
