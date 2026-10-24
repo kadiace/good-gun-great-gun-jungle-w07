@@ -5,6 +5,8 @@ namespace WeaponWorkshop
 {
     public sealed class OnboardingManager : MonoBehaviour
     {
+        private const float DialogueInputLockSeconds = 0.5f;
+
         private sealed class Prompt
         {
             public string Id;
@@ -138,6 +140,7 @@ namespace WeaponWorkshop
                 description = current.Description,
                 completion = TutorialCompletion.Confirmation,
                 confirmOnBackgroundClick = true,
+                dialogueInputLockSeconds = DialogueInputLockSeconds,
                 buttonGuide = CustomButtonGuide(current.Id)
             } };
             if (current.IsCustom)

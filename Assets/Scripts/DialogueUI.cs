@@ -94,7 +94,7 @@ namespace WeaponWorkshop
         /// 대사 본문과 확인 버튼 문구를 지정해 표시하고 완료 콜백을 등록한다.
         /// 이미 열려 있으면 기존 화면과 콜백을 새 내용으로 교체한다.
         /// </summary>
-        public bool Show(string _text, string _answer, Action _onAnswer, string _speaker = "손님", bool _confirmOnBackgroundClick = false)
+        public bool Show(string _text, string _answer, Action _onAnswer, string _speaker = "손님", bool _confirmOnBackgroundClick = false, float _inputLockSeconds = 0f)
         {
             if (!isActiveAndEnabled)
             {
@@ -112,7 +112,7 @@ namespace WeaponWorkshop
                 return false;
             }
 
-            return m_presenter != null && m_presenter.Show(_text, _answer, _onAnswer, _speaker, _confirmOnBackgroundClick);
+            return m_presenter != null && m_presenter.Show(_text, _answer, _onAnswer, _speaker, _confirmOnBackgroundClick, _inputLockSeconds);
         }
 
         /// <summary>

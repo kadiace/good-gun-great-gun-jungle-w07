@@ -21,6 +21,7 @@ namespace WeaponWorkshop
         private bool m_confirmOnAnyClick;
         private bool m_wasInputBlocked;
         private int m_openedFrame;
+        private float m_inputLockedUntil;
         private int m_currentGestureId;
         private int m_consumedGestureId = -1;
         private int m_openedGestureId;
@@ -99,6 +100,7 @@ namespace WeaponWorkshop
             m_answered = null;
             m_answerRequested = false;
             m_inputHeldOnOpen = false;
+            m_inputLockedUntil = 0f;
             m_wasInputBlocked = false;
             m_isInitialized = false;
         }
@@ -106,7 +108,7 @@ namespace WeaponWorkshop
         /// <summary>
         /// 대화를 표시한다. 이미 열려 있으면 화면과 콜백을 새 요청으로 교체하고 큐에 넣지 않는다.
         /// </summary>
-        public bool Show(string _text, string _answer, Action _onAnswer, string _speaker, bool _confirmOnBackgroundClick = false)
+        public bool Show(string _text, string _answer, Action _onAnswer, string _speaker, bool _confirmOnBackgroundClick = false, float _inputLockSeconds = 0f)
         {
             if (!m_isInitialized && !Initialize())
             {
@@ -126,6 +128,7 @@ namespace WeaponWorkshop
             m_answerRequested = false;
             m_openedFrame = Time.frameCount;
             m_openedGestureId = m_currentGestureId;
+            m_inputLockedUntil = Time.unscaledTime + Mathf.Max(0f, _inputLockSeconds);
             m_inputHeldOnOpen = m_view.IsInteractPressed ||
                                 m_view.IsAdvancePressed ||
                                 (m_confirmOnAnyClick && m_view.IsClickPressed);
@@ -149,6 +152,7 @@ namespace WeaponWorkshop
             m_answered = null;
             m_answerRequested = false;
             m_inputHeldOnOpen = false;
+            m_inputLockedUntil = 0f;
 
             bool wasOpen = IsOpen;
             m_view?.Hide();
@@ -194,7 +198,7 @@ namespace WeaponWorkshop
             }
 
             m_answerRequested = false;
-            if (!IsOpen || isInputBlocked)
+            if (!IsOpen || isInputBlocked || Time.unscaledTime < m_inputLockedUntil)
             {
                 return;
             }
@@ -272,6 +276,11 @@ namespace WeaponWorkshop
             }
 
             if (IsInputBlocked())
+            {
+                return false;
+            }
+
+            if (Time.unscaledTime < m_inputLockedUntil)
             {
                 return false;
             }

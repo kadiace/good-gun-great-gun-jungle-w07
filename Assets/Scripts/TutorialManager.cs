@@ -310,7 +310,8 @@ namespace WeaponWorkshop
                 if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
                 stepIntroductionOpen = step.completion == TutorialCompletion.Signal;
                 ownsDialogue = true;
-                if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼", step.confirmOnBackgroundClick))
+                if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼", step.confirmOnBackgroundClick,
+                        step.dialogueInputLockSeconds))
                 { ownsDialogue = false; Finish("error"); }
             }
             else if (step.completion == TutorialCompletion.RaidTankSpawned)
