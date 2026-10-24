@@ -328,7 +328,7 @@ namespace WeaponWorkshop.EditorTools
             GameObject root = PrefabUtility.LoadPrefabContents(UIManagerPath);
             try
             {
-                HoveringUI hovering = root.GetComponent<HoveringUI>();
+                HoveringUI hovering = root.GetComponentInChildren<HoveringUI>(true);
                 SerializedProperty diameter = hovering != null ? new SerializedObject(hovering).FindProperty("scanLoadingDiameter") : null;
                 if (diameter == null || !Mathf.Approximately(diameter.floatValue, 90f))
                 {

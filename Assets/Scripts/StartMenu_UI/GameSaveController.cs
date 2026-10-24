@@ -334,7 +334,7 @@ namespace WeaponWorkshop
         /// </summary>
         private void RestoreCore(GameSaveData data)
         {
-            GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
+            GameManager.Instance?.UI?.Screen<ShootingTestHUD>()?.CancelTest();
             if (data.version >= 3) { RestoreWorldSave(data); return; }
             if (dayManager == null || player == null || !dayManager.CanRestoreSave(data) || player.GetComponent<PlayerWallet>() == null ||
                 (data.inWorkshop && (workbenches == null || data.workbench < 0 || data.workbench >= workbenches.Length || workbenches[data.workbench] == null)))
