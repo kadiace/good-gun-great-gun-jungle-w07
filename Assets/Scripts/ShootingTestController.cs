@@ -55,7 +55,7 @@ namespace WeaponWorkshop
             if (string.IsNullOrEmpty(assemblyKey)) { error = "총의 구성을 인증할 수 없습니다."; return false; }
             var sourcePlayerTest = sourcePlayer.GetComponent<PlayerShootingTest>();
             var sourceHUD = GameManager.Instance != null && GameManager.Instance.UI != null
-                ? GameManager.Instance.UI.GetComponent<ShootingTestHUD>() : null;
+                ? GameManager.Instance.UI.Screen<ShootingTestHUD>() : null;
             if (sourcePlayerTest == null || sourceHUD == null)
             { error = "플레이어와 사격 테스트 HUD 연결을 확인하세요."; return false; }
             NonForwardMuzzles = 0;
@@ -117,7 +117,7 @@ namespace WeaponWorkshop
             if (!CanRetryWithWeapon || definition == null) return;
             var retryData = definition;
             if (Prepare(retryData, player, out var error)) Begin();
-            else GameManager.Instance?.UI?.ShowNotification(error);
+            else FeedbackUI.For(this)?.ShowNotification(error);
         }
 
         private void LateUpdate()
@@ -174,7 +174,7 @@ namespace WeaponWorkshop
             StatusText = reason + "\n" + StatusText + (passed ? "" : "\n" + definition.FailureHint);
             if (!passed) RemainingSeconds = definition.TimeLimit;
             ClearShots(); DestroyLayout();
-            GameManager.Instance?.UI?.ShowNotification(reason);
+            FeedbackUI.For(this)?.ShowNotification(reason);
         }
 
         private bool HasOriginalWeapon() => holder != null && holder.isActiveAndEnabled && weapon != null &&

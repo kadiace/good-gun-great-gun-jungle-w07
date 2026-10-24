@@ -112,12 +112,12 @@ namespace WeaponWorkshop
                     if (offer != PlacementLoanOfferResult.Offered && offer != PlacementLoanOfferResult.NotNeeded &&
                         !string.IsNullOrEmpty(reason))
                     {
-                        GameManager.Instance?.UI?.ShowNotification(reason);
+                        FeedbackUI.For(this)?.ShowNotification(reason);
                     }
                 }
                 else
                 {
-                    GameManager.Instance?.UI?.ShowNotification(error);
+                    FeedbackUI.For(this)?.ShowNotification(error);
                 }
                 return;
             }
@@ -164,7 +164,7 @@ namespace WeaponWorkshop
                 {
                     if (strokeCells.Count >= MaximumStrokeCells)
                     {
-                        GameManager.Instance?.UI?.ShowNotification("한 번에 최대 256셀까지 그릴 수 있습니다");
+                        FeedbackUI.For(this)?.ShowNotification("한 번에 최대 256셀까지 그릴 수 있습니다");
                         CancelStroke(); return;
                     }
                     strokeCells.Add(cell);
