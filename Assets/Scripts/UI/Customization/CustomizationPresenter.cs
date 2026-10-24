@@ -412,7 +412,9 @@ namespace WeaponWorkshop
             }
         }
 
-        private void ConfirmCustom()
+        private void ConfirmCustom() => ConfirmCustom(false);
+
+        private void ConfirmCustom(bool forOnboarding)
         {
             bool removeCustom = m_confirmingCustomRemoval;
             m_confirmingCustomRemoval = false;
@@ -426,6 +428,8 @@ namespace WeaponWorkshop
             {
                 return;
             }
+
+            if (!forOnboarding) OnboardingManager.NotifyCustomOpened();
 
             Camera listenerCamera = Camera.main;
             WorkshopSoundEffects.RaiseAssemblyCompleted(listenerCamera != null
@@ -479,7 +483,7 @@ namespace WeaponWorkshop
             }
 
             m_confirmingCustomRemoval = false;
-            ConfirmCustom();
+            ConfirmCustom(true);
             return m_builder.IsCustomMode;
         }
 
