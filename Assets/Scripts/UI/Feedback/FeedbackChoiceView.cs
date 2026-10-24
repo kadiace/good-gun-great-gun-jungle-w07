@@ -193,7 +193,7 @@ namespace WeaponWorkshop
 
             m_choicePanel.SetActive(true);
             ConfigureNavigation();
-            m_choicePanel.transform.SetAsLastSibling();
+            UIScreenRoot.BringToFront(m_choicePanel.transform);
             m_choiceCanvas.overrideSorting = true;
             // 일시정지 메뉴에서 새로 연 일반 선택창은 PausePanel(200) 앞인 300, 일반 단일 안내는 150으로 배치한다.
             m_choiceCanvas.sortingOrder = !_isAcknowledgement && _isGamePaused ? 300 : 150;

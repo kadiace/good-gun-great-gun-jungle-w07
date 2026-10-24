@@ -78,7 +78,7 @@ namespace WeaponWorkshop
                 m_view.BindReferences(panel, choicePanel, slots, saveButton, loadButton, closeButton, choiceMessage);
             }
 
-            m_presenter = new PresetPanelPresenter(m_view, GetComponent<UIManager>());
+            m_presenter = new PresetPanelPresenter(m_view, GetComponentInParent<UIManager>(true));
             m_presenter.Initialize();
             m_isInitialized = true;
         }

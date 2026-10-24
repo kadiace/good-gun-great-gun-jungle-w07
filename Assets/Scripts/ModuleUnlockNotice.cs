@@ -29,7 +29,7 @@ namespace WeaponWorkshop
 
             if (uiManager == null)
             {
-                uiManager = GetComponent<UIManager>();
+                uiManager = GetComponentInParent<UIManager>(true);
             }
 
             m_view.BindReferences(uiManager);

@@ -145,7 +145,7 @@ namespace WeaponWorkshop
         private void PreparePanel()
         {
             m_panel.SetActive(true);
-            m_panel.transform.SetAsLastSibling();
+            UIScreenRoot.BringToFront(m_panel.transform);
             m_dayText.gameObject.SetActive(false);
         }
 

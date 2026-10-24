@@ -21,7 +21,7 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
-            m_uiManager = GetComponent<UIManager>();
+            m_uiManager = GetComponentInParent<UIManager>(true);
             if (m_view == null)
             {
                 Debug.LogError(

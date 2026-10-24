@@ -3,7 +3,6 @@ using UnityEngine;
 namespace WeaponWorkshop
 {
     // 주문 요구사항 HUD 브리지. 기존 직렬화 참조와 공개 API를 유지하고 View·Presenter를 연결한다.
-    [RequireComponent(typeof(UIManager))]
     public sealed class CustomerRequirementsUI : MonoBehaviour
     {
         [SerializeField] private RectTransform content;
@@ -91,7 +90,7 @@ namespace WeaponWorkshop
             }
 
             m_view.BindReferences(content, rowTemplate, textSizing);
-            m_presenter = new CustomerRequirementsPresenter(m_view, GetComponent<UIManager>());
+            m_presenter = new CustomerRequirementsPresenter(m_view, GetComponentInParent<UIManager>(true));
             if (m_presenter.Initialize())
             {
                 m_presenter.Bind(m_bell);

@@ -67,7 +67,7 @@ namespace WeaponWorkshop
                 m_view.BindReferences(panel, openButton, closeButton, copyButton, importButton, codeInput);
             }
 
-            m_presenter = new WeaponCodePresenter(m_view, GetComponent<UIManager>(), this);
+            m_presenter = new WeaponCodePresenter(m_view, GetComponentInParent<UIManager>(true), this);
             m_presenter.Initialize();
             m_isInitialized = true;
         }
