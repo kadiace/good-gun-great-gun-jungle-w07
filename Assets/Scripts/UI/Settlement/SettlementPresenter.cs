@@ -276,7 +276,7 @@ namespace WeaponWorkshop
             return m_view.IsPanelOpen && m_view.IsConfirmInputReady && Time.frameCount > m_view.OpenedFrame &&
                 (DialogueUI.Instance == null || !DialogueUI.Instance.IsOpen) &&
                 (GameManager.Instance == null || (!GameManager.Instance.IsPaused &&
-                    !GameManager.Instance.InDialogue && !GameManager.Instance.UI.IsChoiceOpen));
+                    !GameManager.Instance.InDialogue && !(GameManager.Instance.UI.Screen<FeedbackUI>()?.IsChoiceOpen ?? false)));
         }
 
         private void RequestNextDay()

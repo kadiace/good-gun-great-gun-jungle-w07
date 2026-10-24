@@ -30,7 +30,7 @@ namespace WeaponWorkshop
                 return local;
             }
 
-            return GameManager.Instance != null ? GameManager.Instance.UI?.Feedback : null;
+            return GameManager.Instance != null ? GameManager.Instance.UI?.Screen<FeedbackUI>() : null;
         }
 
         private void Awake()

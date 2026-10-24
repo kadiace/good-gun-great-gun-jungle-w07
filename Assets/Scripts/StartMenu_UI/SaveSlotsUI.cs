@@ -12,7 +12,7 @@ namespace WeaponWorkshop
     /// 카드·삭제 버튼과 SaveSlotCardView·SaveSlotsView 참조는
     /// Tools/UI/Authoring/SaveSlots/Author 저작 명령이 프리팹에 만들어 연결합니다.
     /// </summary>
-    public sealed class SaveSlotsUI : MonoBehaviour
+    public sealed class SaveSlotsUI : MonoBehaviour, IUIScreen
     {
         // 아래 직렬화 필드 이름은 기존 UIManager.prefab·StartUI_Manager.prefab·씬 오버라이드와의 호환을 위해 유지한다.
         [SerializeField] private GameObject panel;
@@ -82,6 +82,8 @@ namespace WeaponWorkshop
         }
 
         /// <summary>UIManager가 비활성 패널까지 포함해 호출하는 초기 연결점이다. 기존과 같이 닫힌 화면으로 시작한다.</summary>
+        public void InitializeScreen(UIContext _context) => Initialize();
+
         public void Initialize()
         {
             EnsureInitialized();

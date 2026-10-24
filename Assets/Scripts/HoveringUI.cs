@@ -4,7 +4,7 @@ namespace WeaponWorkshop
 {
     // 호버·스캔 HUD 브리지. 기존 직렬화 필드와 공개 API를 유지하고 View·Presenter를 연결한다.
     [DefaultExecutionOrder(60)]
-    public sealed class HoveringUI : MonoBehaviour
+    public sealed class HoveringUI : MonoBehaviour, IUIScreen
     {
         [SerializeField] private GameObject panel;
         [SerializeField] private TMPro.TMP_Text title;
@@ -30,6 +30,8 @@ namespace WeaponWorkshop
         private HoverTooltipPresenter m_presenter;
         private bool m_hasAttemptedInitialization;
         private bool m_hasLoggedReferenceError;
+
+        public void InitializeScreen(UIContext _context) => Initialize(_context?.Builder, _context?.Interaction);
 
         public void Initialize(CubeBuilder source, Interaction interactionSource)
         {
