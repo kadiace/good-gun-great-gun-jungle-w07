@@ -122,5 +122,17 @@ namespace WeaponWorkshop
         {
             m_presenter?.Hide();
         }
+
+        /// <summary>
+        /// 특정 튜토리얼 구간에서 대화창 배경 클릭 차단 블로커의 활성화 여부를 임시로 제어합니다.
+        /// </summary>
+        /// <param name="_active">블로커를 활성화할지 여부입니다.</param>
+        public void SetClickBlockerActive(bool _active)
+        {
+            if (m_view != null)
+            {
+                m_view.SetClickBlockerActive(_active);
+            }
+        }
     }
 }

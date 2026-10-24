@@ -261,6 +261,19 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
+        /// 특정 튜토리얼 구간에서 배경 클릭 차단 블로커의 활성화 여부를 임시로 제어합니다.
+        /// 블로커가 비활성화되어도 대화 상자 자체의 상호작용과 레이캐스트는 유지됩니다.
+        /// </summary>
+        /// <param name="_active">블로커를 활성화할지 여부입니다.</param>
+        public void SetClickBlockerActive(bool _active)
+        {
+            if (m_blocker != null)
+            {
+                m_blocker.SetActive(_active);
+            }
+        }
+
+        /// <summary>
         /// 표시 성공 후 유효한 확인 버튼을 선택한다. 버튼이 없거나 사용할 수 없으면 선택을 비운다.
         /// </summary>
         public void ApplyDefaultFocus()

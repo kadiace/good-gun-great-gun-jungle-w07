@@ -309,16 +309,25 @@ namespace WeaponWorkshop
                 BeginRetirementFinalStep(step);
                 return;
             }
+            bool isSettlementIntro = dayZeroOwner != null &&
+                step.id == "close-and-settle" &&
+                step.completion == TutorialCompletion.SettlementClosed &&
+                !string.IsNullOrWhiteSpace(step.description);
             if (step.completion == TutorialCompletion.Confirmation ||
                 (step.completion == TutorialCompletion.Signal && step.showDescriptionBeforeObjective &&
-                    !string.IsNullOrWhiteSpace(step.description)))
+                    !string.IsNullOrWhiteSpace(step.description)) ||
+                isSettlementIntro)
             {
                 if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
-                stepIntroductionOpen = step.completion == TutorialCompletion.Signal;
+                stepIntroductionOpen = step.completion == TutorialCompletion.Signal || isSettlementIntro;
                 ownsDialogue = true;
                 if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼", step.confirmOnBackgroundClick,
                         step.dialogueInputLockSeconds))
                 { ownsDialogue = false; Finish("error"); }
+                if (isSettlementIntro)
+                {
+                    dialogue.SetClickBlockerActive(false);
+                }
             }
             else if (step.completion == TutorialCompletion.RaidTankSpawned)
             {
@@ -425,6 +434,12 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
+            if (stepIntroductionOpen && CurrentStep != null && dayZeroOwner != null &&
+                CurrentStep.id == "close-and-settle" &&
+                CurrentStep.completion == TutorialCompletion.SettlementClosed && IsActionStepComplete())
+            {
+                ReleaseDialogue();
+            }
             bool saleCompleted = CurrentStep != null && (CurrentStep.completion == TutorialCompletion.CustomerSold ||
                 CurrentStep.completion == TutorialCompletion.CustomerKilled);
             if (!stepIntroductionOpen && (!GameManager.GameplayBlocked || saleCompleted) &&
