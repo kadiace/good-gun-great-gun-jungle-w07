@@ -1705,6 +1705,53 @@ namespace WeaponWorkshop
             backToMaterialButton.onClick.AddListener(ReturnToMaterialSelection);
         }
 
+        public bool TryPerformCustomOnboardingAction(string stepId)
+        {
+            if (!isActiveAndEnabled || builder == null || !builder.isActiveAndEnabled ||
+                GameManager.GameplayBlocked) return false;
+
+            RectTransform targetPanel;
+            switch (stepId)
+            {
+                case "button":
+                    if (builder.IsCustomMode) return true;
+                    if (!builder.CanStartCustom) return false;
+                    confirmingCustomRemoval = false;
+                    ConfirmCustom();
+                    wasCustomMode = builder.IsCustomMode;
+                    return builder.IsCustomMode;
+                case "paint":
+                    targetPanel = paintPanel;
+                    break;
+                case "keyring":
+                    targetPanel = keyringPanel;
+                    break;
+                case "sticker":
+                    targetPanel = stickerPanel;
+                    break;
+                case "removal":
+                    if (!builder.IsCustomMode) return false;
+                    ConfirmCustomRemoval();
+                    if (builder.IsCustomMode) return false;
+                    wasCustomMode = false;
+                    selectedCustomPanel = null;
+                    RefreshCustomNavigation();
+                    UpdateCustomPanelVisibility(false);
+                    return true;
+                default:
+                    return false;
+            }
+
+            if (!builder.IsCustomMode || targetPanel == null) return false;
+            foreach (CustomPanelEntry entry in customPanels)
+                if (entry.Panel == targetPanel)
+                {
+                    SelectCustomPanel(entry);
+                    return true;
+                }
+            return false;
+        }
+
         private void OpenCustomConfirmation()
         {
             if (builder == null || !builder.CanStartCustom) return;

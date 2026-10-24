@@ -1,0 +1,14 @@
+{
+  "customRequestIds": ["color/crimson-3"],
+  "modules": [
+    { "moduleId": 2, "title": "연장", "description": "마우스를 움직여 총알이 나가는 방향을 선택하세요." },
+    { "moduleId": 3, "title": "두 방향 분할", "description": "마우스를 움직여 마주 보는 두 출력 방향의 축을 선택하세요." }
+  ],
+  "customSteps": [
+    { "id": "button", "order": 10, "title": "커스텀 버튼", "description": "커스텀 버튼으로 도색·키링·스티커 메뉴를 엽니다. 확인·F·화면 클릭으로 커스텀 모드에 진입합니다.", "targetPath": "CustomButton" },
+    { "id": "paint", "order": 20, "title": "도색", "description": "커스텀 왼쪽 메뉴의 도색에서 재질이나 색을 고른 뒤 모듈 면을 클릭하세요. 전체 도색과 도색 되돌리기도 사용할 수 있습니다. 코어와 컬러 모듈은 도색하지 않습니다.", "targetPath": "CustomNavigation/CustomNavigationViewport/CustomNavigationItems/CustomMenuItem_0" },
+    { "id": "keyring", "order": 30, "title": "키링", "description": "커스텀 왼쪽 메뉴의 키링에서 모델을 선택하고 일반 모듈 표면에 배치하세요. 무기당 하나를 달 수 있고, 키링 패널의 제거 버튼으로 뗄 수 있습니다.", "targetPath": "CustomNavigation/CustomNavigationViewport/CustomNavigationItems/CustomMenuItem_2" },
+    { "id": "sticker", "order": 40, "title": "스티커", "description": "커스텀 왼쪽 메뉴의 스티커에서 그림을 선택해 일반 모듈 표면에 붙이세요. 좌우 반전·크기 조절·되돌리기·스티커 제거를 사용할 수 있습니다.", "targetPath": "CustomNavigation/CustomNavigationViewport/CustomNavigationItems/CustomMenuItem_1" },
+    { "id": "removal", "order": 50, "title": "커스텀 제거", "description": "커스텀 > 커스텀 제거로 도색·스티커·키링을 지우고 조립을 다시 허용합니다. 확인·F·화면 클릭으로 실제 제거합니다.", "targetPath": "RemoveCustom" }
+  ]
+}

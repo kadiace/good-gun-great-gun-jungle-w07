@@ -24,8 +24,11 @@ namespace WeaponWorkshop
 
         private Action _answered;
         private InputActionMap _controls;
+        private InputActionMap _uiControls;
         private InputAction _advanceAction;
         private InputAction _interactAction;
+        private InputAction _clickAction;
+        private bool _confirmOnAnyClick;
         private int _openedFrame;
         private bool _answerRequested;
 
@@ -71,6 +74,9 @@ namespace WeaponWorkshop
             if (inputActions != null)
             {
                 _controls = inputActions.FindActionMap("Workshop", true).Clone();
+                _uiControls = inputActions.FindActionMap("UI", true).Clone();
+                _clickAction = _uiControls.FindAction("Click", true);
+                _clickAction.performed += OnClickPerformed;
                 _advanceAction = _controls.FindAction("AdvanceDialogue", false);
                 if (_advanceAction != null)
                 {
@@ -84,14 +90,15 @@ namespace WeaponWorkshop
             }
         }
 
-        void OnEnable() => _controls?.Enable();
+        void OnEnable() { _controls?.Enable(); _uiControls?.Enable(); }
 
         void LateUpdate()
         {
             if (_inputHeldOnOpen)
             {
                 bool isHeld = (_advanceAction != null && _advanceAction.IsPressed()) ||
-                              (_interactAction != null && _interactAction.IsPressed());
+                              (_interactAction != null && _interactAction.IsPressed()) ||
+                              (_confirmOnAnyClick && _clickAction != null && _clickAction.IsPressed());
                 if (!isHeld)
                 {
                     _inputHeldOnOpen = false;
@@ -113,6 +120,7 @@ namespace WeaponWorkshop
         void OnDisable()
         {
             _controls?.Disable();
+            _uiControls?.Disable();
             _inputHeldOnOpen = false;
             Hide();
         }
@@ -121,8 +129,10 @@ namespace WeaponWorkshop
         {
             if (_advanceAction != null) _advanceAction.performed -= OnAdvancePerformed;
             if (_interactAction != null) _interactAction.performed -= OnAdvancePerformed;
+            if (_clickAction != null) _clickAction.performed -= OnClickPerformed;
             if (_buttonEventRelay != null) _buttonEventRelay.Bind(null, null, null);
             _controls?.Dispose();
+            _uiControls?.Dispose();
             if (Instance == this) Instance = null;
         }
 
@@ -147,6 +157,11 @@ namespace WeaponWorkshop
         private void OnAdvancePerformed(InputAction.CallbackContext context)
         {
             RequestAnswerFromGesture(ObtainFrameGestureId());
+        }
+
+        private void OnClickPerformed(InputAction.CallbackContext context)
+        {
+            if (_confirmOnAnyClick) RequestAnswerFromGesture(ObtainFrameGestureId());
         }
 
         /// <summary>
@@ -272,7 +287,7 @@ namespace WeaponWorkshop
         /// 대사 본문과 확인 버튼 문구를 지정해 화면에 표시하고 완료 콜백을 등록합니다.
         /// text, answer, onAnswer, speaker를 입력받아 대사창을 열고 성공 여부를 반환합니다.
         /// </summary>
-        public bool Show(string text, string answer, Action onAnswer, string speaker = "손님")
+        public bool Show(string text, string answer, Action onAnswer, string speaker = "손님", bool confirmOnBackgroundClick = false)
         {
             if (box == null || line == null || answerButton == null || answerLabel == null)
             {
@@ -283,11 +298,13 @@ namespace WeaponWorkshop
             if (speakerLabel != null) speakerLabel.text = speaker;
             answerLabel.text = answer;
             _answered = onAnswer;
+            _confirmOnAnyClick = confirmOnBackgroundClick;
             _answerRequested = false;
             _openedFrame = Time.frameCount;
             _openedGestureId = _currentGestureId;
             _inputHeldOnOpen = (_advanceAction != null && _advanceAction.IsPressed()) ||
-                               (_interactAction != null && _interactAction.IsPressed());
+                                (_interactAction != null && _interactAction.IsPressed()) ||
+                                (_confirmOnAnyClick && _clickAction != null && _clickAction.IsPressed());
 
             EnsureBlocker();
             if (_blocker != null)
@@ -312,6 +329,7 @@ namespace WeaponWorkshop
         /// </summary>
         public void Hide()
         {
+            _confirmOnAnyClick = false;
             _answered = null;
             _answerRequested = false;
             _inputHeldOnOpen = false;

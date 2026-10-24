@@ -77,6 +77,7 @@ namespace WeaponWorkshop
             public TutorialSequence sequence;
             public Component owner;
             public Action done;
+            public Action<bool> completed;
         }
         private readonly Queue<Request> waiting = new Queue<Request>();
         private Request current;
@@ -254,13 +255,13 @@ namespace WeaponWorkshop
             }
             EndPractice();
         }
-        public static void Run(TutorialSequence sequence, Component owner, Action done = null)
+        public static void Run(TutorialSequence sequence, Component owner, Action done = null, Action<bool> completed = null)
         {
             if (sequence == null || sequence.steps == null || sequence.steps.Length == 0 || Instance == null || !Instance.isActiveAndEnabled)
-            { done?.Invoke(); return; }
+            { completed?.Invoke(false); done?.Invoke(); return; }
             // The authored day-zero sequence replaces legacy customer hints during its entire lifetime.
-            if (Instance.dayZeroOwner != null && owner != Instance.dayZeroOwner) { done?.Invoke(); return; }
-            Instance.waiting.Enqueue(new Request { sequence = sequence, owner = owner, done = done });
+            if (Instance.dayZeroOwner != null && owner != Instance.dayZeroOwner) { completed?.Invoke(false); done?.Invoke(); return; }
+            Instance.waiting.Enqueue(new Request { sequence = sequence, owner = owner, done = done, completed = completed });
             Instance.BeginNext();
         }
         private void BeginNext()
@@ -309,7 +310,7 @@ namespace WeaponWorkshop
                 if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
                 stepIntroductionOpen = step.completion == TutorialCompletion.Signal;
                 ownsDialogue = true;
-                if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼"))
+                if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼", step.confirmOnBackgroundClick))
                 { ownsDialogue = false; Finish("error"); }
             }
             else if (step.completion == TutorialCompletion.RaidTankSpawned)
@@ -629,7 +630,9 @@ namespace WeaponWorkshop
         {
             LogTutorialEnded(reason);
             var done = current?.done;
+            var completed = current?.completed;
             ReleaseDialogue(); current = null; StepIndex = 0; Changed?.Invoke();
+            completed?.Invoke(reason == "completed");
             done?.Invoke(); BeginNext();
         }
         /// <summary>
