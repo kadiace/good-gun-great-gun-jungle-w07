@@ -62,7 +62,7 @@ namespace WeaponWorkshop
             PlayerIdentity.LogSessionStart();
             GameLogger.Data("Info", "System", "씬 시작", new SceneBootLog
             { scene = gameObject.scene.name, installId = PlayerIdentity.InstallId, saveId = PlayerIdentity.SaveId });
-            uiManager?.Refresh(this);
+            uiManager?.Screen<PauseUI>()?.Refresh(this);
         }
         private void OnDisable()
         {
@@ -98,7 +98,7 @@ namespace WeaponWorkshop
             }
             UIInputPolicy.SetPaused(_paused);
             GameLogger.Info("Game", IsPaused ? "일시정지" : "일시정지 해제");
-            uiManager?.Refresh(this);
+            uiManager?.Screen<PauseUI>()?.Refresh(this);
             if (!IsPaused)
             {
                 if (cursorRestore != null) StopCoroutine(cursorRestore);
@@ -143,7 +143,7 @@ namespace WeaponWorkshop
         }
         public void Restart()
         {
-            uiManager?.GetComponent<ShootingTestHUD>()?.CancelTest();
+            uiManager?.Screen<ShootingTestHUD>()?.CancelTest();
             ManualCloseRequested?.Invoke();
             TargetSelectionCloseRequested?.Invoke();
             if (IsNight) return;
@@ -158,7 +158,7 @@ namespace WeaponWorkshop
             foreach (PowerCore core in FindObjectsByType<PowerCore>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 core.ResetFireCooldown();
             UIInputPolicy.ResetToGameplay();
-            uiManager?.Refresh(this);
+            uiManager?.Screen<PauseUI>()?.Refresh(this);
         }
         // 대화 중엔 이동/사격/상호작용을 막고 커서를 풂.
         public void SetDialogue(bool open)
@@ -167,11 +167,11 @@ namespace WeaponWorkshop
         }
         public void SetNight(bool night)
         {
-            if (night) uiManager?.GetComponent<ShootingTestHUD>()?.CancelTest();
+            if (night) uiManager?.Screen<ShootingTestHUD>()?.CancelTest();
             if (night) ManualCloseRequested?.Invoke();
             if (night) TargetSelectionCloseRequested?.Invoke();
             UIInputPolicy.SetNight(night);
-            uiManager?.Refresh(this);
+            uiManager?.Screen<PauseUI>()?.Refresh(this);
         }
         public void RegisterEffect(GameObject effect)
         {

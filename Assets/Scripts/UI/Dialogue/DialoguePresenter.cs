@@ -360,7 +360,7 @@ namespace WeaponWorkshop
                 return true;
             }
 
-            return ui.IsChoiceOpen && (ui.Feedback == null || !ui.Feedback.IsChoiceInputSuspended);
+            return (ui.Screen<FeedbackUI>()?.IsChoiceOpen ?? false) && (ui.Screen<FeedbackUI>() == null || !ui.Screen<FeedbackUI>().IsChoiceInputSuspended);
         }
 
         // 대출 안내처럼 Feedback 선택 입력이 중단된 동안에는 대화가 선택창 위에 겹치는 기존 연출을 유지한다.
@@ -368,9 +368,9 @@ namespace WeaponWorkshop
         {
             UIManager ui = _gameManager != null ? _gameManager.UI : null;
             return ui != null &&
-                   ui.IsChoiceOpen &&
-                   ui.Feedback != null &&
-                   ui.Feedback.IsChoiceInputSuspended;
+                   (ui.Screen<FeedbackUI>()?.IsChoiceOpen ?? false) &&
+                   ui.Screen<FeedbackUI>() != null &&
+                   ui.Screen<FeedbackUI>().IsChoiceInputSuspended;
         }
 
         private void SetDialogue(bool _open)

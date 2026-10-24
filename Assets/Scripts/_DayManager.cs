@@ -290,7 +290,7 @@ public class _DayManager : MonoBehaviour
         if (IsBankrupt)
         {
             if (bankruptcyResultOpen) return;
-            var resultUI = gameManager.UI != null ? gameManager.UI.RaidUI : null;
+            var resultUI = gameManager.UI != null ? gameManager.UI.Screen<NightRaidUI>() : null;
             if (resultUI == null) { Debug.LogError("자릿세 게임오버 결과 UI가 연결되지 않았습니다.", this); return; }
             bankruptcyResultOpen = true;
             gameManager.SetDialogue(true);

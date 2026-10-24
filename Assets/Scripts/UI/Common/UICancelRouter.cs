@@ -47,18 +47,18 @@ namespace WeaponWorkshop
             }
 
             // 기존 GameManager가 쓰던 좁은 타입 탐색과 같은 범위만 사용한다.
-            m_retireUI = _uiManager.GetComponent<RetireUI>();
-            m_tutorialSkipUI = _uiManager.GetComponent<TutorialSkipUI>();
-            m_dayTransitionUI = _uiManager.GetComponent<DayTransitionUI>();
-            m_saveSlotsUIs = _uiManager.GetComponentsInChildren<SaveSlotsUI>(true);
-            m_soundSettingsUIs = _uiManager.GetComponentsInChildren<SoundSettingsUI>(true);
-            m_shootingTestHUD = _uiManager.GetComponent<ShootingTestHUD>();
-            m_recipeUI = _uiManager.GetComponent<WeaponRecipeUI>();
-            m_presetPanelUI = _uiManager.GetComponent<PresetPanelUI>();
-            m_weaponCodeUI = _uiManager.GetComponent<WeaponCodeUI>();
-            m_weaponNameUI = _uiManager.GetComponent<WeaponNameUI>();
-            m_paletteUI = _uiManager.GetComponentInChildren<ModulePaletteUI>(true);
-            FirstPersonPlayer player = _uiManager.Player;
+            m_retireUI = _uiManager.Screen<RetireUI>();
+            m_tutorialSkipUI = _uiManager.Screen<TutorialSkipUI>();
+            m_dayTransitionUI = _uiManager.Screen<DayTransitionUI>();
+            m_saveSlotsUIs = _uiManager.Screens<SaveSlotsUI>();
+            m_soundSettingsUIs = _uiManager.Screens<SoundSettingsUI>();
+            m_shootingTestHUD = _uiManager.Screen<ShootingTestHUD>();
+            m_recipeUI = _uiManager.Screen<WeaponRecipeUI>();
+            m_presetPanelUI = _uiManager.Screen<PresetPanelUI>();
+            m_weaponCodeUI = _uiManager.Screen<WeaponCodeUI>();
+            m_weaponNameUI = _uiManager.Screen<WeaponNameUI>();
+            m_paletteUI = _uiManager.Screen<ModulePaletteUI>();
+            FirstPersonPlayer player = GameManager.Instance?.Player;
             m_cubeBuilder = player != null ? player.GetComponentInChildren<CubeBuilder>(true) : null;
         }
 
@@ -91,11 +91,11 @@ namespace WeaponWorkshop
             }
 
             // 일반 확인창은 취소하고, 대출 안내처럼 입력이 Suspend된 선택은 소비만 한다.
-            if (m_uiManager != null && m_uiManager.IsChoiceOpen)
+            if (m_uiManager != null && (m_uiManager.Screen<FeedbackUI>()?.IsChoiceOpen ?? false))
             {
-                if (m_uiManager.Feedback != null && !m_uiManager.Feedback.IsChoiceInputSuspended)
+                if (m_uiManager.Screen<FeedbackUI>() != null && !m_uiManager.Screen<FeedbackUI>().IsChoiceInputSuspended)
                 {
-                    m_uiManager.Feedback.Cancel();
+                    m_uiManager.Screen<FeedbackUI>().Cancel();
                 }
                 return true;
             }
@@ -217,7 +217,7 @@ namespace WeaponWorkshop
                 return m_workshopSession;
             }
 
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             return player != null ? player.GetComponent<WorkshopSession>() : null;
         }
     }
