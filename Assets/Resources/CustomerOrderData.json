@@ -1,6 +1,7 @@
 {
   "sale": {
-    "difficultCustomerRatio": 0.5
+    "difficultCustomerRatio": 0.5,
+    "failedSaleRatio": 0.5
   },
   "pools": [
     {
@@ -14,7 +15,7 @@
         },
         {
           "id": "shape/cat",
-          "unlockDay": 20
+          "unlockDay": 2
         },
         {
           "id": "color/crimson-3",
@@ -98,11 +99,11 @@
         },
         {
           "id": "shooting-test/around-cover",
-          "unlockDay": 6
+          "unlockDay": 4
         },
         {
           "id": "shooting-test/behind-barrier",
-          "unlockDay": 6
+          "unlockDay": 5
         },
         {
           "id": "shooting-test/wide-targets",
