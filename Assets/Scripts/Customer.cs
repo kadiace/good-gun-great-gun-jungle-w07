@@ -96,9 +96,13 @@ namespace WeaponWorkshop
         // 요구 조건 체크. 판매 전에 외부(UI 등)에서도 호출 가능.
         public bool CheckWeapon(EquipableWeapon weapon) => profile != null && profile.Check(weapon);
 
+        /// <summary>
+        /// 제출한 무기를 판매하고 대금과 손님 완료를 기존 이벤트로 전달합니다. Day0 첫 제출 거절은 무기를 꺼내기 전에 처리합니다.
+        /// </summary>
         public bool Sell(WeaponHolder holder)
         {
             if (!atCounter || talking || profile == null || holder == null || holder.EquippedWeapon == null) return false;
+            if (TutorialManager.Instance != null && TutorialManager.Instance.TryRejectFirstSubmission(this)) return true;
             if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero && !CheckWeapon(holder.EquippedWeapon))
             { FeedbackUI.For(this)?.ShowNotification("손님이 요청한 조건에 맞춰 무기를 완성하세요."); return false; }
             EquipableWeapon weapon = holder.TakeWeapon();

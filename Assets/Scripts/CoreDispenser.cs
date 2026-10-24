@@ -15,6 +15,7 @@ namespace WeaponWorkshop
             ? GameManager.Instance.UI.Player.GetComponent<WeaponPresets>() : null;
         private const int CorePrice = WeaponPurchasePrices.Core;
         public Transform OutlineRoot => drawRoot != null ? drawRoot : transform;
+        public int PresetSlot => presetSlot;
         public bool IsBasicCoreDispenser => presetSlot < 0 && corePrefab != null;
         public bool OwnsSavedPreview(PresetWeaponPreview preview) => presetSlot >= 0 &&
             weaponPreview != null && preview != null && preview.transform == weaponPreview.transform;
@@ -88,7 +89,11 @@ namespace WeaponWorkshop
             finally { dispensing = false; }
         }
 
-        // 지급은 저장 코드의 제작/장착이 모두 성공한 뒤 결제한다. 전시 실물이나 슬롯을 소비하지 않는다.
+        /// <summary>
+        /// 디스펜서에서 코어 또는 저장된 프리셋 무기를 제작하여 플레이어에게 지급하고 결제합니다.
+        /// </summary>
+        /// <param name="interactor">상호작용한 플레이어 Interaction 컴포넌트입니다.</param>
+        /// <returns>지급과 결제가 성공했으면 true, 실패했으면 false를 반환합니다.</returns>
         private bool TryDispense(Interaction interactor)
         {
             WeaponHolder holder = interactor.Player.GetComponent<WeaponHolder>();
@@ -179,7 +184,10 @@ namespace WeaponWorkshop
                     block.RecordModuleCreditCost(materials);
                 }
             }
-            if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("core-picked-up", this);
+            if (TutorialManager.Instance != null && presetSlot < 0) TutorialManager.Instance.NotifySignal("core-picked-up", this);
+            if (TutorialManager.Instance != null && presetSlot == 0 &&
+                TutorialManager.Instance.CurrentStep != null && TutorialManager.Instance.CurrentStep.id == "raid-pick-up")
+                TutorialManager.Instance.NotifySignal("raid-preset-one-equipped", this);
             return true;
         }
 

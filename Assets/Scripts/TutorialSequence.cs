@@ -4,9 +4,9 @@ using UnityEngine;
 namespace WeaponWorkshop
 {
     public enum TutorialCompletion { Confirmation, Signal, FiveCoreFacesBlocked, ModuleInstalled, CellEmpty, CustomerWeaponReady, WorkshopExited, WeaponHeld, SettlementClosed, CustomerSold, CustomerKilled, TargetNearby, TargetScanned, RaidTankSpawned, RetirementIntroduction, RaidTicketCollected, RaidMaterialCollected, WeaponTagged }
-    public enum TutorialTarget { None, Shutter, Customer, MainCoreDispenser, Workbench, ShootingTarget, WorkbenchWeapon, CloseShop, RaidEntrance, RaidLoot, RaidExit, RaidMaterialCrate, RaidTank }
+    public enum TutorialTarget { None, Shutter, Customer, MainCoreDispenser, Workbench, ShootingTarget, WorkbenchWeapon, CloseShop, RaidEntrance, RaidLoot, RaidExit, RaidMaterialCrate, RaidTank, PresetDispenserOne }
     public enum TutorialRotationGuide { None, Tilt, Roll }
-    public enum TutorialButtonGuide { None, Recipe, PresetFirst, RaidHouse, LoanConfirm }
+    public enum TutorialButtonGuide { None, Recipe, PresetFirst, RaidHouse, LoanConfirm, PresetSecond }
 
     [Serializable]
     public sealed class TutorialStep
@@ -19,6 +19,8 @@ namespace WeaponWorkshop
         [TextArea, Tooltip("좌상단 행동 목표. 비우면 해당 단계의 목표 패널을 숨깁니다.")] public string objective;
         [Tooltip("Signal 단계에서 설명을 먼저 확인한 뒤, 같은 단계의 행동 목표를 시작합니다.")]
         public bool showDescriptionBeforeObjective;
+        [Tooltip("판매 목표 중 작업대 재진입과 작업대 무기 재장착을 허용합니다.")]
+        public bool allowWorkbenchReentry;
         [TextArea] public string objectiveWhileChoiceOpen;
         [TextArea] public string choiceGuidance;
         public TutorialCompletion completion;
@@ -28,11 +30,15 @@ namespace WeaponWorkshop
         [Min(5f)] public float requiredRotationDegrees = 45f;
         public TutorialRotationGuide rotationGuide;
         public TutorialButtonGuide buttonGuide;
+        [Tooltip("도착 안내에서 달리기 Shift, 점프 Space 키캡 이미지를 함께 표시합니다.")]
+        public bool showMovementKeycaps;
         public bool showPlacementHints;
         public Vector3Int openCoreFace = Vector3Int.forward;
         [Tooltip("비우면 기존 5면 안내. 지정하면 해당 셀만 표시합니다.")] public Vector3Int[] hintCells = Array.Empty<Vector3Int>();
         public int requiredModuleId;
         [Tooltip("WeaponTagged 단계에서 작업대 무기가 충족해야 할 CustomerRequestData.tags의 id(무기 타입 자산 GUID). tag/... 요청 id가 아니다.")] public string requiredTagId;
+        [Tooltip("손님이 없어도 왼쪽 요청사항 패널에 requiredTagId 태그의 조건을 표시합니다.")] public bool showTagRequirement;
+        [Tooltip("buttonGuide와 별개로 레시피 버튼 하이라이트를 requiredTagId 태그를 작업대 무기가 만족할 때까지 유지합니다.")] public bool keepRecipeHighlight;
         public int requiredCustomerCount;
         [Min(0.1f), Tooltip("대상 접근·스캔 단계의 최대 거리(m)")] public float requiredTargetDistance = 5f;
         public Vector3Int requiredCell = Vector3Int.forward;

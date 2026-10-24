@@ -50,6 +50,8 @@ namespace WeaponWorkshop
             public string[] lines = Array.Empty<string>();
             public bool endsClear = true;
             public string happyLine, angryLine;
+            public string tutorialRejectionLine;
+            public string[] tutorialFollowupRequestIds = Array.Empty<string>();
             public int unlockDay;
         }
         public Sale sale = new Sale();

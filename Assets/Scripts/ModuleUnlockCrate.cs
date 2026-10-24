@@ -24,12 +24,14 @@ namespace WeaponWorkshop
         public void TrackObjective(RaidCrateSpawner.Objective target) => objective = target;
         public Transform OutlineRoot => transform;
         private void Awake() { body = GetComponent<DestructibleTarget>(); claimed = false; }
+        /// <summary>
+        /// 상자에 저장할 모듈 정보(식별자, 외형 프리팹, 표시 이름)를 설정합니다.
+        /// </summary>
         public void Configure(int id, GameObject prefab, string displayName)
         {
             moduleId = id;
             modulePrefab = prefab;
             moduleName = displayName;
-            body.DamageProtected = TutorialManager.TrainingRaidPending;
         }
         private void LateUpdate()
         {

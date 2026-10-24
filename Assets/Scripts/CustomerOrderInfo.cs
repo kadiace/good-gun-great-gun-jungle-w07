@@ -71,10 +71,15 @@ namespace WeaponWorkshop
             return false;
         }
 
+        /// <summary>
+        /// 손님 표의 값을 독립적인 런타임 주문으로 복사합니다. 튜토리얼 거절 뒤 요구사항도 원본과 분리합니다.
+        /// </summary>
         public static CustomerOrderData.Guest Copy(CustomerOrderData.Guest source) => source == null ? new CustomerOrderData.Guest() : new CustomerOrderData.Guest
         {
             id = source.id, name = source.name, price = source.price, endsClear = source.endsClear,
             happyLine = source.happyLine, angryLine = source.angryLine, unlockDay = source.unlockDay,
+            tutorialRejectionLine = source.tutorialRejectionLine,
+            tutorialFollowupRequestIds = (string[])(source.tutorialFollowupRequestIds ?? Array.Empty<string>()).Clone(),
             requestIds = (string[])(source.requestIds ?? Array.Empty<string>()).Clone(),
             noBonusRequestIds = (string[])(source.noBonusRequestIds ?? Array.Empty<string>()).Clone(),
             bonusRequestIds = (string[])(source.bonusRequestIds ?? Array.Empty<string>()).Clone(),
@@ -87,6 +92,9 @@ namespace WeaponWorkshop
         };
 
         // 로드 직후 한 번 호출한다. 요청 표가 먼저 로드되어 있어야 한다.
+        /// <summary>
+        /// 주문 표의 식별자와 요청 참조를 점검합니다. 튜토리얼 거절 이후의 요청도 같은 요청 표를 참조해야 합니다.
+        /// </summary>
         public static void Validate(CustomerOrderData table, CustomerRequestData requests)
         {
             if (table.sale == null) table.sale = new CustomerOrderData.Sale();
@@ -100,6 +108,7 @@ namespace WeaponWorkshop
                 if (row.price < 0) Debug.LogError("주문 표 손님 보상이 음수입니다: " + row.name);
                 if (row.lines == null || row.lines.Length == 0) Debug.LogError("주문 표 손님 대사가 없습니다: " + row.name);
                 CheckRequests(requests, row.requestIds, "손님 " + row.name);
+                CheckRequests(requests, row.tutorialFollowupRequestIds, "튜토리얼 후속 주문 " + row.name);
                 CheckRequests(requests, row.noBonusRequestIds, "손님 " + row.name);
                 CheckRequests(requests, row.bonusRequestIds, "손님 " + row.name);
             }

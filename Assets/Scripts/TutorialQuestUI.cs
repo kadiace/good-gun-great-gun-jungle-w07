@@ -37,6 +37,10 @@ namespace WeaponWorkshop
         private void OnEnable() => Refresh();
         private void OnDisable() => panel.SetActive(false);
         private void LateUpdate() => Refresh();
+
+        /// <summary>
+        /// 현재 상태(튜토리얼, 습격, 일차 기본 목표)에 맞춰 목표 텍스트와 패널의 가시성을 갱신합니다.
+        /// </summary>
         private void Refresh()
         {
             string objective = null;
@@ -72,13 +76,26 @@ namespace WeaponWorkshop
                 description.gameObject.SetActive(hasObjective);
                 textSizing?.MarkDirty();
             }
-            bool visible = hasObjective || (requirements != null && requirements.HasActiveOrder);
+            bool visible = hasObjective || (requirements != null && requirements.HasActiveOrder) || HasActiveTagRequirement();
             if (panel.activeSelf != visible) panel.SetActive(visible);
             if (hasObjective && description.text != objective)
             {
                 description.text = objective;
                 textSizing?.MarkDirty();
             }
+        }
+
+        /// <summary>
+        /// 튜토리얼이 활성화되어 있고 현재 단계에 유효한 태그 요구사항이 설정되어 있는지 확인합니다.
+        /// </summary>
+        private bool HasActiveTagRequirement()
+        {
+            var tutorial = TutorialManager.Instance;
+            if (tutorial == null || !tutorial.IsTutorialActive) return false;
+            var step = tutorial.CurrentStep;
+            if (step == null || !step.showTagRequirement || string.IsNullOrEmpty(step.requiredTagId)) return false;
+            var table = TableManager.Instance != null ? TableManager.Instance.CustomerRequest : null;
+            return table != null && table.FindTag(step.requiredTagId) != null;
         }
     }
 }

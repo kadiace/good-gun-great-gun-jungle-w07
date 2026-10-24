@@ -95,6 +95,18 @@ namespace WeaponWorkshop
             var transport = Instantiate(tankTransportPrefab);
             return transport.Initialize(player, point, outward, enemyId, cargoPrefabOverride);
         }
+        /// <summary>
+        /// 연습 습격 진행 중 적어도 1대의 탱크가 현장에 존재(수송 중 포함)하도록 보장합니다.
+        /// </summary>
+        /// <returns>이미 살아있는 탱크가 있거나 새 탱크가 성공적으로 소환되면 true, 연습 습격 조건 불충족 또는 소환 실패 시 false.</returns>
+        public bool EnsureTrainingTankSpawned()
+        {
+            if (!TutorialManager.TrainingRaidPending || gameObject.scene.name != TutorialManager.TrainingScene)
+                return false;
+            if (CountLiving<RaidTank>() > 0)
+                return true;
+            return SpawnTank($"{gameObject.scene.name}_Training_Tank");
+        }
         private void Update()
         {
             if (GameManager.GameplayBlocked) return;

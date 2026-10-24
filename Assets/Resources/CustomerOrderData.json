@@ -198,6 +198,8 @@
     {
       "id": "a5308f1435d603f46aea8a8ee70cd591",
       "name": "D0_1_TutorialCustomer",
+      "tutorialRejectionLine": "이대로는 나무판을 뚫기 어렵겠어요. 관통 모듈을 하나 달아서 다시 가져와 주세요.",
+      "tutorialFollowupRequestIds": ["module/penetration/min-1"],
       "requestIds": [],
       "price": 300,
       "lines": [

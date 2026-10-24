@@ -29,6 +29,9 @@ namespace WeaponWorkshop
         private Coroutine warningTurn;
         [SerializeField, Min(.01f)] private float warningTurnDuration = .25f;
         [SerializeField] private string blockedInteractionMessage = "튜토리얼 중에는 안내된 대상과만 상호작용할 수 있습니다.";
+        [Header("야간 습격 준비")]
+        [SerializeField] private WeaponDisposal _raidDisposal;
+        [SerializeField] private Transform _raidDisposalPoint;
         [Header("튜토리얼 은퇴 소개")]
         [SerializeField] private Transform _retirementShotPoint;
         [SerializeField] private GameObject[] _retirementHudElements = Array.Empty<GameObject>();
@@ -108,7 +111,10 @@ namespace WeaponWorkshop
                     case TutorialTarget.RaidExit: return RaidExitTarget();
                     case TutorialTarget.RaidMaterialCrate: return RaidMaterialCrateTarget();
                     case TutorialTarget.RaidTank: return RaidTankTarget();
-                    default: return null;
+                    case TutorialTarget.PresetDispenserOne: return PresetDispenserOneTarget();
+                    default:
+                        if (step.id == "raid-acquire-core") return mainCoreDispenser;
+                        return null;
                 }
             }
         }
@@ -490,6 +496,9 @@ namespace WeaponWorkshop
                 string.Equals(step.requiredSignal, signal, StringComparison.Ordinal) &&
                 (step.target == TutorialTarget.None || (source != null && source == CurrentInteractionTarget))) Advance();
         }
+        /// <summary>
+        /// 현재 목표의 상호작용 대상을 허용합니다. 재제작을 허용한 판매 목표에서는 작업대와 작업대 무기도 사용할 수 있으며, 디스펜서가 목표일 때는 소유한 프리셋 무기 미리보기도 허용합니다.
+        /// </summary>
         public bool AllowsInteraction(IInteractable target)
         {
             if (!IsTutorialActive) return true;
@@ -498,7 +507,13 @@ namespace WeaponWorkshop
             if (step.completion == TutorialCompletion.RaidTankSpawned) return true;
             if (step.completion == TutorialCompletion.CustomerKilled || !(target is Component component) || component == null)
                 return false;
+            if (step.allowWorkbenchReentry && (component == workbench ||
+                workbench != null && component == workbench.CurrentWeapon)) return true;
+            if (step.id == "raid-acquire-core" && (component == mainCoreDispenser || (component is CoreDispenser dispenser && dispenser.IsBasicCoreDispenser)))
+                return true;
             var current = CurrentInteractionTarget;
+            if (component is PresetWeaponPreview preview && current is CoreDispenser dispenserTarget && dispenserTarget.OwnsSavedPreview(preview))
+                return true;
             // 습격 픽업 목표는 상자 파괴 뒤 Transform으로 바뀌므로 컴포넌트 동일성만으로 비교하지 않는다.
             return component == current ||
                 current is Component currentComponent && currentComponent != null && component.transform == currentComponent.transform;

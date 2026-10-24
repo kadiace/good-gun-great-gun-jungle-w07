@@ -554,17 +554,87 @@ namespace WeaponWorkshop
             IgnorePlayerCollisions();
         }
 
+        /// <summary>
+        /// 무기를 지정된 경유 지점으로 이동시킵니다.
+        /// </summary>
+        /// <param name="destination">이동할 목표 Transform입니다.</param>
+        /// <returns>이동을 시작했으면 true, 이미 이동 중이거나 대상이 유효하지 않으면 false입니다.</returns>
+        public bool MoveToPoint(Transform destination)
+        {
+            if (IsMoving || destination == null || destination.IsChildOf(transform)) return false;
+            SetDroppedCollisionLayer(false);
+            if (originalWorldScale == Vector3.zero) originalWorldScale = transform.lossyScale;
+            if (originalScale == Vector3.zero) originalScale = transform.localScale;
+            IsEquipped = false;
+            equippedGripPoint = null;
+            dropped = false;
+            workbench = null;
+            // 이동이 끝나기 전에 중단돼도 RestorePhysics로 복구할 수 있게 원래 물리 상태를 먼저 기록한다.
+            colliderStates.Clear();
+            triggerStates.Clear();
+            foreach (Collider collider in GetComponentsInChildren<Collider>(true))
+            {
+                colliderStates.Add(collider, collider.enabled);
+                triggerStates.Add(collider, collider.isTrigger);
+                collider.enabled = false;
+            }
+            rigidbodyStates.Clear();
+            foreach (Rigidbody body in GetComponentsInChildren<Rigidbody>(true))
+            {
+                rigidbodyStates.Add(body, body.isKinematic);
+                body.isKinematic = true;
+            }
+            MoveTo(destination, Vector3.zero, Quaternion.identity, originalWorldScale);
+            return true;
+        }
+
+        /// <summary>
+        /// 무기를 지정된 폐기 지점으로 이동시킨 뒤 제작비를 환불하고 파괴합니다.
+        /// </summary>
+        /// <param name="destination">폐기 지점 Transform입니다.</param>
+        /// <param name="refundWallet">제작비 환불을 수령할 지갑입니다.</param>
+        /// <returns>폐기 이동을 시작했으면 true, 이동 중이거나 대상이 유효하지 않으면 false입니다.</returns>
         public bool DisposeTo(Transform destination, PlayerWallet refundWallet = null)
         {
-            if (!IsEquipped || IsMoving || destination == null) return false;
+            if (IsMoving || destination == null || destination.IsChildOf(transform)) return false;
             IsEquipped = false;
             equippedGripPoint = null;
             disposing = true;
             disposalRefundWallet = refundWallet;
+            if (originalWorldScale == Vector3.zero) originalWorldScale = transform.lossyScale;
             foreach (Collider collider in GetComponentsInChildren<Collider>(true))
                 collider.enabled = false;
             MoveTo(destination, Vector3.zero, Quaternion.identity, originalWorldScale);
             return true;
+        }
+
+        /// <summary>
+        /// 이동 연출 없이 즉시 제작비를 환불하고 무기 오브젝트를 파괴합니다.
+        /// </summary>
+        /// <param name="refundWallet">제작비 환불을 수령할 플레이어 지갑입니다.</param>
+        /// <returns>즉시 폐기 처리를 완료했으면 true, 대상이 유효하지 않거나 이미 폐기 중이면 false입니다.</returns>
+        public bool DisposeImmediately(PlayerWallet refundWallet)
+        {
+            if (this == null || disposing) return false;
+            if (movement != null) StopCoroutine(movement);
+            movement = null;
+            IsMoving = false;
+            IsEquipped = false;
+            equippedGripPoint = null;
+            FinalizeDisposal(refundWallet);
+            return true;
+        }
+
+        /// <summary>
+        /// 설정된 환불 지갑으로 제작비를 정산하고 무기 게임오브젝트를 파괴합니다.
+        /// </summary>
+        /// <param name="refundWallet">지정할 경우 기존 환불 지갑을 갱신할 플레이어 지갑입니다.</param>
+        private void FinalizeDisposal(PlayerWallet refundWallet = null)
+        {
+            if (refundWallet != null) disposalRefundWallet = refundWallet;
+            disposing = false;
+            RefundConstructionCost();
+            Destroy(gameObject);
         }
 
         private void MoveTo(Transform parent, Vector3 position, Quaternion rotation, Vector3 scale)
@@ -607,9 +677,7 @@ namespace WeaponWorkshop
             IsMoving = false;
             if (disposing)
             {
-                disposing = false;
-                RefundConstructionCost();
-                Destroy(gameObject);
+                FinalizeDisposal();
                 return;
             }
             if (!IsEquipped) RestorePhysics();

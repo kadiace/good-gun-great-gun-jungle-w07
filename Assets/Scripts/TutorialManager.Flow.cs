@@ -38,6 +38,8 @@ namespace WeaponWorkshop
         private static int trainingStep;
         private static bool trainingReturning;
         private static bool practiceEconomy;
+        private static bool _trainingPresetOneSaved;
+        private bool _raidExitSaveRequested;
         private static int originalMoney, originalCredits;
         private static int[] originalUnlocks;
         private static string[] originalPresets;
@@ -47,11 +49,13 @@ namespace WeaponWorkshop
         public bool IsGuidedDayZero => dayZeroOwner != null || trainingSequence != null;
         public static bool TrainingRaidPending => trainingSequence != null && !trainingReturning;
         public static bool TrainingReturnPending => trainingSequence != null && trainingReturning;
+        public bool RaidPresetSaveRequested => _raidExitSaveRequested;
         public static void AbandonTraining() { LogAbandoned(); ResetTraining(); }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetTraining()
         {
             trainingSequence = null; trainingStep = 0; trainingReturning = practiceEconomy = false;
+            _trainingPresetOneSaved = false;
             originalUnlocks = null; originalPresets = null;
             originalSlotMachineDestructions = 0; originalSlotMachineDestroyedDay = -1; originalSlotMachineDestroyedAtNight = false;
         }
@@ -59,6 +63,12 @@ namespace WeaponWorkshop
             ? GameManager.Instance.UI.Player : null;
         private CubeAssembly TutorialAssembly => workbench != null && workbench.CurrentWeapon != null
             ? workbench.CurrentWeapon.GetComponentInChildren<CubeAssembly>() : null;
+        private Component PresetDispenserOneTarget()
+        {
+            foreach (var dispenser in FindObjectsByType<CoreDispenser>(FindObjectsSortMode.None))
+                if (dispenser.PresetSlot == 0) return dispenser;
+            return null;
+        }
         public static bool ActionAllowed(string action) => Instance == null || Instance.AllowsAction(action);
         public static bool TryAction(string action) => Instance == null || Instance.TryAuthorizeAction(action);
         private void BeginPractice()
@@ -69,6 +79,8 @@ namespace WeaponWorkshop
             originalMoney = wallet.Balance; originalCredits = wallet.ModuleCredits;
             originalUnlocks = player.GetComponent<PlayerModuleUnlocks>().CaptureUnlockedModules();
             originalPresets = player.GetComponent<WeaponPresets>().Capture();
+            _trainingPresetOneSaved = false;
+            _raidExitSaveRequested = false;
             var slotMachine = FindFirstObjectByType<SlotMachineReels>();
             originalSlotMachineDestructions = slotMachine != null ? slotMachine.DestructionCount : 0;
             originalSlotMachineDestroyedDay = slotMachine != null ? slotMachine.DestroyedDay : -1;
@@ -79,6 +91,96 @@ namespace WeaponWorkshop
             practiceEconomy = true;
             wallet.RestoreBalance(Mathf.Max(originalMoney, practiceMoney));
             wallet.RestoreModuleCredits(Mathf.Max(originalCredits, practiceModuleCredits));
+        }
+
+        /// <summary>
+        /// Day0에서 첫 번째 프리셋 저장 여부를 기록해 작업대 퇴장 전에 필요한 안내를 생략할 수 있게 합니다.
+        /// </summary>
+        /// <param name="slot">저장한 프리셋의 0 기반 슬롯 번호입니다.</param>
+        public void RecordTutorialPresetSaved(int slot)
+        {
+            if (IsGuidedDayZero && slot == 0)
+            {
+                _trainingPresetOneSaved = true;
+                _raidExitSaveRequested = false;
+                Changed?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Day0 작업대 퇴장을 처음 시도할 때 1번 슬롯 저장 안내를 시작합니다.
+        /// </summary>
+        /// <returns>저장 안내를 보여 주며 퇴장을 막아야 하면 false를 반환합니다.</returns>
+        public bool TryAuthorizeRaidWorkbenchExit()
+        {
+            var step = CurrentStep;
+            if (!IsGuidedDayZero || step == null || step.id != "raid-exit-workbench" || _trainingPresetOneSaved) return true;
+            if (!_raidExitSaveRequested)
+            {
+                _raidExitSaveRequested = true;
+                Changed?.Invoke();
+            }
+            FeedbackUI.For(this)?.ShowNotification("작업대를 나가기 전에 프리셋 1번에 현재 무기를 저장하세요.");
+            return false;
+        }
+
+        /// <summary>
+        /// Day0에서 저장한 작업대 무기를 쓰레기통 폐기 경로로 전달합니다. 연출 실패 시 즉시 폐기 후 단계를 진행합니다.
+        /// </summary>
+        /// <param name="session">퇴장을 시작한 플레이어 작업대 세션입니다.</param>
+        /// <param name="weapon">작업대에 있던 현재 무기입니다.</param>
+        public void NotifyTutorialWorkbenchExited(WorkshopSession session, EquipableWeapon weapon)
+        {
+            var step = CurrentStep;
+            if (!IsGuidedDayZero || step == null || step.id != "raid-exit-workbench" ||
+                !_trainingPresetOneSaved || session == null || weapon == null) return;
+
+            var player = session.GetComponent<FirstPersonPlayer>();
+            var wallet = player != null ? player.GetComponent<PlayerWallet>() : null;
+            bool signalSent = false;
+
+            void SendDisposedSignal()
+            {
+                if (signalSent) return;
+                signalSent = true;
+                NotifySignal("raid-weapon-disposed");
+            }
+
+            void FallbackImmediateDispose()
+            {
+                if (signalSent) return;
+                if (weapon != null)
+                {
+                    weapon.DisposeImmediately(wallet);
+                }
+                SendDisposedSignal();
+            }
+
+            if (_raidDisposal == null || _raidDisposalPoint == null || wallet == null)
+            {
+                if (_raidDisposal == null)
+                    Debug.LogWarning("튜토리얼 쓰레기통 참조(_raidDisposal)가 설정되지 않아 무기를 즉시 폐기합니다.", this);
+                else if (_raidDisposalPoint == null)
+                    Debug.LogWarning("튜토리얼 쓰레기통 경유 지점 참조(_raidDisposalPoint)가 설정되지 않아 무기를 즉시 폐기합니다.", this);
+                else if (wallet == null)
+                    Debug.LogWarning("플레이어 지갑을 찾을 수 없어 무기를 즉시 폐기합니다.", this);
+
+                FallbackImmediateDispose();
+                return;
+            }
+
+            bool accepted = _raidDisposal.DisposeTutorialWeapon(
+                weapon,
+                _raidDisposalPoint,
+                wallet,
+                onCompleted: () => SendDisposedSignal(),
+                onFailed: () => FallbackImmediateDispose());
+
+            if (!accepted)
+            {
+                Debug.LogWarning("튜토리얼 무기 폐기 요청이 쓰레기통에 의해 거절되어 무기를 즉시 폐기합니다.", this);
+                FallbackImmediateDispose();
+            }
         }
         private void EndPractice()
         {
@@ -91,21 +193,20 @@ namespace WeaponWorkshop
                 var wallet = player.GetComponent<PlayerWallet>();
                 wallet.RestoreBalance(originalMoney); wallet.RestoreModuleCredits(originalCredits);
                 player.GetComponent<PlayerModuleUnlocks>().RestoreUnlockedModules(originalUnlocks);
-                var savedPresets = player.GetComponent<WeaponPresets>().Capture();
-                originalPresets[0] = savedPresets[0];
-                player.GetComponent<WeaponPresets>().Restore(originalPresets);
+                if (originalPresets != null)
+                    player.GetComponent<WeaponPresets>()?.Restore(originalPresets);
                 var slotMachine = FindFirstObjectByType<SlotMachineReels>();
                 if (slotMachine != null) slotMachine.RestoreDamage(originalSlotMachineDestructions,
                     originalSlotMachineDestroyedDay, originalSlotMachineDestroyedAtNight);
             }
             ResetTraining();
         }
-        private TutorialStep scannedStep;
-        private ModuleUnlockCrate scannedCrate;
         private int withheldBalance;
         private void PrepareStep(TutorialStep step)
         {
-            scannedStep = null; scannedCrate = null;
+            // 티켓 단계는 경보나 웨이브 타이머를 기다리지 않고 연습 습격에 탱크를 최소 1대 즉시 출격시킨다.
+            if (step.completion == TutorialCompletion.RaidTicketCollected && TrainingRaidPending)
+                FindFirstObjectByType<RaidEnemySpawnManager>()?.EnsureTrainingTankSpawned();
             if (step.setBalanceOnStart >= 0)
             {
                 var wallet = TutorialPlayer != null ? TutorialPlayer.GetComponent<PlayerWallet>() : null;
@@ -178,23 +279,11 @@ namespace WeaponWorkshop
                         default: return false;
                     }
                 case TutorialCompletion.TargetNearby:
-                case TutorialCompletion.TargetScanned:
-                    var scanner = player != null ? player.GetComponent<PlayerScanMode>() : null;
-                    if (step.completion == TutorialCompletion.TargetScanned && scannedStep == step)
-                    {
-                        if (scanner == null || scanner.IsScanning) return false;
-                        if (scannedCrate != null) scannedCrate.GetComponent<DestructibleTarget>().DamageProtected = false;
-                        return true;
-                    }
+                    // 강제 스캔 교육은 제거됐다. TargetScanned는 직렬화 정수 보존용으로만 남기며 어떤 단계도 기다리지 않는다.
                     var target = CurrentInteractionTarget;
                     if (player == null || target == null || target.GetComponentInParent<ModuleUnlockCrate>() == null) return false;
-                    if ((player.transform.position - target.transform.position).sqrMagnitude >
-                        step.requiredTargetDistance * step.requiredTargetDistance) return false;
-                    if (step.completion == TutorialCompletion.TargetNearby) return true;
-                    bool scanned = scanner != null && scanner.IsScanning && scanner.ScanComplete && scanner.Target != null &&
-                        scanner.Target.GetComponentInParent<ModuleUnlockCrate>() == target.GetComponentInParent<ModuleUnlockCrate>();
-                    if (scanned) { scannedStep = step; scannedCrate = target.GetComponentInParent<ModuleUnlockCrate>(); }
-                    return false;
+                    return (player.transform.position - target.transform.position).sqrMagnitude <=
+                        step.requiredTargetDistance * step.requiredTargetDistance;
                 case TutorialCompletion.ModuleInstalled:
                 case TutorialCompletion.CellEmpty:
                     if (assembly == null) return false;
@@ -229,11 +318,38 @@ namespace WeaponWorkshop
                     return NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid &&
                         NightRaidController.Instance.RaidEarnedTickets > 0;
                 case TutorialCompletion.RaidMaterialCollected:
+                    // 재료 상자는 파괴하면 달러 픽업을 함께 떨어뜨린다. 달러를 실제로 주워야 완료한다.
                     return NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid &&
-                        NightRaidController.Instance.RaidEarnedParts > 0;
+                        NightRaidController.Instance.RaidEarnedDollars > 0;
                 default: return false;
             }
         }
+        /// <summary>
+        /// Day0 첫 손님의 첫 제출을 거절하고 확인 뒤 관통 안내로 진행합니다. 무기와 판매 집계는 유지하며 요구사항만 런타임 주문에 반영합니다.
+        /// </summary>
+        public bool TryRejectFirstSubmission(Customer customer)
+        {
+            var step = CurrentStep;
+            if (dayZeroOwner == null || dayZeroOwner.DayNumber != 0 || dayZeroOwner.CompletedGuests != 0 ||
+                customerBell == null || customer != customerBell.Current || customer.Profile == null ||
+                step == null || step.requiredSignal != "first-sale-rejected") return false;
+            if (ownsDialogue) return true;
+            ResolvePresentation();
+            var order = TableManager.Instance.CustomerOrder.FindGuest(customer.Profile.ProfileId);
+            if (dialogue == null || order == null || string.IsNullOrWhiteSpace(order.tutorialRejectionLine)) return true;
+            ownsDialogue = true;
+            if (!dialogue.Show(order.tutorialRejectionLine, "알겠습니다!", () =>
+                {
+                    customer.Profile.RequestIds = (string[])order.tutorialFollowupRequestIds.Clone();
+                    ReleaseDialogue();
+                    NotifySignal("first-sale-rejected", customer);
+                }, "손님")) ownsDialogue = false;
+            return true;
+        }
+
+        /// <summary>
+        /// 삭제 모드 전환 단계와 실제 삭제 대상 칸을 구분해 허용합니다. 실습에서는 방금 설치한 기본 블록만 제거할 수 있습니다.
+        /// </summary>
         public bool TryAuthorizeRemoval(PlacedBlock block)
         {
             if (!TryAuthorizeAction("delete")) return false;
@@ -246,7 +362,7 @@ namespace WeaponWorkshop
             }
             if (step == null || step.completion != TutorialCompletion.CellEmpty) return true;
             bool allowed = block != null && block.Cell == step.requiredCell && block.GetComponentInParent<CubeAssembly>() == TutorialAssembly;
-            if (!allowed) FeedbackUI.For(this)?.ShowNotification("앞에 설치한 연장 모듈을 지워 보세요.");
+            if (!allowed) FeedbackUI.For(this)?.ShowNotification("방금 설치한 기본 블록을 지워 보세요.");
             return allowed;
         }
         public bool AllowsRaidRegion(int index) => !IsGuidedDayZero || index == 0;
@@ -267,6 +383,10 @@ namespace WeaponWorkshop
             current = new Request { sequence = trainingSequence, owner = this };
             StepIndex = trainingStep; ShowStep();
         }
+        /// <summary>
+        /// 훈련 습격 종료 상태를 설정하고 사망 여부에 따라 다음 튜토리얼 단계를 준비합니다.
+        /// </summary>
+        /// <param name="died">플레이어가 습격 중 사망했는지 여부입니다.</param>
         public static void PrepareTrainingReturn(bool died)
         {
             if (trainingSequence == null) return;
@@ -274,6 +394,7 @@ namespace WeaponWorkshop
             if (died)
             {
                 trainingStep = Array.FindIndex(trainingSequence.steps, s => s != null && s.id == "raid-retry");
+                if (Instance != null) Instance._raidExitSaveRequested = false;
             }
             else if (Instance != null) { Instance.LogStepCompleted(); trainingStep = Instance.StepIndex + 1; }
         }

@@ -16,10 +16,17 @@ namespace WeaponWorkshop
             cover.raycastTarget = false;
             cover.gameObject.SetActive(false);
         }
+        /// <summary>
+        /// 하이라이트할 UI 요소를 목록에 추가합니다.
+        /// </summary>
+        /// <param name="target">하이라이트할 UI RectTransform입니다.</param>
         private void Add(RectTransform target)
         {
             if (target != null && target.gameObject.activeInHierarchy && !targets.Contains(target)) targets.Add(target);
         }
+        /// <summary>
+        /// 매 프레임 튜토리얼 진행 상태와 안내 가이드에 따라 하이라이트할 대상 버튼들을 갱신하고 커버를 표시합니다.
+        /// </summary>
         private void LateUpdate()
         {
             if (cover == null) return;
@@ -41,20 +48,33 @@ namespace WeaponWorkshop
                 {
                     // Ordinary choices and confirmation dialogue are not guided action buttons.
                 }
-                else if (presets != null && presets.IsOpen && step != null && step.buttonGuide == TutorialButtonGuide.PresetFirst)
-                    Add(presets.TutorialSaveButton);
-                else if (step != null)
+                else
                 {
-                    if (step.buttonGuide == TutorialButtonGuide.Recipe && manager.IsEditingTutorialWorkbench &&
-                        !GameManager.GameplayBlocked && recipe != null && !recipe.IsOpen)
-                        Add(recipe != null ? recipe.TutorialButton : null);
-                    if (step.buttonGuide == TutorialButtonGuide.PresetFirst && manager.IsEditingTutorialWorkbench && !GameManager.GameplayBlocked)
-                        Add(presets != null ? presets.TutorialFirstSlot : null);
-                    if (step.buttonGuide == TutorialButtonGuide.RaidHouse)
+                    if (presets != null && presets.IsOpen && step != null && step.buttonGuide == TutorialButtonGuide.PresetFirst &&
+                        manager.RaidPresetSaveRequested && presets.SelectedSlot == 0)
+                        Add(presets.TutorialSaveButton);
+                    else if (presets != null && presets.IsOpen && step != null && step.buttonGuide == TutorialButtonGuide.PresetSecond && presets.SelectedSlot == 1)
+                        Add(presets.TutorialLoadButton);
+                    else if (step != null)
                     {
-                        var raid = GetComponentInChildren<NightRaidUI>(true);
-                        Add(raid != null ? raid.TutorialHouseButton : null);
+                        if (step.buttonGuide == TutorialButtonGuide.Recipe && manager.IsEditingTutorialWorkbench &&
+                            !GameManager.GameplayBlocked && recipe != null && !recipe.IsOpen)
+                            Add(recipe != null ? recipe.TutorialButton : null);
+                        if (step.buttonGuide == TutorialButtonGuide.PresetFirst && manager.IsEditingTutorialWorkbench && !GameManager.GameplayBlocked)
+                            Add(manager.RaidPresetSaveRequested && presets != null ? presets.TutorialFirstSlot : null);
+                        if (step.buttonGuide == TutorialButtonGuide.PresetSecond && manager.IsEditingTutorialWorkbench && !GameManager.GameplayBlocked)
+                            Add(presets != null ? presets.TutorialSecondSlot : null);
+                        if (step.buttonGuide == TutorialButtonGuide.RaidHouse)
+                        {
+                            var raid = GetComponentInChildren<NightRaidUI>(true);
+                            Add(raid != null ? raid.TutorialHouseButton : null);
+                        }
                     }
+
+                    if (step != null && step.keepRecipeHighlight && manager.IsEditingTutorialWorkbench &&
+                        !GameManager.GameplayBlocked && recipe != null && !recipe.IsOpen &&
+                        !IsWorkbenchWeaponTagSatisfied(manager, step))
+                        Add(recipe.TutorialButton);
                 }
             }
             while (covers.Count < targets.Count)
@@ -73,6 +93,21 @@ namespace WeaponWorkshop
                 if (!show) { image.transform.SetParent(transform, false); continue; }
                 Draw(image, targets[i]);
             }
+        }
+        /// <summary>
+        /// 작업대 무기가 현재 튜토리얼 단계에서 요구하는 무기 태그를 만족하는지 확인합니다.
+        /// </summary>
+        /// <param name="manager">튜토리얼 매니저 인스턴스입니다.</param>
+        /// <param name="step">요구 태그가 정의된 튜토리얼 단계입니다.</param>
+        /// <returns>무기가 요구 태그 조건을 충족하면 true를 반환합니다.</returns>
+        private static bool IsWorkbenchWeaponTagSatisfied(TutorialManager manager, TutorialStep step)
+        {
+            if (manager == null || step == null || string.IsNullOrEmpty(step.requiredTagId)) return false;
+            var workbench = manager.TutorialWorkbench;
+            var weapon = workbench != null ? workbench.CurrentWeapon : null;
+            if (weapon == null) return false;
+            var table = TableManager.Instance != null ? TableManager.Instance.CustomerRequest : null;
+            return table != null && table.MeetsTag(step.requiredTagId, new CustomerRequestInfo.WeaponSnapshot(weapon));
         }
         private static void Draw(UnityEngine.UI.Image image, RectTransform target)
         {

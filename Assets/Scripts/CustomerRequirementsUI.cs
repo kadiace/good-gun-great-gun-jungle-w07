@@ -19,6 +19,7 @@ namespace WeaponWorkshop
         private float nextUpdate;
         private Customer previousCustomer;
         private EquipableWeapon previousWeapon;
+        private TutorialStep previousStep;
         public bool HasActiveOrder => bell != null && bell.Current != null && bell.Current.HasActiveOrder;
 
         private void Awake()
@@ -28,48 +29,90 @@ namespace WeaponWorkshop
             HideRows();
         }
         public void Bind(Bell source) => bell = source;
+        /// <summary>
+        /// 손님 주문 또는 튜토리얼 단계의 태그 요구사항에 맞춰 요청사항 목록 UI를 갱신합니다.
+        /// 튜토리얼 태그 모드가 활성화되어 있으면 손님 주문보다 우선하여 해당 태그 조건을 표시합니다.
+        /// </summary>
         private void LateUpdate()
         {
             if (content == null || rowTemplate == null) return;
+
+            var tutorial = TutorialManager.Instance;
+            bool tutorialActive = tutorial != null && tutorial.IsTutorialActive;
+            var currentStep = tutorialActive ? tutorial.CurrentStep : null;
+            var table = TableManager.Instance.CustomerRequest;
+            var tutorialTag = (currentStep != null && currentStep.showTagRequirement &&
+                !string.IsNullOrEmpty(currentStep.requiredTagId) && table != null)
+                ? table.FindTag(currentStep.requiredTagId)
+                : null;
+            bool isTutorialTagMode = tutorialTag != null;
+
             var customer = bell != null ? bell.Current : null;
-            if (customer == null || !customer.HasActiveOrder)
+            bool hasCustomerOrder = customer != null && customer.HasActiveOrder;
+
+            if (!isTutorialTagMode && !hasCustomerOrder)
             {
-                HideRows(); previousCustomer = null; previousWeapon = null; nextUpdate = 0f;
+                HideRows();
+                previousCustomer = null;
+                previousWeapon = null;
+                previousStep = null;
+                nextUpdate = 0f;
                 return;
             }
+
             var player = ui.Player;
             var session = player != null ? player.GetComponent<WorkshopSession>() : null;
             var holder = ui.PlayerWeaponHolder;
             var weapon = session != null && session.IsEditing && session.ActiveWorkbench != null
                 ? session.ActiveWorkbench.CurrentWeapon : holder != null ? holder.EquippedWeapon : null;
-            if (Time.unscaledTime < nextUpdate && previousCustomer == customer && previousWeapon == weapon) return;
+
+            if (Time.unscaledTime < nextUpdate && previousCustomer == customer && previousWeapon == weapon && previousStep == currentStep)
+                return;
+
             nextUpdate = Time.unscaledTime + .12f;
-            previousCustomer = customer; previousWeapon = weapon;
-            var table = TableManager.Instance.CustomerRequest;
+            previousCustomer = customer;
+            previousWeapon = weapon;
+            previousStep = currentStep;
+
             var snapshot = new CustomerRequestInfo.WeaponSnapshot(weapon);
             used = 0;
             Row("손님 요청사항", true, 0, true);
-            var ids = customer.Profile != null ? customer.Profile.RequestIds : null;
-            if (ids == null) Row("요청 데이터를 확인할 수 없습니다.", false, 0);
-            else if (ids.Length == 0) Row("추가 요청 없음", true, 0, true);
-            else foreach (string id in ids)
+
+            if (isTutorialTagMode)
             {
-                var request = table.FindRequest(id);
-                if (request == null) { Row("등록되지 않은 요청", false, 0); continue; }
-                var tag = table.FindTag(request.tagId);
-                bool grouped = tag != null || request.conditions == null || request.conditions.Length != 1 ||
-                    (request.requiredTestIds != null && request.requiredTestIds.Length > 0);
-                if (grouped) Row(tag != null ? tag.name + " 태그" : request.name, table.MeetsRequest(id, snapshot), 0);
-                foreach (var condition in table.Conditions(request))
-                    if (condition == null) Row("요청 조건을 확인할 수 없습니다.", false, grouped ? 1 : 0);
-                    else Row(Describe(condition, snapshot.Value(condition)), snapshot.Meets(condition), grouped ? 1 : 0);
-                foreach (string testId in request.requiredTestIds ?? System.Array.Empty<string>())
+                string tagId = currentStep.requiredTagId;
+                Row(tutorialTag.name + " 태그", table.MeetsTag(tagId, snapshot), 0);
+                foreach (var condition in tutorialTag.conditions ?? System.Array.Empty<CustomerRequestData.Condition>())
                 {
-                    var test = TableManager.Instance.ShootingTestTable.Find(testId);
-                    bool passed = snapshot.HasPassedTest(testId);
-                    Row((test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, grouped ? 1 : 0);
+                    if (condition == null) Row("요청 조건을 확인할 수 없습니다.", false, 1);
+                    else Row(Describe(condition, snapshot.Value(condition)), snapshot.Meets(condition), 1);
                 }
             }
+            else
+            {
+                var ids = customer.Profile != null ? customer.Profile.RequestIds : null;
+                if (ids == null) Row("요청 데이터를 확인할 수 없습니다.", false, 0);
+                else if (ids.Length == 0) Row("추가 요청 없음", true, 0, true);
+                else foreach (string id in ids)
+                {
+                    var request = table.FindRequest(id);
+                    if (request == null) { Row("등록되지 않은 요청", false, 0); continue; }
+                    var tag = table.FindTag(request.tagId);
+                    bool grouped = tag != null || request.conditions == null || request.conditions.Length != 1 ||
+                        (request.requiredTestIds != null && request.requiredTestIds.Length > 0);
+                    if (grouped) Row(tag != null ? tag.name + " 태그" : request.name, table.MeetsRequest(id, snapshot), 0);
+                    foreach (var condition in table.Conditions(request))
+                        if (condition == null) Row("요청 조건을 확인할 수 없습니다.", false, grouped ? 1 : 0);
+                        else Row(Describe(condition, snapshot.Value(condition)), snapshot.Meets(condition), grouped ? 1 : 0);
+                    foreach (string testId in request.requiredTestIds ?? System.Array.Empty<string>())
+                    {
+                        var test = TableManager.Instance.ShootingTestTable.Find(testId);
+                        bool passed = snapshot.HasPassedTest(testId);
+                        Row((test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, grouped ? 1 : 0);
+                    }
+                }
+            }
+
             for (int i = used; i < rows.Count; i++)
                 if (rows[i].rect.gameObject.activeSelf)
                 {
@@ -119,6 +162,6 @@ namespace WeaponWorkshop
                     textSizing?.MarkDirty();
                 }
         }
-        private void OnDisable() { HideRows(); previousCustomer = null; previousWeapon = null; nextUpdate = 0f; }
+        private void OnDisable() { HideRows(); previousCustomer = null; previousWeapon = null; previousStep = null; nextUpdate = 0f; }
     }
 }

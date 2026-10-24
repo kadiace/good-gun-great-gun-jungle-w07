@@ -677,6 +677,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d24c940dee4982f46aee6749e34404ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &66214491 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3280110481958234536, guid: ea603e9380f5f0e4d86434f238a66899, type: 3}
+  m_PrefabInstance: {fileID: 66214487}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b12770e4138cb154c84643782679af9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &76561079 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7462604652015016830, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
@@ -17468,6 +17479,14 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2033816289}
     - target: {fileID: 5595850750318366456, guid: f58191c3e947a71478526e1f9868b175, type: 3}
+      propertyPath: _raidDisposal
+      value: 
+      objectReference: {fileID: 66214491}
+    - target: {fileID: 5595850750318366456, guid: f58191c3e947a71478526e1f9868b175, type: 3}
+      propertyPath: _raidDisposalPoint
+      value: 
+      objectReference: {fileID: 1713652276}
+    - target: {fileID: 5595850750318366456, guid: f58191c3e947a71478526e1f9868b175, type: 3}
       propertyPath: _retirementShotPoint
       value: 
       objectReference: {fileID: 1713652274}
@@ -19889,6 +19908,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 7.5, y: 180, z: 0}
+--- !u!1 &1713652275
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1713652276}
+  m_Layer: 0
+  m_Name: RaidDisposalPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1713652276
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1713652275}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.5, y: 1.25, z: 1.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1720536811 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1527637746965127308, guid: cd14c968f8efebe4c8bd772e4099a0a2, type: 3}
@@ -22963,4 +23013,5 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 1713652274}
+  - {fileID: 1713652276}
   - {fileID: 1100090759}
