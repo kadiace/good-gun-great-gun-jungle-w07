@@ -162,7 +162,7 @@ namespace WeaponWorkshop
             }
             else
             {
-                AddRow($"현재 보상 ${quote.price:N0} / 최대 ${quote.maximumPrice:N0}\n클리어 배율 ×{quote.multiplier:0.##}", true, 0, true);
+                AddRow($"현재 지급액 ${quote.price:N0} / 최대 ${quote.maximumPrice:N0}\n계약 보상 배율 ×{quote.multiplier:0.##}", true, 0, true);
             }
             string[] ids = customer.Profile != null ? customer.Profile.RequestIds : null;
             if (ids == null)

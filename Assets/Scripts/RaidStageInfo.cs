@@ -82,7 +82,7 @@ namespace WeaponWorkshop
             if (settings == null) return "이 구역의 설정을 찾을 수 없습니다.";
             var text = new StringBuilder(region.name).AppendLine();
             if (!cleared && region.FirstClearSaleBonus() > 0f)
-                text.AppendLine().Append("<color=#F04D4D>●</color> 최초 클리어 보상: 상점 판매 시 고객 요구 조건 하나당 제작비 보너스 +")
+                text.AppendLine().Append("<color=#F04D4D>●</color> 최초 클리어 보상: 충족한 요청의 계약 보상 배율 +")
                     .Append((region.FirstClearSaleBonus() * 100f).ToString("0.#")).AppendLine("%p");
             text.AppendLine().AppendLine("획득 가능한 모듈");
             int remaining = 0, acquiredCount = 0;

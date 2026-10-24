@@ -33,7 +33,8 @@ namespace WeaponWorkshop
     [Serializable] public sealed class ShopSaleLogEvent : ShopWeaponLogEvent
     {
         public int price, tagCount; public bool satisfied;
-        // basePrice·bonus는 기존 분석 호환용 제작비·제작비 대비 손익이다. 지급액은 달성 요청 정액 × saleMultiplier.
+        // basePrice·bonus는 기존 분석 호환용 제작비·제작비 대비 손익이다.
+        // 일반 주문은 달성 요청 정액 × saleMultiplier + 제작비, 전부 미충족이면 제작비의 50%를 지급한다.
         public int basePrice, bonus;
         // tagCount는 기존 필드명을 유지하되 v2부터 충족한 요청 수를 기록한다.
         public int generatedDay, rewardBeforeMultiplier;
