@@ -325,7 +325,7 @@ namespace WeaponWorkshop
             }
         }
         /// <summary>
-        /// Day0 첫 손님의 첫 제출을 거절하고 확인 뒤 관통 안내로 진행합니다. 무기와 판매 집계는 유지하며 요구사항만 런타임 주문에 반영합니다.
+        /// Day0 첫 손님의 첫 제출을 거절하고 확인 뒤 관통 안내로 진행합니다. 무기와 판매 집계는 유지하며 후속 요구와 보상을 함께 계약합니다.
         /// </summary>
         public bool TryRejectFirstSubmission(Customer customer)
         {
@@ -340,7 +340,11 @@ namespace WeaponWorkshop
             ownsDialogue = true;
             if (!dialogue.Show(order.tutorialRejectionLine, "알겠습니다!", () =>
                 {
-                    customer.Profile.RequestIds = (string[])order.tutorialFollowupRequestIds.Clone();
+                    var profile = customer.Profile;
+                    profile.RequestIds = (string[])order.tutorialFollowupRequestIds.Clone();
+                    // 의도적으로 주문을 변경한 경우에만 재계약한다. 이전 요청의 보상이 남으면 판매액과 복귀 스냅샷이 어긋난다.
+                    if (profile.OrderState != null) profile.OrderState.rewards = null;
+                    CustomerRewardInfo.InitializeOrder(profile, dayZeroOwner.DayNumber);
                     ReleaseDialogue();
                     NotifySignal("first-sale-rejected", customer);
                 }, "손님")) ownsDialogue = false;
