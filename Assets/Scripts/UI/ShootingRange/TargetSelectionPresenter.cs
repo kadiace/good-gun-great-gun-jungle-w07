@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace WeaponWorkshop
 {
     /// <summary>
-    /// TargetSelectionView와 TargetBell·GameManager·ShootingTestData 도메인을 연결해
+    /// TargetSelectionView와 TargetBell·GameManager·ShootingTestBinding 도메인을 연결해
     /// 표적 소환·시험 시작·커스텀 큐브 소환·내부 청소 요청과 표시 가공을 담당하는 Presenter입니다.
     /// </summary>
     public sealed class TargetSelectionPresenter : IDisposable
@@ -19,7 +19,7 @@ namespace WeaponWorkshop
         private readonly TargetSelectionView m_view;
         private readonly GameObject[] m_targetPrefabs;
         private readonly string[] m_targetNames;
-        private readonly ShootingTestData[] m_timedTests;
+        private readonly ShootingTestBinding[] m_timedTests;
         private readonly GameObject m_customTargetPrefab;
 
         private GameManager m_game;
@@ -28,12 +28,12 @@ namespace WeaponWorkshop
         private bool m_hasLoggedDependencyError;
 
         public TargetSelectionPresenter(TargetSelectionView _view, GameObject[] _targetPrefabs,
-            string[] _targetNames, ShootingTestData[] _timedTests, GameObject _customTargetPrefab)
+            string[] _targetNames, ShootingTestBinding[] _timedTests, GameObject _customTargetPrefab)
         {
             m_view = _view;
             m_targetPrefabs = _targetPrefabs ?? Array.Empty<GameObject>();
             m_targetNames = _targetNames ?? Array.Empty<string>();
-            m_timedTests = _timedTests ?? Array.Empty<ShootingTestData>();
+            m_timedTests = _timedTests ?? Array.Empty<ShootingTestBinding>();
             m_customTargetPrefab = _customTargetPrefab;
         }
 
@@ -138,16 +138,20 @@ namespace WeaponWorkshop
             }
 
             var required = _source.RequiredTestIds() ?? new System.Collections.Generic.List<string>();
+            var tests = TableManager.Instance.ShootingTestTable;
+            var unlocks = game.UI != null && game.UI.Player != null ? game.UI.Player.GetComponent<PlayerModuleUnlocks>() : null;
             Button selected = null;
             for (int i = 0; i < m_timedTests.Length; i++)
             {
-                ShootingTestData data = m_timedTests[i];
+                ShootingTestBinding data = m_timedTests[i];
                 bool mandatory = data != null && required.Contains(data.Id);
-                bool interactable = _source.TestController != null && data != null && data.IsAvailable;
+                bool interactable = _source.TestController != null && data != null && data.IsAvailable && tests.CanStart(data.Id, unlocks);
                 string label = data == null
                     ? "미설정 테스트"
                     : (mandatory ? "<color=#FFE28A>[주문 필수]</color> " : "") + data.DisplayName + " · " +
                       data.TimeLimit.ToString("0") + "초";
+                if (data != null && !tests.CanStart(data.Id, unlocks))
+                    label += " · " + tests.UnlockDescription(data.Id, unlocks);
                 m_view.SetTimedTestRow(i, label, interactable, mandatory);
             }
 

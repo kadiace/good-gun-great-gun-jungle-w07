@@ -21,10 +21,7 @@ namespace WeaponWorkshop
                 foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
                 {
                     var tests = TableManager.Instance.ShootingTestTable;
-                    if (!tests.IsAvailable(testId)) return false;
-                    foreach (var requirement in tests.Find(testId).requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
-                        if (!ShootingTestInfo.TryGetModuleKind(requirement, out var kind) ||
-                            unlocks == null || !unlocks.IsUnlocked(kind) || unlocks.FindModule(kind) == null) return false;
+                    if (!tests.CanStart(testId, unlocks)) return false;
                 }
                 foreach (var condition in table.Conditions(row))
                 {

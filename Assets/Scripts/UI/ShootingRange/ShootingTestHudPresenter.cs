@@ -177,7 +177,7 @@ namespace WeaponWorkshop
                     : controller.CanRetryNearby
                         ? "테스트할 총을 손에 든 뒤 F: 재시도 · Esc: 종료"
                         : "테이블 근처로 돌아와 F: 재시도 · Esc: 종료")
-                : "모든 총구를 전방으로 정렬하세요. 붉은 보호 표적은 파괴하면 실패합니다.";
+                : "공격 종류와 관계없이 모든 표적을 각각 기준 이상 파괴하세요.";
 
             m_view.SetContent(controller.Definition.DisplayName, timer, timerColor, details, retry);
         }

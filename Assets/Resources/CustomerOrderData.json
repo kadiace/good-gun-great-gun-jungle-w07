@@ -43,7 +43,10 @@
         },
         {
           "id": "module/split-two/min-1",
-          "unlockDay": 1
+          "unlockDay": 1,
+          "requiredRequestIds": [
+            "shooting-test/around-cover"
+          ]
         },
         {
           "id": "tag/assault-rifle",
@@ -71,7 +74,10 @@
         },
         {
           "id": "tag/mini-nuke",
-          "unlockDay": 1
+          "unlockDay": 1,
+          "requiredRequestIds": [
+            "shooting-test/around-cover"
+          ]
         },
         {
           "id": "tag/handgun",
@@ -95,11 +101,33 @@
         },
         {
           "id": "tag/spin",
-          "unlockDay": 1
+          "unlockDay": 1,
+          "requiredRequestIds": [
+            "shooting-test/around-cover"
+          ]
         },
         {
           "id": "tag/water-gun",
           "unlockDay": 1
+        },
+        {
+          "id": "shooting-test/around-cover",
+          "unlockDay": 2
+        },
+        {
+          "id": "shooting-test/behind-barrier",
+          "unlockDay": 2
+        },
+        {
+          "id": "shooting-test/wide-targets",
+          "unlockDay": 4
+        },
+        {
+          "id": "module/split-four/min-1",
+          "unlockDay": 1,
+          "requiredRequestIds": [
+            "shooting-test/around-cover"
+          ]
         }
       ],
       "orderTemplates": [
