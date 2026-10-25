@@ -13,6 +13,8 @@ namespace WeaponWorkshop
         private readonly Func<GameManager> m_gameManagerProvider;
 
         private Action m_answered;
+        private Action[] m_choices;
+        private int m_requestedChoice = -1;
         private bool m_isInitialized;
         private bool m_hasLoggedViewError;
         private bool m_answerRequested;
@@ -74,6 +76,7 @@ namespace WeaponWorkshop
             m_view.AnswerPointerClick += OnAnswerPointerClick;
             m_view.AnswerSubmitted -= OnAnswerSubmitted;
             m_view.AnswerSubmitted += OnAnswerSubmitted;
+            m_view.ChoiceSelected += OnChoiceSelected;
 
             m_isInitialized = true;
             m_wasInputBlocked = RefreshViewState();
@@ -93,6 +96,7 @@ namespace WeaponWorkshop
                 m_view.AnswerPointerDown -= OnAnswerPointerDown;
                 m_view.AnswerPointerClick -= OnAnswerPointerClick;
                 m_view.AnswerSubmitted -= OnAnswerSubmitted;
+                m_view.ChoiceSelected -= OnChoiceSelected;
                 Hide();
                 m_view.Dispose();
             }
@@ -124,6 +128,7 @@ namespace WeaponWorkshop
             bool isInputBlocked = RefreshViewState();
 
             m_answered = _onAnswer;
+            m_choices = null;
             m_confirmOnAnyClick = _confirmOnBackgroundClick;
             m_answerRequested = false;
             m_openedFrame = Time.frameCount;
@@ -143,6 +148,27 @@ namespace WeaponWorkshop
             return true;
         }
 
+        public bool ShowChoices(string _text, string _speaker, string[] _labels, Action[] _callbacks)
+        {
+            if (_labels == null || _callbacks == null || _labels.Length != _callbacks.Length || _labels.Length == 0)
+                return false;
+            if (!m_isInitialized && !Initialize()) return false;
+            if (!m_view.ShowChoices(_text, _speaker, _labels)) return false;
+            m_choices = _callbacks;
+            m_answered = null;
+            m_answerRequested = false;
+            m_requestedChoice = -1;
+            m_confirmOnAnyClick = false;
+            m_inputLockedUntil = 0f;
+            m_openedFrame = Time.frameCount;
+            m_openedGestureId = m_currentGestureId;
+            m_inputHeldOnOpen = m_view.IsInteractPressed || m_view.IsAdvancePressed;
+            m_wasInputBlocked = RefreshViewState();
+            if (!m_wasInputBlocked) m_view.ApplyDefaultFocus();
+            SetDialogue(true);
+            return true;
+        }
+
         /// <summary>
         /// 대화 표시를 닫고 등록된 콜백을 실행하지 않은 채 비운다.
         /// </summary>
@@ -150,6 +176,8 @@ namespace WeaponWorkshop
         {
             m_confirmOnAnyClick = false;
             m_answered = null;
+            m_choices = null;
+            m_requestedChoice = -1;
             m_answerRequested = false;
             m_inputHeldOnOpen = false;
             m_inputLockedUntil = 0f;
@@ -208,6 +236,17 @@ namespace WeaponWorkshop
                 return;
             }
 
+            if (m_choices != null)
+            {
+                int selected = m_requestedChoice;
+                m_requestedChoice = -1;
+                if (selected < 0 || selected >= m_choices.Length) return;
+                Action choice = m_choices[selected];
+                m_choices = null;
+                choice?.Invoke();
+                return;
+            }
+
             if (!m_view.IsAnswerAvailable)
             {
                 return;
@@ -220,12 +259,13 @@ namespace WeaponWorkshop
 
         private void OnInteractPerformed()
         {
-            RequestAnswerFromGesture(ObtainFrameGestureId());
+            if (m_choices != null) RequestFocusedChoice();
+            else RequestAnswerFromGesture(ObtainFrameGestureId());
         }
 
         private void OnAdvancePerformed()
         {
-            RequestAnswerFromGesture(ObtainFrameGestureId());
+            if (m_choices == null) RequestAnswerFromGesture(ObtainFrameGestureId());
         }
 
         private void OnClickPerformed()
@@ -253,7 +293,21 @@ namespace WeaponWorkshop
 
         private void OnAnswerSubmitted()
         {
-            RequestAnswerFromGesture(ObtainFrameGestureId());
+            if (m_choices == null) RequestAnswerFromGesture(ObtainFrameGestureId());
+        }
+
+        private void RequestFocusedChoice()
+        {
+            if (CanRequestAnswer()) m_view.SelectFocusedChoice();
+        }
+
+        private void OnChoiceSelected(int _index)
+        {
+            if (m_choices == null || _index < 0 || _index >= m_choices.Length || !IsOpen ||
+                IsInputBlocked() || m_inputHeldOnOpen || Time.frameCount <= m_openedFrame ||
+                Time.unscaledTime < m_inputLockedUntil) return;
+            m_requestedChoice = _index;
+            m_answerRequested = true;
         }
 
         // 동일 프레임의 포인터·Submit·범용 입력을 하나의 제스처로 병합한다.
@@ -295,7 +349,7 @@ namespace WeaponWorkshop
                 return false;
             }
 
-            return m_view.IsAnswerAvailable;
+            return m_choices != null ? m_view.ChoiceCount > 0 : m_view.IsAnswerAvailable;
         }
 
         private void RequestAnswerFromGesture(int _gestureId)

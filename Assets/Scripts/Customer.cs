@@ -102,7 +102,7 @@ namespace WeaponWorkshop
         public bool Use(WeaponHolder holder)
         {
             if (!atCounter || talking || profile == null) return false;
-            Talk(HasTalked && holder != null && holder.EquippedWeapon != null ? holder : null);
+            Talk(HasTalked ? holder : null);
             return true;
         }
 
@@ -283,14 +283,21 @@ namespace WeaponWorkshop
                 // 튜토리얼은 처음 주문을 들었을 때만.
                 TutorialManager.Run(HasTalked ? null : profile.orderTutorialSequence, this, () =>
                 {
-                    talking = false;
                     HasTalked = true;
                     saveStage = 1;
-                    DialogueUI.Instance.Hide();
                     NotifyIfCustomOrder();
                     if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
-                    if (submissionHolder != null && submissionHolder.EquippedWeapon != null)
-                        SaleConfirmationUI.Instance?.ShowSubmissionChoice(this, submissionHolder);
+                    if (submissionHolder != null)
+                    {
+                        bool hasWeapon = submissionHolder.EquippedWeapon != null;
+                        string[] labels = hasWeapon ? new[] { "총기 제출하기", "닫기" } : new[] { "닫기" };
+                        System.Action close = () => { talking = false; DialogueUI.Instance.Hide(); };
+                        System.Action[] actions = hasWeapon
+                            ? new System.Action[] { () => { close(); if (submissionHolder.EquippedWeapon != null) Sell(submissionHolder); }, close }
+                            : new System.Action[] { close };
+                        DialogueUI.Instance.ShowChoices(profile.Lines[index], labels, actions);
+                    }
+                    else { talking = false; DialogueUI.Instance.Hide(); }
                 });
             });
         }

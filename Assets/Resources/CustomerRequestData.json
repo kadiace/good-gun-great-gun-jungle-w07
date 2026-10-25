@@ -411,8 +411,8 @@
     },
     {
       "id": "tag/charge",
-      "name": "차지 태그",
-      "phrase": "차지 태그 (차지 모듈 1개 이상)",
+      "name": "스모킹건 태그",
+      "phrase": "스모킹건 태그 (발열 1 이상, 물 1 이상)",
       "tagId": "f591f239c94e4f44dae9ea87c6bcdb26",
       "requiredTestIds": [],
       "conditions": [],
@@ -426,8 +426,8 @@
     },
     {
       "id": "tag/flamethrower",
-      "name": "화염방사 태그",
-      "phrase": "화염방사 태그 (발열 모듈 1개 이상, 연사 1 이상)",
+      "name": "화염방사기 태그",
+      "phrase": "화염방사기 태그 (발열 1 이상, 연사 1 이상, 무게 15 이상)",
       "tagId": "b370a46a3f0c45a438dc174b4b9c8d32",
       "requiredTestIds": [],
       "conditions": [],
@@ -442,7 +442,7 @@
     {
       "id": "tag/gravity-gun",
       "name": "중력건 태그",
-      "phrase": "중력건 태그 (중력 모듈 1개 이상)",
+      "phrase": "중력건 태그 (중력 모듈 1개 이상, 차지 모듈 1개 이상)",
       "tagId": "1199a71d1cb406344b40eab02c202fd0",
       "requiredTestIds": [],
       "conditions": [],
@@ -456,8 +456,8 @@
     },
     {
       "id": "tag/grenade-launcher",
-      "name": "유탄 태그",
-      "phrase": "유탄 태그 (폭발 1 이상, 10 이하)",
+      "name": "유탄발사기 태그",
+      "phrase": "유탄발사기 태그 (폭발 5 이상, 차지 1 이상, 무게 20 이상)",
       "tagId": "cb2c1699ceedbb54084051bd0ed7a56b",
       "requiredTestIds": [],
       "conditions": [],
@@ -472,7 +472,7 @@
     {
       "id": "tag/handgun",
       "name": "권총 태그",
-      "phrase": "권총 태그 (무게 20 미만, 스코프 모듈 없음)",
+      "phrase": "권총 태그 (무게 10 미만)",
       "tagId": "f9e8d0ecf0b963e4aa51f837b5ae8602",
       "requiredTestIds": [],
       "conditions": [],
@@ -486,8 +486,8 @@
     },
     {
       "id": "tag/homing",
-      "name": "유도 태그",
-      "phrase": "유도 태그 (유도 모듈 1개 이상)",
+      "name": "스팅어 태그",
+      "phrase": "스팅어 태그 (유도 1 이상, 폭발 3 이상, 무게 15 이상)",
       "tagId": "7d95d7b383516df44830a4c7b34f3568",
       "requiredTestIds": [],
       "conditions": [],
@@ -501,8 +501,8 @@
     },
     {
       "id": "tag/mini-nuke",
-      "name": "소형핵 태그",
-      "phrase": "소형핵 태그 (폭발 5 이상)",
+      "name": "워터블래스트 태그",
+      "phrase": "워터블래스트 태그 (물 1 이상, 회전 1 이상, 4방향 분할 1 이상, 연사 2 이상)",
       "tagId": "3396cf208ef6d564bb1cd952a6fe598b",
       "requiredTestIds": [],
       "conditions": [],
@@ -530,7 +530,7 @@
     {
       "id": "tag/shotgun",
       "name": "산탄총 태그",
-      "phrase": "산탄총 태그 (폭발 2, 관통 8, 방사 1 이상)",
+      "phrase": "산탄총 태그 (방사 1 이상, 폭발 2 이상, 관통 4 이상, 무게 15 이상)",
       "tagId": "b89c88322f37da74cb6f1624397fce4d",
       "requiredTestIds": [],
       "conditions": [],
@@ -559,8 +559,8 @@
     },
     {
       "id": "tag/spin",
-      "name": "회전 태그",
-      "phrase": "회전 태그 (회전 모듈 1개 이상)",
+      "name": "개틀링건 태그",
+      "phrase": "개틀링건 태그 (회전 1 이상, 4방향 분할 1 이상, 가속 2 이상, 연사 3 이상, 무게 12 이상)",
       "tagId": "b5d9e450608d02c448b9a7d3bba5ad92",
       "requiredTestIds": [],
       "conditions": [],
@@ -575,7 +575,7 @@
     {
       "id": "tag/water-gun",
       "name": "물총 태그",
-      "phrase": "물총 태그 (전력이 연결된 물 모듈 1개 이상)",
+      "phrase": "물총 태그 (물 1 이상, 연사 1 이상)",
       "tagId": "3912bb5b7da966a47995e32041938a6a",
       "requiredTestIds": [],
       "conditions": [],
@@ -606,12 +606,19 @@
           "measure": "PathModules",
           "stat": "Gravity",
           "min": 1.0
+        },
+        {
+          "id": "gravity-gun-charge",
+          "label": "차지 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Charge",
+          "min": 1.0
         }
       ]
     },
     {
       "id": "3396cf208ef6d564bb1cd952a6fe598b",
-      "name": "소형핵",
+      "name": "워터블래스트",
       "color": {
         "r": 0.4431372582912445,
         "g": 0.6078431606292725,
@@ -621,11 +628,32 @@
       "sellMultiplier": 1.0,
       "conditions": [
         {
-          "id": "09602f9cad214a56a3167920e97b366b",
-          "label": "폭발력",
+          "id": "water-blast-water",
+          "label": "물 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Water",
+          "min": 1.0
+        },
+        {
+          "id": "water-blast-spin",
+          "label": "회전 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Spin",
+          "min": 1.0
+        },
+        {
+          "id": "water-blast-split-four",
+          "label": "4방향 분할 모듈 개수",
+          "measure": "SplitFourBlocks",
+          "stat": "Water",
+          "min": 1.0
+        },
+        {
+          "id": "water-blast-fire-rate",
+          "label": "연사력",
           "measure": "WeaponStat",
-          "stat": "Explosion",
-          "min": 5.0
+          "stat": "FireRate",
+          "min": 2.0
         }
       ]
     },
@@ -666,12 +694,19 @@
           "measure": "PathModules",
           "stat": "Water",
           "min": 1.0
+        },
+        {
+          "id": "water-gun-fire-rate",
+          "label": "연사력",
+          "measure": "WeaponStat",
+          "stat": "FireRate",
+          "min": 1.0
         }
       ]
     },
     {
       "id": "7d95d7b383516df44830a4c7b34f3568",
-      "name": "유도",
+      "name": "스팅어",
       "color": {
         "r": 0.23529411852359772,
         "g": 0.5176470875740051,
@@ -686,6 +721,20 @@
           "measure": "PathModules",
           "stat": "Homing",
           "min": 1.0
+        },
+        {
+          "id": "stinger-explosion",
+          "label": "폭발력",
+          "measure": "WeaponStat",
+          "stat": "Explosion",
+          "min": 3.0
+        },
+        {
+          "id": "stinger-weight",
+          "label": "무게",
+          "measure": "WeaponStat",
+          "stat": "Weight",
+          "min": 15.0
         }
       ]
     },
@@ -766,7 +815,7 @@
     },
     {
       "id": "b370a46a3f0c45a438dc174b4b9c8d32",
-      "name": "화염방사",
+      "name": "화염방사기",
       "color": {
         "r": 0.772549033164978,
         "g": 0.2980392277240753,
@@ -788,12 +837,19 @@
           "measure": "WeaponStat",
           "stat": "FireRate",
           "min": 1.0
+        },
+        {
+          "id": "flamethrower-weight",
+          "label": "무게",
+          "measure": "WeaponStat",
+          "stat": "Weight",
+          "min": 15.0
         }
       ]
     },
     {
       "id": "b5d9e450608d02c448b9a7d3bba5ad92",
-      "name": "회전",
+      "name": "개틀링건",
       "color": {
         "r": 0.32549020648002625,
         "g": 0.41960784792900085,
@@ -808,6 +864,34 @@
           "measure": "PathModules",
           "stat": "Spin",
           "min": 1.0
+        },
+        {
+          "id": "gatling-split-four",
+          "label": "4방향 분할 모듈 개수",
+          "measure": "SplitFourBlocks",
+          "stat": "Spin",
+          "min": 1.0
+        },
+        {
+          "id": "gatling-speed",
+          "label": "가속",
+          "measure": "WeaponStat",
+          "stat": "Speed",
+          "min": 2.0
+        },
+        {
+          "id": "gatling-fire-rate",
+          "label": "연사력",
+          "measure": "WeaponStat",
+          "stat": "FireRate",
+          "min": 3.0
+        },
+        {
+          "id": "gatling-weight",
+          "label": "무게",
+          "measure": "WeaponStat",
+          "stat": "Weight",
+          "min": 12.0
         }
       ]
     },
@@ -841,13 +925,20 @@
           "label": "관통력",
           "measure": "WeaponStat",
           "stat": "Penetration",
-          "min": 8.0
+          "min": 4.0
+        },
+        {
+          "id": "shotgun-weight",
+          "label": "무게",
+          "measure": "WeaponStat",
+          "stat": "Weight",
+          "min": 15.0
         }
       ]
     },
     {
       "id": "cb2c1699ceedbb54084051bd0ed7a56b",
-      "name": "유탄",
+      "name": "유탄발사기",
       "color": {
         "r": 0.6392157077789307,
         "g": 0.4156862795352936,
@@ -861,21 +952,27 @@
           "label": "폭발력",
           "measure": "WeaponStat",
           "stat": "Explosion",
+          "min": 5.0
+        },
+        {
+          "id": "grenade-launcher-charge",
+          "label": "차지 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Charge",
           "min": 1.0
         },
         {
-          "id": "d4b7c6142b6b409db7e142ffc1234b65",
-          "label": "폭발력",
+          "id": "grenade-launcher-weight",
+          "label": "무게",
           "measure": "WeaponStat",
-          "stat": "Explosion",
-          "min": 0.0,
-          "max": 10.0
+          "stat": "Weight",
+          "min": 20.0
         }
       ]
     },
     {
       "id": "f591f239c94e4f44dae9ea87c6bcdb26",
-      "name": "차지",
+      "name": "스모킹건",
       "color": {
         "r": 0.6745098233222961,
         "g": 0.5176470875740051,
@@ -885,10 +982,17 @@
       "sellMultiplier": 1.0,
       "conditions": [
         {
-          "id": "2712e58edf614a48a556ba535a0b85fb",
-          "label": "차지 모듈 개수",
+          "id": "smoking-gun-heat",
+          "label": "발열 모듈 개수",
           "measure": "PathModules",
-          "stat": "Charge",
+          "stat": "Heat",
+          "min": 1.0
+        },
+        {
+          "id": "smoking-gun-water",
+          "label": "물 모듈 개수",
+          "measure": "PathModules",
+          "stat": "Water",
           "min": 1.0
         }
       ]
@@ -910,7 +1014,7 @@
           "measure": "WeaponStat",
           "stat": "Weight",
           "min": 0.0,
-          "max": 20.0,
+          "max": 10.0,
           "maxExclusive": true
         }
       ]
