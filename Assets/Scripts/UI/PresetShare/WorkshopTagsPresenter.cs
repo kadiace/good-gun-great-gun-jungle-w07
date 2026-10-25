@@ -13,7 +13,6 @@ namespace WeaponWorkshop
     {
         private readonly WorkshopTagsView m_view;
         private readonly UIManager m_uiManager;
-        private readonly ShopCatalog m_shopCatalog;
         private readonly WeaponTypeData[] m_tagData;
         private readonly RaidModuleIcon[] m_raidModuleIcons;
         private readonly Sprite m_raidFallbackIcon;
@@ -40,7 +39,6 @@ namespace WeaponWorkshop
         {
             m_view = _view;
             m_uiManager = _uiManager;
-            m_shopCatalog = _shopCatalog;
             m_tagData = _tagData;
             m_raidModuleIcons = _raidModuleIcons;
             m_raidFallbackIcon = _raidFallbackIcon;
@@ -216,8 +214,7 @@ namespace WeaponWorkshop
             if (m_view != null)
             {
                 core.TryGetComponent<StatCollector>(out var collector);
-                int price = m_shopCatalog != null && collector != null
-                    ? m_shopCatalog.GetSellPrice(collector.Modules, m_matchedTags) : 0;
+                int price = collector != null ? ModulePriceTotal(collector.Modules) : 0;
                 if (price != m_lastPrice)
                 {
                     m_lastPrice = price;
@@ -277,12 +274,18 @@ namespace WeaponWorkshop
 
         public int GetWeaponValue(EquipableWeapon weapon)
         {
-            if (weapon == null || m_shopCatalog == null) return 0;
+            if (weapon == null) return 0;
             PowerCore core = weapon.GetComponentInChildren<PowerCore>(true);
             if (core == null || !core.TryGetComponent<StatCollector>(out var collector)) return 0;
-            var matched = new List<WeaponTypeData>();
-            GetMatchedTags(CustomerRequestInfo.GetSnapshot(core), matched);
-            return m_shopCatalog.GetSellPrice(collector.Modules, matched);
+            return ModulePriceTotal(collector.Modules);
+        }
+
+        private static int ModulePriceTotal(IEnumerable<ModuleData> modules)
+        {
+            long total = 0;
+            foreach (ModuleData module in modules)
+                if (module != null) total += module.BuyPrice;
+            return (int)Math.Min(total, int.MaxValue);
         }
 
         private static bool SameTags(List<CustomerRequestData.Tag> _current, List<CustomerRequestData.Tag> _applied)
