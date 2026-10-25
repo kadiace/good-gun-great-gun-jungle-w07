@@ -320,7 +320,6 @@ namespace WeaponWorkshop
                     HasTalked = true;
                     saveStage = 1;
                     NotifyIfCustomOrder();
-                    if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
                     if (submissionHolder != null)
                     {
                         bool hasWeapon = submissionHolder.EquippedWeapon != null;
@@ -350,6 +349,8 @@ namespace WeaponWorkshop
                         DialogueUI.Instance.ShowChoices(line, labels, actions);
                     }
                     else { talking = false; DialogueUI.Instance.Hide(); }
+                    // 신호가 다음 튜토리얼 대화를 즉시 열 수 있으므로 손님 대화 처리를 먼저 끝낸다.
+                    if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
                 });
             });
         }
