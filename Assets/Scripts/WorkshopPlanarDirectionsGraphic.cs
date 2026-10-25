@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
-    // 총구 목록은 발사 경로를 공유하고, 표시는 최종 작업대 자세를 Canvas에 투영한다.
+    // 3D/2D 작업대의 코어 정면과 실제 발사 출구를 하나의 UI 메시로 투영한다.
     [DefaultExecutionOrder(115)]
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class WorkshopPlanarDirectionsGraphic : MaskableGraphic
@@ -13,8 +13,14 @@ namespace WeaponWorkshop
         [SerializeField] private Color muzzleColor = Color.red;
         [SerializeField] private Color forwardColor = Color.white;
         [SerializeField] private TMP_Text forwardLabel;
-        [SerializeField, Range(.001f, .025f), Tooltip("정면 다이아몬드 대각선 크기 / 화면의 짧은 변")]
+        [SerializeField, Range(.001f, .025f), Tooltip("시선과 평행한 정면 표식 크기 / 화면의 짧은 변")]
         private float forwardDiamondSizeRatio = .006f;
+        [SerializeField, Min(.1f), Tooltip("장착 정면 화살표 길이(코어 셀 단위)")]
+        private float forwardArrowLength = 1.5f;
+        [SerializeField, Min(0f), Tooltip("가장 앞선 모듈 끝과 정면 화살표 사이 간격(셀 단위)")]
+        private float forwardArrowGap = .12f;
+        [SerializeField, Min(.1f), Tooltip("실제 총구의 직선 방향 안내 길이(셀 단위). 탄도 시뮬레이션은 하지 않습니다.")]
+        private float muzzleLineLength = 4f;
         private struct Marker
         {
             public Vector3 origin;
@@ -24,17 +30,21 @@ namespace WeaponWorkshop
         }
 
         private readonly List<Marker> markers = new List<Marker>();
-        private readonly Dictionary<(Vector2Int, Vector3Int), int> projectedMuzzles =
-            new Dictionary<(Vector2Int, Vector3Int), int>();
+        private readonly Dictionary<(Vector3Int, Vector3Int), int> projectedMuzzles =
+            new Dictionary<(Vector3Int, Vector3Int), int>();
         private WorkshopPlanarView view;
+        private Camera viewCamera;
         private CubeAssembly assembly;
-        private EquipableWeapon subscribedWeapon;
         private WorkshopViewAxis cachedAxis;
-        private bool visible, structureDirty;
-        private Vector3 forwardFace;
-        private bool IsSideView => view != null && view.Normal.z == 0;
-        private Vector3 ForwardMarkerWorld => assembly.transform.TransformPoint(IsSideView ? forwardFace : Vector3.zero);
-        private float DiamondPixels => Mathf.Min(view.Camera.pixelWidth, view.Camera.pixelHeight) * forwardDiamondSizeRatio;
+        private uint cachedStructureRevision;
+        private bool visible, structureDirty, cachedPlanar;
+        private float forwardDepth;
+        private bool IsPlanar => view != null && view.Is2D;
+        // 시작점은 코어 중심 축에 두고, 조립 전체의 가장 앞선 셀 끝을 지난다.
+        private Vector3 ForwardMarkerWorld => assembly.transform.TransformPoint(Vector3.forward * (forwardDepth + .5f + forwardArrowGap));
+        private Vector3 ForwardTipWorld => assembly.transform.TransformPoint(Vector3.forward * (forwardDepth + .5f + forwardArrowGap + forwardArrowLength));
+        private float ScreenSize => Mathf.Min(viewCamera.pixelWidth, viewCamera.pixelHeight);
+        private float DiamondPixels => ScreenSize * forwardDiamondSizeRatio;
         // Seven-segment digits keep overlap counts in the same batched UI mesh.
         private static readonly byte[] Digits = { 0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f };
 
@@ -45,7 +55,7 @@ namespace WeaponWorkshop
             visible = false;
             if (forwardLabel != null)
             {
-                forwardLabel.text = "장착 전방 (+Forward)";
+                forwardLabel.text = "장착 정면";
                 forwardLabel.color = forwardColor;
                 forwardLabel.raycastTarget = false;
                 forwardLabel.enableAutoSizing = true;
@@ -57,9 +67,20 @@ namespace WeaponWorkshop
         }
 
         public void Bind(WorkshopPlanarView planarView, bool show)
+            => Bind(planarView, planarView != null ? planarView.Assembly : null,
+                planarView != null ? planarView.Camera : null, show);
+
+        public void Bind(WorkshopPlanarView planarView, CubeAssembly target, Camera camera, bool show)
         {
             view = planarView;
-            visible = show && view != null;
+            viewCamera = camera;
+            if (assembly != target)
+            {
+                ReleaseAssembly();
+                assembly = target;
+                structureDirty = true;
+            }
+            visible = show && assembly != null && viewCamera != null;
             if (visible) return;
             HideForwardLabel();
             ReleaseAssembly();
@@ -68,32 +89,21 @@ namespace WeaponWorkshop
 
         private void LateUpdate()
         {
-            if (!visible || view == null || !view.Is2D || view.Assembly == null || view.Camera == null)
+            if (!visible || assembly == null || viewCamera == null)
             {
                 HideForwardLabel();
                 ReleaseAssembly();
                 SetVerticesDirty();
                 return;
             }
-            if (assembly != view.Assembly)
-            {
-                ReleaseAssembly();
-                assembly = view.Assembly;
-                subscribedWeapon = assembly.GetComponentInParent<EquipableWeapon>();
-                if (subscribedWeapon != null) subscribedWeapon.AssemblyChanged += MarkStructureDirty;
-                structureDirty = true;
-            }
-            if (structureDirty || cachedAxis != view.Axis) RebuildMarkers();
+            if (structureDirty || cachedStructureRevision != assembly.Analysis.StructureRevision ||
+                cachedPlanar != IsPlanar || (IsPlanar && cachedAxis != view.Axis)) RebuildMarkers();
             UpdateForwardLabel();
             SetVerticesDirty();
         }
 
-        private void MarkStructureDirty() => structureDirty = true;
-
         private void ReleaseAssembly()
         {
-            if (!ReferenceEquals(subscribedWeapon, null)) subscribedWeapon.AssemblyChanged -= MarkStructureDirty;
-            subscribedWeapon = null;
             assembly = null;
             markers.Clear();
             projectedMuzzles.Clear();
@@ -103,19 +113,15 @@ namespace WeaponWorkshop
         {
             markers.Clear();
             projectedMuzzles.Clear();
-            forwardFace = assembly.GetOutermostFace(Vector3Int.forward);
-            foreach (var muzzle in assembly.GetProjectilePaths())
+            forwardDepth = 0f;
+            foreach (PlacedBlock block in assembly.Analysis.Blocks) forwardDepth = Mathf.Max(forwardDepth, block.Cell.z);
+            foreach (var muzzle in assembly.Analysis.Paths)
             {
-                // 최종 발사 방향이 아니라 코어 +Forward 면에서 시작한 경로를 선택한다.
-                // 분할·꺾임 후 다른 방향을 향해도 이 경로에서 파생된 총구면 포함한다.
-                bool fromForward = muzzle.path.Length == 0 ? muzzle.direction == Vector3Int.forward
-                    : muzzle.path[0].Cell == Vector3Int.forward;
-                if (!fromForward) continue;
                 // 직접 코어 출력의 발사 원점은 중심이지만, 표식만 코어의 해당 면에 붙인다.
                 Vector3 origin = muzzle.path.Length == 0 ? (Vector3)muzzle.direction * .5f : muzzle.origin;
-                Vector2Int position = new Vector2Int(
+                Vector3Int position = IsPlanar ? new Vector3Int(
                     Mathf.RoundToInt(Vector3.Dot(origin, view.Horizontal) * 2f),
-                    Mathf.RoundToInt(Vector3.Dot(origin, view.Vertical) * 2f));
+                    Mathf.RoundToInt(Vector3.Dot(origin, view.Vertical) * 2f), 0) : Vector3Int.RoundToInt(origin * 2f);
                 var key = (position, muzzle.direction);
                 if (projectedMuzzles.TryGetValue(key, out int index))
                 {
@@ -130,7 +136,9 @@ namespace WeaponWorkshop
                     markers.Add(new Marker { origin = origin, direction = muzzle.direction, count = 1 });
                 }
             }
-            cachedAxis = view.Axis;
+            if (view != null) cachedAxis = view.Axis;
+            cachedPlanar = IsPlanar;
+            cachedStructureRevision = assembly.Analysis.StructureRevision;
             structureDirty = false;
         }
 
@@ -141,20 +149,20 @@ namespace WeaponWorkshop
 
         private void UpdateForwardLabel()
         {
-            if (forwardLabel == null || canvas == null || !IsOnScreen(ForwardMarkerWorld))
+            if (forwardLabel == null || canvas == null)
             { HideForwardLabel(); return; }
-            Vector2 point = Project(ForwardMarkerWorld);
-            // 3D FrontMark처럼 지점의 오른쪽에 텍스트를 둔다. 간격도 화면 비율로 환산한다.
-            float gapPixels = DiamondPixels * .5f + Mathf.Min(view.Camera.pixelWidth, view.Camera.pixelHeight) * .004f;
+            Vector3 anchor = IsOnScreen(ForwardTipWorld) ? ForwardTipWorld : ForwardMarkerWorld;
+            if (!IsOnScreen(anchor)) { HideForwardLabel(); return; }
+            Vector2 point = Project(anchor);
+            float gapPixels = DiamondPixels * .5f + ScreenSize * .004f;
             Vector2 gap = ScreenSizeInLocal(new Vector2(gapPixels, 0f));
-            if (!IsSideView)
-                gap.x += Vector2.Distance(point, Project(assembly.transform.TransformPoint(view.Horizontal))) * .6f;
             RectTransform labelRect = forwardLabel.rectTransform;
             labelRect.pivot = new Vector2(0f, .5f);
             forwardLabel.alignment = TextAlignmentOptions.Left;
             Vector2 local = point + gap;
             labelRect.localPosition = new Vector3(local.x, local.y, 0f);
-            labelRect.sizeDelta = ScreenSizeInLocal(new Vector2(view.Camera.pixelWidth * .14f, view.Camera.pixelHeight * .03f));
+            labelRect.sizeDelta = ScreenSizeInLocal(new Vector2(viewCamera.pixelWidth * .14f, viewCamera.pixelHeight * .03f));
+            forwardLabel.color = DirectionTint(forwardColor, Vector3Int.forward);
             if (!forwardLabel.gameObject.activeSelf) forwardLabel.gameObject.SetActive(true);
         }
 
@@ -169,40 +177,46 @@ namespace WeaponWorkshop
         protected override void OnPopulateMesh(VertexHelper mesh)
         {
             mesh.Clear();
-            if (!visible || view == null || !view.Is2D || assembly == null || canvas == null || view.Camera == null) return;
+            if (!visible || assembly == null || canvas == null || viewCamera == null) return;
             Transform root = assembly.transform;
-            Vector2 core = Project(root.position);
-            float cellWidth = Vector2.Distance(core, Project(root.TransformPoint(view.Horizontal)));
-            float cellHeight = Vector2.Distance(core, Project(root.TransformPoint(view.Vertical)));
-            if (cellWidth <= .001f || cellHeight <= .001f) return;
-
-            // +Forward 보기에서는 총구 자체가 보이므로 화살표와 겹침 개수를 함께 숨긴다.
-            if (view.Axis != WorkshopViewAxis.Front)
+            Vector2 lineSize = ScreenSizeInLocal(new Vector2(Mathf.Max(1.5f, ScreenSize * .0015f), ScreenSize * .007f));
+            Vector2 countSize = ScreenSizeInLocal(Vector2.one * ScreenSize * .055f);
+            foreach (Marker marker in markers)
             {
-                foreach (Marker marker in markers)
+                Vector3 start = root.TransformPoint(marker.origin);
+                Vector3 end = root.TransformPoint(marker.origin + (Vector3)marker.direction * muzzleLineLength);
+                if (!TryProjectSegment(start, end, out Vector2 a, out Vector2 b)) continue;
+                Vector2 delta = b - a;
+                float length = delta.magnitude;
+                if (length < lineSize.x) continue;
+                Vector2 unit = delta / length;
+                Color tint = DirectionTint(muzzleColor, marker.direction);
+                float dash = Mathf.Max(lineSize.y, lineSize.x * 3f);
+                for (float distance = 0f; distance < length; distance += dash * 1.6f)
                 {
-                    Vector3 world = root.TransformPoint(marker.origin);
-                    if (!IsOnScreen(world)) continue;
-                    DrawDirection(mesh, Project(world), marker.direction, cellWidth, cellHeight,
-                        muzzleColor, marker.countLabel);
+                    Color faded = tint;
+                    faded.a *= Mathf.Lerp(1f, .25f, distance / length);
+                    Line(mesh, a + unit * distance, a + unit * Mathf.Min(distance + dash, length), lineSize.x, faded);
                 }
+                if (marker.countLabel != null && IsOnScreen(start))
+                    Count(mesh, marker.countLabel, Project(start), unit, countSize.x, countSize.y, tint);
             }
-            // 정면 지점은 총구 화살표와 겹쳐도 읽을 수 있게 마지막에 그린다.
-            if (IsSideView && IsOnScreen(ForwardMarkerWorld))
-                Diamond(mesh, Project(ForwardMarkerWorld), ScreenSizeInLocal(Vector2.one * DiamondPixels), forwardColor);
+            Color forwardTint = DirectionTint(forwardColor, Vector3Int.forward);
+            if (TryProjectSegment(ForwardMarkerWorld, ForwardTipWorld, out Vector2 arrowStart, out Vector2 arrowEnd))
+            {
+                Vector2 delta = arrowEnd - arrowStart;
+                Vector2 width = ScreenSizeInLocal(Vector2.one * ScreenSize * .014f);
+                if (delta.magnitude > width.x)
+                    Arrow(mesh, arrowStart, delta.normalized, delta.magnitude, width.x, forwardTint);
+                else if (IsOnScreen(ForwardMarkerWorld))
+                    Diamond(mesh, Project(ForwardMarkerWorld), ScreenSizeInLocal(Vector2.one * DiamondPixels), forwardTint);
+            }
         }
 
-        private void DrawDirection(VertexHelper mesh, Vector2 origin, Vector3Int direction, float cellWidth,
-            float cellHeight, Color tint, string count)
+        private Color DirectionTint(Color tint, Vector3Int direction)
         {
-            Vector2 planar = new Vector2(Vector3.Dot(direction, view.Horizontal), Vector3.Dot(direction, view.Vertical));
-            // 화면 앞·뒤 방향에는 대체 화살표나 겹침 개수를 그리지 않는다.
-            if (planar.sqrMagnitude <= .5f) return;
-            Vector2 unit = planar.normalized;
-            float length = (Mathf.Abs(unit.x) > .5f ? cellWidth : cellHeight) * .85f;
-            float width = (Mathf.Abs(unit.x) > .5f ? cellHeight : cellWidth) * .4f;
-            Arrow(mesh, origin, unit, length, width, tint);
-            if (count != null) Count(mesh, count, origin, unit, cellWidth, cellHeight, tint);
+            if (Vector3.Dot(viewCamera.transform.forward, assembly.transform.TransformDirection(direction)) > .05f) tint.a *= .2f;
+            return tint;
         }
 
         private static void Arrow(VertexHelper mesh, Vector2 start, Vector2 direction, float length, float width, Color tint)
@@ -270,7 +284,7 @@ namespace WeaponWorkshop
 
         private Vector2 Project(Vector3 world)
         {
-            Vector2 screen = view.Camera.WorldToScreenPoint(world);
+            Vector2 screen = viewCamera.WorldToScreenPoint(world);
             Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screen, uiCamera, out Vector2 local);
             return local;
@@ -278,9 +292,43 @@ namespace WeaponWorkshop
 
         private bool IsOnScreen(Vector3 world)
         {
-            Vector3 screen = view.Camera.WorldToScreenPoint(world);
-            return screen.z >= view.Camera.nearClipPlane && screen.z <= view.Camera.farClipPlane &&
-                view.Camera.pixelRect.Contains(new Vector2(screen.x, screen.y));
+            Vector3 screen = viewCamera.WorldToScreenPoint(world);
+            return screen.z >= viewCamera.nearClipPlane && screen.z <= viewCamera.farClipPlane &&
+                viewCamera.pixelRect.Contains(new Vector2(screen.x, screen.y));
+        }
+
+        private bool TryProjectSegment(Vector3 start, Vector3 end, out Vector2 a, out Vector2 b)
+        {
+            a = b = Vector2.zero;
+            Vector3 cameraForward = viewCamera.transform.forward;
+            Vector3 cameraPosition = viewCamera.transform.position;
+            float near = viewCamera.nearClipPlane + .0001f;
+            float startDepth = Vector3.Dot(start - cameraPosition, cameraForward);
+            float endDepth = Vector3.Dot(end - cameraPosition, cameraForward);
+            if (startDepth < near && endDepth < near) return false;
+            if (startDepth < near) start = Vector3.Lerp(start, end, (near - startDepth) / (endDepth - startDepth));
+            else if (endDepth < near) end = Vector3.Lerp(start, end, (near - startDepth) / (endDepth - startDepth));
+            a = Project(start);
+            b = Project(end);
+            Vector2 delta = b - a;
+            Rect bounds = rectTransform.rect;
+            float enter = 0f, exit = 1f;
+            if (!Clip(-delta.x, a.x - bounds.xMin, ref enter, ref exit) ||
+                !Clip(delta.x, bounds.xMax - a.x, ref enter, ref exit) ||
+                !Clip(-delta.y, a.y - bounds.yMin, ref enter, ref exit) ||
+                !Clip(delta.y, bounds.yMax - a.y, ref enter, ref exit)) return false;
+            b = a + delta * exit;
+            a += delta * enter;
+            return true;
+        }
+
+        private static bool Clip(float direction, float distance, ref float enter, ref float exit)
+        {
+            if (Mathf.Abs(direction) < .00001f) return distance >= 0f;
+            float t = distance / direction;
+            if (direction < 0f) { if (t > exit) return false; enter = Mathf.Max(enter, t); }
+            else { if (t < enter) return false; exit = Mathf.Min(exit, t); }
+            return true;
         }
 
         protected override void OnDisable()

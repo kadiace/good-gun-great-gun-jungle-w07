@@ -39,6 +39,7 @@ namespace WeaponWorkshop
         private bool m_authoredAnswerInteractable;
         private bool m_hasAppliedInitialHiddenState;
         private bool m_hasLoggedInitializationError;
+        private readonly System.Collections.Generic.List<UnityEngine.UI.Button> m_choiceButtons = new System.Collections.Generic.List<UnityEngine.UI.Button>();
 
         public event Action InteractPerformed;
         public event Action AdvancePerformed;
@@ -54,6 +55,8 @@ namespace WeaponWorkshop
         public bool IsClickPressed => m_clickAction != null && m_clickAction.IsPressed();
         public bool IsAnswerAvailable => m_answerButton != null && m_answerButton.isActiveAndEnabled && m_answerButton.interactable;
         public RectTransform TutorialButton => m_answerButton != null ? m_answerButton.transform as RectTransform : null;
+        public int ChoiceCount => m_choiceButtons.Count;
+        public event Action<int> ChoiceSelected;
 
         private void Awake()
         {
@@ -205,6 +208,8 @@ namespace WeaponWorkshop
                 return false;
             }
 
+            ClearChoices();
+            m_answerButton.gameObject.SetActive(true);
             m_line.text = _text;
             if (m_speakerLabel != null)
             {
@@ -220,6 +225,70 @@ namespace WeaponWorkshop
 
             m_box.SetActive(true);
             return true;
+        }
+
+        public bool ShowChoices(string _text, string _speaker, string[] _labels)
+        {
+            if (!Show(_text, string.Empty, _speaker) || _labels == null || _labels.Length == 0)
+                return false;
+
+            m_answerButton.gameObject.SetActive(false);
+            RectTransform original = (RectTransform)m_answerButton.transform;
+            for (int i = 0; i < _labels.Length; i++)
+            {
+                int index = i;
+                UnityEngine.UI.Button button = Instantiate(m_answerButton, original.parent);
+                button.gameObject.name = "DialogueChoice_" + i;
+                button.gameObject.SetActive(true);
+                button.GetComponent<DialogueConfirmButtonEventRelay>().enabled = false;
+                RectTransform rect = (RectTransform)button.transform;
+                rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
+                rect.pivot = new Vector2(1f, 0f);
+                rect.sizeDelta = new Vector2(210f, 39f);
+                rect.anchoredPosition = new Vector2(-18f, 12f + (_labels.Length - 1 - i) * 45f);
+                button.GetComponentInChildren<TextMeshProUGUI>().text = _labels[i];
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(() => ChoiceSelected?.Invoke(index));
+                m_choiceButtons.Add(button);
+            }
+            ConfigureChoiceNavigation();
+            return true;
+        }
+
+        public void FocusChoice(int _index)
+        {
+            if (_index >= 0 && _index < m_choiceButtons.Count && EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(m_choiceButtons[_index].gameObject);
+        }
+
+        public void SelectFocusedChoice()
+        {
+            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            for (int i = 0; i < m_choiceButtons.Count; i++)
+                if (m_choiceButtons[i].gameObject == selected) { ChoiceSelected?.Invoke(i); return; }
+            if (m_choiceButtons.Count > 0) ChoiceSelected?.Invoke(0);
+        }
+
+        private void ConfigureChoiceNavigation()
+        {
+            for (int i = 0; i < m_choiceButtons.Count; i++)
+            {
+                var navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.Explicit };
+                navigation.selectOnUp = m_choiceButtons[Mathf.Max(0, i - 1)];
+                navigation.selectOnDown = m_choiceButtons[Mathf.Min(m_choiceButtons.Count - 1, i + 1)];
+                m_choiceButtons[i].navigation = navigation;
+            }
+        }
+
+        private void ClearChoices()
+        {
+            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            foreach (var button in m_choiceButtons)
+            {
+                if (button != null && button.gameObject == selected) EventSystem.current.SetSelectedGameObject(null);
+                if (button != null) Destroy(button.gameObject);
+            }
+            m_choiceButtons.Clear();
         }
 
         public void Hide()
@@ -250,6 +319,8 @@ namespace WeaponWorkshop
             {
                 m_answerButton.interactable = _isBlocked ? false : m_authoredAnswerInteractable;
             }
+            foreach (var button in m_choiceButtons)
+                if (button != null) button.interactable = !_isBlocked;
         }
 
         /// <summary>
@@ -285,6 +356,7 @@ namespace WeaponWorkshop
             }
 
             eventSystem.SetSelectedGameObject(null);
+            if (m_choiceButtons.Count > 0) { FocusChoice(0); return; }
             if (IsValidSelectable(m_answerButton))
             {
                 eventSystem.SetSelectedGameObject(m_answerButton.gameObject);
@@ -305,6 +377,8 @@ namespace WeaponWorkshop
             GameObject selected = eventSystem.currentSelectedGameObject;
             if (selected != null)
             {
+                foreach (var choice in m_choiceButtons)
+                    if (choice != null && selected == choice.gameObject) return;
                 if (m_answerButton != null && selected == m_answerButton.gameObject)
                 {
                     return;
@@ -334,6 +408,8 @@ namespace WeaponWorkshop
 
         private void HideImmediate()
         {
+            ClearChoices();
+            if (m_answerButton != null) m_answerButton.gameObject.SetActive(true);
             ApplySortingOrder(AUTHORED_SORTING_ORDER);
 
             if (m_blocker != null)

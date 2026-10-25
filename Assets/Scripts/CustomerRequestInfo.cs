@@ -6,6 +6,10 @@ namespace WeaponWorkshop
 {
     public static class CustomerRequestInfo
     {
+        internal static WeaponSnapshot GetSnapshot(PowerCore core)
+            => core != null && core.TryGetComponent<CubeAssembly>(out var assembly)
+                ? assembly.Analysis.Snapshot : new WeaponSnapshot(core);
+
         public sealed class WeaponSnapshot
         {
             private readonly Dictionary<StatType, float> muzzleStats = new Dictionary<StatType, float>();
@@ -19,6 +23,8 @@ namespace WeaponWorkshop
             private readonly CubeAssembly assembly;
             private readonly List<Material> paintedMaterials = new List<Material>();
             private readonly int colorModules;
+            private readonly Dictionary<string, bool> shapeMatches = new Dictionary<string, bool>();
+            private GunShapeData shapeTable;
             public bool HasPassedTest(string id) => weapon != null && weapon.HasPassedTest(id);
             public WeaponSnapshot(EquipableWeapon weapon) : this(weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null) { }
             public WeaponSnapshot(PowerCore core)
@@ -26,22 +32,21 @@ namespace WeaponWorkshop
                 if (core == null) return;
                 weapon = core.GetComponentInParent<EquipableWeapon>();
                 HasWeapon = true;
-                assembly = core.GetComponent<CubeAssembly>();
+                core.TryGetComponent(out assembly);
                 if (assembly != null)
-                    foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>())
+                    foreach (var block in assembly.Analysis.Blocks)
                     {
-                        if (block.transform.parent != assembly.transform) continue;
-                        if (block.GetComponent<ColorModule>() != null) colorModules++;
+                        if (block.TryGetComponent<ColorModule>(out _)) colorModules++;
                         foreach (var paint in block.GetComponentsInChildren<ModuleFacePaint>()) paintedMaterials.AddRange(paint.PaintedMaterials);
                     }
-                var collector = core.GetComponent<StatCollector>();
+                core.TryGetComponent<StatCollector>(out var collector);
                 var baseStats = collector != null && collector.BaseStats != null
                     ? collector.BaseStats.Stats : new WeaponStats { fireRate = core.EmissionsPerSecond };
-                whole = WeaponAssemblyStats.Calculate(assembly, baseStats);
+                whole = assembly != null ? assembly.Analysis.GetWholeStats(baseStats) : baseStats.Clamped();
                 var effective = baseStats;
                 var seen = new HashSet<PlacedBlock>();
                 if (assembly == null) return;
-                var paths = assembly.GetProjectilePaths(); muzzles = paths.Count;
+                var paths = assembly.Analysis.Paths; muzzles = paths.Count;
                 foreach (var path in paths)
                 {
                     var stats = core.GetMuzzleStats(path.path);
@@ -58,7 +63,7 @@ namespace WeaponWorkshop
                                 // Count each firing split once, including splits on different branches.
                                 if (kind == ModuleKind.SplitTwo) splitTwoCount++;
                                 else if (kind == ModuleKind.SplitFour) splitFourCount++;
-                                var module = block.GetComponent<ModuleStats>();
+                                block.TryGetComponent<ModuleStats>(out var module);
                                 var bonus = module != null && module.Data != null ? module.Data.GetStats() : block.GetStatContribution();
                                 bonus.weight = 0f; effective.Add(bonus);
                             }
@@ -76,7 +81,7 @@ namespace WeaponWorkshop
                 switch (condition.Measure)
                 {
                     case GunMeasure.ConstructionCost: return weapon != null ? weapon.PaidConstructionCost : 0;
-                    case GunMeasure.Shape: return TableManager.Instance.GunShape.Matches(condition.shapeId, assembly) ? 1 : 0;
+                    case GunMeasure.Shape: return MatchesShape(condition.shapeId) ? 1 : 0;
                     case GunMeasure.PaintedFaces: return paintedMaterials.Count;
                     case GunMeasure.ColorModules: return colorModules;
                     case GunMeasure.PaintedColorFaces:
@@ -98,6 +103,16 @@ namespace WeaponWorkshop
                     default: return muzzleStats.TryGetValue(condition.Stat, out var value) ? value : 0f;
                 }
             }
+            private bool MatchesShape(string id)
+            {
+                var table = TableManager.Instance.GunShape;
+                if (!ReferenceEquals(shapeTable, table)) { shapeTable = table; shapeMatches.Clear(); }
+                if (string.IsNullOrEmpty(id)) return false;
+                if (!shapeMatches.TryGetValue(id, out bool matches))
+                    shapeMatches.Add(id, matches = table.Matches(id, assembly));
+                return matches;
+            }
+
             private static bool TryPaintColor(Material material, out Color color)
             {
                 color = default;

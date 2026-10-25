@@ -57,6 +57,14 @@ namespace WeaponWorkshop
         public float ChargeProgress => MaxChargeLevel > 0
             ? Mathf.Clamp01(ChargeTime / ChargeDuration(MaxChargeLevel)) : 0f;
 
+        public void GetChargeState(out float progress, out int level, out int maximum)
+        {
+            maximum = MaxChargeLevel;
+            float seconds = ChargeTime;
+            level = ChargeLevel(maximum, seconds);
+            progress = maximum > 0 ? Mathf.Clamp01(seconds / ChargeDuration(maximum)) : 0f;
+        }
+
         private int ChargeModules(float chargeStat) => Mathf.Max(0, Mathf.FloorToInt(chargeStat));
 
         public int MaxStages(float chargeStat)
@@ -221,6 +229,13 @@ namespace WeaponWorkshop
 
         public WeaponStats GetMuzzleStats(PlacedBlock[] path)
         {
+            if (powerCore == null) ResolvePowerCore();
+            if (cubeAssembly == null) TryGetComponent(out cubeAssembly);
+            return cubeAssembly != null ? cubeAssembly.Analysis.GetMuzzleStats(path, this) : CalculateMuzzleStats(path);
+        }
+
+        internal WeaponStats CalculateMuzzleStats(PlacedBlock[] path)
+        {
             WeaponStats stats = weaponStats;
             if (stats.fireRate <= 0f && powerCore != null) stats.fireRate = powerCore.EmissionsPerSecond;
             if (path == null) return stats;
@@ -280,7 +295,10 @@ namespace WeaponWorkshop
         /// </summary>
         public void SetWeaponStats(WeaponStats stats)
         {
+            if (WeaponAnalysis.SameStats(weaponStats, stats)) return;
             weaponStats = stats;
+            if (cubeAssembly == null) TryGetComponent(out cubeAssembly);
+            cubeAssembly?.InvalidateStats();
         }
 
         /// <summary>Entry point for CoreBaseStats or another core-owned base damage source.</summary>

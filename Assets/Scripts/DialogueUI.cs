@@ -115,6 +115,12 @@ namespace WeaponWorkshop
             return m_presenter != null && m_presenter.Show(_text, _answer, _onAnswer, _speaker, _confirmOnBackgroundClick, _inputLockSeconds);
         }
 
+        public bool ShowChoices(string text, string[] labels, Action[] callbacks, string speaker = "손님")
+        {
+            return isActiveAndEnabled && m_presenter != null &&
+                   m_presenter.ShowChoices(text, speaker, labels, callbacks);
+        }
+
         /// <summary>
         /// 대사 표시를 닫고 등록된 콜백과 대화 상태를 정리한다.
         /// </summary>

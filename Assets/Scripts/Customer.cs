@@ -99,12 +99,10 @@ namespace WeaponWorkshop
             return accepted;
         }
 
-        // 처음이면 대화(총 들고 있어도), 대화 후 총을 들고 오면 판매. 빈손이면 다시 대화.
         public bool Use(WeaponHolder holder)
         {
             if (!atCounter || talking || profile == null) return false;
-            if (HasTalked && holder != null && holder.EquippedWeapon != null) return Sell(holder);
-            Talk();
+            Talk(HasTalked ? holder : null);
             return true;
         }
 
@@ -267,30 +265,39 @@ namespace WeaponWorkshop
             if (portrait != null) portrait.transform.localPosition = portraitRest + Vector3.up * height;
         }
 
-        private void Talk()
+        private void Talk(WeaponHolder submissionHolder)
         {
             saveStage = 2;
             talking = true;
-            ShowLine(0);
+            ShowLine(0, submissionHolder);
         }
 
-        private void ShowLine(int index)
+        private void ShowLine(int index, WeaponHolder submissionHolder = null)
         {
             dialogueIndex = index;
             bool last = index >= profile.Lines.Length - 1;
             string answer = last && profile.EndsClear ? Okay : Huh;
             DialogueUI.Instance.Show(profile.Lines[index], answer, () =>
             {
-                if (!last) { ShowLine(index + 1); return; }
+                if (!last) { ShowLine(index + 1, submissionHolder); return; }
                 // 튜토리얼은 처음 주문을 들었을 때만.
                 TutorialManager.Run(HasTalked ? null : profile.orderTutorialSequence, this, () =>
                 {
-                    talking = false;
                     HasTalked = true;
                     saveStage = 1;
-                    DialogueUI.Instance.Hide();
                     NotifyIfCustomOrder();
                     if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
+                    if (submissionHolder != null)
+                    {
+                        bool hasWeapon = submissionHolder.EquippedWeapon != null;
+                        string[] labels = hasWeapon ? new[] { "총기 제출하기", "닫기" } : new[] { "닫기" };
+                        System.Action close = () => { talking = false; DialogueUI.Instance.Hide(); };
+                        System.Action[] actions = hasWeapon
+                            ? new System.Action[] { () => { close(); if (submissionHolder.EquippedWeapon != null) Sell(submissionHolder); }, close }
+                            : new System.Action[] { close };
+                        DialogueUI.Instance.ShowChoices(profile.Lines[index], labels, actions);
+                    }
+                    else { talking = false; DialogueUI.Instance.Hide(); }
                 });
             });
         }

@@ -58364,6 +58364,7 @@ GameObject:
   - component: {fileID: 836000009}
   - component: {fileID: 8281967837557574802}
   - component: {fileID: 6433941928138802473}
+  - component: {fileID: 9100000000000000061}
   - component: {fileID: 4564485505605348673}
   - component: {fileID: 9195474757741827381}
   - component: {fileID: 7300000000000000001}
@@ -58775,6 +58776,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_choiceView: {fileID: 7100000000000000001}
   m_notificationView: {fileID: 7100000000000000002}
+--- !u!114 &9100000000000000061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5513238841504740859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9eb45408223047c585e5cd0b3ae61fbe, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!114 &4564485505605348673
 MonoBehaviour:
   m_ObjectHideFlags: 0

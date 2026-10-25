@@ -10,6 +10,7 @@ namespace WeaponWorkshop
     {
         [SerializeField, HideInInspector] private string tableId;
         public string TableId => tableId;
+        private void OnValidate() => WeaponAnalysis.NotifyConfigurationChanged();
         private CustomerRequestData.Tag Definition => TableManager.Instance.CustomerRequest.FindTag(tableId);
         public enum Comparison { AtLeast, LessThan, AtMost }
         public enum ValueSource { Stat, ModuleCount, PoweredModuleCount }

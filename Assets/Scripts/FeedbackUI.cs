@@ -73,14 +73,14 @@ namespace WeaponWorkshop
         /// 예/아니오 선택창을 표시하고 확인·취소 콜백을 등록한다. 이미 열려 있으면 false를 반환한다.
         /// </summary>
         public bool ShowChoice(object _requester, string _message, Action _onYes, Action _onNo = null,
-            string _yesLabel = "예", string _noLabel = "아니오", bool _canConfirm = true)
+            string _yesLabel = "예", string _noLabel = "아니오", bool _canConfirm = true, bool _focusYes = false)
         {
             if (!isActiveAndEnabled || m_presenter == null)
             {
                 return false;
             }
 
-            return m_presenter.ShowChoice(_requester, _message, _onYes, _onNo, _yesLabel, _noLabel, _canConfirm);
+            return m_presenter.ShowChoice(_requester, _message, _onYes, _onNo, _yesLabel, _noLabel, _canConfirm, _focusYes);
         }
 
         /// <summary>

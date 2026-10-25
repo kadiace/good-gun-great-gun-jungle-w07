@@ -214,5 +214,6 @@ namespace WeaponWorkshop
         public float scopeZoomDuration = 0.15f;
         [Tooltip("줌 배율만큼 마우스 감도를 낮춤.")]
         public bool scopeScalesSensitivity = true;
+        private void OnValidate() => WeaponAnalysis.NotifyConfigurationChanged();
     }
 }

@@ -110,7 +110,7 @@ namespace WeaponWorkshop
             if (upMark != null) upMark.gameObject.SetActive(editing);
             if (rotationCircle != null) rotationCircle.gameObject.SetActive(editing &&
                 (workshopSession == null || workshopSession.PlanarView == null || !workshopSession.PlanarView.Is2D));
-            if (frontMark != null) frontMark.gameObject.SetActive(editing);
+            if (frontMark != null) frontMark.gameObject.SetActive(false);
             if (!editing) SetFrontOpacity(1f);
         }
         [SerializeField] private AimUI aimUI;
@@ -228,9 +228,9 @@ namespace WeaponWorkshop
                 if (upMark != null) upMark.gameObject.SetActive(false);
                 return;
             }
-            // 2D와 같은 최외곽 면을 사용한다. 모듈의 출력 방향과는 무관하다.
+            // 정면은 작업대 방향 오버레이가 표시하고, 기존 UP 표식만 유지한다.
             var assembly = core.GetComponent<CubeAssembly>();
-            UpdateDirectionMark(frontMark, Vector3Int.forward, core, view, assembly, frontGraphics, frontAlphas);
+            if (frontMark != null) frontMark.gameObject.SetActive(false);
             UpdateDirectionMark(upMark, Vector3Int.up, core, view, assembly, upGraphics, upAlphas);
         }
         private void UpdateDirectionMark(RectTransform mark, Vector3Int axis, PowerCore core, Camera view,

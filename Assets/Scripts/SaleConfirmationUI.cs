@@ -13,11 +13,16 @@ namespace WeaponWorkshop
         public bool UseCustomer(Customer target, WeaponHolder weaponHolder)
         {
             if (IsOpen || target == null) return false;
-            if (!target.HasTalked || weaponHolder == null || weaponHolder.EquippedWeapon == null) return target.Use(weaponHolder);
+            return target.Use(weaponHolder);
+        }
+        public bool ShowSubmissionChoice(Customer target, WeaponHolder weaponHolder)
+        {
+            if (IsOpen || target == null || weaponHolder == null || weaponHolder.EquippedWeapon == null) return false;
             feedback = FeedbackUI.For(this);
             if (feedback == null || target.Profile == null) return false;
             customer = target; holder = weaponHolder; weapon = holder.EquippedWeapon;
-            IsOpen = feedback.ShowChoice(this, "들고 있는 총을 제출하시겠습니까?", Confirm, Cancel);
+            IsOpen = feedback.ShowChoice(this, "들고 있는 총을 제출하시겠습니까?", Confirm, Cancel,
+                "제출", "취소", true, true);
             if (!IsOpen) Cancel();
             return IsOpen;
         }

@@ -23,6 +23,7 @@ namespace WeaponWorkshop
             value.a = 1f;
             color = value;
             ApplyTint();
+            GetComponentInParent<CubeAssembly>()?.InvalidateAppearance();
         }
 
         private void ApplyTint()
