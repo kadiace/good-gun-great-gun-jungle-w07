@@ -14,7 +14,7 @@ namespace WeaponWorkshop
         [SerializeField] private UnityEngine.UI.Button closeButton;
         [SerializeField] private GameObject[] targetPrefabs = new GameObject[0];
         [SerializeField] private string[] targetNames = new string[0];
-        [SerializeField] private ShootingTestData[] timedTests = new ShootingTestData[0];
+        [SerializeField] private ShootingTestBinding[] timedTestLayouts = new ShootingTestBinding[0];
         [SerializeField] private GameObject customTargetPrefab;
         [SerializeField] private TargetSelectionView m_view;
 
@@ -44,7 +44,7 @@ namespace WeaponWorkshop
 
             // 씬 오버라이드가 적용된 브리지 직렬화 참조를 Initialize 전에 View에 주입한다.
             m_view.BindReferences(panel, grid, buttonTemplate, closeButton);
-            m_presenter = new TargetSelectionPresenter(m_view, targetPrefabs, targetNames, timedTests,
+            m_presenter = new TargetSelectionPresenter(m_view, targetPrefabs, targetNames, timedTestLayouts,
                 customTargetPrefab);
             if (!m_presenter.Initialize())
             {

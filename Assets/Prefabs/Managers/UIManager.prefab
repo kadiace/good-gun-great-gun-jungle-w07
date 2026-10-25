@@ -58710,10 +58710,13 @@ MonoBehaviour:
   - "\uBB3C\uCD1D \uAC80\uC99D"
   - "\uC18C\uD615\uD575 \uAC80\uC99D"
   - "\uBB34\uC800\uD56D \uD050\uBE0C"
-  timedTests:
-  - {fileID: 11400000, guid: 527bbe369f1ef17419971d4c2d6d6770, type: 2}
-  - {fileID: 11400000, guid: ba34a227fc04f3f4e870ef35b98e406f, type: 2}
-  - {fileID: 11400000, guid: 17cecd800eec9a748bfedd2bbaeffed1, type: 2}
+  timedTestLayouts:
+  - testId: around-cover
+    layoutPrefab: {fileID: 4375878458017071587, guid: 96f9740694073dc4f8e2baa9549dfde1, type: 3}
+  - testId: behind-barrier
+    layoutPrefab: {fileID: 5560886772035489521, guid: 05091b9cc69e02346880cd732fc39df9, type: 3}
+  - testId: wide-targets
+    layoutPrefab: {fileID: 6359976648980756560, guid: 070acd3ee5e991e4ba058664e14a6c13, type: 3}
   customTargetPrefab: {fileID: 8077227969123137866, guid: 06e5d6081f45c834db42a57727248c25, type: 3}
   m_view: {fileID: 3842226616419038229}
 --- !u!114 &836000009

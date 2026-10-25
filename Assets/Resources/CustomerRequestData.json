@@ -352,8 +352,8 @@
     {"id":"construction/value","name":"가성비","phrase":"제작비 $1,500 이하","reward":300,"conditions":[{"id":"value-cost","label":"제작비($)","measure":"ConstructionCost","min":0,"max":1500}]},
     {
       "id": "shooting-test/around-cover",
-      "name": "엄폐 뒤 표적 테스트 통과",
-      "phrase": "엄폐 뒤 표적 테스트를 통과한 총",
+      "name": "정면 사격 테스트 통과",
+      "phrase": "정면 사격 테스트를 통과한 총",
       "tagId": "",
       "requiredTestIds": [
         "around-cover"
@@ -365,8 +365,8 @@
     },
     {
       "id": "shooting-test/behind-barrier",
-      "name": "장애물 뒤 표적 테스트 통과",
-      "phrase": "장애물 뒤 표적 테스트를 통과한 총",
+      "name": "관통 사격 테스트 통과",
+      "phrase": "관통 사격 테스트를 통과한 총",
       "tagId": "",
       "requiredTestIds": [
         "behind-barrier"
@@ -378,8 +378,8 @@
     },
     {
       "id": "shooting-test/wide-targets",
-      "name": "넓게 흩어진 표적 테스트 통과",
-      "phrase": "넓게 흩어진 표적 테스트를 통과한 총",
+      "name": "폭발 사격 테스트 통과",
+      "phrase": "폭발 사격 테스트를 통과한 총",
       "tagId": "",
       "requiredTestIds": [
         "wide-targets"

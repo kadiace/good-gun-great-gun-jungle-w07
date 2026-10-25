@@ -20,6 +20,8 @@ namespace WeaponWorkshop
             public string id;
             public int unlockDay = 1;
             public string[] excludes = Array.Empty<string>();
+            // 이 요청을 뽑으면 함께 붙이는 요청. 각 항목의 일차·해금·비용도 함께 적용한다.
+            public string[] requiredRequestIds = Array.Empty<string>();
         }
         [Serializable] public sealed class Pool
         {
