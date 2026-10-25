@@ -18,6 +18,7 @@ namespace WeaponWorkshop
         private Action m_yes;
         private Action m_no;
         private bool m_isAcknowledgement;
+        private bool m_focusYes;
         private bool m_inputSuspended;
         private bool m_canConfirm = true;
         private bool m_confirmRequested;
@@ -126,14 +127,14 @@ namespace WeaponWorkshop
         /// 예/아니오 선택창을 연다. 이미 열려 있으면 기존 요청과 화면을 유지하고 false를 반환한다.
         /// </summary>
         public bool ShowChoice(object _requester, string _message, Action _onYes, Action _onNo,
-            string _yesLabel, string _noLabel, bool _canConfirm)
+            string _yesLabel, string _noLabel, bool _canConfirm, bool _focusYes = false)
         {
             if (!m_isInitialized && !Initialize())
             {
                 return false;
             }
 
-            return OpenChoice(_requester, _message, _onYes, _onNo, _yesLabel, _noLabel, _canConfirm, false);
+            return OpenChoice(_requester, _message, _onYes, _onNo, _yesLabel, _noLabel, _canConfirm, false, _focusYes);
         }
 
         /// <summary>
@@ -181,7 +182,7 @@ namespace WeaponWorkshop
             m_inputHeldOnOpen = m_choiceView.IsInteractPressed ||
                                 m_isAcknowledgement && m_choiceView.IsAdvancePressed;
             m_choiceView.SetButtonInteractivity(m_canConfirm, true);
-            m_choiceView.RestoreFocusOrApplyDefault(m_suspendFocus, m_isAcknowledgement);
+            m_choiceView.RestoreFocusOrApplyDefault(m_suspendFocus, m_isAcknowledgement || m_focusYes);
             m_suspendFocus = null;
         }
 
@@ -235,7 +236,7 @@ namespace WeaponWorkshop
         }
 
         private bool OpenChoice(object _requester, string _message, Action _onYes, Action _onNo,
-            string _yesLabel, string _noLabel, bool _canConfirm, bool _isAcknowledgement)
+            string _yesLabel, string _noLabel, bool _canConfirm, bool _isAcknowledgement, bool _focusYes = false)
         {
             if (m_isOpen || _requester == null || m_choiceView == null || !m_choiceView.IsInitialized)
             {
@@ -247,6 +248,7 @@ namespace WeaponWorkshop
             m_yes = _onYes;
             m_no = _onNo;
             m_isAcknowledgement = _isAcknowledgement;
+            m_focusYes = _focusYes;
             m_inputSuspended = false;
             m_canConfirm = _canConfirm;
             m_confirmRequested = false;
@@ -263,7 +265,7 @@ namespace WeaponWorkshop
                 return false;
             }
 
-            m_choiceView.ApplyDefaultFocus(_isAcknowledgement);
+            m_choiceView.ApplyDefaultFocus(_isAcknowledgement || _focusYes);
             m_refreshInputState?.Invoke();
             return true;
         }
@@ -416,6 +418,7 @@ namespace WeaponWorkshop
             m_yes = null;
             m_no = null;
             m_isAcknowledgement = false;
+            m_focusYes = false;
             m_inputSuspended = false;
             m_canConfirm = true;
             m_confirmRequested = false;

@@ -119,5 +119,11 @@ namespace WeaponWorkshop
         {
             m_presenter?.GetMatchedTagsForCompat(core, result);
         }
+
+        public int GetWeaponValue(EquipableWeapon weapon)
+        {
+            Initialize();
+            return m_presenter != null ? m_presenter.GetWeaponValue(weapon) : 0;
+        }
     }
 }

@@ -275,6 +275,16 @@ namespace WeaponWorkshop
             }
         }
 
+        public int GetWeaponValue(EquipableWeapon weapon)
+        {
+            if (weapon == null || m_shopCatalog == null) return 0;
+            PowerCore core = weapon.GetComponentInChildren<PowerCore>(true);
+            if (core == null || !core.TryGetComponent<StatCollector>(out var collector)) return 0;
+            var matched = new List<WeaponTypeData>();
+            GetMatchedTags(CustomerRequestInfo.GetSnapshot(core), matched);
+            return m_shopCatalog.GetSellPrice(collector.Modules, matched);
+        }
+
         private static bool SameTags(List<CustomerRequestData.Tag> _current, List<CustomerRequestData.Tag> _applied)
         {
             if (_current.Count != _applied.Count)

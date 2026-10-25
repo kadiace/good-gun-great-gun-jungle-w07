@@ -13,14 +13,13 @@ namespace WeaponWorkshop
         {
             public readonly int baseReward, maximumBaseReward, price, maximumPrice, matchedRequests;
             public readonly float multiplier;
-            public Quote(long reward, long maximum, int matched, float saleMultiplier, int constructionCost = 0, float failedRatio = 0.5f)
+            public Quote(long reward, long maximum, int matched, float saleMultiplier, int weaponValue = 0, float failedRatio = 0.5f)
             {
                 baseReward = Clamp(reward); maximumBaseReward = Clamp(maximum);
                 matchedRequests = matched; multiplier = saleMultiplier;
-                // 제작비는 클리어 배율에서 제외하고, 충족한 요청이 없으면 절반만 회수한다.
-                int costRecovery = matched > 0 ? constructionCost : Scale(constructionCost, failedRatio);
-                price = Clamp((long)Scale(baseReward, multiplier) + costRecovery);
-                maximumPrice = Clamp((long)Scale(maximumBaseReward, multiplier) + constructionCost);
+                price = matched > 0 ? Clamp((long)Scale(baseReward, multiplier) + weaponValue)
+                    : baseReward > 0 ? Scale(baseReward, multiplier) : Scale(weaponValue, failedRatio);
+                maximumPrice = Clamp((long)Scale(maximumBaseReward, multiplier) + (matched > 0 ? weaponValue : 0));
             }
         }
 
@@ -65,9 +64,8 @@ namespace WeaponWorkshop
             if (profile == null) return new Quote(0, 0, 0, multiplier);
             if (profile.IsDifficult)
             {
-                int reward = weapon == null ? 0 : Scale(weapon.PaidConstructionCost,
-                    TableManager.Instance.CustomerOrder.sale.difficultCustomerRatio);
-                return new Quote(reward, reward, 0, multiplier);
+                return new Quote(0, 0, 0, 1f, CurrentWeaponValue(weapon),
+                    TableManager.Instance.CustomerOrder.sale.failedSaleRatio);
             }
             var table = TableManager.Instance.CustomerRequest;
             var snapshot = weaponSnapshot ?? new CustomerRequestInfo.WeaponSnapshot(weapon);
@@ -84,8 +82,16 @@ namespace WeaponWorkshop
                 rewardTotal += reward;
                 matched++;
             }
-            return new Quote(rewardTotal, maximum, matched, multiplier,
-                weapon != null ? weapon.PaidConstructionCost : 0, TableManager.Instance.CustomerOrder.sale.failedSaleRatio);
+            int value = CurrentWeaponValue(weapon);
+            return new Quote(rewardTotal, maximum, matched, multiplier, value,
+                TableManager.Instance.CustomerOrder.sale.failedSaleRatio);
+        }
+
+        public static int CurrentWeaponValue(EquipableWeapon weapon)
+        {
+            if (weapon == null) return 0;
+            var tagsUI = UnityEngine.Object.FindFirstObjectByType<WorkshopTagsUI>();
+            return tagsUI != null ? tagsUI.GetWeaponValue(weapon) : 0;
         }
 
         public static bool ValidSavedRewards(CustomerOrderState state, string[] requestIds)
