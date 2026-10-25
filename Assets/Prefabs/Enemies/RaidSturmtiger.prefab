@@ -12243,6 +12243,7 @@ GameObject:
   - component: {fileID: 5947274692131382655}
   - component: {fileID: 2449642852302496214}
   - component: {fileID: 1422004574406603829}
+  - component: {fileID: 7697331687272000001}
   m_Layer: 0
   m_Name: TurretAxisCore
   m_TagString: Untagged
@@ -12321,7 +12322,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eef24cf547a1a48449ab08ac8bca1184, type: 2}
+  - {fileID: 2100000, guid: 92fcba17a89e4cde88a014f859e88d23, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -31086,3 +31087,16 @@ MonoBehaviour:
   debrisFadeDuration: 0.2
   debrisFloorBounce: 0.25
   debrisFloorFriction: 0.8
+--- !u!114 &7697331687272000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6925223171995296213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94df3e84dbe84b84bb779b10a2610d53, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  rayMaterial: {fileID: 2100000, guid: a81f8756bbcf4acd8e0d2abc9cd8ba16, type: 2}
