@@ -16,7 +16,7 @@ namespace WeaponWorkshop
             public string shapeId, colorHex;
             public float colorTolerance;
             public float min, max = float.MaxValue;
-            public bool maxExclusive;
+            public bool maxExclusive, minExclusive;
             [NonSerialized] public GunMeasure Measure;
             [NonSerialized] public StatType Stat;
             [NonSerialized] public bool Parsed;

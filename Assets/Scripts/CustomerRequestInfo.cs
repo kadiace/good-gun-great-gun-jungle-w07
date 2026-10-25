@@ -83,6 +83,18 @@ namespace WeaponWorkshop
                     case GunMeasure.ConstructionCost: return weapon != null ? weapon.PaidConstructionCost : 0;
                     case GunMeasure.Shape: return MatchesShape(condition.shapeId) ? 1 : 0;
                     case GunMeasure.PaintedFaces: return paintedMaterials.Count;
+                    case GunMeasure.StickerFaces:
+                        var faces = new HashSet<string>();
+                        foreach (var sticker in weapon.GetComponentsInChildren<StickerOverlay>(true))
+                            if (sticker.gameObject.activeSelf && sticker.transform.parent != null)
+                            {
+                                Vector3 normal = sticker.transform.parent.InverseTransformDirection(sticker.transform.forward);
+                                faces.Add(sticker.transform.parent.GetInstanceID() + ":" +
+                                    Mathf.RoundToInt(normal.x) + ":" + Mathf.RoundToInt(normal.y) + ":" + Mathf.RoundToInt(normal.z));
+                            }
+                        return faces.Count;
+                    case GunMeasure.Keyrings: return weapon != null && weapon.TryGetComponent<WeaponKeyringHistory>(out var keyrings) ? keyrings.Count : 0;
+                    case GunMeasure.BasicCore: return HasWeapon ? 1 : 0;
                     case GunMeasure.ColorModules: return colorModules;
                     case GunMeasure.PaintedColorFaces:
                         if (!ColorUtility.TryParseHtmlString(condition.colorHex, out var target)) return 0;
@@ -130,7 +142,8 @@ namespace WeaponWorkshop
             {
                 if (!HasWeapon || !ValidCondition(condition)) return false;
                 float value = Value(condition);
-                return value >= condition.min && (condition.maxExclusive ? value < condition.max : value <= condition.max);
+                return (condition.minExclusive ? value > condition.min : value >= condition.min) &&
+                    (condition.maxExclusive ? value < condition.max : value <= condition.max);
             }
         }
 
@@ -241,9 +254,9 @@ namespace WeaponWorkshop
             if (includePathScope && scopedModule && condition.Stat != StatType.Scope) label = "한 발사 경로의 " + label;
             string lower = condition.min.ToString("0.##"), upper = condition.max.ToString("0.##");
             if (condition.min == condition.max && !condition.maxExclusive) return label + " 정확히 " + lower;
-            if (condition.max == float.MaxValue) return label + " " + lower + " 이상";
+            if (condition.max == float.MaxValue) return label + " " + lower + (condition.minExclusive ? " 초과" : " 이상");
             if (condition.min <= 0f) return label + " " + upper + (condition.maxExclusive ? " 미만" : " 이하");
-            return label + " " + lower + " 이상 · " + upper + (condition.maxExclusive ? " 미만" : " 이하");
+            return label + " " + lower + (condition.minExclusive ? " 초과 · " : " 이상 · ") + upper + (condition.maxExclusive ? " 미만" : " 이하");
         }
         public static IEnumerable<CustomerRequestData.Condition> Conditions(this CustomerRequestData table, CustomerRequestData.Request request)
         {
@@ -280,7 +293,7 @@ namespace WeaponWorkshop
                     if (string.IsNullOrEmpty(alias) || !ids.Add(alias)) Debug.LogError("요청 표에 빈/중복 이전 요청 ID가 있습니다: " + row.id);
             }
         }
-        private static bool RequiresStat(GunMeasure measure) => measure == GunMeasure.WeaponStat || measure == GunMeasure.MuzzleStat || measure == GunMeasure.PathModules || measure == GunMeasure.TotalModules;
+        private static bool RequiresStat(GunMeasure measure) => measure == GunMeasure.WeaponStat || measure == GunMeasure.MuzzleStat || measure == GunMeasure.PathModules;
         private static void Parse(CustomerRequestData.Condition condition, string owner, GunShapeData shapes)
         {
             if (condition == null) return;

@@ -40,20 +40,28 @@ namespace WeaponWorkshop
                 if (CustomerModuleRequirements.Allows(new[] { id }, unlocks, CoreStats) &&
                     (canTakeLoan || CustomerModuleRequirements.DollarCost(new[] { id }, unlocks, CoreStats) <= money)) candidates.Add(id);
             }
-            int count = Mathf.Min(Random.Range(min, Mathf.Max(min, max) + 1), candidates.Count);
+            var tags = candidates.FindAll(id => !string.IsNullOrEmpty(table.FindRequest(id).tagId));
+            if (tags.Count == 0)
+            {
+                Debug.LogError("생성 가능한 필수 태그가 없습니다.", this);
+                return null;
+            }
+            int count = Mathf.Min(Random.Range(Mathf.Max(1, min), Mathf.Max(1, max) + 1), candidates.Count);
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
-                int index = Random.Range(0, candidates.Count);
-                string next = candidates[index];
+                var choices = i == 0 ? tags : candidates;
+                string next = choices[Random.Range(0, choices.Count)];
                 picked.Add(next);
-                candidates.RemoveAt(index);
+                candidates.Remove(next);
                 // 같이 만족할 수 없는 요구사항은 후보에서 뺀다 (예: 권총 태그 + 스코프).
                 candidates.RemoveAll(c => pool.Conflicts(next, c));
                 if (!canTakeLoan) candidates.RemoveAll(c => DollarCost(picked, c, unlocks) > money);
             }
 
             var phrases = new List<string>();
-            foreach (string request in picked) phrases.Add(table.Phrase(request));
+            foreach (string request in picked)
+                phrases.Add("<b>" + (string.IsNullOrEmpty(table.FindRequest(request).tagId)
+                    ? table.FindRequest(request).name : table.Phrase(request)) + "</b>");
 
             CustomerProfile profile = CreateInstance<CustomerProfile>();
             profile.name = "Endless_" + string.Join("+", phrases);
@@ -63,7 +71,7 @@ namespace WeaponWorkshop
             profile.Lines = new[] { phrases.Count == 0 ? "기본 총 하나 주세요. 특별한 조건은 없어요."
                 : string.Format(Pick(templates, "{0} 주세요."), string.Join(", ", phrases)) };
             profile.EndsClear = true;
-            profile.RequestIds = picked.Count == 0 ? new[] { CustomerRewardInfo.BasicRequestId } : picked.ToArray();
+            profile.RequestIds = picked.ToArray();
             profile.HappyLine = Pick(pool.happyLines, null);
             profile.AngryLine = Pick(pool.angryLines, null);
             profile.portrait = Pick(portraits, null);

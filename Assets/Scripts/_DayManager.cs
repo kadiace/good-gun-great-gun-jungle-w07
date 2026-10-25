@@ -791,11 +791,18 @@ public class _DayManager : MonoBehaviour
         day.CopyRuntimeFrom(source);
         if (source.customers == null) return day;
         day.customers = (CustomerProfile[])source.customers.Clone();
-        if (source.day == 0 || endlessRequests == null || !source.UseRequestPool) return day;
+        if (source.day == 0 || endlessRequests == null) return day;
+        if (!source.UseRequestPool)
+        {
+            for (int i = 0; i < day.customers.Length; i++)
+                if (day.customers[i] != null && !day.customers[i].IsDifficult &&
+                    !HasMandatoryTag(day.customers[i])) day.customers[i] = CreateCombination(source.day, day.MinRequests, day.MaxRequests);
+            return day;
+        }
         var specials = new List<CustomerProfile>();
         int generated = source.ExtraGenerated;
         foreach (CustomerProfile profile in source.customers)
-            if (profile != null && !IsSpecial(profile)) generated++;
+            if (profile != null && (!IsSpecial(profile) || (!profile.IsDifficult && !HasMandatoryTag(profile)))) generated++;
             else specials.Add(profile); // null도 그대로 넘겨 ApplyCustomerDay가 에러를 띄우게 함
         int total = specials.Count + generated;
         var customers = new CustomerProfile[total];
@@ -853,7 +860,8 @@ public class _DayManager : MonoBehaviour
             foreach (CustomerDay day in customerDays)
                 if (day != null && day.customers != null)
                     foreach (CustomerProfile profile in day.customers)
-                        if (profile != null && (endlessRequests == null || IsSpecial(profile)) &&
+                        if (profile != null && (endlessRequests == null || (IsSpecial(profile) &&
+                            (profile.IsDifficult || HasMandatoryTag(profile)))) &&
                             !ContainsProfile(exclude, profile) && !IsDeferred(profile) && seen.Add(profile)) endlessBag.Add(profile);
         for (int i = endlessBag.Count - 1; i > 0; i--)
         {
@@ -868,6 +876,14 @@ public class _DayManager : MonoBehaviour
     // '예?'를 눌러야 말하는 손님 또는 진상. 일반 손님은 무한 모드에서 조합으로 대체됨.
     private static bool IsSpecial(CustomerProfile profile)
         => !profile.EndsClear || profile.Lines.Length > 1;
+
+    private static bool HasMandatoryTag(CustomerProfile profile)
+    {
+        var table = TableManager.Instance.CustomerRequest;
+        foreach (string id in profile.RequestIds)
+            if (!string.IsNullOrEmpty(table.FindRequest(id)?.tagId)) return true;
+        return false;
+    }
 
     private bool HasAnyCustomer()
     {

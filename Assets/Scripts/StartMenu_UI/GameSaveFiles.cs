@@ -118,6 +118,7 @@ namespace WeaponWorkshop
     {
         public int stage, line, price;
         public bool talked, satisfied;
+        public string[] revealedRequests;
         public Vector3 position;
     }
     [Serializable] public sealed class TimerSave
