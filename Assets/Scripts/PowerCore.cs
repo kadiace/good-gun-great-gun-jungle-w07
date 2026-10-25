@@ -88,6 +88,9 @@ namespace WeaponWorkshop
 
         // Blocks attach as children of this object (CubeAssembly), so rebuild muzzles on change.
         private void OnTransformChildrenChanged()
+            => InvalidateMuzzles();
+
+        internal void InvalidateMuzzles()
         {
             muzzles = null;
             muzzleKeys.Clear();
@@ -97,14 +100,11 @@ namespace WeaponWorkshop
         {
             get
             {
-                if (muzzles != null) return muzzles;
                 CubeAssembly assembly = GetComponent<CubeAssembly>();
-                if (assembly != null) muzzles = assembly.GetProjectilePaths();
-                else
-                {
-                    muzzles = new List<(Vector3, Vector3Int, PlacedBlock[])>();
-                    foreach (var core in CubeAssembly.GetCoreOutputs()) muzzles.Add((core.origin, core.direction, new PlacedBlock[0]));
-                }
+                if (assembly != null) return assembly.Analysis.Paths;
+                if (muzzles != null) return muzzles;
+                muzzles = new List<(Vector3, Vector3Int, PlacedBlock[])>();
+                foreach (var core in CubeAssembly.GetCoreOutputs()) muzzles.Add((core.origin, core.direction, new PlacedBlock[0]));
                 return muzzles;
             }
         }
@@ -112,6 +112,7 @@ namespace WeaponWorkshop
         // Stats of one muzzle: core base stats + only the modules on that projectile's route.
         public WeaponStats GetMuzzleStats(PlacedBlock[] path)
         {
+            if (statsSource == null) TryGetComponent(out statsSource);
             if (statsSource != null) return statsSource.GetMuzzleStats(path);
             return new WeaponStats { fireRate = emissionsPerSecond };
         }
@@ -123,7 +124,7 @@ namespace WeaponWorkshop
             if (collector != null) return collector.CurrentStats;
             WeaponStats stats = statsSource != null ? statsSource.CurrentStats
                 : new WeaponStats { fireRate = emissionsPerSecond };
-            return WeaponAssemblyStats.Calculate(GetComponent<CubeAssembly>(), stats);
+            return TryGetComponent<CubeAssembly>(out var assembly) ? assembly.Analysis.WholeStats : stats;
         }
 
         // Heat muzzles fire pentagon bullets like any other muzzle (ProjectileStatsSource), so charge applies normally.

@@ -31,6 +31,7 @@ namespace WeaponWorkshop
         }
         public void NotifyAssemblyChanged()
         {
+            InvalidateJudgement();
             passedTestIds.Clear(); certifiedAssemblyKey = null; currentAssemblyKey = null;
             AssemblyChanged?.Invoke();
         }
@@ -43,6 +44,7 @@ namespace WeaponWorkshop
             if (certifiedAssemblyKey != actual) passedTestIds.Clear();
             certifiedAssemblyKey = actual;
             passedTestIds.Add(testId);
+            InvalidateJudgement();
             return true;
         }
         public bool HasPassedTest(string testId) => TableManager.Instance.ShootingTestTable.IsAvailable(testId) &&
@@ -62,6 +64,7 @@ namespace WeaponWorkshop
         }
         public void RestorePassedTests(string[] ids, string assemblyKey)
         {
+            InvalidateJudgement();
             passedTestIds.Clear(); certifiedAssemblyKey = null; currentAssemblyKey = ReadAssemblyKey();
             if (ids == null || string.IsNullOrEmpty(assemblyKey) || currentAssemblyKey != assemblyKey) return;
             foreach (string id in ids) if (TableManager.Instance.ShootingTestTable.IsAvailable(id)) passedTestIds.Add(id);
@@ -137,12 +140,13 @@ namespace WeaponWorkshop
         public int PaidConstructionCost { get; private set; }
         public void RecordConstructionPurchase(int amount)
         {
-            if (amount > 0) PaidConstructionCost += amount;
+            if (amount > 0) { PaidConstructionCost += amount; InvalidateJudgement(); }
         }
 
         public void RestoreConstructionPurchaseCost(int amount)
         {
             PaidConstructionCost = Mathf.Max(0, amount);
+            InvalidateJudgement();
         }
 
         public int RefundModulePurchases(int amount, PlayerWallet wallet)
@@ -150,6 +154,7 @@ namespace WeaponWorkshop
             if (wallet == null || amount <= 0) return 0;
             int refund = Mathf.Min(amount, PaidConstructionCost);
             PaidConstructionCost -= refund;
+            InvalidateJudgement();
             wallet.RefundConstruction(refund);
             return refund;
         }
@@ -163,9 +168,12 @@ namespace WeaponWorkshop
             foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>(true))
                 wallet.CreditModuleCredits(block.TakeModuleCreditCost());
             PaidConstructionCost = 0;
+            InvalidateJudgement();
             wallet.RefundConstruction(refund);
         }
         private Vector3 targetPosition;
+        private void InvalidateJudgement()
+            => GetComponentInChildren<CubeAssembly>(true)?.InvalidateJudgement();
         private Quaternion targetRotation;
         private Vector3 targetScale;
         public Transform OutlineRoot => transform;
@@ -275,6 +283,11 @@ namespace WeaponWorkshop
         }
         public bool IsCharging => IsEquipped && statsSource != null && statsSource.IsCharging;
         public float ChargeProgress => statsSource != null ? statsSource.ChargeProgress : 0f;
+        public void GetChargeState(out float progress, out int level, out int maximum)
+        {
+            progress = 0f; level = maximum = 0;
+            if (statsSource != null) statsSource.GetChargeState(out progress, out level, out maximum);
+        }
         public int ChargeLevel => statsSource != null ? statsSource.CurrentChargeLevel : 0;
         public int MaxChargeLevel => statsSource != null ? statsSource.MaxChargeLevel : 0;
         public float ChargeShakeDistance => statsSource != null ? statsSource.Tuning.chargeShakeDistance : 0f;

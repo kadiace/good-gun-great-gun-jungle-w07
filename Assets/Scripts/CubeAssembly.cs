@@ -6,8 +6,24 @@ namespace WeaponWorkshop
     public sealed class CubeAssembly : MonoBehaviour
     {
         private bool buildingLayout;
+        private WeaponAnalysis analysis;
+        internal WeaponAnalysis Analysis => analysis ?? (analysis = new WeaponAnalysis(this));
+        internal void InvalidateAnalysis()
+        {
+            analysis?.InvalidateStructure();
+            if (TryGetComponent<PowerCore>(out var core)) core.InvalidateMuzzles();
+            if (TryGetComponent<StatCollector>(out var collector)) collector.MarkDirty();
+        }
+        internal void InvalidateStats() => analysis?.InvalidateStats();
+        internal void InvalidateAppearance() => analysis?.InvalidateAppearance();
+        internal void InvalidateJudgement() => analysis?.InvalidateJudgement();
+        private void OnTransformChildrenChanged() => InvalidateAnalysis();
+        private void OnEnable() => InvalidateAnalysis();
+        private void OnValidate() => WeaponAnalysis.NotifyConfigurationChanged();
+
         public void NotifyStructureChanged()
         {
+            InvalidateAnalysis();
             if (!buildingLayout) GetComponentInParent<EquipableWeapon>()?.NotifyAssemblyChanged();
         }
 
@@ -260,6 +276,7 @@ namespace WeaponWorkshop
             }
 
             GetComponentInParent<EquipableWeapon>()?.RestoreConstructionPurchaseCost(snapshot.paidConstructionCost);
+            InvalidateAnalysis();
             if (!sameStructure) NotifyStructureChanged();
             return true;
         }
@@ -458,9 +475,17 @@ namespace WeaponWorkshop
         // Same order as GetProjectileOutputs; path lists the blocks each projectile passed, core first.
         public System.Collections.Generic.List<(Vector3 origin, Vector3Int direction, PlacedBlock[] path)> GetProjectilePaths()
         {
+            var result = new System.Collections.Generic.List<(Vector3, Vector3Int, PlacedBlock[])>();
+            foreach (var output in Analysis.Paths)
+                result.Add((output.origin, output.direction, (PlacedBlock[])output.path.Clone()));
+            return result;
+        }
+
+        internal System.Collections.Generic.List<(Vector3 origin, Vector3Int direction, PlacedBlock[] path)> BuildProjectilePaths(
+            System.Collections.Generic.IReadOnlyList<PlacedBlock> blocks)
+        {
             var cells = new System.Collections.Generic.Dictionary<Vector3Int, PlacedBlock>();
-            foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>())
-                if (block.transform.parent == transform) cells[block.Cell] = block;
+            foreach (PlacedBlock block in blocks) cells[block.Cell] = block;
             var outputs = new System.Collections.Generic.List<(Vector3, Vector3Int, PlacedBlock[])>();
             foreach (Vector3Int direction in Neighbors)
                 TraceOutput(direction, direction, Vector3.zero,

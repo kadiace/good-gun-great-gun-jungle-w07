@@ -11,8 +11,7 @@ namespace WeaponWorkshop
             var powered = new HashSet<PlacedBlock>();
             if (assembly == null) return powered;
             var cells = new Dictionary<Vector3Int, PlacedBlock>();
-            foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>())
-                if (block.transform.parent == assembly.transform) cells[block.Cell] = block;
+            foreach (var block in assembly.Analysis.Blocks) cells[block.Cell] = block;
             var pending = new Queue<(Vector3Int cell, Vector3Int direction)>();
             foreach (var output in CubeAssembly.GetCoreOutputs())
                 pending.Enqueue((output.direction, output.direction));
@@ -40,10 +39,9 @@ namespace WeaponWorkshop
         {
             if (assembly == null) return coreStats.Clamped();
             var powered = PoweredBlocks(assembly);
-            foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>())
+            foreach (var block in assembly.Analysis.Blocks)
             {
-                if (block.transform.parent != assembly.transform) continue;
-                var module = block.GetComponent<ModuleStats>();
+                block.TryGetComponent<ModuleStats>(out var module);
                 bool hasData = module != null && module.Data != null;
                 var contribution = hasData ? module.Data.GetStats() : block.GetStatContribution();
                 // Basic/extension/split blocks without a stats SO weigh one each.

@@ -86,7 +86,10 @@ namespace WeaponWorkshop
             bool planar = visible && planarView != null && planarView.Is2D;
             if (directionsGraphic != null)
             {
-                directionsGraphic.Bind(planarView, planar);
+                var guideCore = visible && session.ActiveWorkbench != null ? session.ActiveWorkbench.CurrentCore : null;
+                CubeAssembly guideAssembly = guideCore != null && guideCore.TryGetComponent<CubeAssembly>(out var target) ? target : null;
+                directionsGraphic.Bind(planarView, guideAssembly, session != null ? session.WorkshopCamera : null,
+                    visible && !GameManager.GameplayBlocked);
             }
 
             if (layerPresentation != null)
