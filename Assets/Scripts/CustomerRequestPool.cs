@@ -72,6 +72,19 @@ namespace WeaponWorkshop
             bool CanCombine(string[] ids)
             {
                 var mandatory = table.FindRequest(ids[0]);
+                var firstOptional = table.FindRequest(ids[1]);
+                var secondOptional = table.FindRequest(ids[2]);
+                if (mandatory == null || firstOptional == null || secondOptional == null) return false;
+                bool firstIsTest = firstOptional.IsShootingTestRequest();
+                bool secondIsTest = secondOptional.IsShootingTestRequest();
+                if (firstIsTest && secondIsTest) return false;
+                bool firstHasTarget = table.HasMuzzleOrSplitCondition(firstOptional);
+                bool secondHasTarget = table.HasMuzzleOrSplitCondition(secondOptional);
+                if (table.HasMuzzleOrSplitCondition(mandatory) || firstHasTarget || secondHasTarget)
+                {
+                    if (!firstIsTest && !secondIsTest) return false;
+                    if (firstHasTarget && secondHasTarget) return false;
+                }
                 foreach (string id in ids)
                     foreach (string required in bundles[id])
                         if (System.Array.IndexOf(ids, required) < 0) return false;
@@ -86,8 +99,6 @@ namespace WeaponWorkshop
                                 optionalCondition.max >= tagCondition.max &&
                                 optionalRequest.conditions.Length == 1) return false;
                 }
-                var firstOptional = table.FindRequest(ids[1]);
-                var secondOptional = table.FindRequest(ids[2]);
                 if (firstOptional.conditions.Length == 1 && secondOptional.conditions.Length == 1)
                 {
                     var firstCondition = firstOptional.conditions[0];
