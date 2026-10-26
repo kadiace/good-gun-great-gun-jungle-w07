@@ -438,7 +438,7 @@ namespace WeaponWorkshop
 
             // 실패도 클릭으로 설명한다. 실제 적용 직전의 재화·가격·잠금을 다시 확인한다.
             RefreshCurrentSnapshot();
-            if (!TryEvaluateLoad(entry, out _, out _, out string reason) || reason != null)
+            if (!TryEvaluateLoad(entry, out int moneyDelta, out int materialsDelta, out string reason))
             {
                 ShowApplyFailure(reason ?? "프리셋의 적용 비용을 계산할 수 없습니다.");
                 return;
@@ -446,6 +446,13 @@ namespace WeaponWorkshop
 
             if (!TutorialManager.TryAction("preset-load"))
             {
+                return;
+            }
+
+            if (reason != null)
+            {
+                ShowApplyFailure(reason);
+                TryOfferPresetLoan(Mathf.Max(0, moneyDelta), Mathf.Max(0, materialsDelta));
                 return;
             }
 
@@ -498,6 +505,55 @@ namespace WeaponWorkshop
             RefreshBrowserDisplay();
             m_view.SetApplyFailure(message);
             m_uiManager.Screen<FeedbackUI>()?.ShowNotification(message);
+        }
+
+        private void TryOfferPresetLoan(int dollars, int materials)
+        {
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
+            var wallet = player != null ? player.GetComponent<PlayerWallet>() : null;
+            // Match module placement: loans cover dollars only, and never purchase/apply automatically.
+            if (wallet == null || !wallet.isActiveAndEnabled || wallet.Balance >= dollars ||
+                wallet.ModuleCredits < materials) return;
+
+            var day = UnityEngine.Object.FindFirstObjectByType<_DayManager>();
+            if (day == null || !wallet.CanTakeLoan(day.DayNumber))
+            {
+                ShowApplyFailure(day != null && wallet.LastLoanDay == day.DayNumber
+                    ? "대출은 하루에 한 번만 받을 수 있습니다."
+                    : "지금은 대출을 받을 수 없습니다.");
+                return;
+            }
+
+            var feedback = m_uiManager.Screen<FeedbackUI>();
+            int requestedDay = day.DayNumber;
+            int interest = (int)((long)day.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
+            bool opened = feedback != null && feedback.ShowChoice(this,
+                $"프리셋 적용에 필요한 돈이 부족합니다.\n${PlayerWallet.LoanAmount:N0} 대출을 받으시겠습니까? 예상 이자 ${interest:N0}\n대출 후 프리셋 적용 버튼을 다시 눌러 주세요.",
+                () =>
+                {
+                    if (!m_browserOpen || !BrowserEditing || day == null || day.DayNumber != requestedDay) return;
+                    if (wallet != null && wallet.TryTakeLoan(requestedDay))
+                    {
+                        var tutorial = TutorialManager.Instance;
+                        tutorial?.NotifySignal("loan-taken", tutorial.TutorialWorkbench);
+                        RefreshCurrentSnapshot();
+                        RestoreBrowserFocus();
+                        feedback.ShowNotification($"${PlayerWallet.LoanAmount:N0} 대출을 받았습니다. 프리셋 적용 버튼을 다시 눌러 주세요.");
+                    }
+                    else
+                    {
+                        RestoreBrowserFocus();
+                        ShowApplyFailure("대출을 받을 수 없습니다. 오늘 대출 여부를 확인해 주세요.");
+                    }
+                }, RestoreBrowserFocus, "대출받기", "취소");
+            if (!opened)
+            {
+                ShowApplyFailure("대출 안내를 표시할 수 없습니다. 열려 있는 확인창을 먼저 닫아 주세요.");
+                return;
+            }
+
+            var guide = TutorialManager.Instance;
+            if (guide != null && guide.CurrentStep?.requiredSignal == "loan-taken") guide.ShowLoanGuide(feedback);
         }
 
         private void OnBrowserDeleteRequested()
