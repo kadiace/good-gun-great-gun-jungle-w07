@@ -149,7 +149,7 @@ namespace WeaponWorkshop
                     OnboardingManager.AllowsShootingGuideTest(_source, data.Id);
                 string label = data == null
                     ? "미설정 테스트"
-                    : (mandatory ? "<color=#FFE28A>[주문 필수]</color> " : "") + data.DisplayName + " · " +
+                    : (mandatory ? "<color=#FFFFFF>[주문 필수]</color> " : "") + data.DisplayName + " · " +
                       data.TimeLimit.ToString("0") + "초";
                 if (data != null && !tests.CanStart(data.Id, unlocks))
                     label += " · " + tests.UnlockDescription(data.Id, unlocks);

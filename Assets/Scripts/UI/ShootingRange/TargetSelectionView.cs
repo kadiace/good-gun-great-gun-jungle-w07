@@ -28,6 +28,9 @@ namespace WeaponWorkshop
         [SerializeField] private Button m_spawnButton;
         [SerializeField] private Button m_cleanupButton;
         [SerializeField] private TMP_Text m_statusText;
+        [SerializeField, Tooltip("하위 요소를 저작한 Window 기준 크기. 실제 Window 크기에 비례해 여백·셀·글자를 확대합니다.")]
+        private Vector2 m_layoutReferenceSize = new Vector2(465f, 315f);
+        private TargetSelectionLayout m_layout;
 
         private readonly List<Button> m_targetRows = new List<Button>();
         private readonly List<Button> m_timedTestRows = new List<Button>();
@@ -104,6 +107,8 @@ namespace WeaponWorkshop
 
             BindFixedButtons();
             m_buttonTemplate.gameObject.SetActive(false);
+            m_layout = new TargetSelectionLayout(m_grid.parent as RectTransform, m_layoutReferenceSize,
+                m_customPanel.transform as RectTransform);
             m_isInitialized = true;
             return true;
         }
@@ -114,7 +119,14 @@ namespace WeaponWorkshop
         public void Dispose()
         {
             UnbindFixedButtons();
+            m_layout?.Restore();
+            m_layout = null;
             m_isInitialized = false;
+        }
+
+        private void LateUpdate()
+        {
+            if (m_isInitialized && m_panel != null && m_panel.activeInHierarchy) m_layout?.Apply();
         }
 
         /// <summary>
@@ -201,6 +213,7 @@ namespace WeaponWorkshop
             {
                 m_panel.SetActive(true);
             }
+            m_layout?.Apply();
 
             Selectable defaultSelectable = null;
             if (m_targetRows.Count > 0 && UIRoot.IsValidSelectable(m_targetRows[0]))
@@ -453,6 +466,7 @@ namespace WeaponWorkshop
             for (int i = 0; i < _count; i++)
             {
                 Button button = Instantiate(m_buttonTemplate, m_grid);
+                m_layout?.RegisterRows(button.transform);
                 button.name = _prefix + i;
                 int index = i;
                 if (_timed)
