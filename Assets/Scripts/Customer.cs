@@ -286,7 +286,6 @@ namespace WeaponWorkshop
                     HasTalked = true;
                     saveStage = 1;
                     NotifyIfCustomOrder();
-                    if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
                     if (submissionHolder != null)
                     {
                         bool hasWeapon = submissionHolder.EquippedWeapon != null;
@@ -298,6 +297,7 @@ namespace WeaponWorkshop
                         DialogueUI.Instance.ShowChoices(profile.Lines[index], labels, actions);
                     }
                     else { talking = false; DialogueUI.Instance.Hide(); }
+                    if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
                 });
             });
         }

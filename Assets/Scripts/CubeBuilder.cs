@@ -819,6 +819,15 @@ namespace WeaponWorkshop
             return true;
         }
 
+        public void CancelOnboardingPlacement(int slot)
+        {
+            if (preview != null && pendingSlot == slot && IsTrigger(pendingAssembly, slot))
+                CancelPreview();
+        }
+
+        private static bool IsTrigger(CubeAssembly assembly, int slot) =>
+            assembly != null && assembly.IsTriggerModuleSlot(slot);
+
         // 3D 표면 선택과 2D 그리드 선택은 같은 설치·결제·되돌리기 경로를 사용한다.
         private void PlaceAtCell(CubeAssembly assembly, Vector3Int cell, Vector3Int face)
         {
@@ -847,7 +856,8 @@ namespace WeaponWorkshop
             // Stat modules (5+) place in one click: output continues straight from the feed,
             // falling back to any other allowed direction when that one is blocked.
             // Scopes choose their lens direction like an extension (arrow = lens, opposite face = eyepiece).
-            if (selectedSlot >= 5 && !IsScope(assembly, selectedSlot))
+            if (selectedSlot >= 5 && !IsScope(assembly, selectedSlot) &&
+                !(assembly.IsTriggerModuleSlot(selectedSlot) && OnboardingManager.NeedsModuleOnboarding(selectedSlot)))
             {
                 if (ExecuteUndoableEdit(assembly,
                         () => TryPurchaseAttach(assembly, cell, selectedSlot, feed, feed))) return;

@@ -3,7 +3,8 @@
   "modules": [
     { "moduleId": 2, "title": "연장", "description": "마우스를 움직여 총알이 나가는 방향을 선택하세요." },
     { "moduleId": 3, "title": "두 방향 분할", "description": "마우스를 움직여 마주 보는 두 출력 방향의 축을 선택하세요." },
-    { "moduleId": 17, "title": "스코프", "description": "마우스를 움직여 렌즈가 바라볼 방향을 선택하세요. 스코프는 총알을 발사하거나 에너지를 전달하지 않습니다." }
+    { "moduleId": 17, "title": "스코프", "description": "마우스를 움직여 렌즈가 바라볼 방향을 선택하세요. 스코프는 총알을 발사하거나 에너지를 전달하지 않습니다." },
+    { "moduleId": 18, "title": "트리거", "description": "무기를 잡는 위치와 조준 기준을 정하는 모듈입니다. 무기마다 하나만 설치할 수 있습니다." }
   ],
   "customSteps": [
     { "id": "intro", "order": 5, "title": "커스텀", "description": "고객이 커스텀 도색을 요청했네요! 커스텀 기능을 알아봅시다.", "targetPath": "" },

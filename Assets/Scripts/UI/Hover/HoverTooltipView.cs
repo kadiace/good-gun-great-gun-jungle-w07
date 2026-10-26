@@ -225,12 +225,13 @@ namespace WeaponWorkshop
             }
         }
 
-        public void SetResultSortingEnabled(bool _enabled)
+        private void SetOverlaySorting()
         {
             if (m_resultSortingCanvas != null)
             {
                 m_resultSortingCanvas.enabled = true;
-                m_resultSortingCanvas.overrideSorting = _enabled;
+                m_resultSortingCanvas.overrideSorting = true;
+                m_resultSortingCanvas.sortingOrder = short.MaxValue;
             }
         }
 
@@ -258,6 +259,7 @@ namespace WeaponWorkshop
                 return;
             }
 
+            SetOverlaySorting();
             m_scanLoading.rectTransform.sizeDelta = Vector2.one * m_scanLoadingDiameter;
             m_scanLoading.SetProgress(_progress, m_scanLoadingThickness);
             m_scanLoadingText.rectTransform.anchoredPosition = new Vector2(0f, -m_scanLoadingDiameter * 0.5f - 18f);
@@ -334,6 +336,7 @@ namespace WeaponWorkshop
         /// </summary>
         public void Show(string _heading, string _body, bool _richText = false, bool _showModuleCrateScanHint = false)
         {
+            SetOverlaySorting();
             if (m_title != null)
             {
                 m_title.maxVisibleCharacters = int.MaxValue;
@@ -442,7 +445,7 @@ namespace WeaponWorkshop
 
         private void ApplyInitialHiddenState()
         {
-            SetResultSortingEnabled(false);
+            SetOverlaySorting();
             Hide();
             SetScanModeTextVisible(false);
         }

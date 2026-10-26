@@ -30,7 +30,21 @@ namespace WeaponWorkshop
             !instance.current.IsStroke && instance.current.Builder == builder &&
             DialogueUI.Instance != null && DialogueUI.Instance.IsOpen;
 
-        public static void NotifyModulePlacementAttempt(int moduleId, CubeBuilder builder)
+        public static bool NeedsModuleOnboarding(int moduleId)
+        {
+            if (!Application.isPlaying || shownModules.Contains(moduleId)) return false;
+            var tutorial = TutorialManager.Instance;
+            if (tutorial == null || tutorial.IsTutorialActive) return false;
+            var table = TableManager.Instance != null ? TableManager.Instance.Onboarding : null;
+            if (table == null || table.modules == null) return false;
+            foreach (var module in table.modules)
+                if (module != null && module.moduleId == moduleId) return true;
+            return false;
+        }
+
+        public static bool HasShownModule(int moduleId) => shownModules.Contains(moduleId);
+
+        public static bool NotifyModulePlacementAttempt(int moduleId, CubeBuilder builder)
             => QueueModulePlacementAttempt(moduleId, builder, false);
 
         public static bool NotifyModuleStrokeAttempt(int moduleId, CubeBuilder builder)
@@ -218,6 +232,7 @@ namespace WeaponWorkshop
                 {
                     shownModules.Remove(completed.ModuleId);
                     if (completed.IsStroke && completed.Builder != null) completed.Builder.CancelOnboardingStroke();
+                    else if (completed.Builder != null) completed.Builder.CancelOnboardingPlacement(completed.ModuleId);
                 }
                 return;
             }
@@ -238,6 +253,7 @@ namespace WeaponWorkshop
             if (current != null && current.IsCustom == custom)
             {
                 if (current.IsStroke && current.Builder != null) current.Builder.CancelOnboardingStroke();
+                else if (current.Builder != null) current.Builder.CancelOnboardingPlacement(current.ModuleId);
                 TutorialManager.Instance?.Cancel(this);
                 if (runningSequence != null) Destroy(runningSequence);
                 runningSequence = null;
@@ -249,15 +265,26 @@ namespace WeaponWorkshop
                 var prompt = waiting.Dequeue();
                 if (prompt.IsCustom != custom) waiting.Enqueue(prompt);
                 else if (prompt.IsStroke && prompt.Builder != null) prompt.Builder.CancelOnboardingStroke();
+                else if (prompt.Builder != null) prompt.Builder.CancelOnboardingPlacement(prompt.ModuleId);
             }
         }
 
         private void OnDestroy()
         {
             if (session != null) session.WorkbenchEntered -= OnWorkbenchEntered;
-            if (current != null && current.IsStroke && current.Builder != null) current.Builder.CancelOnboardingStroke();
+            if (current != null && current.Builder != null)
+            {
+                if (current.IsStroke) current.Builder.CancelOnboardingStroke();
+                else current.Builder.CancelOnboardingPlacement(current.ModuleId);
+            }
             foreach (var prompt in waiting)
-                if (prompt.IsStroke && prompt.Builder != null) prompt.Builder.CancelOnboardingStroke();
+            {
+                if (prompt.Builder != null)
+                {
+                    if (prompt.IsStroke) prompt.Builder.CancelOnboardingStroke();
+                    else prompt.Builder.CancelOnboardingPlacement(prompt.ModuleId);
+                }
+            }
             TutorialManager.Instance?.Cancel(this);
             if (runningSequence != null) Destroy(runningSequence);
             if (instance == this) instance = null;

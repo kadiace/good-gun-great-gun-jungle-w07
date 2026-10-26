@@ -22,6 +22,8 @@ namespace WeaponWorkshop
         private readonly List<WeaponTypeData> m_weaponTags = new List<WeaponTypeData>();
 
         private Interaction m_interaction;
+        private float m_nextInteractionSearch;
+        private readonly HashSet<int> m_warnedLabelTargets = new HashSet<int>();
         private CubeBuilder m_builder;
         private PlayerScanMode m_scanner;
         private bool m_muzzleTooltipObserved;
@@ -90,6 +92,19 @@ namespace WeaponWorkshop
             m_interaction = _interaction;
         }
 
+        // UIManager가 플레이어보다 먼저 깨어나 Interaction을 못 찾았거나 플레이어가 교체된 경우 상호작용 라벨이 통째로 사라지므로 늦게라도 다시 찾는다.
+        private void ResolveInteraction()
+        {
+            if (m_interaction != null || Time.unscaledTime < m_nextInteractionSearch)
+            {
+                return;
+            }
+
+            m_nextInteractionSearch = Time.unscaledTime + 1f;
+            m_interaction = Object.FindFirstObjectByType<Interaction>();
+            m_scanner = null;
+        }
+
         public void Hide()
         {
             if (m_view == null)
@@ -118,7 +133,6 @@ namespace WeaponWorkshop
 
             m_resultModule = _module;
             m_view.SetPointerPosition(_position);
-            m_view.SetResultSortingEnabled(true);
             ShowResultModuleNow();
         }
 
@@ -130,11 +144,6 @@ namespace WeaponWorkshop
             }
 
             m_resultModule = null;
-            if (m_view != null)
-            {
-                m_view.SetResultSortingEnabled(false);
-            }
-
             Hide();
         }
 
@@ -163,6 +172,7 @@ namespace WeaponWorkshop
             bool hoveringMuzzle = false;
             try
             {
+                ResolveInteraction();
                 if (m_scanner == null && m_interaction != null && m_interaction.Player != null)
                 {
                     m_scanner = m_interaction.Player.GetComponent<PlayerScanMode>();
@@ -227,7 +237,10 @@ namespace WeaponWorkshop
                 {
                     var unlocks = m_interaction != null && m_interaction.Player != null
                         ? m_interaction.Player.GetComponent<PlayerModuleUnlocks>() : null;
-                    if (unlocks != null && !unlocks.IsUnlocked(id))
+                    bool isLocked = m_builder != null
+                        ? m_builder.IsModuleLocked(id)
+                        : unlocks != null && !unlocks.IsUnlocked(id);
+                    if (isLocked)
                     {
                         m_view.Show(entry.displayName, "잠긴 모듈\n" + TableManager.Instance.RaidMap.Locations(entry.data));
                         m_view.SetTitleColor(entry.color);
@@ -435,6 +448,12 @@ namespace WeaponWorkshop
             var label = target.GetComponent<InteractionLabel>();
             if (label == null || string.IsNullOrWhiteSpace(label.Title))
             {
+                // 무기류는 태그 UI가 이름을 대신하므로 라벨이 없어도 정상이다.
+                if (!(target is EquipableWeapon) && !(target is PresetWeaponPreview) && m_warnedLabelTargets.Add(target.GetInstanceID()))
+                {
+                    Debug.LogWarning($"[{SCREEN_NAME}] {target.name}({target.GetType().Name})에 InteractionLabel 또는 Title이 없어 이름을 표시할 수 없습니다.", target);
+                }
+
                 return false;
             }
 

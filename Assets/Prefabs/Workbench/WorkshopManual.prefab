@@ -292,9 +292,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c2cd8bdccc9d3449b951fd5ac236855, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: WorkshopManual
-  unavailableCondition: "\uD604\uC7AC\uB294 \uC0C1\uD638\uC791\uC6A9\uD560 \uC218
-    \uC5C6\uC2B5\uB2C8\uB2E4."
+  title: "\uB9E4\uB274\uC5BC"
+  unavailableCondition: "\uC870\uC791 \uBC29\uC2DD\uC5D0 \uB300\uD55C \uC124\uBA85\uC785\uB2C8\uB2E4."
 --- !u!114 &406454316247098456
 MonoBehaviour:
   m_ObjectHideFlags: 0
