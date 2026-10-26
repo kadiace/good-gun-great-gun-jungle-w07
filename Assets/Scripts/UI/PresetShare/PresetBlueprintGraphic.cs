@@ -30,6 +30,8 @@ namespace WeaponWorkshop
 
         protected override void Awake()
         {
+            // CanvasRenderer가 없으면 그래픽이 캔버스에 제출되지 않아 메시가 만들어지지 않는다(프리팹에 누락된 경우 대비).
+            if (GetComponent<CanvasRenderer>() == null) gameObject.AddComponent<CanvasRenderer>();
             base.Awake();
             // 미리보기 그래픽은 클릭·레이캐스트 대상이 아니므로 프리팹 저장값과 무관하게 항상 끈다.
             raycastTarget = false;
