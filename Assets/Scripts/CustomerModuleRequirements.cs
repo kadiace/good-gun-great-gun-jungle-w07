@@ -15,6 +15,7 @@ namespace WeaponWorkshop
         {
             var table = TableManager.Instance.CustomerRequest;
             if (!table.ContainsOrder(ids)) return false;
+            if (!AllowsShootingTests(ids, core)) return false;
             foreach (string id in ids)
             {
                 var row = table.FindRequest(id);
@@ -62,6 +63,24 @@ namespace WeaponWorkshop
                 }
             }
             return true;
+        }
+
+        private static bool AllowsShootingTests(string[] ids, WeaponStats stats)
+        {
+            var table = TableManager.Instance.CustomerRequest;
+            var tests = TableManager.Instance.ShootingTestTable;
+            bool requiresWater = stats.water > 0f;
+            bool requiresDestruction = false;
+            foreach (string id in ids)
+            {
+                var request = table.FindRequest(id);
+                requiresWater |= table.RequiresWater(request);
+                foreach (string testId in request.requiredTestIds ?? Array.Empty<string>())
+                    requiresDestruction |= tests.Find(testId).RequiresDestruction();
+            }
+            // 별도의 물 없는 발사 경로를 만드는 것을 주문의 암묵적 전제로 두지 않는다.
+            // 명중 횟수 시험은 물 탄환으로도 통과할 수 있다.
+            return !requiresWater || !requiresDestruction;
         }
 
         public static bool IsFeasible(string[] ids, PlayerModuleUnlocks unlocks, WeaponStats core, out int dollars)
@@ -213,6 +232,8 @@ namespace WeaponWorkshop
                 }
                 if (!MeetsRange(value, condition)) return false;
             }
+            // 필요 모듈의 실제 스탯에 물이 섞인 경우도 같은 기준으로 거른다.
+            if (!AllowsShootingTests(ids, stats)) return false;
             if (cost > int.MaxValue) return false;
             dollars = (int)cost;
             return true;

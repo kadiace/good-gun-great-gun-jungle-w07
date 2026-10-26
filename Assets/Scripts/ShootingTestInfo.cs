@@ -11,11 +11,14 @@ namespace WeaponWorkshop
         public static bool CountsHits(this ShootingTestTableData.Entry row)
             => row != null && row.goalType == nameof(ShootingTestGoal.HitCount);
 
+        // 방식이 없는 기존 호환 데이터는 파괴율로 해석한다.
+        public static bool RequiresDestruction(this ShootingTestTableData.Entry row)
+            => row != null && (string.IsNullOrEmpty(row.goalType) || row.goalType == nameof(ShootingTestGoal.Destruction));
+
         private static bool HasValidGoal(ShootingTestTableData.Entry row)
         {
             if (row.CountsHits()) return row.requiredHits > 0;
-            // 방식이 없는 기존 호환 데이터는 파괴율로 해석한다.
-            return (string.IsNullOrEmpty(row.goalType) || row.goalType == nameof(ShootingTestGoal.Destruction)) &&
+            return row.RequiresDestruction() &&
                 row.requiredDestruction > 0f && row.requiredDestruction <= 1f;
         }
 
