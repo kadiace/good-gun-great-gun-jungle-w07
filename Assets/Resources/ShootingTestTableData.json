@@ -4,12 +4,12 @@
       "id": "around-cover",
       "requiredModules": [],
       "name": "정면 사격 테스트",
-      "instructions": "10초 안에 표적에 총알을 10회 명중시키세요.",
+      "instructions": "10초 안에 표적에 총알을 3회 명중시키세요.",
       "failureHint": "명중 횟수를 확인하고 조준이나 연사를 조절하세요.",
       "enabled": true,
       "timeLimit": 10,
       "goalType": "HitCount",
-      "requiredHits": 10,
+      "requiredHits": 3,
       "requiredUnlockModules": []
     },
     {

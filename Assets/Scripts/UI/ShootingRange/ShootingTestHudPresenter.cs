@@ -109,7 +109,8 @@ namespace WeaponWorkshop
         /// </summary>
         public bool CloseRetry()
         {
-            if (m_controller == null || (m_controller.State != ShootingTestController.TestState.Failed &&
+            if (m_controller == null || (m_controller.State != ShootingTestController.TestState.Ready &&
+                m_controller.State != ShootingTestController.TestState.Failed &&
                 m_controller.State != ShootingTestController.TestState.Passed))
             {
                 return false;
@@ -174,6 +175,17 @@ namespace WeaponWorkshop
                 m_view.SetContent(controller.Definition.DisplayName, null, Color.white,
                     "<color=#55FF55>사격 시험 통과!</color>",
                     "Esc: 닫기 · " + PASSED_AUTO_CANCEL_SECONDS.ToString("0") + "초 후 자동 종료");
+                return;
+            }
+            if (controller.State == ShootingTestController.TestState.Ready)
+            {
+                string start = controller.CanRetryWithWeapon
+                    ? "F: 주문 테스트 시작 · Esc: 닫기"
+                    : controller.CanRetryNearby
+                        ? "총을 장착한 뒤 F: 시작 · Esc: 닫기"
+                        : "테스트 장치 근처에서 총을 들고 F: 시작 · Esc: 닫기";
+                m_view.SetContent(controller.Definition.DisplayName, null, Color.white,
+                    string.IsNullOrEmpty(controller.ResultReason) ? controller.Definition.Instructions : controller.ResultReason, start);
                 return;
             }
             string retry = controller.CanRetryWithWeapon

@@ -44,13 +44,17 @@ namespace WeaponWorkshop
 
         public static void NotifyShootingOrder(Customer customer)
         {
-            if (!Application.isPlaying || shootingGuideCompleted || customer == null ||
-                !customer.HasTalked || customer.Profile == null ||
-                TutorialManager.Instance == null || TutorialManager.Instance.IsGuidedDayZero) return;
+            if (!Application.isPlaying || customer == null || !customer.HasTalked ||
+                !customer.HasActiveOrder || customer.Profile == null) return;
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return;
+            var testBell = FindFirstObjectByType<TargetBell>();
+            // 첫 안내를 이미 마친 세션에서도 새 주문의 시험은 즉시 시작 대기로 연결한다.
+            if (testBell != null) testBell.ReadyRequiredTest(GameManager.Instance?.Player);
+            if (shootingGuideCompleted || TutorialManager.Instance == null) return;
             if (instance != null && instance.shootingPhase != ShootingPhase.None) return;
 
             var settings = TableManager.Instance.Onboarding.shootingGuide;
-            if (settings == null || settings.minimumPenetration <= 0f) return;
+            if (settings == null) return;
             string chosen = null;
             foreach (string requestId in customer.Profile.RequestIds)
             {
@@ -68,7 +72,6 @@ namespace WeaponWorkshop
             }
             if (chosen == null) return;
             var workbench = TutorialManager.Instance.TutorialWorkbench;
-            var testBell = FindFirstObjectByType<TargetBell>();
             if (workbench == null || testBell == null)
             {
                 Debug.LogWarning("사격 온보딩을 시작할 작업대·테스트 장치 연결이 없습니다.", customer);
@@ -166,10 +169,7 @@ namespace WeaponWorkshop
             var assembly = weapon.GetComponentInChildren<CubeAssembly>();
             var core = assembly != null ? assembly.GetComponent<PowerCore>() : null;
             if (core == null) return false;
-            if (ShootingCountsHits) return assembly.GetProjectilePaths().Count > 0;
-            foreach (var path in assembly.GetProjectilePaths())
-                if (core.GetMuzzleStats(path.path).penetration >= ShootingSettings.minimumPenetration) return true;
-            return false;
+            return assembly.GetProjectilePaths().Count > 0;
         }
 
         public static bool AllowsShootingGuideTest(TargetBell bell, string id) =>
@@ -179,6 +179,11 @@ namespace WeaponWorkshop
         {
             error = null;
             if (!IsShootingGuideActive || instance.shootingBell != bell) return true;
+            if (instance.shootingPhase == ShootingPhase.Introduction || instance.shootingPhase == ShootingPhase.Result)
+            {
+                error = "사격 테스트 안내를 마친 뒤 시작하세요.";
+                return false;
+            }
             if (id != instance.shootingTestId)
             {
                 error = instance.ShootingText(instance.ShootingSettings.selectObjective);

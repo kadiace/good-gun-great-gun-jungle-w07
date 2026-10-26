@@ -18,6 +18,12 @@ namespace WeaponWorkshop
                     if (!ids.Contains(id)) ids.Add(id);
             return ids;
         }
+        public bool AllowsTest(string testId)
+        {
+            var required = RequiredTestIds();
+            return required.Count == 0 || required.Contains(testId);
+        }
+        public bool AllowsPracticeTargets => RequiredTestIds().Count == 0;
         public ShootingTestController TestController => testController;
         public string SpawnFailureReason { get; private set; }
         [SerializeField, Min(0.01f), Tooltip("기본 허용 높이와 폭발저항 1당 추가 허용 높이(m). 소환 표적에 적용. 허용 높이 = (폭발저항 + 1) × 이 값.")]
@@ -115,7 +121,38 @@ namespace WeaponWorkshop
         {
             if (!CanInteract(interactor)) return false;
             ResolveSelectionUI();
+            if (!AllowsPracticeTargets)
+            {
+                if (ReadyRequiredTest(interactor.Player))
+                {
+                    if (testController.CanRetryWithWeapon) testController.Retry();
+                    else FeedbackUI.For(this)?.ShowNotification("테스트할 총을 손에 들고 시작하세요.");
+                }
+                else FeedbackUI.For(this)?.ShowNotification(SpawnFailureReason);
+                return true;
+            }
             return selectionUI != null && selectionUI.Open(this);
+        }
+
+        public bool ReadyRequiredTest(FirstPersonPlayer player)
+        {
+            var required = RequiredTestIds();
+            if (required.Count == 0) return false;
+            ResolveSelectionUI();
+            string preferred = TableManager.Instance.Onboarding.shootingGuide?.preferredTestId;
+            required.Sort(System.StringComparer.Ordinal);
+            string id = required.Contains(preferred) ? preferred : required[0];
+            var equipped = player != null ? player.GetComponent<WeaponHolder>()?.EquippedWeapon : null;
+            // 시험이 여러 개인 기존 주문은 아직 합격하지 않은 시험을 우선한다.
+            if (equipped != null && equipped.HasPassedTest(id))
+                foreach (string candidate in required)
+                    if (!equipped.HasPassedTest(candidate)) { id = candidate; break; }
+            var data = selectionUI != null ? selectionUI.FindTest(id) : null;
+            SpawnFailureReason = "주문에서 요구한 사격 테스트 연결을 확인하세요.";
+            if (testController == null || data == null) return false;
+            bool ready = testController.ReadyForOrder(data, player, customerBell.Current, out var error);
+            SpawnFailureReason = error;
+            return ready;
         }
 
         private void ResolveSelectionUI()
@@ -131,6 +168,8 @@ namespace WeaponWorkshop
         {
             if (!isActiveAndEnabled || spawnPoint == null || prefab == null) return false;
             SpawnFailureReason = null;
+            if (!AllowsPracticeTargets)
+            { SpawnFailureReason = "현재 주문에서 요구하는 사격 테스트만 진행할 수 있습니다."; return false; }
             testController?.Cancel();
             if (IsSpawnBlocked(prefab, spawnPoint)) { SpawnFailureReason = "스폰 공간에 물체가 있습니다."; return false; }
             EnsureSpawnedRoot();
