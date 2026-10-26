@@ -28,6 +28,7 @@ namespace WeaponWorkshop
         public ShootingTestBinding Definition => definition;
         public float RemainingSeconds { get; private set; }
         public string StatusText { get; private set; } = "";
+        public string ResultReason { get; private set; } = "";
         public int NonForwardMuzzles { get; private set; }
         public bool IsActive => State == TestState.Prepared || State == TestState.Running;
         public bool CanRetryNearby => State == TestState.Failed && player != null && bell != null &&
@@ -102,6 +103,7 @@ namespace WeaponWorkshop
             foreach (var target in destructibles) target.DamageProtected = true;
             layout.SetActive(true);
             RemainingSeconds = data.TimeLimit;
+            ResultReason = "";
             State = TestState.Prepared;
             holder.EquippedWeaponChanged += OnEquippedWeaponChanged;
             weapon.AssemblyChanged += OnAssemblyChanged;
@@ -171,20 +173,17 @@ namespace WeaponWorkshop
         private void BuildSummary(int complete, int goals)
         {
             summary.Clear();
-            summary.Append("목표 ").Append(complete).Append('/').Append(goals).Append(" · 각 목표 ");
-            if (definition.CountsHits) summary.Append(definition.RequiredHits).Append("회 명중\n");
-            else summary.Append(Mathf.RoundToInt(definition.RequiredDestruction * 100f)).Append("% 파괴\n");
+            summary.Append("목표 ").Append(complete).Append('/').Append(goals);
             foreach (var target in targets)
             {
                 if (target == null || target.IsProtected) continue;
-                summary.Append(target.DisplayName).Append(' ');
+                summary.Append('\n').Append(target.DisplayName).Append(' ');
                 if (definition.CountsHits)
-                    summary.Append("명중 ").Append(target.HitCount).Append('/').Append(definition.RequiredHits).Append('\n');
+                    summary.Append("명중 ").Append(target.HitCount).Append('/').Append(definition.RequiredHits);
                 else
-                    summary.Append(Mathf.RoundToInt(target.Destruction * 100f)).Append("% · ")
-                        .Append(target.ResistanceDescription).Append('\n');
+                    summary.Append(Mathf.RoundToInt(target.Destruction * 100f)).Append("% (기준 ")
+                        .Append(Mathf.RoundToInt(definition.RequiredDestruction * 100f)).Append("%)");
             }
-            summary.Append(definition.Instructions);
             StatusText = summary.ToString();
         }
 
@@ -195,7 +194,7 @@ namespace WeaponWorkshop
             { passed = false; reason = "총의 구성이 변경되어 다시 테스트해야 합니다."; }
             State = passed ? TestState.Passed : TestState.Failed;
             UnsubscribeWeapon();
-            StatusText = reason + "\n" + StatusText + (passed ? "" : "\n" + definition.FailureHint);
+            ResultReason = reason;
             if (!passed) RemainingSeconds = definition.TimeLimit;
             ClearShots(); DestroyLayout();
             GameManager.Instance?.UI?.ShowNotification(reason);
@@ -206,11 +205,11 @@ namespace WeaponWorkshop
             holder.EquippedWeapon == weapon && weapon.IsEquipped && !weapon.IsMoving && weapon.gameObject.activeInHierarchy;
         private void OnEquippedWeaponChanged(EquipableWeapon previous, EquipableWeapon next)
         {
-            if (IsActive) Finish(false, "총을 내려놓거나 교체했습니다. 테스트할 총을 들고 F키로 다시 시도하세요.");
+            if (IsActive) Finish(false, "총을 내려놓거나 교체했습니다.");
         }
         private void OnAssemblyChanged()
         {
-            if (IsActive) Finish(false, "모듈 구성이 변경되어 테스트를 종료했습니다. F키로 다시 시도하세요.");
+            if (IsActive) Finish(false, "모듈 구성이 변경되었습니다.");
         }
         private void UnsubscribeWeapon()
         {
@@ -247,6 +246,7 @@ namespace WeaponWorkshop
             if (hud != null) hud.Unbind(this);
             definition = null; weapon = null; shotSource = null; player = null; holder = null; startedAssemblyKey = null;
             RemainingSeconds = 0f; NonForwardMuzzles = 0; StatusText = "";
+            ResultReason = "";
         }
         private void OnDisable() => Cancel();
     }

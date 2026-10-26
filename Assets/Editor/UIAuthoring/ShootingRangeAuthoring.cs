@@ -23,21 +23,27 @@ namespace WeaponWorkshop.Editor
         private const int CUSTOM_INPUT_COUNT = 7;
 
         [MenuItem("Tools/UI/Authoring/ShootingRange/Author")]
-        public static void Author()
+        public static void Author() => AuthorScreens(true);
+
+        [MenuItem("Tools/UI/Authoring/ShootingRange/Author HUD")]
+        public static void AuthorHud() => AuthorScreens(false);
+
+        private static void AuthorScreens(bool includeSelection)
         {
-            const string step = "ShootingRange/Author";
+            string step = includeSelection ? "ShootingRange/Author" : "ShootingRange/Author HUD";
             GameObject root = null;
             try
             {
                 root = LoadPrefab(UIMANAGER_PREFAB_PATH);
-                TargetSelectionUI selectionBridge = RequireSingleDescendantComponent<TargetSelectionUI>(root.transform);
                 ShootingTestHUD hudBridge = RequireSingleDescendantComponent<ShootingTestHUD>(root.transform);
 
-                AuthorTargetSelection(selectionBridge);
+                if (includeSelection)
+                    AuthorTargetSelection(RequireSingleDescendantComponent<TargetSelectionUI>(root.transform));
                 AuthorShootingTestHud(hudBridge);
 
                 SavePrefabOrThrow(root, UIMANAGER_PREFAB_PATH);
-                Debug.Log($"[UIAuthoring] OK {step} TargetSelectionView·ShootingTestHudView 저작·참조 연결");
+                AssetDatabase.ImportAsset(UIMANAGER_PREFAB_PATH);
+                Debug.Log($"[UIAuthoring] OK {step} 저작·참조 연결");
             }
             catch (Exception exception)
             {
@@ -111,17 +117,25 @@ namespace WeaponWorkshop.Editor
             panelRect.anchorMax = new Vector2(.5f, 1f);
             panelRect.pivot = new Vector2(.5f, 1f);
             panelRect.anchoredPosition = new Vector2(0f, -48f);
-            panelRect.sizeDelta = new Vector2(525f, 255f);
+            panelRect.sizeDelta = new Vector2(525f, 51f);
 
             Image background = EnsureComponent<Image>(panel);
             background.color = new Color(.025f, .04f, .065f, .88f);
             background.raycastTarget = false;
 
-            TMP_Text title = EnsureHudLabel(panel.transform, "Title", font, 12f, 18.75f, 22.5f);
-            TMP_Text timer = EnsureHudLabel(panel.transform, "Timer", font, 36.75f, 20.25f, 24f);
-            TMP_Text details = EnsureHudLabel(panel.transform, "Details", font, 66.75f, 12.75f, 138.75f);
-            TMP_Text retry = EnsureHudLabel(panel.transform, "Retry", font, 211.5f, 13.5f, 33f);
+            TMP_Text title = EnsureHudLabel(panel.transform, "Title", font, 12f, 18.75f, 27f);
+            TMP_Text timer = EnsureHudLabel(panel.transform, "Timer", font, 45f, 20.25f, 30f);
+            TMP_Text details = EnsureHudLabel(panel.transform, "Details", font, 81f, 12.75f, 24f);
+            TMP_Text retry = EnsureHudLabel(panel.transform, "Retry", font, 111f, 13.5f, 24f);
             retry.color = new Color(1f, .85f, .25f);
+            details.color = Color.white;
+            details.richText = true;
+            title.text = "사격 테스트";
+            timer.text = details.text = retry.text = "";
+            title.gameObject.SetActive(true);
+            timer.gameObject.SetActive(false);
+            details.gameObject.SetActive(false);
+            retry.gameObject.SetActive(false);
 
             panel.SetActive(false);
 
@@ -132,6 +146,8 @@ namespace WeaponWorkshop.Editor
             SetObject(viewData, "m_timer", timer);
             SetObject(viewData, "m_details", details);
             SetObject(viewData, "m_retry", retry);
+            RequireProperty(viewData, "m_padding").vector2Value = new Vector2(12f, 12f);
+            RequireProperty(viewData, "m_spacing").floatValue = 6f;
             viewData.ApplyModifiedPropertiesWithoutUndo();
 
             SetObject(bridgeData, "m_view", view);
