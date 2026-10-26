@@ -41,6 +41,14 @@
           "id": "color/crimson-3",
           "unlockDay": 2
         },
+        {"id":"color/orange-3","unlockDay":2},
+        {"id":"color/yellow-3","unlockDay":2},
+        {"id":"color/lime-3","unlockDay":2},
+        {"id":"color/emerald-3","unlockDay":2},
+        {"id":"color/cyan-3","unlockDay":2},
+        {"id":"color/cobalt-blue-3","unlockDay":2},
+        {"id":"color/violet-3","unlockDay":2},
+        {"id":"color/pink-3","unlockDay":2},
         {
           "id": "module/split-two/min-1",
           "unlockDay": 1,

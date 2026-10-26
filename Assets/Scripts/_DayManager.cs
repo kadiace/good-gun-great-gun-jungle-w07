@@ -16,6 +16,7 @@ public class _DayManager : MonoBehaviour
     public float BusinessRemaining => businessRemaining;
     public float BusinessDuration => businessDuration;
     public bool BusinessRunning => businessRunning;
+    public bool CanAcceptCustomers => !IsNight && (DayNumber == 0 || businessRunning && businessRemaining > 0f);
     [SerializeField, Tooltip("일차 번호로 조회할 CustomerDay 에셋 목록")] private CustomerDay[] customerDays;
     [SerializeField] private CustomerDay tutorialDay;
     [SerializeField, Min(0), Tooltip("0은 튜토리얼 일차. 내용 작성 전에는 기존 1일차 시작을 유지합니다.")]
@@ -125,7 +126,7 @@ public class _DayManager : MonoBehaviour
     {
         if (!businessRunning || IsNight || OnboardingManager.IsShootingGuideActive) return;
         businessRemaining = Mathf.Max(0f, businessRemaining - Time.deltaTime);
-        if (businessRemaining <= 0f) CloseShop();
+        if (businessRemaining <= 0f && (customerBell == null || customerBell.Current == null)) CloseShop();
     }
     private void OnEnable()
     {
@@ -235,6 +236,10 @@ public class _DayManager : MonoBehaviour
         return selected;
     }
     public void CloseShop() => CloseShop(false);
+    public void CloseShopAfterCustomer()
+    {
+        if (businessRunning && businessRemaining <= 0f) CloseShop();
+    }
     public void CloseShop(bool manual)
     {
         if (IsNight || IsAwaitingOpening || isSettled || !HasRequiredReferences()) return;
@@ -350,9 +355,13 @@ public class _DayManager : MonoBehaviour
             ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday);
             if (!ApplyCustomerDay(CurrentCustomerDay)) return false;
         }
-        if (!customerBell.StartBusiness()) return false;
         businessRemaining = businessDuration;
         businessRunning = DayNumber != 0;
+        if (!customerBell.StartBusiness())
+        {
+            businessRunning = false;
+            return false;
+        }
         BusinessOpened?.Invoke(DayNumber, Money);
         Changed?.Invoke();
         return true;

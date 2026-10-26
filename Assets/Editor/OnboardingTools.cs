@@ -10,7 +10,7 @@ internal static class OnboardingTools
     private static void ResetModules()
     {
         OnboardingManager.ResetModuleOnboarding();
-        Debug.Log("모듈 온보딩 노출 상태를 초기화했습니다. 다음 연장·2방향 모듈 선택 또는 설치 때 다시 안내합니다.");
+        Debug.Log("모듈 온보딩 노출 상태를 초기화했습니다. 다음 연장·2방향·스코프·트리거 모듈 선택 또는 설치 때 다시 안내합니다.");
     }
 
     [MenuItem(MenuRoot + "Reset Custom Onboarding")]

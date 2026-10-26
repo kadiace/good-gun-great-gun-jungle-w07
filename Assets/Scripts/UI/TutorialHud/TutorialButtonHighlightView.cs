@@ -17,7 +17,7 @@ namespace WeaponWorkshop
         private Image m_cover;
         private readonly List<Image> m_covers = new List<Image>();
         private readonly Image[] m_spotlight = new Image[4];
-        private readonly Image[] m_guides = new Image[5];
+        private readonly Image[] m_guides = new Image[4];
         private readonly Vector3[] m_corners = new Vector3[4];
 
         private bool m_hasAppliedInitialState;
@@ -214,32 +214,6 @@ namespace WeaponWorkshop
             SetGuideRect(1, surface, left, top - width, right, top);
             SetGuideRect(2, surface, left, bottom, left + width, top);
             SetGuideRect(3, surface, right - width, bottom, right, top);
-
-            Vector2 center = bounds.center;
-            Vector2 destination = new Vector2((left + right) * .5f, (bottom + top) * .5f);
-            Vector2 direction = destination - center;
-            if (direction.sqrMagnitude < .01f ||
-                (center.x >= left && center.x <= right && center.y >= bottom && center.y <= top))
-            {
-                if (m_guides[4] != null)
-                {
-                    m_guides[4].gameObject.SetActive(false);
-                }
-                return;
-            }
-
-            float entry = 0f;
-            if (direction.x > 0f) entry = Mathf.Max(entry, (left - center.x) / direction.x);
-            else if (direction.x < 0f) entry = Mathf.Max(entry, (right - center.x) / direction.x);
-            if (direction.y > 0f) entry = Mathf.Max(entry, (bottom - center.y) / direction.y);
-            else if (direction.y < 0f) entry = Mathf.Max(entry, (top - center.y) / direction.y);
-            Vector2 endpoint = center + direction * entry;
-            Image line = GetGuide(4, surface);
-            RectTransform lineRect = line.rectTransform;
-            lineRect.anchoredPosition = (center + endpoint) * .5f - bounds.center;
-            lineRect.sizeDelta = new Vector2(Vector2.Distance(center, endpoint), width);
-            lineRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
-            line.gameObject.SetActive(true);
         }
 
         private Image GetGuide(int index, RectTransform surface)
