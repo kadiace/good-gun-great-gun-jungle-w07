@@ -408,23 +408,24 @@ namespace WeaponWorkshop
                 return false;
             }
 
-            DayTransitionUI transition = ui.GetComponent<DayTransitionUI>();
+            DayTransitionUI transition = ui.Screen<DayTransitionUI>();
             if (transition != null && transition.IsTransitioning)
             {
                 return true;
             }
 
-            return ui.IsChoiceOpen && (ui.Feedback == null || !ui.Feedback.IsChoiceInputSuspended);
+            FeedbackUI feedback = ui.Screen<FeedbackUI>();
+            return feedback != null && feedback.IsChoiceOpen && !feedback.IsChoiceInputSuspended;
         }
 
         // 대출 안내처럼 Feedback 선택 입력이 중단된 동안에는 대화가 선택창 위에 겹치는 기존 연출을 유지한다.
         private static bool IsSuspendedChoiceOverlay(GameManager _gameManager)
         {
             UIManager ui = _gameManager != null ? _gameManager.UI : null;
-            return ui != null &&
-                   ui.IsChoiceOpen &&
-                   ui.Feedback != null &&
-                   ui.Feedback.IsChoiceInputSuspended;
+            FeedbackUI feedback = ui != null ? ui.Screen<FeedbackUI>() : null;
+            return feedback != null &&
+                   feedback.IsChoiceOpen &&
+                   feedback.IsChoiceInputSuspended;
         }
 
         private void SetDialogue(bool _open)

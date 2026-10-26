@@ -139,7 +139,7 @@ namespace WeaponWorkshop
 
             var required = _source.RequiredTestIds() ?? new System.Collections.Generic.List<string>();
             var tests = TableManager.Instance.ShootingTestTable;
-            var unlocks = game.UI != null && game.UI.Player != null ? game.UI.Player.GetComponent<PlayerModuleUnlocks>() : null;
+            var unlocks = game.Player != null ? game.Player.GetComponent<PlayerModuleUnlocks>() : null;
             Button selected = null;
             for (int i = 0; i < m_timedTests.Length; i++)
             {
@@ -259,8 +259,8 @@ namespace WeaponWorkshop
             }
 
             TargetBell source = m_bell;
-            FirstPersonPlayer player = GameManager.Instance != null && GameManager.Instance.UI != null
-                ? GameManager.Instance.UI.Player
+            FirstPersonPlayer player = GameManager.Instance != null
+                ? GameManager.Instance.Player
                 : null;
             if (!OnboardingManager.CanPrepareShootingGuideTest(source, m_timedTests[_index].Id, player, out var guideError))
             {

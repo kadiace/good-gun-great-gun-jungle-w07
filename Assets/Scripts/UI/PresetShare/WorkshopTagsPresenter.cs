@@ -127,14 +127,14 @@ namespace WeaponWorkshop
                 return;
             }
 
-            var player = m_uiManager.Player;
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             if (m_cachedPlayer != player)
             {
                 m_cachedPlayer = player;
                 m_session = player != null ? player.GetComponent<WorkshopSession>() : null;
             }
             var bench = m_session != null && m_session.IsEditing ? m_session.ActiveWorkbench : null;
-            var holder = m_uiManager.PlayerWeaponHolder;
+            var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             var weapon = bench != null ? bench.CurrentWeapon : holder != null ? holder.EquippedWeapon : null;
             if (m_targetWeapon != weapon || (weapon != null && m_targetCore == null))
             {

@@ -123,7 +123,7 @@ namespace WeaponWorkshop
 
             UIRoot.SaveFocus(ref m_restoredFocus, m_panel.transform);
             m_panel.SetActive(true);
-            m_panel.transform.SetAsLastSibling();
+            UIScreenRoot.BringToFront(m_panel.transform);
             UIRoot.SetFocus(m_copyButton, m_importButton != null ? new Selectable[] { m_importButton, m_closeButton } : null);
         }
 

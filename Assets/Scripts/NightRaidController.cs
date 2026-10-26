@@ -25,7 +25,7 @@ namespace WeaponWorkshop
         [SerializeField] private _DayManager dayManager;
         [SerializeField] private GameManager gameManager;
         [SerializeField] private UIManager uiManager;
-        private NightRaidUI ui => uiManager != null ? uiManager.RaidUI : null;
+        private NightRaidUI ui => uiManager != null ? uiManager.Screen<NightRaidUI>() : null;
         [SerializeField] private GameSaveController workshopSave;
         // 목적지 목록은 스테이지 테이블에서 읽는다. 씬마다 목적지 배열을 따로 두지 않는다.
         public int RegionCount => TableManager.Instance.RaidMap.Count();
@@ -576,7 +576,7 @@ namespace WeaponWorkshop
         {
             var area = Object.FindFirstObjectByType<NightRaidArea>();
             if (area == null) return;
-            player = uiManager.Player;
+            player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             playerWeaponHolder = player != null ? player.GetComponent<WeaponHolder>() : null;
             raidCamera = playerWeaponHolder != null ? playerWeaponHolder.AimCamera : null;
             // Core light rays sample opaque depth to stay hidden behind intact armour, including on mobile URP.
@@ -645,7 +645,7 @@ namespace WeaponWorkshop
             var tutorial = TutorialManager.Instance;
             if (tutorial != null && !tutorial.AllowsRaidRegion(index)) return;
             if (!IsRegionUnlocked(index)) return;
-            player = uiManager.Player;
+            player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             var weapon = holder != null ? holder.EquippedWeapon : null;
             if (weapon == null || !weapon.IsEquipped || weapon.IsMoving)

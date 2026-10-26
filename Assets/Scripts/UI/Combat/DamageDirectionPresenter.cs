@@ -105,7 +105,7 @@ namespace WeaponWorkshop
 
         private RaidPlayerHealth ResolveHealth()
         {
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             return player != null ? player.GetComponent<RaidPlayerHealth>() : null;
         }
 
@@ -147,7 +147,7 @@ namespace WeaponWorkshop
                 return;
             }
 
-            FirstPersonPlayer player = m_uiManager.Player;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             if (player == null)
             {
                 return;
@@ -169,7 +169,7 @@ namespace WeaponWorkshop
 
         private void UpdateScreenDirection()
         {
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             Transform view = player != null ? player.ViewPoint : null;
             if (view == null || m_incomingDirectionInReferenceView.sqrMagnitude < 0.001f)
             {
@@ -199,7 +199,7 @@ namespace WeaponWorkshop
 
         private void RecordViewSample()
         {
-            FirstPersonPlayer player = m_uiManager != null ? m_uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             Transform view = player != null ? player.ViewPoint : null;
             if (view == null)
             {

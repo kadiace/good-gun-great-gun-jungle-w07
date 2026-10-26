@@ -27,49 +27,6 @@ namespace WeaponWorkshop
 
         public Button Button => m_button;
 
-        public void SetContentPadding(float padding)
-        {
-            ApplyContentPadding(Vector2.zero, new Vector2(padding, padding));
-        }
-
-        public void SetContentPaddingRatio(Vector2 ratio)
-        {
-            ratio.x = Mathf.Clamp(ratio.x, 0f, .2f);
-            ratio.y = Mathf.Clamp(ratio.y, 0f, .2f);
-            ApplyContentPadding(ratio, Vector2.zero);
-        }
-
-        private void ApplyContentPadding(Vector2 ratio, Vector2 fixedPadding)
-        {
-            if (m_label == null || m_priceLabel == null || m_swatch == null) return;
-            float textLeft = fixedPadding.x * 3f;
-            float priceHeight = Mathf.Max(m_priceLabel.fontSizeMax, m_priceLabel.GetPreferredValues("0").y);
-            float numberRowHeight = 0f;
-            if (m_numberLabel != null)
-            {
-                float numberHeight = Mathf.Max(m_numberLabel.fontSizeMax, m_numberLabel.GetPreferredValues("0").y);
-                m_numberLabel.rectTransform.anchorMin = m_numberLabel.rectTransform.anchorMax = Vector2.one - ratio;
-                m_numberLabel.rectTransform.anchoredPosition = -fixedPadding;
-                m_numberLabel.rectTransform.sizeDelta = new Vector2(Mathf.Max(21f, numberHeight), numberHeight);
-                numberRowHeight = numberHeight + fixedPadding.y;
-            }
-            var nameRect = m_label.rectTransform;
-            nameRect.anchorMin = new Vector2(ratio.x * 3f, ratio.y * 2f);
-            nameRect.anchorMax = new Vector2(1f - ratio.x, 1f - ratio.y * (m_numberLabel != null ? 2f : 1f));
-            nameRect.offsetMin = new Vector2(textLeft, fixedPadding.y * 2f + priceHeight);
-            nameRect.offsetMax = new Vector2(-fixedPadding.x, -fixedPadding.y - numberRowHeight);
-            var priceRect = m_priceLabel.rectTransform;
-            priceRect.anchorMin = new Vector2(ratio.x * 3f, ratio.y);
-            priceRect.anchorMax = new Vector2(1f - ratio.x, ratio.y);
-            priceRect.offsetMin = new Vector2(textLeft, fixedPadding.y);
-            priceRect.offsetMax = new Vector2(-fixedPadding.x, fixedPadding.y + priceHeight);
-            var swatchRect = m_swatch.rectTransform;
-            swatchRect.anchorMin = ratio;
-            swatchRect.anchorMax = new Vector2(ratio.x * 2f, 1f - ratio.y);
-            swatchRect.offsetMin = fixedPadding;
-            swatchRect.offsetMax = new Vector2(fixedPadding.x * 2f, -fixedPadding.y);
-        }
-
         public void SetDropHighlight(bool active)
         {
             if (m_dropBorder != null) m_dropBorder.gameObject.SetActive(active);

@@ -250,7 +250,7 @@ namespace WeaponWorkshop
             var session = player.GetComponent<WorkshopSession>();
             if (data.inWorkshop && (workbenches == null || data.workbench < 0 || data.workbench >= workbenches.Length || workbenches[data.workbench] == null))
             { Debug.LogError("저장된 작업대가 없습니다.", this); return false; }
-            GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
+            GameManager.Instance?.UI?.Screen<ShootingTestHUD>()?.CancelTest();
             if (data.savedWeapons)
             {
                 player.GetComponent<WeaponHolder>()?.TakeWeapon();

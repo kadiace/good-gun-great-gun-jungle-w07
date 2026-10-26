@@ -316,7 +316,7 @@ namespace WeaponWorkshop
             }
             if (!dayManager.CanStartNextDay) { dayManager.ShowSettlement(); return; }
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            var transition = ui != null ? ui.GetComponent<DayTransitionUI>() : null;
+            var transition = ui != null ? ui.Screen<DayTransitionUI>() : null;
             if (showFade && transition != null && transition.BeginReturn(dayManager)) return;
             dayManager.StartNextDay();
         }
@@ -336,7 +336,7 @@ namespace WeaponWorkshop
         /// </summary>
         private void RestoreCore(GameSaveData data)
         {
-            GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
+            GameManager.Instance?.UI?.Screen<ShootingTestHUD>()?.CancelTest();
             if (data.version >= 3) { RestoreWorldSave(data); return; }
             if (dayManager == null || player == null || !dayManager.CanRestoreSave(data) || player.GetComponent<PlayerWallet>() == null ||
                 (data.inWorkshop && (workbenches == null || data.workbench < 0 || data.workbench >= workbenches.Length || workbenches[data.workbench] == null)))

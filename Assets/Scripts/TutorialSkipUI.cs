@@ -65,7 +65,7 @@ namespace WeaponWorkshop
             }
 
             m_view.Configure(panel, skipButton, tutorialButton);
-            m_presenter = new TutorialSkipPresenter(m_view, GetComponent<DayTransitionUI>());
+            m_presenter = new TutorialSkipPresenter(m_view, GetComponentInParent<UIManager>(true)?.Screen<DayTransitionUI>());
             if (m_presenter.Initialize())
             {
                 return;

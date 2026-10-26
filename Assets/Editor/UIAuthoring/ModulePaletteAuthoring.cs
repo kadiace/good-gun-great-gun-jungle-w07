@@ -88,10 +88,7 @@ namespace WeaponWorkshop.Editor
                 Button paletteToggle = AuthorPaletteToggle(root, font);
 
                 ModulePaletteView.PaletteCategory[] categories = new ModulePaletteView.PaletteCategory[3];
-                Vector2 referenceSize;
-                float referenceTitleHeight;
-                RectTransform palette = AuthorPalette(root, font, counts, categories, out referenceSize,
-                    out referenceTitleHeight);
+                RectTransform palette = AuthorPalette(root, font, counts, categories, out _, out _);
 
                 RectTransform templateRect = AuthorTemplate(root, view, font);
                 ModuleSlotUI template = templateRect.GetComponent<ModuleSlotUI>();
@@ -99,7 +96,6 @@ namespace WeaponWorkshop.Editor
 
                 var viewData = new SerializedObject(view);
                 Assign(viewData, "m_hotbar", hotbar);
-                Assign(viewData, "m_hotbarLayout", hotbar.GetComponent<HorizontalLayoutGroup>());
                 Assign(viewData, "m_hotbarGuide", guide);
                 Assign(viewData, "m_paletteToggleButton", paletteToggle);
                 SerializedProperty slotArray = viewData.FindProperty("m_hotbarSlots");
@@ -110,9 +106,6 @@ namespace WeaponWorkshop.Editor
                 }
 
                 Assign(viewData, "m_palette", palette);
-                Assign(viewData, "m_paletteLayout", palette.GetComponent<VerticalLayoutGroup>());
-                Assign(viewData, "m_paletteTitle", palette.Find("Title").GetComponent<TMPro.TextMeshProUGUI>());
-                Assign(viewData, "m_paletteTitleLayout", palette.Find("Title").GetComponent<LayoutElement>());
                 SerializedProperty categoryArray = viewData.FindProperty("m_categories");
                 categoryArray.arraySize = categories.Length;
                 for (int i = 0; i < categories.Length; i++)
@@ -124,8 +117,6 @@ namespace WeaponWorkshop.Editor
                     element.FindPropertyRelative("gridSize").objectReferenceValue = categories[i].gridSize;
                 }
 
-                viewData.FindProperty("m_paletteReferenceSize").vector2Value = referenceSize;
-                viewData.FindProperty("m_paletteReferenceTitleHeight").floatValue = referenceTitleHeight;
                 Assign(viewData, "m_slotTemplate", template);
                 Assign(viewData, "m_dragGhost", ghost);
                 Assign(viewData, "m_dragGhostSwatch", ghostSwatch);
@@ -134,7 +125,7 @@ namespace WeaponWorkshop.Editor
 
                 AuthorNavigation(hotbarSlots);
                 ApplyHotbarContentPadding(hotbarSlots);
-                template.SetContentPadding(5f);
+                ApplySlotContentPadding(template, Vector2.zero, Vector2.one * 5f);
 
                 if (PrefabUtility.SaveAsPrefabAsset(prefab, UIPath) == null)
                 {
@@ -570,9 +561,46 @@ namespace WeaponWorkshop.Editor
             {
                 if (slots[i] != null)
                 {
-                    slots[i].SetContentPaddingRatio(HotbarTextPaddingRatio);
+                    ApplySlotContentPadding(slots[i], HotbarTextPaddingRatio, Vector2.zero);
                 }
             }
+        }
+
+        // Initial authoring only. Runtime slots retain their prefab geometry.
+        private static void ApplySlotContentPadding(ModuleSlotUI slot, Vector2 ratio, Vector2 fixedPadding)
+        {
+            var data = new SerializedObject(slot);
+            var label = data.FindProperty("label").objectReferenceValue as TextMeshProUGUI;
+            var priceLabel = data.FindProperty("priceLabel").objectReferenceValue as TextMeshProUGUI;
+            var numberLabel = data.FindProperty("numberLabel").objectReferenceValue as TextMeshProUGUI;
+            var swatch = data.FindProperty("swatch").objectReferenceValue as Image;
+            if (label == null || priceLabel == null || swatch == null) return;
+            float textLeft = fixedPadding.x * 3f;
+            float priceHeight = Mathf.Max(priceLabel.fontSizeMax, priceLabel.GetPreferredValues("0").y);
+            float numberRowHeight = 0f;
+            if (numberLabel != null)
+            {
+                float numberHeight = Mathf.Max(numberLabel.fontSizeMax, numberLabel.GetPreferredValues("0").y);
+                numberLabel.rectTransform.anchorMin = numberLabel.rectTransform.anchorMax = Vector2.one - ratio;
+                numberLabel.rectTransform.anchoredPosition = -fixedPadding;
+                numberLabel.rectTransform.sizeDelta = new Vector2(Mathf.Max(21f, numberHeight), numberHeight);
+                numberRowHeight = numberHeight + fixedPadding.y;
+            }
+            var nameRect = label.rectTransform;
+            nameRect.anchorMin = new Vector2(ratio.x * 3f, ratio.y * 2f);
+            nameRect.anchorMax = new Vector2(1f - ratio.x, 1f - ratio.y * (numberLabel != null ? 2f : 1f));
+            nameRect.offsetMin = new Vector2(textLeft, fixedPadding.y * 2f + priceHeight);
+            nameRect.offsetMax = new Vector2(-fixedPadding.x, -fixedPadding.y - numberRowHeight);
+            var priceRect = priceLabel.rectTransform;
+            priceRect.anchorMin = new Vector2(ratio.x * 3f, ratio.y);
+            priceRect.anchorMax = new Vector2(1f - ratio.x, ratio.y);
+            priceRect.offsetMin = new Vector2(textLeft, fixedPadding.y);
+            priceRect.offsetMax = new Vector2(-fixedPadding.x, fixedPadding.y + priceHeight);
+            var swatchRect = swatch.rectTransform;
+            swatchRect.anchorMin = ratio;
+            swatchRect.anchorMax = new Vector2(ratio.x * 2f, 1f - ratio.y);
+            swatchRect.offsetMin = fixedPadding;
+            swatchRect.offsetMax = new Vector2(fixedPadding.x * 2f, -fixedPadding.y);
         }
 
         private static void AuthorNavigation(ModuleSlotUI[] slots)

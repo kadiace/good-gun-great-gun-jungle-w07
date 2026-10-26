@@ -197,9 +197,9 @@ namespace WeaponWorkshop
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
             if (ui == null) ui = FindFirstObjectByType<UIManager>(FindObjectsInactive.Include);
             if (ui == null) return;
-            if (dialogue == null) dialogue = ui.GetComponentInChildren<DialogueUI>(true);
-            if (selection == null) selection = ui.GetComponent<TutorialSkipUI>();
-            if (dayTransition == null) dayTransition = ui.GetComponent<DayTransitionUI>();
+            if (dialogue == null) dialogue = ui.Screen<DialogueUI>();
+            if (selection == null) selection = ui.Screen<TutorialSkipUI>();
+            if (dayTransition == null) dayTransition = ui.Screen<DayTransitionUI>();
         }
         public void BeginDayZero(_DayManager day)
         {
@@ -253,10 +253,10 @@ namespace WeaponWorkshop
         }
         private void PrepareFirstDay()
         {
-            var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            if (ui != null && ui.Player != null)
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
+            if (player != null)
             {
-                var session = ui.Player.GetComponent<WorkshopSession>();
+                var session = player.GetComponent<WorkshopSession>();
                 if (session != null) session.LeaveImmediately();
             }
             EndPractice();
@@ -352,7 +352,7 @@ namespace WeaponWorkshop
             if (!IsGuidedDayZero || CurrentStep == null) return false;
             if (CurrentStep.completion != TutorialCompletion.Confirmation) return false;
             if (!ownsDialogue || dialogue == null || !dialogue.IsOpen) return false;
-            if (GameManager.Instance == null || GameManager.Instance.IsPaused || GameManager.Instance.UI.IsChoiceOpen) return false;
+            if (GameManager.Instance == null || GameManager.Instance.IsPaused || UIInputPolicy.IsChoiceOpen) return false;
             if (dayTransition != null && dayTransition.IsTransitioning) return false;
 
             var player = TutorialPlayer;
@@ -560,8 +560,7 @@ namespace WeaponWorkshop
         }
         private System.Collections.IEnumerator TurnToCustomer(Customer customer)
         {
-            var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            var player = ui != null ? ui.Player : null;
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             if (player != null && player.ViewPoint != null)
             {
                 Vector3 direction = customer.transform.position + Vector3.up - player.ViewPoint.position;

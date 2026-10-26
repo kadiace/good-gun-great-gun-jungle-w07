@@ -24,7 +24,7 @@ namespace WeaponWorkshop
         {
             if (panel == null) return;
 
-            FirstPersonPlayer player = uiManager != null ? uiManager.Player : null;
+            FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             if (player == null || !player.isActiveAndEnabled || !Application.isFocused ||
                 NightRaidController.Instance == null || GameManager.GameplayBlocked)
             {

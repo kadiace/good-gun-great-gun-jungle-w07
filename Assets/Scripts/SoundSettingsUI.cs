@@ -8,7 +8,7 @@ namespace WeaponWorkshop
     // PausePanel의 하위 화면 호환 브리지. 기존 직렬화 참조(씬 오버라이드 보존)를 같은 GameObject의
     // SoundSettingsView에 전달하고 표시·적용 로직은 SoundSettingsPresenter가 담당한다.
     // 입력은 기존 EventSystem/Input System UI 모듈을 사용한다.
-    public sealed class SoundSettingsUI : MonoBehaviour
+    public sealed class SoundSettingsUI : MonoBehaviour, IUIScreen
     {
         [Serializable]
         public sealed class SongRow
@@ -50,6 +50,8 @@ namespace WeaponWorkshop
         }
 
         // 비활성 패널도 UIManager에서 초기화해 씬에 저장된 활성 상태에 의존하지 않는다.
+        public void InitializeScreen(UIContext _context) => Initialize();
+
         public void Initialize()
         {
             if (m_initialized)

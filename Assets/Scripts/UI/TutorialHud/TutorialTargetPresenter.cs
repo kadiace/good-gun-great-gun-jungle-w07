@@ -96,7 +96,7 @@ namespace WeaponWorkshop
             if (OnboardingManager.IsShootingGuideVisible)
             {
                 GameManager game = GameManager.Instance;
-                var player = game != null && game.UI != null ? game.UI.Player : null;
+                var player = game != null ? game.Player : null;
                 var workshop = player != null ? player.GetComponent<WorkshopSession>() : null;
                 Component guidedTarget = OnboardingManager.ShootingTarget;
                 if (guidedTarget == null || GameManager.GameplayBlocked || workshop != null && workshop.IsInWorkshop)

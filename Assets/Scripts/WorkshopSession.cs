@@ -25,8 +25,12 @@ namespace WeaponWorkshop
         public bool IsEditing => IsInWorkshop && !IsTransitioning;
         public Rect RotationViewport => playerCamera.pixelRect;
         public Camera WorkshopCamera => playerCamera;
-        private UIManager workshopUI;
-        public void BindWorkshopUI(UIManager owner) => workshopUI = owner;
+        private WorkshopDirectionMarksUI workshopUI;
+        public void BindWorkshopUI(WorkshopDirectionMarksUI owner) => workshopUI = owner;
+        public void UnbindWorkshopUI(WorkshopDirectionMarksUI owner)
+        {
+            if (ReferenceEquals(workshopUI, owner)) workshopUI = null;
+        }
         private float RotationRadius => workshopUI != null ? workshopUI.GetWorkshopRotationRadius(RotationViewport) : 0f;
         public bool CanEnterWorkshop => isActiveAndEnabled && controls != null &&
             playerCamera != null && builder != null && !IsInWorkshop && !IsTransitioning;
@@ -57,7 +61,7 @@ namespace WeaponWorkshop
             PlanarView.Initialize(this, playerCamera, builder);
             builder?.SetPlanarView(PlanarView);
             if (builder != null) builder.enabled = false;
-            workshopUI?.SetWorkshopUI(false);
+            if (workshopUI != null) workshopUI.SetWorkshopUI(false);
             if (inputActions == null || playerCamera == null) { enabled = false; return; }
             playerRenderers = GetComponentsInChildren<Renderer>();
             originalShadows = new ShadowCastingMode[playerRenderers.Length];
@@ -253,7 +257,7 @@ namespace WeaponWorkshop
                     var action = editingControls.FindAction(name, true);
                     if (editing) action.Enable(); else action.Disable();
                 }
-            workshopUI?.SetWorkshopUI(editing);
+            if (workshopUI != null) workshopUI.SetWorkshopUI(editing);
         }
 
         public void CancelRotationDrag() => rotationDrag = false;

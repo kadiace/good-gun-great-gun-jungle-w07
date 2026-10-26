@@ -25,7 +25,7 @@ namespace WeaponWorkshop
             {
                 Log("retire_failed", new RetireFailedLog
                 { reason = save == null ? "save_controller_missing" : "autosave_failed", balance = wallet.Balance });
-                GameManager.Instance?.UI?.ShowNotification(save == null
+                FeedbackUI.For(this)?.ShowNotification(save == null
                     ? "자동 저장 관리자를 찾을 수 없습니다." : error);
                 return false;
             }

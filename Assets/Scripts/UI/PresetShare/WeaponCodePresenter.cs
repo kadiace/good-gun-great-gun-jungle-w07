@@ -35,8 +35,8 @@ namespace WeaponWorkshop
         {
             get
             {
-                return m_uiManager != null && m_uiManager.Player != null
-                    ? m_uiManager.Player.GetComponent<WorkshopSession>() : null;
+                return GameManager.Instance != null && GameManager.Instance.Player != null
+                    ? GameManager.Instance.Player.GetComponent<WorkshopSession>() : null;
             }
         }
 
@@ -152,7 +152,7 @@ namespace WeaponWorkshop
             }
             catch (Exception exception)
             {
-                m_uiManager.ShowNotification(exception.Message);
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification(exception.Message);
             }
 
             m_view.ShowPanel();
@@ -182,11 +182,11 @@ namespace WeaponWorkshop
                 string code = WeaponShareCode.Export(m_weapon);
                 m_view.SetCode(code);
                 GUIUtility.systemCopyBuffer = code;
-                m_uiManager.ShowNotification("무기 코드를 복사했습니다.");
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification("무기 코드를 복사했습니다.");
             }
             catch (Exception exception)
             {
-                m_uiManager.ShowNotification(exception.Message);
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification(exception.Message);
             }
         }
 
@@ -213,11 +213,11 @@ namespace WeaponWorkshop
 
                 int oldMoney = old.blocks.Sum(block => block.paidPurchaseCost);
                 int oldMaterials = old.blocks.Sum(block => block.paidModuleCreditCost);
-                FirstPersonPlayer player = m_uiManager.Player;
+                FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
                 var plan = WeaponShareCode.Resolve(blueprint, assembly, player.GetComponent<PlayerModuleUnlocks>(),
                     Mathf.Max(0, old.paidConstructionCost - oldMoney), out int money, out int materials);
                 EquipableWeapon current = m_weapon;
-                m_uiManager.Feedback.ShowChoice(m_owner,
+                m_uiManager.Screen<FeedbackUI>()?.ShowChoice(m_owner,
                     $"현재 조립을 '{blueprint.name}'으로 교체할까요?\n" +
                     $"차액: ${money - oldMoney:N0} / 재료 {materials - oldMaterials:N0}\n" +
                     "음수는 기존 모듈 구매비 환불입니다.", () =>
@@ -234,15 +234,15 @@ namespace WeaponWorkshop
                             wallet.RefundConstruction(Mathf.Max(0, oldMoney - money));
                             wallet.CreditModuleCredits(Mathf.Max(0, oldMaterials - materials));
                             current.SetWeaponName(blueprint.name);
-                            m_uiManager.GetComponent<WeaponNameUI>()?.RefreshName();
+                            m_uiManager.Screen<WeaponNameUI>()?.RefreshName();
                             current.GetComponentInChildren<StatCollector>()?.Recalculate();
-                            m_uiManager.ShowNotification("무기 코드를 적용했습니다.");
+                            m_uiManager.Screen<FeedbackUI>()?.ShowNotification("무기 코드를 적용했습니다.");
                         }
                     }, () => { });
             }
             catch (Exception exception)
             {
-                m_uiManager.ShowNotification(exception.Message);
+                m_uiManager.Screen<FeedbackUI>()?.ShowNotification(exception.Message);
             }
         }
 

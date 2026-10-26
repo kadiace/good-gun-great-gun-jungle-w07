@@ -305,15 +305,8 @@ namespace WeaponWorkshop.Editor
 
         private static void AuthorCenterMaxWidth(GameObject _root, List<string> _changes)
         {
-            // 1. ModulePalette: 21:9에서 Hotbar(0.08~0.92)·Palette 비율 크기가 왜곡되지 않도록 루트에 CenterMaxWidth 적용
-            ModulePaletteUI palette = _root.GetComponentInChildren<ModulePaletteUI>(true);
-            if (palette != null)
-            {
-                if (EnsureCenterMaxWidth(palette.gameObject, BASE_MAX_WIDTH, true))
-                {
-                    _changes.Add("ModulePalette CenterMaxWidth(1920)");
-                }
-            }
+            // ModulePalette는 저작한 화면 폭·자식 앵커를 그대로 사용한다.
+            // 루트에 CenterMaxWidth를 추가하면 커스텀 메뉴까지 실행 중 재배치된다.
 
             // 2. TutorialSkipPanel/Card: 21:9에서 내부 버튼·메시지(0.3~0.7, 0.4~0.6)가 늘어나지 않도록 Card에 CenterMaxWidth 적용
             Transform tutorialSkip = FindChildRecursive(_root.transform, "TutorialSkipPanel");

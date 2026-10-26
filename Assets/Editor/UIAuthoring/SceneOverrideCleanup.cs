@@ -27,6 +27,13 @@ namespace WeaponWorkshop.EditorTools
         private const string STEP_DRY_RUN = "SceneOverrides/DryRun";
         private const string STEP_CLEAN = "SceneOverrides/Clean";
 
+        private const string MENU_DANGLING_DRY_RUN = "Tools/UI/Authoring/SceneOverrides/DryRunDangling";
+        private const string MENU_DANGLING_CLEAN = "Tools/UI/Authoring/SceneOverrides/CleanDangling";
+        private const string STEP_DANGLING_DRY_RUN = "SceneOverrides/DryRunDangling";
+        private const string STEP_DANGLING_CLEAN = "SceneOverrides/CleanDangling";
+
+        private const string SCENES_ROOT = "Assets/Scenes";
+
         private const string UI_MANAGER_PATH = "Assets/Prefabs/Managers/UIManager.prefab";
         private const string START_UI_PATH = "Assets/Prefabs/UI/StartUI_Manager.prefab";
 
@@ -45,6 +52,18 @@ namespace WeaponWorkshop.EditorTools
         public static void Clean()
         {
             Run(false);
+        }
+
+        [MenuItem(MENU_DANGLING_DRY_RUN)]
+        public static void DryRunDangling()
+        {
+            RunDangling(true);
+        }
+
+        [MenuItem(MENU_DANGLING_CLEAN)]
+        public static void CleanDangling()
+        {
+            RunDangling(false);
         }
 
         private static void Run(bool _dryRun)
@@ -186,6 +205,145 @@ namespace WeaponWorkshop.EditorTools
             }
         }
 
+        /// <summary>
+        /// 프리팹 소스에서 대상이 사라진 오버라이드(m_Modifications의 target 누락·fileID 0)만 제거한다.
+        /// 값 비교를 하지 않으므로 기존 DryRun/Clean의 판정을 바꾸지 않으며, 대상 씬은 빌드 씬 + Assets/Scenes 아래 전체 .unity다.
+        /// 제거 후 씬에서 항목이 사라지므로 두 번째 실행은 0건이다(멱등).
+        /// </summary>
+        private static void RunDangling(bool _dryRun)
+        {
+            string stepName = _dryRun ? STEP_DANGLING_DRY_RUN : STEP_DANGLING_CLEAN;
+
+            if (!CheckRunnableEnvironment(stepName))
+            {
+                return;
+            }
+
+            SceneSetup[] originalSetup = EditorSceneManager.GetSceneManagerSetup();
+            int totalScenesProcessed = 0;
+            int totalRemovedCount = 0;
+            var sceneSummaries = new List<string>();
+
+            try
+            {
+                foreach (string scenePath in GetAllTargetScenePaths())
+                {
+                    Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                    if (!scene.IsValid() || !scene.isLoaded)
+                    {
+                        Debug.LogError("[UIAuthoring] FAIL " + stepName + ": 씬 열기 실패: " + scenePath);
+                        return;
+                    }
+
+                    List<GameObject> instances = FindTargetInstances(scene);
+                    int sceneRemoved = 0;
+                    bool sceneModified = false;
+
+                    foreach (GameObject instance in instances)
+                    {
+                        PropertyModification[] existingMods = PrefabUtility.GetPropertyModifications(instance);
+                        if (existingMods == null || existingMods.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        var remainingMods = new List<PropertyModification>(existingMods.Length);
+                        int removedForInstance = 0;
+
+                        foreach (PropertyModification mod in existingMods)
+                        {
+                            if (IsDanglingModification(mod))
+                            {
+                                removedForInstance++;
+                            }
+                            else
+                            {
+                                remainingMods.Add(mod);
+                            }
+                        }
+
+                        if (removedForInstance > 0)
+                        {
+                            sceneRemoved += removedForInstance;
+                            if (!_dryRun)
+                            {
+                                PrefabUtility.SetPropertyModifications(instance, remainingMods.ToArray());
+                                EditorUtility.SetDirty(instance);
+                                sceneModified = true;
+                            }
+                        }
+                    }
+
+                    if (!_dryRun && sceneModified)
+                    {
+                        EditorSceneManager.MarkSceneDirty(scene);
+                        bool saved = EditorSceneManager.SaveScene(scene);
+                        if (!saved)
+                        {
+                            Debug.LogError("[UIAuthoring] FAIL " + stepName + ": 씬 저장 실패: " + scenePath);
+                            return;
+                        }
+                    }
+
+                    totalScenesProcessed++;
+                    totalRemovedCount += sceneRemoved;
+
+                    string sceneName = System.IO.Path.GetFileName(scenePath);
+                    sceneSummaries.Add(sceneName + "(제거 " + sceneRemoved + ")");
+                }
+
+                string resultAction = _dryRun ? "제거 예정 (저장하지 않음)" : "제거 및 저장 완료";
+                Debug.Log("[UIAuthoring] OK " + stepName + ": 총 " + totalScenesProcessed + "개 씬, " +
+                          resultAction + " (제거: " + totalRemovedCount + "건) -> " +
+                          string.Join(", ", sceneSummaries));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError("[UIAuthoring] FAIL " + stepName + ": 예외 발생 " + exception.Message + "\n" + exception.StackTrace);
+            }
+            finally
+            {
+                if (originalSetup != null && originalSetup.Length > 0)
+                {
+                    try
+                    {
+                        EditorSceneManager.RestoreSceneManagerSetup(originalSetup);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning("[UIAuthoring] WARN " + stepName + ": 씬 구성 복원 실패: " + ex.Message);
+                    }
+                }
+            }
+        }
+
+        private static bool CheckRunnableEnvironment(string _stepName)
+        {
+            if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("[UIAuthoring] FAIL " + _stepName + ": 플레이 모드에서는 실행할 수 없습니다.");
+                return false;
+            }
+
+            if (PrefabStageUtility.GetCurrentPrefabStage() != null)
+            {
+                Debug.LogError("[UIAuthoring] FAIL " + _stepName + ": 프리팹 스테이지가 열려 있습니다. 프리팹 스테이지를 닫고 다시 실행하세요.");
+                return false;
+            }
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene openScene = SceneManager.GetSceneAt(i);
+                if (openScene.isDirty)
+                {
+                    Debug.LogError("[UIAuthoring] FAIL " + _stepName + ": 열린 씬에 저장하지 않은 변경이 있습니다: " + openScene.path);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private static List<GameObject> FindTargetInstances(Scene _scene)
         {
             var instances = new List<GameObject>();
@@ -207,7 +365,8 @@ namespace WeaponWorkshop.EditorTools
                     }
 
                     string sourcePath = GetSourcePrefabPath(instanceRoot);
-                    if (sourcePath == UI_MANAGER_PATH || sourcePath == START_UI_PATH)
+                    if (sourcePath == UI_MANAGER_PATH || sourcePath == START_UI_PATH ||
+                        sourcePath == UIAuthoringPaths.UI_MANAGER_RAID_PREFAB)
                     {
                         instances.Add(instanceRoot);
                     }
@@ -258,6 +417,42 @@ namespace WeaponWorkshop.EditorTools
             }
 
             return paths;
+        }
+
+        // 빌드 씬 + Assets/Scenes 아래 모든 .unity(테스트 씬 포함). 실행 결과 로그가 일정하도록 경로 순서를 정렬한다.
+        private static IEnumerable<string> GetAllTargetScenePaths()
+        {
+            var paths = new SortedSet<string>(StringComparer.Ordinal);
+            foreach (string path in GetBuildScenePaths())
+            {
+                paths.Add(path);
+            }
+
+            if (System.IO.Directory.Exists(SCENES_ROOT))
+            {
+                foreach (string path in System.IO.Directory.GetFiles(SCENES_ROOT, "*.unity", System.IO.SearchOption.AllDirectories))
+                {
+                    paths.Add(path.Replace('\\', '/'));
+                }
+            }
+
+            return paths;
+        }
+
+        private static bool IsDanglingModification(PropertyModification _mod)
+        {
+            if (_mod == null)
+            {
+                return false;
+            }
+
+            if (_mod.target == null)
+            {
+                return true;
+            }
+
+            // 프리팹에서 대상이 사라진 수정은 fileID 0짜리 가짜 대상으로 돌아온다.
+            return Unsupported.GetLocalIdentifierInFileForPersistentObject(_mod.target) == 0;
         }
 
         private static bool IsRedundantModification(PropertyModification _mod)

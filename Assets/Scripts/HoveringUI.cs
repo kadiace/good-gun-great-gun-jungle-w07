@@ -4,13 +4,12 @@ namespace WeaponWorkshop
 {
     // 호버·스캔 HUD 브리지. 기존 직렬화 필드와 공개 API를 유지하고 View·Presenter를 연결한다.
     [DefaultExecutionOrder(60)]
-    public sealed class HoveringUI : MonoBehaviour
+    public sealed class HoveringUI : MonoBehaviour, IUIScreen
     {
         [SerializeField] private GameObject panel;
         [SerializeField] private TMPro.TMP_Text title;
         [SerializeField] private TMPro.TMP_Text description;
         [SerializeField] private GameObject interact;
-        [SerializeField] private ModulePaletteUI palette;
         [SerializeField] private RectTransform textArea;
         [SerializeField] private RectTransform point1;
         [SerializeField] private RectTransform point2;
@@ -30,6 +29,8 @@ namespace WeaponWorkshop
         private HoverTooltipPresenter m_presenter;
         private bool m_hasAttemptedInitialization;
         private bool m_hasLoggedReferenceError;
+
+        public void InitializeScreen(UIContext _context) => Initialize(_context?.Builder, _context?.Interaction);
 
         public void Initialize(CubeBuilder source, Interaction interactionSource)
         {
@@ -117,7 +118,7 @@ namespace WeaponWorkshop
             m_view.BindReferences(panel, title, description, interact, textArea, point1, point2, connector,
                 connectorWidth, textOffset, screenPadding, scanModeText, scanLoadingDiameter,
                 scanLoadingThickness, scanTextRevealDuration, tagGrid, tagTemplate);
-            m_presenter = new HoverTooltipPresenter(m_view, palette, tagSource);
+            m_presenter = new HoverTooltipPresenter(m_view, tagSource);
             if (!m_presenter.Initialize())
             {
                 m_presenter = null;

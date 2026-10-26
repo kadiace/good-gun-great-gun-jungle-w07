@@ -12,7 +12,7 @@ namespace WeaponWorkshop
     /// 카드·삭제 버튼과 SaveSlotCardView·SaveSlotsView 참조는
     /// Tools/UI/Authoring/SaveSlots/Author 저작 명령이 프리팹에 만들어 연결합니다.
     /// </summary>
-    public sealed class SaveSlotsUI : MonoBehaviour
+    public sealed class SaveSlotsUI : MonoBehaviour, IUIScreen
     {
         // 아래 직렬화 필드 이름은 기존 UIManager.prefab·StartUI_Manager.prefab·씬 오버라이드와의 호환을 위해 유지한다.
         [SerializeField] private GameObject panel;
@@ -46,8 +46,41 @@ namespace WeaponWorkshop
             }
         }
 
+        public void InitializeScreen(UIContext _context)
+        {
+            var previous = saveController;
+            ResolveSaveController(_context);
+            if (m_presenter != null && previous == null && saveController != null)
+            {
+                m_presenter.Dispose();
+                m_presenter = null;
+                EnsureInitialized();
+            }
+
+            Initialize();
+        }
+
+        private void ResolveSaveController(UIContext _context = null)
+        {
+            if (saveController != null)
+            {
+                return;
+            }
+
+            if (_context != null && _context.Game != null)
+            {
+                saveController = _context.Game.GetComponentInChildren<GameSaveController>(true);
+            }
+
+            if (saveController == null)
+            {
+                saveController = FindFirstObjectByType<GameSaveController>();
+            }
+        }
+
         private void Awake()
         {
+            ResolveSaveController();
             ResolveStartMenu();
             EnsureInitialized();
             // 기존 Awake와 같이 컴포넌트가 패널 본체가 아니면(인트로의 SlotMenu) 시작 때 패널을 닫는다.
@@ -81,7 +114,8 @@ namespace WeaponWorkshop
             }
         }
 
-        /// <summary>UIManager가 비활성 패널까지 포함해 호출하는 초기 연결점이다. 기존과 같이 닫힌 화면으로 시작한다.</summary>
+        /// <summary>기존과 같이 닫힌 화면으로 시작한다.</summary>
+
         public void Initialize()
         {
             EnsureInitialized();
@@ -194,6 +228,7 @@ namespace WeaponWorkshop
             // 씬 오버라이드가 반영된 브리지 유효 참조를 View에 먼저 전달한다.
             m_view.BindReferences(panel, mainPanel, openSaveSlotsButton, title,
                 autoSaveButton, autoSaveText, slotButtons, slotTexts, deleteButtons, autoSaveDeleteButton);
+            ResolveSaveController();
             var domain = new SaveSlotsDomain(saveController, startMenu, this, confirmDelete);
             m_presenter = new SaveSlotsPresenter(m_view, domain);
             if (!m_presenter.Initialize())

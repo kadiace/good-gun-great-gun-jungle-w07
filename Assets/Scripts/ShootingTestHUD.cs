@@ -6,9 +6,8 @@ namespace WeaponWorkshop
 {
     /// <summary>
     /// 기존 직렬화 필드와 Bind·Unbind·CloseRetry·CancelTest API를 유지하며 사격 시험 HUD의
-    /// View·Presenter를 연결하는 브리지입니다. HUD 컴포넌트는 기존과 같이 UIManager에 남습니다.
+    /// View·Presenter를 연결하는 브리지입니다. HUD 컴포넌트는 HudLayer/ShootingTestScreen 묶음 루트에 둡니다.
     /// </summary>
-    [RequireComponent(typeof(UIManager))]
     public sealed class ShootingTestHUD : MonoBehaviour
     {
         [SerializeField] private TMP_FontAsset font;
@@ -29,7 +28,7 @@ namespace WeaponWorkshop
             if (m_view == null)
             {
                 Debug.LogError(
-                    "[ShootingTestHUD] Initialize 실패: m_view 참조 누락. UIManager.prefab의 ShootingTestHudView 연결이 필요합니다.",
+                    "[ShootingTestHUD] Initialize 실패: m_view 참조 누락. 같은 오브젝트의 ShootingTestHudView 연결이 필요합니다.",
                     this);
                 return;
             }
