@@ -135,12 +135,12 @@ namespace WeaponWorkshop
                 {
                     if (m_presets != null && m_presets.IsOpen && step != null &&
                         step.buttonGuide == TutorialButtonGuide.PresetFirst &&
-                        manager.RaidPresetSaveRequested && m_presets.SelectedSlot == 0)
+                        manager.RaidPresetSaveRequested && m_presets.SelectedSlot == TutorialManager.RaidPresetSaveSlot)
                     {
                         Add(m_presets.TutorialSaveButton);
                     }
                     else if (m_presets != null && m_presets.IsOpen && step != null &&
-                        step.buttonGuide == TutorialButtonGuide.PresetSecond && m_presets.SelectedSlot == 1)
+                        step.buttonGuide == TutorialButtonGuide.PresetSecond && m_presets.SelectedSlot == TutorialManager.RaidPresetLoadSlot)
                     {
                         Add(m_presets.TutorialLoadButton);
                     }
