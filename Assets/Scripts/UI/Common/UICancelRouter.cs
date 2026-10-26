@@ -19,7 +19,6 @@ namespace WeaponWorkshop
         private readonly DayTransitionUI m_dayTransitionUI;
         private readonly SaveSlotsUI[] m_saveSlotsUIs;
         private readonly SoundSettingsUI[] m_soundSettingsUIs;
-        private readonly ShootingTestHUD m_shootingTestHUD;
         private readonly WeaponRecipeUI m_recipeUI;
         private readonly PresetPanelUI m_presetPanelUI;
         private readonly WeaponCodeUI m_weaponCodeUI;
@@ -52,7 +51,6 @@ namespace WeaponWorkshop
             m_dayTransitionUI = _uiManager.Screen<DayTransitionUI>();
             m_saveSlotsUIs = _uiManager.Screens<SaveSlotsUI>();
             m_soundSettingsUIs = _uiManager.Screens<SoundSettingsUI>();
-            m_shootingTestHUD = _uiManager.Screen<ShootingTestHUD>();
             m_recipeUI = _uiManager.Screen<WeaponRecipeUI>();
             m_presetPanelUI = _uiManager.Screen<PresetPanelUI>();
             m_weaponCodeUI = _uiManager.Screen<WeaponCodeUI>();
@@ -121,11 +119,7 @@ namespace WeaponWorkshop
                 return true;
             }
 
-            // 기존 화면별 닫기 우선순위를 그대로 보존한다. 재시도 안내는 레시피보다 먼저 처리한다.
-            if (!GameManager.ModalBlocked && m_shootingTestHUD != null && m_shootingTestHUD.CloseRetry())
-            {
-                return true;
-            }
+            // 사격 테스트 종료는 플레이어의 전용 E 액션에서 처리한다.
             if (m_recipeUI != null && m_recipeUI.IsOpen)
             {
                 m_recipeUI.Close();

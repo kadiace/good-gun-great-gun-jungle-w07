@@ -101,7 +101,7 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 종료 결과를 닫고 처리 여부를 돌려줍니다. 기존 Esc 취소 경로를 재사용합니다.
+        /// 종료 결과를 닫고 처리 여부를 돌려줍니다.
         /// </summary>
         public bool CloseRetry()
         {
@@ -149,25 +149,25 @@ namespace WeaponWorkshop
                 Color timerColor = controller.RemainingSeconds <= TIMER_WARNING_SECONDS
                     ? new Color(1f, .35f, .25f) : Color.white;
                 m_view.SetContent(controller.Definition.DisplayName,
-                    "남은 시간 " + controller.RemainingSeconds.ToString("0.0") + "초", timerColor, controller.StatusText, null);
+                    "남은 시간 " + controller.RemainingSeconds.ToString("0.0") + "초", timerColor, controller.StatusText, "E: 테스트 종료");
                 return;
             }
             if (controller.State == ShootingTestController.TestState.Ready)
             {
                 string start = controller.CanRetryWithWeapon
-                    ? "F: 주문 테스트 시작 · Esc: 닫기"
+                    ? "F: 주문 테스트 시작 · E: 테스트 종료"
                     : controller.CanRetryNearby
-                        ? "총을 장착한 뒤 F: 시작 · Esc: 닫기"
-                        : "테스트 장치 근처에서 총을 들고 F: 시작 · Esc: 닫기";
+                        ? "총을 장착한 뒤 F: 시작 · E: 테스트 종료"
+                        : "테스트 장치 근처에서 총을 들고 F: 시작 · E: 테스트 종료";
                 m_view.SetContent(controller.Definition.DisplayName, null, Color.white,
                     string.IsNullOrEmpty(controller.ResultReason) ? controller.Definition.Instructions : controller.ResultReason, start);
                 return;
             }
             string retry = controller.CanRetryWithWeapon
-                ? "F: 같은 테스트 즉시 재시도 · Esc: 종료"
+                ? "F: 같은 테스트 즉시 재시도 · E: 테스트 종료"
                 : controller.CanRetryNearby
-                    ? "총을 장착한 뒤 F: 재시도 · Esc: 종료"
-                    : "테이블 근처에서 총을 들고 F: 재시도 · Esc: 종료";
+                    ? "총을 장착한 뒤 F: 재시도 · E: 테스트 종료"
+                    : "테이블 근처에서 총을 들고 F: 재시도 · E: 테스트 종료";
             string result = controller.State == ShootingTestController.TestState.Passed
                 ? "<color=#55FF55>사격 시험 통과!</color>"
                 : controller.ResultReason;

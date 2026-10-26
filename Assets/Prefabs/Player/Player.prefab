@@ -661,6 +661,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f7eba6625b9a4e4388635c01f46284d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.PlayerShootingTest
+  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!114 &7057880918029420426
 MonoBehaviour:
   m_ObjectHideFlags: 0
