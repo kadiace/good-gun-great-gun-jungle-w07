@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &2997794510244046847
+--- !u!1 &5159132062801864892
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,10 +8,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 3080112516748906609}
-  - component: {fileID: 5565562092719649270}
-  - component: {fileID: 8123493728999837170}
-  - component: {fileID: 8383987408410177745}
+  - component: {fileID: 4952947474371829554}
+  - component: {fileID: 2539603871047319221}
+  - component: {fileID: 2215445553040474801}
+  - component: {fileID: 1899196738614771602}
   m_Layer: 5
   m_Name: ScopeOverlay
   m_TagString: ScopeOverlay
@@ -19,13 +19,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &3080112516748906609
+--- !u!224 &4952947474371829554
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2997794510244046847}
+  m_GameObject: {fileID: 5159132062801864892}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -38,33 +38,33 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &5565562092719649270
+--- !u!222 &2539603871047319221
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2997794510244046847}
+  m_GameObject: {fileID: 5159132062801864892}
   m_CullTransparentMesh: 1
---- !u!225 &8123493728999837170
+--- !u!225 &2215445553040474801
 CanvasGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2997794510244046847}
+  m_GameObject: {fileID: 5159132062801864892}
   m_Enabled: 1
   m_Alpha: 0
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
---- !u!114 &8383987408410177745
+--- !u!114 &1899196738614771602
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2997794510244046847}
+  m_GameObject: {fileID: 5159132062801864892}
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d99be24353fd194b95ea5965ea8b3b8, type: 3}
