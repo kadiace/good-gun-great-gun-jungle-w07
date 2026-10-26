@@ -45,7 +45,8 @@ namespace WeaponWorkshop
                 return local;
             }
 
-            return GameManager.Instance != null ? GameManager.Instance.UI?.Screen<FeedbackUI>() : null;
+            UIManager globalUi = GameManager.Instance != null ? GameManager.Instance.UI : null;
+            return globalUi != null ? globalUi.Screen<FeedbackUI>() : null;
         }
 
         private void Awake()

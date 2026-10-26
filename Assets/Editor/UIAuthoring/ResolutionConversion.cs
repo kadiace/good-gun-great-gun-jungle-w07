@@ -951,19 +951,6 @@ namespace WeaponWorkshop.EditorTools
                     "Shadow", new[] { R("m_EffectDistance", ValueKind.Vector2) }
                 },
                 {
-                    "ModulePaletteUI", new[]
-                    {
-                        R("slotSize", ValueKind.Vector2)
-                    }
-                },
-                {
-                    "ModulePaletteView", new[]
-                    {
-                        R("m_paletteReferenceSize", ValueKind.Vector2),
-                        R("m_paletteReferenceTitleHeight", ValueKind.Float)
-                    }
-                },
-                {
                     "HoveringUI", new[]
                     {
                         R("connectorWidth", ValueKind.Float),

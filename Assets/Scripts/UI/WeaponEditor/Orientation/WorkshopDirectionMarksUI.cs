@@ -59,6 +59,7 @@ namespace WeaponWorkshop
 
         public void SetWorkshopUI(bool _editing)
         {
+            if (this == null) return;
             EnsureViewAndPresenter();
             bool is2D = m_session != null && m_session.PlanarView != null && m_session.PlanarView.Is2D;
             if (m_view != null)
@@ -79,7 +80,14 @@ namespace WeaponWorkshop
 
         private void OnDisable()
         {
-            SetWorkshopUI(false);
+            // 종료 중에는 기존 View만 숨기고 새 컴포넌트를 생성하지 않는다.
+            if (m_view != null) m_view.SetWorkshopUI(false, false);
+        }
+
+        private void OnDestroy()
+        {
+            if (m_session != null) m_session.UnbindWorkshopUI(this);
+            m_session = null;
         }
 
         private void EnsureViewAndPresenter()

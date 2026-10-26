@@ -80,6 +80,7 @@ namespace WeaponWorkshop
         {
             ClearSpawned();
             if (state == null || !state.exists || spawnPoint == null) return;
+            ResolveSelectionUI();
             // Older saves contain one default target instead of a collection.
             var states = state.spawnedTargets ?? new[] { TargetSpawnSave.From(state) };
             foreach (var saved in states)
@@ -113,12 +114,17 @@ namespace WeaponWorkshop
         public bool Interact(Interaction interactor)
         {
             if (!CanInteract(interactor)) return false;
+            ResolveSelectionUI();
+            return selectionUI != null && selectionUI.Open(this);
+        }
+
+        private void ResolveSelectionUI()
+        {
             if (selectionUI == null)
             {
                 UIManager ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
                 if (ui != null) selectionUI = ui.Screen<TargetSelectionUI>();
             }
-            return selectionUI != null && selectionUI.Open(this);
         }
         public bool Spawn(GameObject prefab) => Spawn(prefab, selectionUI != null ? selectionUI.GetSavePrefabIndex(prefab) : -1);
         private bool Spawn(GameObject prefab, int prefabSlot)

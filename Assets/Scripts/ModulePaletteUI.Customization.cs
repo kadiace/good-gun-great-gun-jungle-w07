@@ -313,11 +313,11 @@ namespace WeaponWorkshop
                 Label = label.Trim(),
                 Panel = panel
             };
-            customPanels.Add(entry);
-            if (customNavigationContent != null && customContentArea != null)
+            if (!CreateCustomPanelEntry(entry))
             {
-                CreateCustomPanelEntry(entry);
+                return false;
             }
+            customPanels.Add(entry);
 
             if (customView != null && entry.Button != null)
             {
@@ -328,24 +328,34 @@ namespace WeaponWorkshop
             return true;
         }
 
-        // 추가 등록 패널의 메뉴 버튼을 만든다. 입력 연결은 CustomizationView가 담당한다.
-        private void CreateCustomPanelEntry(CustomPanelEntry entry)
+        // 저작된 탭을 복제하며 패널의 부모·위치·크기는 호출자가 배치한 그대로 유지한다.
+        private bool CreateCustomPanelEntry(CustomPanelEntry entry)
         {
-            if (entry == null || entry.Panel == null || entry.Button != null)
+            if (entry == null || entry.Panel == null)
             {
-                return;
+                return false;
             }
-
-            entry.Panel.SetParent(customContentArea, false);
-            StretchPanel(entry.Panel);
+            if (entry.Button != null) return true;
+            Button template = null;
+            foreach (CustomPanelEntry existing in customPanels)
+            {
+                if (existing != null && existing.Button != null)
+                {
+                    template = existing.Button;
+                    break;
+                }
+            }
+            if (template == null || customNavigationContent == null)
+            {
+                Debug.LogError("[ModulePaletteUI] 커스텀 탭 등록 실패: 프리팹에 배치된 탭 버튼이 필요합니다.", this);
+                return false;
+            }
+            entry.Button = Instantiate(template, customNavigationContent, false);
+            entry.Button.name = "CustomMenuItem_" + entry.Label;
+            TMPro.TMP_Text label = entry.Button.GetComponentInChildren<TMPro.TMP_Text>(true);
+            if (label != null) label.text = entry.Label;
             entry.Panel.gameObject.SetActive(false);
-            entry.Button = CreateButton("CustomMenuItem_" + customPanels.IndexOf(entry), customNavigationContent,
-                entry.Label, new Vector2(CustomNavigationWidth - 20f, 46f),
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
-                new Color(0.16f, 0.19f, 0.22f, 1f));
-            LayoutElement layoutElement = entry.Button.gameObject.AddComponent<LayoutElement>();
-            layoutElement.minHeight = layoutElement.preferredHeight = 46f;
-            entry.Button.transition = Selectable.Transition.None;
+            return true;
         }
 
         // 레거시 테이블: Resources 폴더를 스캔해 목록을 만든다. 스티커 목록은 테이블로 승격하기 전까지 이 경로를 유지한다.

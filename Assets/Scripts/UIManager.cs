@@ -17,12 +17,13 @@ namespace WeaponWorkshop
         [SerializeField] private NightRaidUI nightRaidUI;
         public T Screen<T>() where T : Component
         {
+            if (this == null) return null;
             if (m_screenCache.TryGetValue(typeof(T), out Component cached) && cached != null) return (T)cached;
             T found = GetComponentInChildren<T>(true);
             m_screenCache[typeof(T)] = found;
             return found;
         }
-        public T[] Screens<T>() where T : Component => GetComponentsInChildren<T>(true);
+        public T[] Screens<T>() where T : Component => this != null ? GetComponentsInChildren<T>(true) : System.Array.Empty<T>();
         private FirstPersonPlayer ResolvePlayer() => player != null ? player : (gameManager != null ? gameManager.Player : null);
 
         private void Awake()

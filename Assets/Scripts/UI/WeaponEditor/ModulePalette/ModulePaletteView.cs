@@ -7,7 +7,8 @@ using UnityEngine.UI;
 namespace WeaponWorkshop
 {
     /// <summary>
-    /// 모듈 팔레트의 저작된 참조(퀵슬롯·목록·드래그 고스트)와 표시·레이아웃만 담당하는 View입니다.
+    /// 모듈 팔레트의 저작된 참조(퀵슬롯·목록·드래그 고스트)와 표시를 담당하는 View입니다.
+    /// 고정 배치는 프리팹의 RectTransform·LayoutGroup·슬롯 템플릿 설정을 그대로 사용합니다.
     /// 선택·즐겨찾기·드래그 판정은 ModulePalettePresenter가 소유하며, 이 클래스는 도메인 상태를 갖지 않습니다.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
@@ -20,19 +21,6 @@ namespace WeaponWorkshop
             "모듈 · 클릭: 선택 · 마우스 올리고 1~9·0: 등록\n목록을 하단으로 드래그: 등록 · 퀵슬롯끼리 드래그: 교체";
 
         [Serializable]
-        public struct LayoutConfig
-        {
-            public Vector2 slotSize;
-            public Vector2 hotbarAnchorMin;
-            public Vector2 hotbarAnchorMax;
-            public Vector2 hotbarPaddingRatio;
-            public Vector2 hotbarTextPaddingRatio;
-            public float hotbarSpacingPixels;
-            public Vector2 paletteSizeRatio;
-            public int paletteColumns;
-        }
-
-        [Serializable]
         public sealed class PaletteCategory
         {
             public VerticalLayoutGroup layout;
@@ -43,7 +31,6 @@ namespace WeaponWorkshop
 
         [Header("Hotbar")]
         [SerializeField] private RectTransform m_hotbar;
-        [SerializeField] private HorizontalLayoutGroup m_hotbarLayout;
         [SerializeField] private TMPro.TextMeshProUGUI m_hotbarGuide;
         // 퀵슬롯 위 "모듈 선택창 [TAB]" 버튼(마우스로 목록 열기·닫기).
         [SerializeField] private UnityEngine.UI.Button m_paletteToggleButton;
@@ -51,14 +38,7 @@ namespace WeaponWorkshop
 
         [Header("Palette")]
         [SerializeField] private RectTransform m_palette;
-        [SerializeField] private VerticalLayoutGroup m_paletteLayout;
-        [SerializeField] private TMPro.TextMeshProUGUI m_paletteTitle;
-        [SerializeField] private LayoutElement m_paletteTitleLayout;
         [SerializeField] private PaletteCategory[] m_categories;
-        [SerializeField, Tooltip("저작 시 계산한 목록 내용 기준 크기. 배율 계산에만 쓴다.")]
-        private Vector2 m_paletteReferenceSize;
-        [SerializeField, Tooltip("저작 시 계산한 제목 높이. 배율 계산에만 쓴다.")]
-        private float m_paletteReferenceTitleHeight;
 
         [Header("Module List")]
         [SerializeField] private ModuleSlotUI m_slotTemplate;
@@ -72,11 +52,7 @@ namespace WeaponWorkshop
         private readonly List<ModuleSlotUI> m_palettePool = new List<ModuleSlotUI>();
         private readonly Dictionary<int, ModuleSlotUI> m_paletteSlotById = new Dictionary<int, ModuleSlotUI>();
         private List<ModuleSlotUI>[] m_categorySlots;
-        private int[] m_categoryCounts;
-        private LayoutConfig m_layoutConfig;
-        private float m_paletteContentPadding = 5f;
         private bool m_isInitialized;
-        private bool m_hasAppliedLayout;
         private bool m_hasLoggedReferenceError;
 
         public RectTransform Root => (RectTransform)transform;
@@ -116,10 +92,10 @@ namespace WeaponWorkshop
         public void NotifySlotDragEnded(PointerEventData _eventData) => SlotDragEnded?.Invoke(_eventData);
 
         /// <summary>
-        /// 저작된 참조를 검증하고 브리지의 레이아웃 설정을 적용한 뒤 모든 모듈 UI를 숨깁니다.
+        /// 저작된 참조를 검증하고 배치 설정을 변경하지 않은 채 모든 모듈 UI를 숨깁니다.
         /// 중복 호출은 초기화된 상태를 유지합니다.
         /// </summary>
-        public bool Initialize(LayoutConfig _layout)
+        public bool Initialize()
         {
             if (m_isInitialized)
             {
@@ -131,7 +107,6 @@ namespace WeaponWorkshop
                 return false;
             }
 
-            m_layoutConfig = _layout;
             BuildCategoryState();
             if (m_paletteToggleButton != null)
             {
@@ -139,7 +114,6 @@ namespace WeaponWorkshop
             }
 
             m_isInitialized = true;
-            ApplyLayout();
             ApplyNavigation();
             HideAll();
             return true;
@@ -147,7 +121,7 @@ namespace WeaponWorkshop
 
         /// <summary>
         /// 목록 카테고리별 모듈 ID를 받아 저작된 템플릿을 재사용해 슬롯을 배치합니다.
-        /// 같은 카테고리 그리드 안에서만 풀을 재사용하며 슬롯을 새로 만들지 않습니다.
+        /// 템플릿 복제 풀을 재사용하며 각 카테고리 그리드의 프리팹 배치 설정을 따릅니다.
         /// </summary>
         public void BuildPaletteSlots(int[][] _moduleIdsByCategory)
         {
@@ -176,7 +150,6 @@ namespace WeaponWorkshop
             for (int i = 0; i < m_categorySlots.Length; i++)
             {
                 m_categorySlots[i].Clear();
-                m_categoryCounts[i] = 0;
             }
 
             int poolIndex = 0;
@@ -186,15 +159,10 @@ namespace WeaponWorkshop
                 int[] ids = _moduleIdsByCategory[category];
                 int count = ids != null ? ids.Length : 0;
                 PaletteCategory target = m_categories[category];
-                int columns = Mathf.Clamp(count, 1, Mathf.Clamp(m_layoutConfig.paletteColumns, 1, 6));
-                target.grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-                target.grid.constraintCount = columns;
-                m_categoryCounts[category] = count;
                 for (int i = 0; i < count; i++)
                 {
                     ModuleSlotUI slot = m_palettePool[poolIndex++];
                     slot.transform.SetParent(target.grid.transform, false);
-                    slot.SetContentPadding(m_paletteContentPadding);
                     slot.gameObject.SetActive(true);
                     m_paletteSlots.Add(slot);
                     m_categorySlots[category].Add(slot);
@@ -202,7 +170,6 @@ namespace WeaponWorkshop
                 }
             }
 
-            ApplyPaletteLayout();
             ApplyNavigation();
         }
 
@@ -227,43 +194,9 @@ namespace WeaponWorkshop
             return UIRoot.SetFocus(slot.Button);
         }
 
-        /// <summary>
-        /// 브리지의 레이아웃 설정을 현재 RectTransform 크기에 맞춰 다시 적용합니다.
-        /// 창 크기가 실제로 바뀔 때만 OnRectTransformDimensionsChange에서 호출됩니다.
-        /// </summary>
-        public void ApplyLayout()
-        {
-            if (!m_isInitialized)
-            {
-                return;
-            }
-
-            ApplyAnchors();
-            ApplyHotbarLayout();
-            ApplyPaletteLayout();
-            m_hasAppliedLayout = HasValidSizes();
-        }
-
-        /// <summary>
-        /// 첫 프레임 전에는 RectTransform 크기가 아직 확정되지 않을 수 있어, 유효한 크기를 얻을 때까지만
-        /// 다시 적용합니다. 이후에는 창 크기 변경 콜백에서만 재계산합니다.
-        /// </summary>
-        public void ApplyPendingLayout()
-        {
-            if (!m_hasAppliedLayout)
-            {
-                ApplyLayout();
-            }
-        }
-
         public void SetHotbarVisible(bool _visible)
         {
-            bool wasVisible = m_hotbar != null && m_hotbar.gameObject.activeSelf;
             SetVisible(m_hotbar != null ? m_hotbar.gameObject : null, _visible);
-            if (_visible && !wasVisible)
-            {
-                ApplyHotbarContentPadding();
-            }
         }
 
         public void SetGuideVisible(bool _visible)
@@ -273,12 +206,7 @@ namespace WeaponWorkshop
 
         public void SetPaletteVisible(bool _visible)
         {
-            bool wasVisible = m_palette != null && m_palette.gameObject.activeSelf;
             SetVisible(m_palette != null ? m_palette.gameObject : null, _visible);
-            if (_visible && !wasVisible)
-            {
-                ApplyPaletteSlotPadding();
-            }
         }
 
         public void SetGuideText(string _text)
@@ -371,15 +299,9 @@ namespace WeaponWorkshop
             }
         }
 
-        private void OnRectTransformDimensionsChange()
-        {
-            ApplyLayout();
-        }
-
         private void BuildCategoryState()
         {
             int count = m_categories != null ? m_categories.Length : 0;
-            m_categoryCounts = new int[count];
             m_categorySlots = new List<ModuleSlotUI>[count];
             for (int i = 0; i < count; i++)
             {
@@ -396,160 +318,6 @@ namespace WeaponWorkshop
                 slot.gameObject.SetActive(false);
                 m_palettePool.Add(slot);
             }
-        }
-
-        private void ApplyAnchors()
-        {
-            ApplyAnchors(m_hotbar, m_layoutConfig.hotbarAnchorMin, m_layoutConfig.hotbarAnchorMax);
-
-            if (m_hotbarGuide != null)
-            {
-                // 모듈 선택창 버튼이 있으면 안내 문구는 버튼 오른쪽에서 시작한다.
-                float guideLeft = m_paletteToggleButton != null
-                    ? ((RectTransform)m_paletteToggleButton.transform).anchorMax.x + .01f
-                    : m_layoutConfig.hotbarAnchorMin.x;
-                Vector2 guideMin = new Vector2(guideLeft, m_layoutConfig.hotbarAnchorMax.y + .01f);
-                Vector2 guideMax = new Vector2(m_layoutConfig.hotbarAnchorMax.x, m_layoutConfig.hotbarAnchorMax.y + .04f);
-                ApplyAnchors(m_hotbarGuide.rectTransform, guideMin, guideMax);
-            }
-
-            Vector2 ratio = new Vector2(Mathf.Clamp(m_layoutConfig.paletteSizeRatio.x, .01f, 1f),
-                Mathf.Clamp(m_layoutConfig.paletteSizeRatio.y, .01f, 1f));
-            Vector2 min = Vector2.one * .5f - ratio * .5f;
-            Vector2 max = Vector2.one * .5f + ratio * .5f;
-            ApplyAnchors(m_palette, min, max);
-            if (m_palette != null)
-            {
-                m_palette.pivot = new Vector2(.5f, .5f);
-            }
-
-            if (m_dragGhost != null)
-            {
-                m_dragGhost.sizeDelta = m_layoutConfig.slotSize;
-            }
-        }
-
-        private static void ApplyAnchors(RectTransform _rect, Vector2 _min, Vector2 _max)
-        {
-            if (_rect == null)
-            {
-                return;
-            }
-
-            _rect.anchorMin = _min;
-            _rect.anchorMax = _max;
-            _rect.offsetMin = Vector2.zero;
-            _rect.offsetMax = Vector2.zero;
-        }
-
-        private void ApplyHotbarLayout()
-        {
-            if (m_hotbar == null)
-            {
-                return;
-            }
-
-            float scale = GetCanvasScale();
-            Vector2 size = m_hotbar.rect.size;
-            if (m_hotbarLayout != null && size.x > 0f && size.y > 0f)
-            {
-                int horizontalPadding = Mathf.RoundToInt(size.x * Mathf.Clamp(m_layoutConfig.hotbarPaddingRatio.x, 0f, .49f));
-                int verticalPadding = Mathf.RoundToInt(size.y * Mathf.Clamp(m_layoutConfig.hotbarPaddingRatio.y, 0f, .49f));
-                m_hotbarLayout.padding = new RectOffset(horizontalPadding, horizontalPadding, verticalPadding, verticalPadding);
-                m_hotbarLayout.spacing = m_layoutConfig.hotbarSpacingPixels / scale;
-            }
-
-            ApplyHotbarContentPadding();
-        }
-
-        private void ApplyHotbarContentPadding()
-        {
-            if (m_hotbarSlots == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < m_hotbarSlots.Length; i++)
-            {
-                if (m_hotbarSlots[i] != null)
-                {
-                    m_hotbarSlots[i].SetContentPaddingRatio(m_layoutConfig.hotbarTextPaddingRatio);
-                }
-            }
-        }
-
-        private void ApplyPaletteSlotPadding()
-        {
-            for (int i = 0; i < m_paletteSlots.Count; i++)
-            {
-                if (m_paletteSlots[i] != null)
-                {
-                    m_paletteSlots[i].SetContentPadding(m_paletteContentPadding);
-                }
-            }
-        }
-
-        private bool HasValidSizes()
-        {
-            return m_hotbar != null && m_hotbar.rect.size.x > 0f && m_hotbar.rect.size.y > 0f &&
-                m_palette != null && m_palette.rect.size.x > 0f && m_palette.rect.size.y > 0f;
-        }
-
-        private void ApplyPaletteLayout()
-        {
-            if (m_palette == null || m_paletteLayout == null || m_paletteTitleLayout == null ||
-                m_paletteReferenceSize.x <= 0f || m_paletteReferenceSize.y <= 0f)
-            {
-                return;
-            }
-
-            Vector2 size = m_palette.rect.size;
-            if (size.x <= 0f || size.y <= 0f)
-            {
-                return;
-            }
-
-            float scale = GetCanvasScale();
-            float scaleX = size.x / m_paletteReferenceSize.x;
-            float scaleY = size.y / m_paletteReferenceSize.y;
-            m_paletteLayout.padding = new RectOffset(Mathf.RoundToInt(12f * scaleX), Mathf.RoundToInt(12f * scaleX),
-                Mathf.RoundToInt(9f * scaleY), Mathf.RoundToInt(12f * scaleY));
-            m_paletteLayout.spacing = 7.5f * scaleY;
-            m_paletteTitleLayout.preferredHeight = m_paletteReferenceTitleHeight * scaleY;
-            m_paletteContentPadding = 5f / scale;
-
-            if (m_categories != null)
-            {
-                int count = Mathf.Min(m_categories.Length, m_categoryCounts != null ? m_categoryCounts.Length : 0);
-                for (int i = 0; i < count; i++)
-                {
-                    PaletteCategory category = m_categories[i];
-                    if (category == null || category.layout == null || category.heading == null ||
-                        category.grid == null || category.gridSize == null)
-                    {
-                        continue;
-                    }
-
-                    category.layout.spacing = 4.5f * scaleY;
-                    category.heading.preferredHeight = 21f * scaleY;
-                    category.grid.cellSize = new Vector2(m_layoutConfig.slotSize.x * scaleX,
-                        m_layoutConfig.slotSize.y * scaleY);
-                    category.grid.spacing = new Vector2(4.5f * scaleX, 4.5f * scaleY);
-                    int columns = Mathf.Max(1, category.grid.constraintCount);
-                    int rows = Mathf.CeilToInt(m_categoryCounts[i] / (float)columns);
-                    category.gridSize.preferredHeight = rows * category.grid.cellSize.y +
-                        Mathf.Max(0, rows - 1) * category.grid.spacing.y;
-                }
-            }
-
-            ApplyPaletteSlotPadding();
-            LayoutRebuilder.MarkLayoutForRebuild(m_palette);
-        }
-
-        private float GetCanvasScale()
-        {
-            Canvas canvas = GetComponentInParent<Canvas>();
-            return canvas != null ? Mathf.Max(.01f, canvas.scaleFactor) : 1f;
         }
 
         private void ApplyNavigation()
@@ -637,21 +405,18 @@ namespace WeaponWorkshop
 
         private bool ValidateReferences()
         {
-            bool valid = m_hotbar != null && m_hotbarLayout != null && m_hotbarGuide != null &&
+            bool valid = m_hotbar != null && m_hotbarGuide != null &&
                 m_hotbarSlots != null && m_hotbarSlots.Length > 0 &&
-                m_palette != null && m_paletteLayout != null && m_paletteTitle != null &&
-                m_paletteTitleLayout != null && m_categories != null && m_categories.Length > 0 &&
+                m_palette != null && m_categories != null && m_categories.Length > 0 &&
                 m_slotTemplate != null && m_dragGhost != null && m_dragGhostSwatch != null &&
-                m_dragGhostLabel != null && m_paletteReferenceSize.x > 0f && m_paletteReferenceSize.y > 0f &&
-                m_paletteReferenceTitleHeight > 0f;
+                m_dragGhostLabel != null;
 
             if (valid)
             {
                 for (int i = 0; i < m_categories.Length; i++)
                 {
                     PaletteCategory category = m_categories[i];
-                    if (category == null || category.layout == null || category.heading == null ||
-                        category.grid == null || category.gridSize == null)
+                    if (category == null || category.grid == null)
                     {
                         valid = false;
                         break;

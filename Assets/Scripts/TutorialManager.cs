@@ -347,7 +347,7 @@ namespace WeaponWorkshop
             if (!IsGuidedDayZero || CurrentStep == null) return false;
             if (CurrentStep.completion != TutorialCompletion.Confirmation) return false;
             if (!ownsDialogue || dialogue == null || !dialogue.IsOpen) return false;
-            if (GameManager.Instance == null || GameManager.Instance.IsPaused || GameManager.Instance.UI.IsChoiceOpen) return false;
+            if (GameManager.Instance == null || GameManager.Instance.IsPaused || UIInputPolicy.IsChoiceOpen) return false;
             if (dayTransition != null && dayTransition.IsTransitioning) return false;
 
             var player = TutorialPlayer;

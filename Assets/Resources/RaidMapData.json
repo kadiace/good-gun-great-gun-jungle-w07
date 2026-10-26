@@ -77,7 +77,7 @@
       "name": "정글 캠퍼스 (개선)",
       "scene": "NightRaid_JungleCampus_improve",
       "selectionOrder": 5,
-      "inheritsFrom": "NightRaid_JungleCampus"
+      "inheritsFrom": "NightRaid_Airport"
     }
   ]
 }
