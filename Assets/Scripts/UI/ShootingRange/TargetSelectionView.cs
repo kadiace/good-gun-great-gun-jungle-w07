@@ -190,6 +190,13 @@ namespace WeaponWorkshop
             }
         }
 
+        public void SetCustomInteractable(bool _interactable)
+        {
+            if (m_customToggleButton != null) m_customToggleButton.interactable = _interactable;
+            if (m_spawnButton != null) m_spawnButton.interactable = _interactable;
+            if (!_interactable) SetCustomPanelVisible(false);
+        }
+
         public void SetStatus(string _text)
         {
             if (m_statusText != null)

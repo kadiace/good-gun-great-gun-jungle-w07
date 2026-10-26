@@ -41,6 +41,7 @@ namespace WeaponWorkshop
         public int requiredModuleId;
         [Tooltip("WeaponTagged 단계에서 작업대 무기가 충족해야 할 CustomerRequestData.tags의 id(무기 타입 자산 GUID). tag/... 요청 id가 아니다.")] public string requiredTagId;
         [Tooltip("손님이 없어도 왼쪽 요청사항 패널에 requiredTagId 태그의 조건을 표시합니다.")] public bool showTagRequirement;
+        [Tooltip("손님이 없어도 왼쪽 요청사항 패널에 표시할 튜토리얼 요청 문구입니다.")] public string requestDescription;
         [Tooltip("buttonGuide와 별개로 레시피 버튼 하이라이트를 requiredTagId 태그를 작업대 무기가 만족할 때까지 유지합니다.")] public bool keepRecipeHighlight;
         public int requiredCustomerCount;
         [Min(0.1f), Tooltip("대상 접근·스캔 단계의 최대 거리(m)")] public float requiredTargetDistance = 5f;

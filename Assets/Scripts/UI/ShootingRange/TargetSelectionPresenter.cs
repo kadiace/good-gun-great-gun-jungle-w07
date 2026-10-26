@@ -127,17 +127,19 @@ namespace WeaponWorkshop
 
             AttachGame();
             m_bell = _source;
+            var required = _source.RequiredTestIds();
+            bool restricted = required.Count > 0;
 
             for (int i = 0; i < m_targetPrefabs.Length; i++)
             {
-                bool interactable = m_targetPrefabs[i] != null;
+                bool interactable = !restricted && m_targetPrefabs[i] != null;
                 string label = i < m_targetNames.Length
                     ? m_targetNames[i]
                     : m_targetPrefabs[i] != null ? m_targetPrefabs[i].name : "없음";
                 m_view.SetTargetRow(i, label, interactable);
             }
 
-            var required = _source.RequiredTestIds() ?? new System.Collections.Generic.List<string>();
+            m_view.SetCustomInteractable(!restricted);
             var tests = TableManager.Instance.ShootingTestTable;
             var unlocks = game.Player != null ? game.Player.GetComponent<PlayerModuleUnlocks>() : null;
             Button selected = null;
@@ -145,7 +147,7 @@ namespace WeaponWorkshop
             {
                 ShootingTestBinding data = m_timedTests[i];
                 bool mandatory = data != null && required.Contains(data.Id);
-                bool interactable = _source.TestController != null && data != null && data.IsAvailable && tests.CanStart(data.Id, unlocks) &&
+                bool interactable = (!restricted || mandatory) && _source.TestController != null && data != null && data.IsAvailable && tests.CanStart(data.Id, unlocks) &&
                     OnboardingManager.AllowsShootingGuideTest(_source, data.Id);
                 string label = data == null
                     ? "미설정 테스트"
@@ -168,7 +170,7 @@ namespace WeaponWorkshop
             m_view.ApplyNavigation();
             m_view.SetGridActive(true);
             m_view.SetCustomPanelVisible(false);
-            m_view.SetStatus("");
+            m_view.SetStatus(restricted ? "현재 주문에서 요구하는 사격 테스트만 진행할 수 있습니다." : "");
             game.SetTargetSelection(true);
             m_view.Show();
             if (selected != null)
@@ -279,6 +281,7 @@ namespace WeaponWorkshop
 
         private void OnCustomToggleRequested()
         {
+            if (m_bell == null || !m_bell.AllowsPracticeTargets) return;
             m_view.ToggleCustomPanel();
             m_view.SetStatus("");
         }

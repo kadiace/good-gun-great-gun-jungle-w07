@@ -48,8 +48,8 @@ namespace WeaponWorkshop
             }
             dialoguePhase = state.dialoguePhase > 0 ? state.dialoguePhase : (HasTalked ? 2 : 0);
             dialogueRequestId = state.dialogueRequestId;
-            if (HasTalked && state.stage == 1) NotifyIfCustomOrder();
             saveStage = state.stage; dialogueIndex = state.line; atCounter = state.stage == 1 || state.stage == 2;
+            if (HasTalked && state.stage == 1) NotifyIfCustomOrder();
             if (state.stage == 0) StartCoroutine(WalkTo(counter, () => { atCounter = true; saveStage = 1; }));
             else if (state.stage == 2)
             {
@@ -271,7 +271,7 @@ namespace WeaponWorkshop
             order.optionalDialogues = optionalDialogues.ToArray();
         }
 
-        private void ShowRequestDialogue(bool justHeardMandatory = false, string justHeardOptional = null)
+        private void ShowRequestDialogue(bool justHeardMandatory = false)
         {
             dialogueIndex = 0;
             var order = profile.OrderState;
@@ -317,9 +317,10 @@ namespace WeaponWorkshop
                     if (optional.requirementId != dialogueRequestId) continue;
                     DialogueUI.Instance.Show(optional.explicitRequest, Okay, () =>
                     {
+                        OnboardingManager.NotifyShootingOrder(this);
                         dialoguePhase = 2;
                         dialogueRequestId = null;
-                        ShowRequestDialogue(justHeardOptional: optional.requirementId);
+                        ShowRequestDialogue();
                     });
                     return;
                 }
@@ -331,8 +332,7 @@ namespace WeaponWorkshop
             var actions = new List<System.Action>();
             foreach (var optional in order.optionalDialogues)
             {
-                if (optional.requirementId != justHeardOptional)
-                    lines.Add(optional.revealed ? optional.explicitRequest : $"<b>{optional.hint}</b>");
+                lines.Add(optional.revealed ? optional.explicitRequest : $"<b>{optional.hint}</b>");
                 if (optional.revealed) continue;
                 labels.Add(optional.question);
                 actions.Add(() =>
@@ -365,6 +365,7 @@ namespace WeaponWorkshop
             dialoguePhase = 2;
             dialogueRequestId = null;
             DialogueUI.Instance.Hide();
+            OnboardingManager.NotifyShootingOrder(this);
         }
 
         /// <summary>

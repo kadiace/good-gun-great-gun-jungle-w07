@@ -174,10 +174,13 @@ namespace WeaponWorkshop
             }
 
             TutorialStep step = tutorial.CurrentStep;
-            if (step == null || !step.showTagRequirement || string.IsNullOrEmpty(step.requiredTagId))
+            if (step == null)
             {
                 return false;
             }
+
+            if (!string.IsNullOrWhiteSpace(step.requestDescription)) return true;
+            if (!step.showTagRequirement || string.IsNullOrEmpty(step.requiredTagId)) return false;
 
             CustomerRequestData table = TableManager.Instance != null ? TableManager.Instance.CustomerRequest : null;
             return table != null && table.FindTag(step.requiredTagId) != null;

@@ -190,6 +190,11 @@ namespace WeaponWorkshop
                     dollarTotal += money;
                     materialTotal += materials;
                 }
+                catch (WeaponShareCode.LockedModulesException e)
+                {
+                    m_presenter.ShowLockedModules(this, e.Modules);
+                    return false;
+                }
                 catch (System.Exception e)
                 {
                     m_presenter.ShowErrorNotification(this, e.Message);
@@ -219,6 +224,12 @@ namespace WeaponWorkshop
 
             if (wallet.Balance < dollarTotal)
             {
+                if (presetPlan != null && TryOfferPresetLoan(interactor, wallet, presets.GetCode(presetSlot),
+                    (int)dollarTotal, (int)materialTotal))
+                {
+                    return false;
+                }
+
                 wallet.CheckPurchaseFunds((int)dollarTotal, false);
                 return false;
             }
@@ -307,6 +318,57 @@ namespace WeaponWorkshop
             }
 
             return true;
+        }
+
+        private bool TryOfferPresetLoan(Interaction interactor, PlayerWallet wallet, string code, int dollars, int materials)
+        {
+            if (!wallet.isActiveAndEnabled || wallet.ModuleCredits < materials ||
+                (long)wallet.Balance + PlayerWallet.LoanAmount < dollars)
+            {
+                return false;
+            }
+
+            var day = FindFirstObjectByType<_DayManager>();
+            if (day == null || !wallet.CanTakeLoan(day.DayNumber))
+            {
+                return false;
+            }
+
+            var feedback = FeedbackUI.For(this);
+            int requestedDay = day.DayNumber;
+            int interest = (int)((long)day.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
+            bool opened = feedback != null && feedback.ShowChoice(this,
+                $"프리셋을 꺼낼 돈이 부족합니다.\n${PlayerWallet.LoanAmount:N0} 대출을 받으시겠습니까? 예상 이자 ${interest:N0}\n대출받으면 프리셋 값을 결제하고 바로 꺼냅니다.",
+                () =>
+                {
+                    var currentPresets = interactor != null && interactor.Player != null
+                        ? interactor.Player.GetComponent<WeaponPresets>() : null;
+                    if (!CanInteract(interactor) || currentPresets == null || currentPresets.GetCode(presetSlot) != code ||
+                        day == null || day.DayNumber != requestedDay || PlayerWallet.ForPlayer(interactor.Player) != wallet ||
+                        wallet.ModuleCredits < materials || (long)wallet.Balance + PlayerWallet.LoanAmount < dollars ||
+                        !wallet.CanTakeLoan(requestedDay))
+                    {
+                        m_presenter.ShowErrorNotification(this, "프리셋 또는 대출 조건이 변경되었습니다. 다시 시도해 주세요.");
+                        return;
+                    }
+
+                    if (wallet.TryTakeLoan(requestedDay))
+                    {
+                        Interact(interactor);
+                        var tutorial = TutorialManager.Instance;
+                        tutorial?.NotifySignal("loan-taken", tutorial.TutorialWorkbench);
+                    }
+                }, null, "대출받기", "취소");
+            if (opened)
+            {
+                var tutorial = TutorialManager.Instance;
+                if (tutorial != null && tutorial.CurrentStep?.requiredSignal == "loan-taken")
+                {
+                    tutorial.ShowLoanGuide(feedback);
+                }
+            }
+
+            return opened;
         }
 
         private static void GetModulePrice(CubeAssembly assembly, PlacedBlock block, ref int shotgunCount, out int dollars, out int materials)

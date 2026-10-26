@@ -4,18 +4,16 @@ namespace WeaponWorkshop
 {
     /// <summary>
     /// ShootingTestHudView와 ShootingTestController 도메인을 연결해 표시 상태·문구·색,
-    /// 합격 후 4초 자동 종료와 재시도·취소 요청을 담당하는 Presenter입니다.
+    /// 합격·실패 후 재시도 안내와 취소 요청을 담당하는 Presenter입니다.
     /// </summary>
     public sealed class ShootingTestHudPresenter
     {
         private const string PRESENTER_NAME = "ShootingTestHudPresenter";
-        private const float PASSED_AUTO_CANCEL_SECONDS = 4f;
         private const float TIMER_WARNING_SECONDS = 5f;
 
         private readonly ShootingTestHudView m_view;
 
         private ShootingTestController m_controller;
-        private float m_completedAt = -1f;
         private bool m_isInitialized;
         private bool m_hasLoggedDependencyError;
 
@@ -68,7 +66,6 @@ namespace WeaponWorkshop
         public void Dispose()
         {
             m_controller = null;
-            m_completedAt = -1f;
 
             if (m_view != null)
             {
@@ -79,12 +76,11 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 표시할 시험 컨트롤러를 연결하고 자동 종료 기준 시간을 초기화합니다.
+        /// 표시할 시험 컨트롤러를 연결합니다.
         /// </summary>
         public void Bind(ShootingTestController _controller)
         {
             m_controller = _controller;
-            m_completedAt = -1f;
         }
 
         /// <summary>
@@ -109,7 +105,8 @@ namespace WeaponWorkshop
         /// </summary>
         public bool CloseRetry()
         {
-            if (m_controller == null || (m_controller.State != ShootingTestController.TestState.Failed &&
+            if (m_controller == null || (m_controller.State != ShootingTestController.TestState.Ready &&
+                m_controller.State != ShootingTestController.TestState.Failed &&
                 m_controller.State != ShootingTestController.TestState.Passed))
             {
                 return false;
@@ -128,7 +125,7 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 시험 상태·남은 시간·상세·재시도 안내를 표시하고 합격 후 4초가 지나면 자동 종료합니다.
+        /// 시험 상태·남은 시간·상세를 표시하고 합격·실패 후에도 재시도 안내를 유지합니다.
         /// </summary>
         public void Tick()
         {
@@ -140,20 +137,6 @@ namespace WeaponWorkshop
             ShootingTestController controller = m_controller;
             bool visible = controller != null && controller.Definition != null &&
                 controller.State != ShootingTestController.TestState.Idle;
-            if (visible && controller.State == ShootingTestController.TestState.Passed)
-            {
-                if (m_completedAt < 0f)
-                {
-                    m_completedAt = Time.unscaledTime;
-                }
-
-                if (Time.unscaledTime - m_completedAt > PASSED_AUTO_CANCEL_SECONDS)
-                {
-                    controller.Cancel();
-                    visible = false;
-                }
-            }
-
             m_view.SetVisible(visible);
             if (!visible)
             {
@@ -169,11 +152,15 @@ namespace WeaponWorkshop
                     "남은 시간 " + controller.RemainingSeconds.ToString("0.0") + "초", timerColor, controller.StatusText, null);
                 return;
             }
-            if (controller.State == ShootingTestController.TestState.Passed)
+            if (controller.State == ShootingTestController.TestState.Ready)
             {
+                string start = controller.CanRetryWithWeapon
+                    ? "F: 주문 테스트 시작 · Esc: 닫기"
+                    : controller.CanRetryNearby
+                        ? "총을 장착한 뒤 F: 시작 · Esc: 닫기"
+                        : "테스트 장치 근처에서 총을 들고 F: 시작 · Esc: 닫기";
                 m_view.SetContent(controller.Definition.DisplayName, null, Color.white,
-                    "<color=#55FF55>사격 시험 통과!</color>",
-                    "Esc: 닫기 · " + PASSED_AUTO_CANCEL_SECONDS.ToString("0") + "초 후 자동 종료");
+                    string.IsNullOrEmpty(controller.ResultReason) ? controller.Definition.Instructions : controller.ResultReason, start);
                 return;
             }
             string retry = controller.CanRetryWithWeapon
@@ -181,7 +168,10 @@ namespace WeaponWorkshop
                 : controller.CanRetryNearby
                     ? "총을 장착한 뒤 F: 재시도 · Esc: 종료"
                     : "테이블 근처에서 총을 들고 F: 재시도 · Esc: 종료";
-            m_view.SetContent(controller.Definition.DisplayName, null, Color.white, controller.ResultReason, retry);
+            string result = controller.State == ShootingTestController.TestState.Passed
+                ? "<color=#55FF55>사격 시험 통과!</color>"
+                : controller.ResultReason;
+            m_view.SetContent(controller.Definition.DisplayName, null, Color.white, result, retry);
         }
 
         /// <summary>

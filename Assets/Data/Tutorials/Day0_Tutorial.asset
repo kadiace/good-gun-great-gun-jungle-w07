@@ -1869,6 +1869,7 @@ MonoBehaviour:
     requiredModuleId: 0
     requiredTagId: 
     showTagRequirement: 0
+    requestDescription: "\uC57C\uAC04 \uC2B5\uACA9\uC6A9 \uCD1D \uC81C\uC791\uD558\uAE30"
     keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
@@ -1920,6 +1921,7 @@ MonoBehaviour:
     requiredModuleId: 0
     requiredTagId: 
     showTagRequirement: 0
+    requestDescription: "\uC57C\uAC04 \uC2B5\uACA9\uC6A9 \uCD1D \uC81C\uC791\uD558\uAE30"
     keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
@@ -1971,6 +1973,7 @@ MonoBehaviour:
     requiredModuleId: 0
     requiredTagId: 
     showTagRequirement: 0
+    requestDescription: "\uC57C\uAC04 \uC2B5\uACA9\uC6A9 \uCD1D \uC81C\uC791\uD558\uAE30"
     keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
@@ -2023,6 +2026,7 @@ MonoBehaviour:
     requiredModuleId: 0
     requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
     showTagRequirement: 1
+    requestDescription: "\uC57C\uAC04 \uC2B5\uACA9\uC6A9 \uCD1D \uC81C\uC791\uD558\uAE30"
     keepRecipeHighlight: 1
     requiredCustomerCount: 0
     requiredTargetDistance: 5
@@ -2095,6 +2099,7 @@ MonoBehaviour:
     requiredModuleId: 0
     requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
     showTagRequirement: 1
+    requestDescription: "\uC57C\uAC04 \uC2B5\uACA9\uC6A9 \uCD1D \uC81C\uC791\uD558\uAE30"
     keepRecipeHighlight: 1
     requiredCustomerCount: 0
     requiredTargetDistance: 5
@@ -2167,6 +2172,7 @@ MonoBehaviour:
     requiredModuleId: 0
     requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
     showTagRequirement: 1
+    requestDescription: "\uC57C\uAC04 \uC2B5\uACA9\uC6A9 \uCD1D \uC81C\uC791\uD558\uAE30"
     keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5
@@ -2239,6 +2245,7 @@ MonoBehaviour:
     requiredModuleId: 0
     requiredTagId: 9b6639978cc6faf49a0a539f89ad1ffb
     showTagRequirement: 1
+    requestDescription: "\uC57C\uAC04 \uC2B5\uACA9\uC6A9 \uCD1D \uC81C\uC791\uD558\uAE30"
     keepRecipeHighlight: 0
     requiredCustomerCount: 0
     requiredTargetDistance: 5

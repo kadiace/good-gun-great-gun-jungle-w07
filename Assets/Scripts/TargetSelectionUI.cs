@@ -25,6 +25,11 @@ namespace WeaponWorkshop
         /// </summary>
         public bool IsReadingVisible => isActiveAndEnabled && m_presenter != null && panel != null && panel.activeInHierarchy;
 
+        public ShootingTestBinding FindTest(string id)
+        {
+            return System.Array.Find(timedTestLayouts, test => test != null && test.Id == id);
+        }
+
         public int GetSavePrefabIndex(GameObject prefab)
         {
             return prefab == customTargetPrefab ? -2 : System.Array.IndexOf(targetPrefabs, prefab);

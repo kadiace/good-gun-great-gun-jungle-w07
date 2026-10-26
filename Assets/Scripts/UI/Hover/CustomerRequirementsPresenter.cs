@@ -101,9 +101,11 @@ namespace WeaponWorkshop
                 ? requestTable.FindTag(currentStep.requiredTagId)
                 : null;
             bool isTutorialTagMode = tutorialTag != null;
+            bool hasTutorialRequest = currentStep != null && !string.IsNullOrWhiteSpace(currentStep.requestDescription);
 
             Customer customer = m_bell != null ? m_bell.Current : null;
-            if (!isTutorialTagMode && (customer == null || !customer.HasActiveOrder || !customer.HasHeardMandatoryRequest))
+            if (!isTutorialTagMode && !hasTutorialRequest &&
+                (customer == null || !customer.HasActiveOrder || !customer.HasHeardMandatoryRequest))
             {
                 m_view.HideRows();
                 ResetCache();
@@ -116,7 +118,7 @@ namespace WeaponWorkshop
             EquipableWeapon weapon = session != null && session.IsEditing && session.ActiveWorkbench != null
                 ? session.ActiveWorkbench.CurrentWeapon
                 : holder != null ? holder.EquippedWeapon : null;
-            if (!isTutorialTagMode) customer.RevealCompletedRequests(weapon);
+            if (!isTutorialTagMode && !hasTutorialRequest) customer.RevealCompletedRequests(weapon);
             if (Time.unscaledTime < m_nextUpdate && m_previousCustomer == customer && m_previousWeapon == weapon &&
                 m_previousStep == currentStep)
             {
@@ -130,21 +132,24 @@ namespace WeaponWorkshop
 
             CustomerRequestData table = requestTable;
             var snapshot = new CustomerRequestInfo.WeaponSnapshot(weapon);
-            if (isTutorialTagMode)
+            if (isTutorialTagMode || hasTutorialRequest)
             {
-                // 튜토리얼 태그 모드는 손님 주문보다 우선하며 보상 행 없이 태그 조건만 보여 준다.
                 m_rows.Clear();
-                AddRow("손님 요청사항", true, 0, true);
-                AddRow(tutorialTag.name + " 태그", table.MeetsTag(currentStep.requiredTagId, snapshot), 0);
-                foreach (CustomerRequestData.Condition condition in tutorialTag.conditions ?? System.Array.Empty<CustomerRequestData.Condition>())
+                if (hasTutorialRequest) AddRow(currentStep.requestDescription, true, 0, true);
+                else AddRow("손님 요청사항", true, 0, true);
+                if (isTutorialTagMode)
                 {
-                    if (condition == null)
+                    AddRow(tutorialTag.name + " 태그", table.MeetsTag(currentStep.requiredTagId, snapshot), 0);
+                    foreach (CustomerRequestData.Condition condition in tutorialTag.conditions ?? System.Array.Empty<CustomerRequestData.Condition>())
                     {
-                        AddRow("요청 조건을 확인할 수 없습니다.", false, 1);
-                    }
-                    else
-                    {
-                        AddRow(Describe(condition, snapshot.Value(condition)), snapshot.Meets(condition), 1);
+                        if (condition == null)
+                        {
+                            AddRow("요청 조건을 확인할 수 없습니다.", false, 1);
+                        }
+                        else
+                        {
+                            AddRow(Describe(condition, snapshot.Value(condition)), snapshot.Meets(condition), 1);
+                        }
                     }
                 }
 

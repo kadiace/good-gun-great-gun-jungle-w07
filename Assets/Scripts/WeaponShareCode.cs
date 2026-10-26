@@ -11,6 +11,17 @@ namespace WeaponWorkshop
 {
     public static class WeaponShareCode
     {
+        public sealed class LockedModulesException : ArgumentException
+        {
+            public IReadOnlyList<ModuleData> Modules { get; }
+
+            public LockedModulesException(IReadOnlyList<ModuleData> modules)
+                : base("해금되지 않은 모듈이 포함된 코드입니다.")
+            {
+                Modules = modules;
+            }
+        }
+
         // 0123456789ABCDEF0123456789ABCDEF; shared by name encryption and decryption.
         private static readonly byte[] NameIV = { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
             0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
@@ -239,6 +250,7 @@ namespace WeaponWorkshop
             if (unlocks == null) throw new ArgumentException("모듈 해금 정보를 확인할 수 없습니다.");
             long money = 0, credits = 0; var blocks = new List<CubeAssembly.BlockSnapshot>();
             int shotgunCount = 0;
+            var lockedModules = new List<ModuleData>();
             foreach (var b in blueprint.blocks)
             {
                 int slot = 0; ModuleData module = null;
@@ -249,7 +261,11 @@ namespace WeaponWorkshop
                     if (candidate != null && candidate.CodeId == b.module) { slot = i; module = candidate; break; }
                 }
                 if (module == null || assembly.GetPrefab(slot) == null) throw new ArgumentException("현재 게임에 없는 모듈입니다: " + b.module);
-                if (!unlocks.IsUnlocked(slot)) throw new ArgumentException("해금되지 않은 모듈이 포함된 코드입니다.");
+                if (!unlocks.IsUnlocked(slot))
+                {
+                    if (!lockedModules.Contains(module)) lockedModules.Add(module);
+                    continue;
+                }
                 int moduleCredits = WeaponPurchasePrices.ModuleCredits(module, shotgunCount);
                 if (module.ModuleType == StatType.Shotgun) shotgunCount++;
                 money += module.BuyPrice; credits += moduleCredits;
@@ -257,6 +273,7 @@ namespace WeaponWorkshop
                     outputDirection = b.output, orientationNormal = b.normal, paidPurchaseCost = module.BuyPrice,
                     paidModuleCreditCost = moduleCredits, hasColor = b.hasColor, color = b.color });
             }
+            if (lockedModules.Count > 0) throw new LockedModulesException(lockedModules);
             if (money + coreCost > int.MaxValue || credits > int.MaxValue) throw new ArgumentException("무기 제작비가 너무 큽니다.");
             dollars = (int)money; materials = (int)credits;
             return new CubeAssembly.LayoutSnapshot(blocks.ToArray(), coreCost + dollars);

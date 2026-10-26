@@ -6,7 +6,7 @@ namespace WeaponWorkshop
 {
     public sealed class ShootingTestController : MonoBehaviour
     {
-        public enum TestState { Idle, Prepared, Running, Passed, Failed }
+        public enum TestState { Idle, Prepared, Running, Passed, Failed, Ready }
         [SerializeField] private TargetBell bell;
         [SerializeField] private Transform layoutPoint;
         [SerializeField, Min(.1f)] private float retryDistance = 3f;
@@ -21,6 +21,8 @@ namespace WeaponWorkshop
         private string startedAssemblyKey;
         private Transform shotSource;
         private ShootingTestHUD hud;
+        private Customer requiredOrder;
+        private bool isOrderTest;
         private readonly StringBuilder summary = new StringBuilder();
         private float nextSummary;
         public TargetBell Bell => bell;
@@ -31,12 +33,42 @@ namespace WeaponWorkshop
         public string ResultReason { get; private set; } = "";
         public int NonForwardMuzzles { get; private set; }
         public bool IsActive => State == TestState.Prepared || State == TestState.Running;
-        public bool CanRetryNearby => State == TestState.Failed && player != null && bell != null &&
+        public bool CanRetryNearby => (State == TestState.Failed || State == TestState.Passed || State == TestState.Ready) && player != null && bell != null &&
             Vector3.Distance(player.transform.position, bell.transform.position) <= retryDistance;
         public bool CanRetryWithWeapon => CanRetryNearby && holder != null && holder.EquippedWeapon != null &&
             holder.EquippedWeapon.IsEquipped && !holder.EquippedWeapon.IsMoving;
 
         private void Awake() { State = TestState.Idle; RemainingSeconds = 0f; }
+
+        // 주문 수신 시에는 총·표적을 생성하지 않고 기존 F 재시도 경로만 연결한다.
+        public bool ReadyForOrder(ShootingTestBinding data, FirstPersonPlayer sourcePlayer, Customer customer, out string error)
+        {
+            error = null;
+            if (data == null || !data.IsAvailable || sourcePlayer == null || customer == null ||
+                !customer.HasActiveOrder || bell == null || !bell.AllowsTest(data.Id))
+            { error = "사격 테스트 주문과 연결을 확인하세요."; return false; }
+            if (definition == data && player == sourcePlayer && requiredOrder == customer && State != TestState.Idle)
+                return true;
+            var sourcePlayerTest = sourcePlayer.GetComponent<PlayerShootingTest>();
+            var sourceHUD = GameManager.Instance?.UI?.Screen<ShootingTestHUD>();
+            if (sourcePlayerTest == null || sourceHUD == null)
+            { error = "플레이어와 사격 테스트 HUD 연결을 확인하세요."; return false; }
+            Cancel();
+            player = sourcePlayer;
+            holder = sourcePlayer.GetComponent<WeaponHolder>();
+            definition = data;
+            requiredOrder = customer;
+            isOrderTest = true;
+            playerTest = sourcePlayerTest;
+            hud = sourceHUD;
+            if (hud.Controller != null && hud.Controller != this) hud.Controller.Cancel();
+            State = TestState.Ready;
+            RemainingSeconds = data.TimeLimit;
+            StatusText = data.Instructions;
+            playerTest.Bind(this);
+            hud.Bind(this);
+            return true;
+        }
 
         public bool Prepare(ShootingTestBinding data, FirstPersonPlayer sourcePlayer, out string error)
         {
@@ -45,6 +77,9 @@ namespace WeaponWorkshop
             if (data == null || !data.IsAvailable || data.LayoutPrefab == null || layoutPoint == null || sourcePlayer == null || bell == null ||
                 data.TimeLimit <= 0f || float.IsNaN(data.TimeLimit) || float.IsInfinity(data.TimeLimit))
             { error = "사격 테스트 설정을 확인하세요."; return false; }
+            // 선택창과 실패 후 재시도가 같은 주문 제한을 따른다.
+            if (!bell.AllowsTest(data.Id))
+            { error = "현재 주문에서 요구하는 사격 테스트만 진행할 수 있습니다."; return false; }
             var tests = TableManager.Instance.ShootingTestTable;
             var unlocks = sourcePlayer.GetComponent<PlayerModuleUnlocks>();
             if (!tests.CanStart(data.Id, unlocks))
@@ -127,9 +162,15 @@ namespace WeaponWorkshop
         public void Retry()
         {
             if (!CanRetryWithWeapon || definition == null) return;
+            if (!OnboardingManager.CanPrepareShootingGuideTest(bell, definition.Id, player, out var guideError))
+            { FeedbackUI.For(this)?.ShowNotification(guideError); return; }
             var retryData = definition;
             if (Prepare(retryData, player, out var error)) Begin();
-            else FeedbackUI.For(this)?.ShowNotification(error);
+            else
+            {
+                ResultReason = error;
+                FeedbackUI.For(this)?.ShowNotification(error);
+            }
         }
 
         internal bool CanCountBulletHit(ShootingTestTarget target, Transform weaponSource)
@@ -141,6 +182,8 @@ namespace WeaponWorkshop
 
         private void LateUpdate()
         {
+            if (isOrderTest && (requiredOrder == null || !requiredOrder.HasActiveOrder))
+            { Cancel(); return; }
             if (State != TestState.Running) return;
             if (!HasOriginalWeapon())
             { Finish(false, "테스트 중 총을 내려놓거나 교체했습니다."); return; }
@@ -247,6 +290,7 @@ namespace WeaponWorkshop
             definition = null; weapon = null; shotSource = null; player = null; holder = null; startedAssemblyKey = null;
             RemainingSeconds = 0f; NonForwardMuzzles = 0; StatusText = "";
             ResultReason = "";
+            requiredOrder = null; isOrderTest = false;
         }
         private void OnDisable() => Cancel();
     }
