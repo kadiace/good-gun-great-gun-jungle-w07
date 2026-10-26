@@ -13,6 +13,19 @@ namespace WeaponWorkshop
     {
         private const int AUTHORED_SORTING_ORDER = 150;
         private const int SUSPENDED_CHOICE_SORTING_ORDER = 151;
+        // 선택지 문구가 길어져도 잘리지 않도록 상자 높이와 버튼 높이를 문구에 맞춰 늘린다.
+        private const float ChoiceFontSize = 18f;
+        private const float ChoiceSideMargin = 18f;
+        private const float ChoiceTopPadding = 16f;
+        private const float ChoiceBottomMargin = 16f;
+        private const float ChoiceGap = 6f;
+        private const float ChoiceTextPadding = 12f;
+        private const float ChoiceMinHeight = 39f;
+        private const float ChoiceMinLineHeight = 40f;
+        private const float ChoiceMaxWidth = 620f;
+        private const float ChoiceBoxWidth = 560f;
+        private const float ChoiceMaxBoxHeight = 520f;
+        private const float ChoiceLineInset = 36f;
 
         [Header("Authored UI")]
         [SerializeField] private Canvas m_canvas;
@@ -33,12 +46,24 @@ namespace WeaponWorkshop
         // 배경 클릭 확인용 UI 맵 복제본. 대화 맵과 별도로 View 활성 상태에 맞춰 켜고 끈다.
         private InputActionMap m_uiControls;
         private InputAction m_clickAction;
+        private InputAction m_scrollAction;
         private bool m_isInitialized;
         private bool m_isInputBlocked;
         private bool m_authoredRaycasterEnabled;
         private bool m_authoredAnswerInteractable;
         private bool m_hasAppliedInitialHiddenState;
         private bool m_hasLoggedInitializationError;
+        private RectTransform m_boxRect;
+        private RectTransform m_lineRect;
+        private bool m_authoredLayoutCaptured;
+        private Vector2 m_authoredBoxSize;
+        private Vector2 m_authoredLineAnchorMin;
+        private Vector2 m_authoredLineAnchorMax;
+        private Vector2 m_authoredLinePivot;
+        private Vector2 m_authoredLinePosition;
+        private Vector2 m_authoredLineSize;
+        private bool m_authoredLineAutoSize;
+        private float m_authoredLineFontSize;
         private readonly System.Collections.Generic.List<UnityEngine.UI.Button> m_choiceButtons = new System.Collections.Generic.List<UnityEngine.UI.Button>();
 
         public event Action InteractPerformed;
@@ -95,6 +120,9 @@ namespace WeaponWorkshop
             m_answerButton = _answerButton;
             m_answerLabel = _answerLabel;
             m_inputActions = _inputActions;
+            m_boxRect = m_box != null ? m_box.transform as RectTransform : null;
+            m_lineRect = m_line != null ? m_line.rectTransform : null;
+            CaptureAuthoredLayout();
 
             if (m_box != null)
             {
@@ -165,9 +193,11 @@ namespace WeaponWorkshop
 
             m_uiControls = uiSource.Clone();
             m_clickAction = m_uiControls.FindAction("Click", false);
+            m_scrollAction = m_uiControls.FindAction("ScrollWheel", false);
             m_interactAction.performed += OnInteractPerformed;
             m_advanceAction.performed += OnAdvancePerformed;
             m_clickAction.performed += OnClickPerformed;
+            if (m_scrollAction != null) m_scrollAction.performed += OnScrollPerformed;
             m_answerRelay.Bind(OnAnswerPointerDown, OnAnswerPointerClick, OnAnswerSubmitted);
             ConfigureNavigation();
 
@@ -234,6 +264,9 @@ namespace WeaponWorkshop
 
             m_answerButton.gameObject.SetActive(false);
             RectTransform original = (RectTransform)m_answerButton.transform;
+            float boxWidth = ChoiceBoxWidth;
+            float buttonWidth = Mathf.Min(ChoiceMaxWidth, boxWidth - ChoiceSideMargin * 2f);
+            var heights = new float[_labels.Length];
             for (int i = 0; i < _labels.Length; i++)
             {
                 int index = i;
@@ -241,18 +274,83 @@ namespace WeaponWorkshop
                 button.gameObject.name = "DialogueChoice_" + i;
                 button.gameObject.SetActive(true);
                 button.GetComponent<DialogueConfirmButtonEventRelay>().enabled = false;
-                RectTransform rect = (RectTransform)button.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
-                rect.pivot = new Vector2(1f, 0f);
-                rect.sizeDelta = new Vector2(210f, 39f);
-                rect.anchoredPosition = new Vector2(-18f, 12f + (_labels.Length - 1 - i) * 45f);
-                button.GetComponentInChildren<TextMeshProUGUI>().text = _labels[i];
+                TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
+                label.text = _labels[i];
+                label.enableAutoSizing = false;
+                label.fontSize = ChoiceFontSize;
+                label.horizontalAlignment = HorizontalAlignmentOptions.Left;
+                label.verticalAlignment = VerticalAlignmentOptions.Middle;
+                float textWidth = buttonWidth + label.rectTransform.sizeDelta.x;
+                heights[i] = Mathf.Max(ChoiceMinHeight,
+                    label.GetPreferredValues(_labels[i], textWidth, 0f).y + ChoiceTextPadding);
                 button.onClick.RemoveAllListeners();
                 button.onClick.AddListener(() => ChoiceSelected?.Invoke(index));
                 m_choiceButtons.Add(button);
             }
+            ApplyChoiceLayout(buttonWidth, heights);
             ConfigureChoiceNavigation();
             return true;
+        }
+
+        private void ApplyChoiceLayout(float _buttonWidth, float[] _heights)
+        {
+            if (m_boxRect == null || m_lineRect == null || m_line == null) return;
+            CaptureAuthoredLayout();
+            float stackHeight = ChoiceGap * Mathf.Max(0, _heights.Length - 1);
+            foreach (float height in _heights) stackHeight += height;
+            m_line.enableAutoSizing = false;
+            m_line.fontSize = ChoiceFontSize;
+            float lineWidth = Mathf.Max(80f, ChoiceBoxWidth - ChoiceLineInset);
+            float lineHeight = Mathf.Max(ChoiceMinLineHeight,
+                m_line.GetPreferredValues(m_line.text, lineWidth, 0f).y + ChoiceTextPadding);
+            m_line.enableAutoSizing = m_authoredLineAutoSize;
+            m_line.fontSize = m_authoredLineFontSize;
+            float boxHeight = Mathf.Min(ChoiceMaxBoxHeight, Mathf.Max(m_authoredBoxSize.y,
+                ChoiceTopPadding + lineHeight + ChoiceGap + stackHeight + ChoiceBottomMargin));
+            m_boxRect.sizeDelta = new Vector2(ChoiceBoxWidth, boxHeight);
+            m_lineRect.anchorMin = new Vector2(0f, 1f);
+            m_lineRect.anchorMax = new Vector2(1f, 1f);
+            m_lineRect.pivot = new Vector2(0.5f, 1f);
+            m_lineRect.sizeDelta = new Vector2(m_authoredLineSize.x, lineHeight);
+            m_lineRect.anchoredPosition = new Vector2(0f, -ChoiceTopPadding);
+            float top = ChoiceBottomMargin + stackHeight;
+            for (int i = 0; i < m_choiceButtons.Count && i < _heights.Length; i++)
+            {
+                RectTransform rect = (RectTransform)m_choiceButtons[i].transform;
+                rect.anchorMin = rect.anchorMax = new Vector2(1f, 0f);
+                rect.pivot = new Vector2(1f, 0f);
+                rect.sizeDelta = new Vector2(_buttonWidth, _heights[i]);
+                top -= _heights[i];
+                rect.anchoredPosition = new Vector2(-ChoiceSideMargin, top);
+                top -= ChoiceGap;
+            }
+        }
+
+        private void CaptureAuthoredLayout()
+        {
+            if (m_authoredLayoutCaptured || m_boxRect == null || m_lineRect == null || m_line == null) return;
+            m_authoredLayoutCaptured = true;
+            m_authoredBoxSize = m_boxRect.sizeDelta;
+            m_authoredLineAnchorMin = m_lineRect.anchorMin;
+            m_authoredLineAnchorMax = m_lineRect.anchorMax;
+            m_authoredLinePivot = m_lineRect.pivot;
+            m_authoredLinePosition = m_lineRect.anchoredPosition;
+            m_authoredLineSize = m_lineRect.sizeDelta;
+            m_authoredLineAutoSize = m_line.enableAutoSizing;
+            m_authoredLineFontSize = m_line.fontSize;
+        }
+
+        private void RestoreAuthoredLayout()
+        {
+            if (!m_authoredLayoutCaptured || m_boxRect == null || m_lineRect == null || m_line == null) return;
+            m_boxRect.sizeDelta = m_authoredBoxSize;
+            m_lineRect.anchorMin = m_authoredLineAnchorMin;
+            m_lineRect.anchorMax = m_authoredLineAnchorMax;
+            m_lineRect.pivot = m_authoredLinePivot;
+            m_lineRect.anchoredPosition = m_authoredLinePosition;
+            m_lineRect.sizeDelta = m_authoredLineSize;
+            m_line.enableAutoSizing = m_authoredLineAutoSize;
+            m_line.fontSize = m_authoredLineFontSize;
         }
 
         public void FocusChoice(int _index)
@@ -282,6 +380,7 @@ namespace WeaponWorkshop
 
         private void ClearChoices()
         {
+            RestoreAuthoredLayout();
             GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
             foreach (var button in m_choiceButtons)
             {
@@ -505,6 +604,12 @@ namespace WeaponWorkshop
                 m_clickAction = null;
             }
 
+            if (m_scrollAction != null)
+            {
+                m_scrollAction.performed -= OnScrollPerformed;
+                m_scrollAction = null;
+            }
+
             m_uiControls?.Disable();
             m_uiControls?.Dispose();
             m_uiControls = null;
@@ -550,6 +655,26 @@ namespace WeaponWorkshop
         private void OnClickPerformed(InputAction.CallbackContext _context)
         {
             ClickPerformed?.Invoke();
+        }
+
+        private void OnScrollPerformed(InputAction.CallbackContext _context)
+        {
+            if (m_isInputBlocked || m_choiceButtons.Count == 0) return;
+            float y = _context.ReadValue<Vector2>().y;
+            if (Mathf.Abs(y) < 0.01f) return;
+            MoveChoiceFocus(y > 0f ? -1 : 1);
+        }
+
+        private void MoveChoiceFocus(int _direction)
+        {
+            if (m_choiceButtons.Count == 0) return;
+            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            int current = -1;
+            for (int i = 0; i < m_choiceButtons.Count; i++)
+                if (m_choiceButtons[i].gameObject == selected) { current = i; break; }
+            if (current < 0) { FocusChoice(0); return; }
+            int next = Mathf.Clamp(current + _direction, 0, m_choiceButtons.Count - 1);
+            FocusChoice(next);
         }
 
         private void OnAnswerPointerDown()

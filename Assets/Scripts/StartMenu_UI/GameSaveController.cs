@@ -174,6 +174,7 @@ namespace WeaponWorkshop
                 outstandingLoans = wallet.OutstandingLoans,
                 lastLoanDay = wallet.LastLoanDay,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
+                experiencedTagIds = TagExperience.Capture(),
                 savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null, saveId = PlayerIdentity.SaveId };
             var slotMachine = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene);
             if (slotMachine != null)
@@ -326,6 +327,7 @@ namespace WeaponWorkshop
         }
         private void Restore(GameSaveData data)
         {
+            TagExperience.Restore(data.experiencedTagIds);
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) RestoreCore(data);
         }
         /// <summary>
@@ -408,6 +410,7 @@ namespace WeaponWorkshop
         {
             _unlockedMainTrackIds.Clear();
             _trackUnlocksMigrated = true;
+            TagExperience.Reset();
             SoundManager.SetMainTrackUnlockState(_unlockedMainTrackIds.ToArray());
         }
 
