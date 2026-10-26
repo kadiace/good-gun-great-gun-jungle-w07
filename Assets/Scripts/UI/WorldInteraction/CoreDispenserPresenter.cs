@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
 
@@ -66,6 +68,19 @@ namespace WeaponWorkshop
             }
 
             FeedbackUI.For(_owner)?.ShowNotification(_message);
+        }
+
+        public void ShowLockedModules(Component owner, IReadOnlyList<ModuleData> modules)
+        {
+            var message = new StringBuilder("프리셋에 해금되지 않은 모듈이 있습니다.");
+            var raidMap = TableManager.Instance.RaidMap;
+            foreach (var module in modules)
+                message.Append("\n• ").Append(module.DisplayName).Append(" · ").Append(raidMap.Locations(module));
+
+            var feedback = FeedbackUI.For(owner);
+            if (feedback == null) return;
+            string text = message.ToString();
+            if (!feedback.ShowAcknowledgement(owner, text, "확인")) feedback.ShowNotification(text);
         }
     }
 }
