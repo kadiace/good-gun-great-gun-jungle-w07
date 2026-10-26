@@ -35,6 +35,7 @@ namespace WeaponWorkshop
             {
                 string id = table.FindRequest(entry?.id)?.id;
                 if (id == null || entry.unlockDay > day || candidates.Contains(id)) continue;
+                if (!string.IsNullOrEmpty(entry.requiresTagId) && !TagExperience.Has(entry.requiresTagId)) continue;
                 if (!pool.TryRequestBundle(id, day, out var bundle)) continue;
                 if (CustomerModuleRequirements.Allows(bundle.ToArray(), unlocks, CoreStats))
                 { candidates.Add(id); bundles.Add(id, bundle); }

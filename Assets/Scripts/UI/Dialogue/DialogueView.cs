@@ -23,6 +23,7 @@ namespace WeaponWorkshop
         private const float ChoiceMinHeight = 39f;
         private const float ChoiceMinLineHeight = 40f;
         private const float ChoiceMaxWidth = 620f;
+        private const float ChoiceBoxWidth = 560f;
         private const float ChoiceMaxBoxHeight = 520f;
         private const float ChoiceLineInset = 36f;
 
@@ -45,6 +46,7 @@ namespace WeaponWorkshop
         // 배경 클릭 확인용 UI 맵 복제본. 대화 맵과 별도로 View 활성 상태에 맞춰 켜고 끈다.
         private InputActionMap m_uiControls;
         private InputAction m_clickAction;
+        private InputAction m_scrollAction;
         private bool m_isInitialized;
         private bool m_isInputBlocked;
         private bool m_authoredRaycasterEnabled;
@@ -191,9 +193,11 @@ namespace WeaponWorkshop
 
             m_uiControls = uiSource.Clone();
             m_clickAction = m_uiControls.FindAction("Click", false);
+            m_scrollAction = m_uiControls.FindAction("ScrollWheel", false);
             m_interactAction.performed += OnInteractPerformed;
             m_advanceAction.performed += OnAdvancePerformed;
             m_clickAction.performed += OnClickPerformed;
+            if (m_scrollAction != null) m_scrollAction.performed += OnScrollPerformed;
             m_answerRelay.Bind(OnAnswerPointerDown, OnAnswerPointerClick, OnAnswerSubmitted);
             ConfigureNavigation();
 
@@ -260,7 +264,7 @@ namespace WeaponWorkshop
 
             m_answerButton.gameObject.SetActive(false);
             RectTransform original = (RectTransform)m_answerButton.transform;
-            float boxWidth = m_boxRect != null ? m_boxRect.sizeDelta.x : 675f;
+            float boxWidth = ChoiceBoxWidth;
             float buttonWidth = Mathf.Min(ChoiceMaxWidth, boxWidth - ChoiceSideMargin * 2f);
             var heights = new float[_labels.Length];
             for (int i = 0; i < _labels.Length; i++)
@@ -296,14 +300,14 @@ namespace WeaponWorkshop
             foreach (float height in _heights) stackHeight += height;
             m_line.enableAutoSizing = false;
             m_line.fontSize = ChoiceFontSize;
-            float lineWidth = Mathf.Max(80f, m_boxRect.sizeDelta.x - ChoiceLineInset);
+            float lineWidth = Mathf.Max(80f, ChoiceBoxWidth - ChoiceLineInset);
             float lineHeight = Mathf.Max(ChoiceMinLineHeight,
                 m_line.GetPreferredValues(m_line.text, lineWidth, 0f).y + ChoiceTextPadding);
             m_line.enableAutoSizing = m_authoredLineAutoSize;
             m_line.fontSize = m_authoredLineFontSize;
             float boxHeight = Mathf.Min(ChoiceMaxBoxHeight, Mathf.Max(m_authoredBoxSize.y,
                 ChoiceTopPadding + lineHeight + ChoiceGap + stackHeight + ChoiceBottomMargin));
-            m_boxRect.sizeDelta = new Vector2(m_authoredBoxSize.x, boxHeight);
+            m_boxRect.sizeDelta = new Vector2(ChoiceBoxWidth, boxHeight);
             m_lineRect.anchorMin = new Vector2(0f, 1f);
             m_lineRect.anchorMax = new Vector2(1f, 1f);
             m_lineRect.pivot = new Vector2(0.5f, 1f);
@@ -600,6 +604,12 @@ namespace WeaponWorkshop
                 m_clickAction = null;
             }
 
+            if (m_scrollAction != null)
+            {
+                m_scrollAction.performed -= OnScrollPerformed;
+                m_scrollAction = null;
+            }
+
             m_uiControls?.Disable();
             m_uiControls?.Dispose();
             m_uiControls = null;
@@ -645,6 +655,26 @@ namespace WeaponWorkshop
         private void OnClickPerformed(InputAction.CallbackContext _context)
         {
             ClickPerformed?.Invoke();
+        }
+
+        private void OnScrollPerformed(InputAction.CallbackContext _context)
+        {
+            if (m_isInputBlocked || m_choiceButtons.Count == 0) return;
+            float y = _context.ReadValue<Vector2>().y;
+            if (Mathf.Abs(y) < 0.01f) return;
+            MoveChoiceFocus(y > 0f ? -1 : 1);
+        }
+
+        private void MoveChoiceFocus(int _direction)
+        {
+            if (m_choiceButtons.Count == 0) return;
+            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            int current = -1;
+            for (int i = 0; i < m_choiceButtons.Count; i++)
+                if (m_choiceButtons[i].gameObject == selected) { current = i; break; }
+            if (current < 0) { FocusChoice(0); return; }
+            int next = Mathf.Clamp(current + _direction, 0, m_choiceButtons.Count - 1);
+            FocusChoice(next);
         }
 
         private void OnAnswerPointerDown()

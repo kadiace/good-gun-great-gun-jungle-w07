@@ -21,7 +21,7 @@
         {"id":"module/homing","unlockDay":1},
         {"id":"custom/sticker","unlockDay":1},
         {"id":"custom/keyring","unlockDay":1},
-        {"id":"construction/premium","unlockDay":1},
+        {"id":"construction/premium","unlockDay":2},
         {"id":"construction/value","unlockDay":1},
         {"id":"module/fire-rate/min-1","unlockDay":1},
         {"id":"module/penetration/min-1","unlockDay":1},
@@ -73,7 +73,8 @@
         },
         {
           "id": "tag/mini-nuke",
-          "unlockDay": 1
+          "unlockDay": 1,
+          "requiresTagId": "3912bb5b7da966a47995e32041938a6a"
         },
         {
           "id": "tag/handgun",

@@ -205,6 +205,7 @@ namespace WeaponWorkshop
         }
         private bool RestoreWorldSave(GameSaveData data)
         {
+            TagExperience.Restore(data.experiencedTagIds);
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) return RestoreWorldSaveCore(data);
         }
         /// <summary>
