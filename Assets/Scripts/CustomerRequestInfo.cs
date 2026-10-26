@@ -162,6 +162,22 @@ namespace WeaponWorkshop
             if (ids == null) return null;
             return Array.ConvertAll(ids, id => table.FindRequest(id)?.id ?? id);
         }
+        public static bool IsCustomRequest(this CustomerRequestData table, string id)
+        {
+            foreach (var condition in table.Conditions(table.FindRequest(id)))
+            {
+                if (condition == null || !condition.Parsed) continue;
+                switch (condition.Measure)
+                {
+                    case GunMeasure.PaintedFaces:
+                    case GunMeasure.PaintedColorFaces:
+                    case GunMeasure.StickerFaces:
+                    case GunMeasure.Keyrings:
+                        return true;
+                }
+            }
+            return false;
+        }
         public static CustomerRequestData.Tag FindTag(this CustomerRequestData table, string id)
         {
             if (!string.IsNullOrEmpty(id) && table?.tags != null)

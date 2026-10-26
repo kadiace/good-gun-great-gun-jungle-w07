@@ -34,7 +34,6 @@ namespace WeaponWorkshop
             public string selectObjective, fireObjective, passed, failed;
         }
 
-        public string[] customRequestIds = Array.Empty<string>();
         public Module[] modules = Array.Empty<Module>();
         public CustomStep[] customSteps = Array.Empty<CustomStep>();
         public ShootingGuide shootingGuide = new ShootingGuide();

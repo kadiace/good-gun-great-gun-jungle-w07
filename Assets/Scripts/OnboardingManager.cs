@@ -86,12 +86,10 @@ namespace WeaponWorkshop
             var customer = bell != null ? bell.Current : null;
             if (customer == null || !customer.HasActiveOrder || customer.Profile == null) return false;
 
-            var onboarding = TableManager.Instance.Onboarding;
             var requests = TableManager.Instance.CustomerRequest;
             foreach (string requestId in customer.Profile.RequestIds)
             {
-                string canonical = requests.FindRequest(requestId)?.id;
-                if (System.Array.IndexOf(onboarding.customRequestIds, canonical) >= 0) return true;
+                if (requests.IsCustomRequest(requestId)) return true;
             }
             return false;
         }

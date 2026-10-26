@@ -84,12 +84,10 @@ namespace WeaponWorkshop
         {
             OnboardingManager.NotifyShootingOrder(this);
             if (profile == null) return;
-            var onboarding = TableManager.Instance.Onboarding;
             var requests = TableManager.Instance.CustomerRequest;
             foreach (string requestId in profile.RequestIds)
             {
-                string canonical = requests.FindRequest(requestId)?.id;
-                if (System.Array.IndexOf(onboarding.customRequestIds, canonical) < 0) continue;
+                if (!requests.IsCustomRequest(requestId)) continue;
                 OnboardingManager.NotifyCustomOrder();
                 break;
             }

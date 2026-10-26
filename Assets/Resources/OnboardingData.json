@@ -1,5 +1,4 @@
 {
-  "customRequestIds": ["color/crimson-3"],
   "shootingGuide": {
     "testIds": ["around-cover", "behind-barrier"],
     "preferredTestId": "around-cover",
