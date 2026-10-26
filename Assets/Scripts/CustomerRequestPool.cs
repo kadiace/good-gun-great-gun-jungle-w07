@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    // 손님 풀의 요구사항을 무작위로 조합해 일반 손님을 만든다. 무한 모드에서 사용.
+    // 손님 풀의 요구사항을 무작위로 조합해 일반 손님을 만든다. 1일차 이후 일반 손님에게 사용.
     // 후보·등장 일차·조합 제외·대사 틀·가격은 주문 표(TableManager.CustomerOrder)의 손님 풀 행(poolId)에서 읽고,
     // 이 SO는 에셋 연결(초상화·코어 기본 스탯)만 갖는다.
     [CreateAssetMenu(menuName = "Weapon Workshop/Customer Request Pool")]
@@ -52,11 +52,14 @@ namespace WeaponWorkshop
             var optional = candidates.FindAll(id => string.IsNullOrEmpty(table.FindRequest(id).tagId));
             // 모든 조합을 섞은 뒤 처음 만족하는 조합을 고른다. 전체 조합을 매번 검사하면 손님 한 명을 만드는 데 수 초가 걸리므로,
             // 유효 조합이 앞에 나오면 조기 종료하고 무작위 순서 덕분에 유효 조합 사이의 분포는 균등하게 유지된다.
-            var combinations = new List<string[]>(tags.Count * optional.Count * optional.Count);
+            int optionalCount = day <= 1 ? 1 : day == 2 ? Random.Range(1, 3) : 2;
+            var combinations = new List<string[]>(tags.Count * optional.Count * (optionalCount == 1 ? 1 : optional.Count));
             foreach (string tag in tags)
                 for (int first = 0; first < optional.Count; first++)
-                    for (int second = first + 1; second < optional.Count; second++)
-                        combinations.Add(new[] { tag, optional[first], optional[second] });
+                    if (optionalCount == 1) combinations.Add(new[] { tag, optional[first] });
+                    else
+                        for (int second = first + 1; second < optional.Count; second++)
+                            combinations.Add(new[] { tag, optional[first], optional[second] });
             for (int index = combinations.Count - 1; index > 0; index--)
             {
                 int swapIndex = Random.Range(0, index + 1);
@@ -73,7 +76,7 @@ namespace WeaponWorkshop
             }
             if (picked == null)
             {
-                Debug.LogError($"Customer request pool '{poolId}' has no feasible tag + two distinct optional requests for day {day}.", this);
+                Debug.LogError($"Customer request pool '{poolId}' has no feasible tag + {optionalCount} distinct optional request(s) for day {day}.", this);
                 return null;
             }
 
@@ -81,8 +84,8 @@ namespace WeaponWorkshop
             {
                 var mandatory = table.FindRequest(ids[0]);
                 var firstOptional = table.FindRequest(ids[1]);
-                var secondOptional = table.FindRequest(ids[2]);
-                if (mandatory == null || firstOptional == null || secondOptional == null) return false;
+                var secondOptional = ids.Length > 2 ? table.FindRequest(ids[2]) : null;
+                if (mandatory == null || firstOptional == null || (ids.Length > 2 && secondOptional == null)) return false;
                 bool firstIsTest = firstOptional.IsShootingTestRequest();
                 bool secondIsTest = secondOptional.IsShootingTestRequest();
                 if (firstIsTest && secondIsTest) return false;
@@ -107,7 +110,7 @@ namespace WeaponWorkshop
                                 optionalCondition.max >= tagCondition.max &&
                                 optionalRequest.conditions.Length == 1) return false;
                 }
-                if (firstOptional.conditions.Length == 1 && secondOptional.conditions.Length == 1)
+                if (secondOptional != null && firstOptional.conditions.Length == 1 && secondOptional.conditions.Length == 1)
                 {
                     var firstCondition = firstOptional.conditions[0];
                     var secondCondition = secondOptional.conditions[0];
