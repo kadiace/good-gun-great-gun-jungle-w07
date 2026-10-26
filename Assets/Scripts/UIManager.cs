@@ -173,12 +173,12 @@ namespace WeaponWorkshop
 
         private void Awake()
         {
+            // 프리팹 루트 스케일은 0이다. 아래 초기화 중 예외가 나도 HUD가 숨겨지지 않도록 가장 먼저 복구한다.
+            transform.localScale = Vector3.one;
             nightRaidUI?.Initialize();
             foreach (var slots in GetComponentsInChildren<SaveSlotsUI>(true)) slots.Initialize();
             // 사운드 설정도 비활성 상태에서 초기 연결하고 닫힌 화면으로 시작한다.
             foreach (var sound in GetComponentsInChildren<SoundSettingsUI>(true)) sound.Initialize();
-            // CanvasScaler controls UI sizing; a zero authored root scale hides every panel.
-            transform.localScale = Vector3.one;
             if (frontMark != null)
             {
                 frontGraphics = frontMark.GetComponentsInChildren<UnityEngine.UI.Graphic>(true);

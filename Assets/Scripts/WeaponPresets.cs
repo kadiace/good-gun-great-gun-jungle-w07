@@ -3,17 +3,18 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    // Player-owned blueprints: save files and workshop travel retain the same three slots.
+    // Player-owned blueprints: save files and workshop travel retain the same six slots.
     public sealed class WeaponPresets : MonoBehaviour
     {
-        [SerializeField] private EquipableWeapon[] defaults = new EquipableWeapon[3];
+        public const int SlotCount = 6;
+        [SerializeField] private EquipableWeapon[] defaults = new EquipableWeapon[SlotCount];
         private string[] codes;
         public event Action<int, string> Stored;
         private void Awake() => Initialize();
         private void Initialize()
         {
             if (codes != null) return;
-            codes = new string[3];
+            codes = new string[SlotCount];
             for (int i = 0; i < codes.Length; i++)
                 if (defaults != null && i < defaults.Length && defaults[i] != null)
                     codes[i] = WeaponShareCode.Export(defaults[i]);
@@ -30,9 +31,11 @@ namespace WeaponWorkshop
         {
             Initialize();
             if (saved == null) return; // Older saves keep the authored defaults.
-            if (saved.Length != 3) throw new ArgumentException("프리셋 저장 데이터를 확인하세요.");
+            if (saved.Length > SlotCount) throw new ArgumentException("프리셋 저장 데이터를 확인하세요.");
             foreach (var code in saved) if (!string.IsNullOrEmpty(code)) WeaponShareCode.Decode(code);
-            codes = (string[])saved.Clone();
+            // 3슬롯 시절 세이브는 짧으므로 빈 슬롯으로 채운다.
+            codes = new string[SlotCount];
+            Array.Copy(saved, codes, saved.Length);
         }
     }
 }
