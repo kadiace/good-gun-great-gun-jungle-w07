@@ -120,6 +120,18 @@ namespace WeaponWorkshop
                     CheckRequests(requests, entry?.excludes, "손님 풀 " + pool.id);
                     CheckRequests(requests, entry?.requiredRequestIds, "필수 동반 요청 " + pool.id);
                 }
+                var portraitIds = new HashSet<string>();
+                foreach (var rule in pool.portraitRules ?? Array.Empty<CustomerOrderData.PortraitRule>())
+                {
+                    if (rule == null || string.IsNullOrEmpty(rule.portraitId))
+                    { Debug.LogError("주문 표 손님 풀에 빈 초상화 규칙이 있습니다: " + pool.id); continue; }
+                    if (!portraitIds.Add(rule.portraitId)) Debug.LogError("주문 표 손님 풀에 중복 초상화 규칙이 있습니다: " + rule.portraitId);
+                    foreach (string tagId in rule.tagIds ?? Array.Empty<string>())
+                        if (requests.FindTag(tagId) == null) Debug.LogError($"주문 표 손님 풀 {pool.id}의 초상화 태그 ID가 요청 표에 없습니다: {tagId}");
+                    foreach (string tagId in rule.exclusiveTagIds ?? Array.Empty<string>())
+                        if (requests.FindTag(tagId) == null) Debug.LogError($"주문 표 손님 풀 {pool.id}의 독점 초상화 태그 ID가 요청 표에 없습니다: {tagId}");
+                    CheckRequests(requests, rule.requiresRequestIds, "초상화 규칙 " + pool.id);
+                }
             }
         }
         private static void CheckRequests(CustomerRequestData requests, string[] ids, string owner)

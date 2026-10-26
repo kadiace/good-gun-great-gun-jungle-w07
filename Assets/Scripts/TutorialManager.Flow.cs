@@ -300,16 +300,28 @@ namespace WeaponWorkshop
             var order = TableManager.Instance.CustomerOrder.FindGuest(customer.Profile.ProfileId);
             if (dialogue == null || order == null || string.IsNullOrWhiteSpace(order.tutorialRejectionLine)) return true;
             ownsDialogue = true;
-            if (!dialogue.Show(order.tutorialRejectionLine, "알겠습니다!", () =>
+            if (!dialogue.Show("손님이 모호한 요구를 하네요. 다시 물어 자세한 요구를 알아내봅시다.",
+                "확인", () =>
                 {
-                    var profile = customer.Profile;
-                    profile.RequestIds = (string[])order.tutorialFollowupRequestIds.Clone();
-                    // 의도적으로 주문을 변경한 경우에만 재계약한다. 이전 요청의 보상이 남으면 판매액과 복귀 스냅샷이 어긋난다.
-                    if (profile.OrderState != null) profile.OrderState.rewards = null;
-                    CustomerRewardInfo.InitializeOrder(profile, dayZeroOwner.DayNumber);
-                    ReleaseDialogue();
-                    NotifySignal("first-sale-rejected", customer);
-                }, "손님")) ownsDialogue = false;
+                    dialogue.ShowChoices(order.tutorialRejectionLine,
+                        new[] { "나무판이요?", "닫기" }, new Action[]
+                        {
+                            () => dialogue.ShowChoices(order.tutorialRejectionLine,
+                                new[] { "나무판이요?" }, new Action[]
+                                {
+                                    () => dialogue.Show("관통 모듈 1개요.", "알겠습니다!", () =>
+                                    {
+                                        var profile = customer.Profile;
+                                        profile.RequestIds = (string[])order.tutorialFollowupRequestIds.Clone();
+                                        if (profile.OrderState != null) profile.OrderState.rewards = null;
+                                        CustomerRewardInfo.InitializeOrder(profile, dayZeroOwner.DayNumber);
+                                        ReleaseDialogue();
+                                        NotifySignal("first-sale-rejected", customer);
+                                    }, "손님")
+                                }, "손님"),
+                            ReleaseDialogue
+                        }, "손님");
+                }, "튜토리얼")) ownsDialogue = false;
             return true;
         }
 

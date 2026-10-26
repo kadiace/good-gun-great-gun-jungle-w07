@@ -1431,7 +1431,7 @@ MonoBehaviour:
     confirmOnBackgroundClick: 0
     dialogueInputLockSeconds: 0
     objective: "\uBB34\uAE30\uB97C \uB4E0 \uCC44 \uC190\uB2D8\uACFC F\uB85C \uC0C1\uD638\uC791\uC6A9\uD558\uACE0
-      \uD310\uB9E4\uB97C \uD655\uC778\uD558\uC138\uC694."
+      \uCD1D\uAE30 \uC81C\uCD9C\uC744 \uC120\uD0DD\uD558\uC138\uC694."
     showDescriptionBeforeObjective: 0
     allowWorkbenchReentry: 1
     objectiveWhileChoiceOpen: 

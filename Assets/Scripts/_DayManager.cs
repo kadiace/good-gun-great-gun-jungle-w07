@@ -645,8 +645,7 @@ public class _DayManager : MonoBehaviour
             return new CustomerOrderSave { profileId = profile.ProfileId, orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.RequestIds) };
         return new CustomerOrderSave { orderState = profile.OrderState?.Copy(), requestIds = TableManager.Instance.CustomerRequest.CanonicalRequestIds(profile.RequestIds), lines = profile.Lines,
             happyLine = profile.HappyLine, angryLine = profile.AngryLine,
-            portrait = endlessRequests != null && endlessRequests.portraits != null
-                ? Array.IndexOf(endlessRequests.portraits, profile.portrait) : -1 };
+            portrait = endlessRequests != null ? endlessRequests.IndexOfPortrait(profile.portrait) : -1 };
     }
 
     private bool CanRestoreOrder(CustomerOrderSave order)
@@ -687,8 +686,7 @@ public class _DayManager : MonoBehaviour
         profile.RequestIds = (string[])SavedRequestIds(order).Clone();
         profile.HappyLine = order.happyLine; profile.AngryLine = order.angryLine;
         CustomerRewardInfo.InitializeOrder(profile, savedDay);
-        if (endlessRequests != null && endlessRequests.portraits != null && order.portrait >= 0 &&
-            order.portrait < endlessRequests.portraits.Length) profile.portrait = endlessRequests.portraits[order.portrait];
+        if (endlessRequests != null) profile.portrait = endlessRequests.PortraitAt(order.portrait);
         return profile;
     }
 
@@ -796,7 +794,7 @@ public class _DayManager : MonoBehaviour
         day.customers = remaining.ToArray();
     }
 
-    // 정해진 일차: '예?'/진상은 그대로, 일반 손님 자리만 그 일차 해금 범위의 요구사항 조합 손님으로 교체한 복사본.
+    // 0~1일차 고정 손님은 유지하고, 이후에는 진상만 남겨 일반 손님 자리를 요구사항 조합으로 교체한다.
     private CustomerDay PrepareFixedDay(CustomerDay source)
     {
         if (source == null) return null;
@@ -823,7 +821,7 @@ public class _DayManager : MonoBehaviour
         int next = 0;
         for (int t = 0; t < total; t++)
         {
-            // '예?' 손님을 목록 순서대로 하루 전체에 고르게 펼침. 첫 손님은 조합 손님이 오도록.
+            // 진상 손님을 목록 순서대로 하루 전체에 고르게 펼침. 첫 손님은 조합 손님이 오도록.
             bool special = next < specials.Count && (t + 1) * specials.Count / total > t * specials.Count / total;
             customers[t] = special ? specials[next++] : CreateCombination(source.day, source.MinRequests, source.MaxRequests);
         }
@@ -840,7 +838,7 @@ public class _DayManager : MonoBehaviour
             if (today.Count < endlessGuestsPerDay && IsSpecial(profile) && CanServeToday(profile, dayNumber)) today.Add(profile);
         while (today.Count < endlessGuestsPerDay)
         {
-            // 일반 손님은 요구사항 조합으로 새로 만들고, '예?'/진상 손님은 대기열에서 꺼냄.
+            // 일반 손님은 요구사항 조합으로 새로 만들고, 진상 손님은 대기열에서 꺼냄.
             if (endlessRequests != null && UnityEngine.Random.value < generatedRatio)
             {
                 var generated = CreateCombination(dayNumber);
@@ -890,9 +888,8 @@ public class _DayManager : MonoBehaviour
         return endlessBag.Count > 0;
     }
 
-    // '예?'를 눌러야 말하는 손님 또는 진상. 일반 손님은 무한 모드에서 조합으로 대체됨.
     private static bool IsSpecial(CustomerProfile profile)
-        => profile.IsDifficult || profile.RequestIds.Length == 0;
+        => profile.IsDifficult;
 
     private bool HasAnyCustomer()
     {

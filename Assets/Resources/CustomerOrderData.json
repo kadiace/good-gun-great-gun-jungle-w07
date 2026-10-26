@@ -101,6 +101,17 @@
           "unlockDay": 1
         }
       ],
+      "portraitRules": [
+        {"portraitId":"17f85440ed49979409be1d8436dfe8a3","tagIds":["b370a46a3f0c45a438dc174b4b9c8d32","f591f239c94e4f44dae9ea87c6bcdb26"],"exclusiveTagIds":["b370a46a3f0c45a438dc174b4b9c8d32"]},
+        {"portraitId":"d93c365fa080b224487234211f2a4b5e","tagIds":["b370a46a3f0c45a438dc174b4b9c8d32","f591f239c94e4f44dae9ea87c6bcdb26"],"exclusiveTagIds":["b370a46a3f0c45a438dc174b4b9c8d32"]},
+        {"portraitId":"da10ad2ef240f60459602bd17613a769","tagIds":["3912bb5b7da966a47995e32041938a6a","3396cf208ef6d564bb1cd952a6fe598b"],"exclusiveTagIds":["3912bb5b7da966a47995e32041938a6a","3396cf208ef6d564bb1cd952a6fe598b"]},
+        {"portraitId":"8eff29f2eedfad54a965f69c8b75b74c","tagIds":["3912bb5b7da966a47995e32041938a6a","3396cf208ef6d564bb1cd952a6fe598b"],"exclusiveTagIds":["3912bb5b7da966a47995e32041938a6a","3396cf208ef6d564bb1cd952a6fe598b"]},
+        {"portraitId":"1868cc07ee699e748950c8451f4f0d29","tagIds":["3396cf208ef6d564bb1cd952a6fe598b"],"exclusiveTagIds":["3396cf208ef6d564bb1cd952a6fe598b"]},
+        {"portraitId":"d6fbf5196743c2a4ea2d88c0ff289027","requiresRequestIds":["module/double-barrel"]},
+        {"portraitId":"7738fafa742de5d42af109bc7cbc58f5","tagIds":["9b6639978cc6faf49a0a539f89ad1ffb"]},
+        {"portraitId":"b7da1ca1031234844b9a28d69012b829","tagIds":["9b6639978cc6faf49a0a539f89ad1ffb"]},
+        {"portraitId":"45ba01f02d224f347b2ddf08086cc33f","tagIds":["9b6639978cc6faf49a0a539f89ad1ffb"]}
+      ],
       "orderTemplates": [
         "총 하나 주세요. 조건은 {0}.",
         "{0}. 이렇게 맞춰서 하나 부탁드려요.",
@@ -246,13 +257,13 @@
     {
       "id": "a5308f1435d603f46aea8a8ee70cd591",
       "name": "D0_1_TutorialCustomer",
-      "tutorialRejectionLine": "이대로는 나무판을 뚫기 어렵겠어요. 관통 모듈을 하나 달아서 다시 가져와 주세요.",
+      "tutorialRejectionLine": "이대로는 나무판을 뚫기 어렵겠어요.",
       "tutorialFollowupRequestIds": ["module/penetration/min-1"],
       "requestIds": [
         "weapon/basic"
       ],
       "lines": [
-        "제가 잘 몰라서 그러는데, 적당히 만들어 주세요."
+        "제가 잘 몰라서 그러는데 아무거나 가져와주세요."
       ],
       "endsClear": true,
       "happyLine": "오, 좋네요! 감사합니다.",
@@ -908,11 +919,12 @@
       "name": "D5_5_RealGun",
       "requestIds": [
         "tag/shotgun",
-        "module/split-two/min-1"
+        "module/split-two/min-1",
+        "module/double-barrel"
       ],
       "lines": [
         "탕! 이게 진짜 총이었으면 당신은 죽었습니다.",
-        "산탄총 태그에, 2방향 분할도 장착해주세요."
+        "산탄총 태그에, 더블배럴과 2방향 분할도 장착해주세요."
       ],
       "endsClear": true,
       "happyLine": "탕! 이번엔 진짜군요. 완벽하게 작동합니다.",
@@ -971,11 +983,11 @@
       "id": "52c56089bff6c5341966c99523742ef5",
       "name": "D5_9_Firefighter",
       "requestIds": [
-        "tag/water-gun",
+        "tag/mini-nuke",
         "tag/charge"
       ],
       "lines": [
-        "물총 태그에 차지 태그까지 부탁해요!"
+        "워터 블래스트 태그에 차지 태그까지 부탁해요!"
       ],
       "endsClear": true,
       "happyLine": "긴급출동!",
@@ -1065,8 +1077,6 @@
       "id": "64bbf60094050bb4492d018a6e417617",
       "name": "D6_6_Everything",
       "requestIds": [
-        "tag/flamethrower",
-        "tag/water-gun",
         "tag/gravity-gun",
         "tag/spin",
         "tag/homing",
@@ -1074,7 +1084,7 @@
       ],
       "lines": [
         "이 가게에서 제일 좋은 거 다 넣어주세요.",
-        "화염방사·물총·중력건·회전·유도·차지 태그를 전부 붙여주세요."
+        "중력건·회전·유도·스모킹건 태그를 전부 붙여주세요."
       ],
       "endsClear": true,
       "happyLine": "이게 바로 궁극의 총...!",

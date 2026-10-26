@@ -24,11 +24,22 @@ namespace WeaponWorkshop
             // 이 요청을 뽑으면 함께 붙이는 요청. 각 항목의 일차·해금·비용도 함께 적용한다.
             public string[] requiredRequestIds = Array.Empty<string>();
         }
+        [Serializable] public sealed class PortraitRule
+        {
+            // 손님 풀 SO에 연결한 초상화 에셋 GUID. 같은 값을 SO의 PortraitAsset.portraitId에 둔다.
+            public string portraitId;
+            // 이 태그가 주문에 있을 때만 후보가 된다. 비우면 태그로 제한하지 않는다.
+            public string[] tagIds = Array.Empty<string>();
+            // 이 태그가 주문에 있으면 해당 초상화만 후보가 된다. 다른 초상화는 같은 태그에서 노출되지 않는다.
+            public string[] exclusiveTagIds = Array.Empty<string>();
+            public string[] requiresRequestIds = Array.Empty<string>();
+        }
         [Serializable] public sealed class Pool
         {
             public string id;
             public int minRequests = 1, maxRequests = 3;
             public PoolRequest[] requests = Array.Empty<PoolRequest>();
+            public PortraitRule[] portraitRules = Array.Empty<PortraitRule>();
             public string[] orderTemplates = Array.Empty<string>();
             public string[] multiRequestTemplates = Array.Empty<string>();
             public string[] happyLines = Array.Empty<string>();

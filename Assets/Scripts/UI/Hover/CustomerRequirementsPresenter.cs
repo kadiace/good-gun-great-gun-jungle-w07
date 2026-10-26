@@ -204,11 +204,11 @@ namespace WeaponWorkshop
             {
                 if (condition == null)
                 {
-                    AddRow("- 요청 조건을 확인할 수 없습니다.", false, 1);
+                    AddRow("요청 조건을 확인할 수 없습니다.", false, 1);
                 }
                 else
                 {
-                    AddRow("- " + Describe(condition, _snapshot.Value(condition)), _snapshot.Meets(condition), 1);
+                    AddRow(Describe(condition, _snapshot.Value(condition)), _snapshot.Meets(condition), 1);
                 }
             }
 
@@ -216,7 +216,7 @@ namespace WeaponWorkshop
             {
                 ShootingTestTableData.Entry test = TableManager.Instance.ShootingTestTable.Find(testId);
                 bool passed = _snapshot.HasPassedTest(testId);
-                AddRow("- " + (test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, 1);
+                AddRow((test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, 1);
             }
         }
 

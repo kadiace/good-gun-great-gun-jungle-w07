@@ -485,6 +485,18 @@ namespace WeaponWorkshop
         {
             saveStage = 2;
             talking = true;
+            if (HasTalked && TutorialManager.Instance != null &&
+                TutorialManager.Instance.CurrentStep?.id == "first-sell")
+            {
+                bool hasWeapon = submissionHolder != null && submissionHolder.EquippedWeapon != null;
+                System.Action close = () => { talking = false; DialogueUI.Instance.Hide(); };
+                DialogueUI.Instance.ShowChoices(profile.Lines[0],
+                    hasWeapon ? new[] { "총기 제출", "닫기" } : new[] { "닫기" },
+                    hasWeapon
+                        ? new System.Action[] { () => { close(); if (submissionHolder.EquippedWeapon != null) Sell(submissionHolder); }, close }
+                        : new System.Action[] { close });
+                return;
+            }
             ShowLine(0, submissionHolder);
         }
 
@@ -508,6 +520,23 @@ namespace WeaponWorkshop
                 }
                 line = string.Join(", ", mandatory) + " 총을 부탁드려요." +
                     (optional.Count > 0 ? " 그리고 " + string.Join(", ", optional) + "." : "");
+            }
+            if (!HasTalked && TutorialManager.Instance != null &&
+                TutorialManager.Instance.CurrentStep?.id == "greet-customer")
+            {
+                DialogueUI.Instance.ShowChoices(line, new[] { "닫기" }, new System.Action[]
+                {
+                    () =>
+                    {
+                        HasTalked = true;
+                        saveStage = 1;
+                        talking = false;
+                        DialogueUI.Instance.Hide();
+                        NotifyIfCustomOrder();
+                        TutorialManager.Instance?.NotifySignal("customer-greeted", this);
+                    }
+                });
+                return;
             }
             DialogueUI.Instance.Show(line, answer, () =>
             {
