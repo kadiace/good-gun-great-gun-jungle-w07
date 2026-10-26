@@ -56,6 +56,9 @@ namespace WeaponWorkshop
             // 3슬롯 시절 세이브는 짧으므로 빈 슬롯으로 채운다.
             codes = new string[SlotCount];
             Array.Copy(saved, codes, saved.Length);
+            // 이전 기본값으로 저장된 슬롯은 현재 기본값으로 바꾼다(기존 세이브 마이그레이션).
+            var table = TableManager.Instance.PresetDefault;
+            for (int i = 0; i < codes.Length; i++) codes[i] = PresetDefaultInfo.Migrate(table, i, codes[i]);
         }
     }
 }

@@ -16,5 +16,7 @@ namespace WeaponWorkshop
             public string code;
         }
         public Entry[] presets = Array.Empty<Entry>();
+        // 이전 기본값으로 저장된 코드. 세이브를 불러올 때 같은 코드면 presets의 현재 기본값으로 바꾼다.
+        public Entry[] legacy = Array.Empty<Entry>();
     }
 }
