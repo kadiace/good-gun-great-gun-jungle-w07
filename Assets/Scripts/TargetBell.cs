@@ -67,6 +67,7 @@ namespace WeaponWorkshop
             return Physics.CheckBox(center,extents,point.rotation,~LayerMask.GetMask("Energy"),QueryTriggerInteraction.Ignore);
         }
         private Transform spawnedRoot;
+        private Customer cleanedTestOrder;
         private readonly System.Collections.Generic.Dictionary<DestructibleTarget, int> spawnedPrefabs = new System.Collections.Generic.Dictionary<DestructibleTarget, int>();
         public TargetWorldSave CaptureSave()
         {
@@ -138,6 +139,13 @@ namespace WeaponWorkshop
         {
             var required = RequiredTestIds();
             if (required.Count == 0) return false;
+            var customer = customerBell.Current;
+            // 첫 가이드 노출 여부와 무관하게 사격 요구가 있는 주문마다 한 번 청소한다.
+            if (cleanedTestOrder != customer)
+            {
+                ClearSpawned();
+                cleanedTestOrder = customer;
+            }
             ResolveSelectionUI();
             string preferred = TableManager.Instance.Onboarding.shootingGuide?.preferredTestId;
             required.Sort(System.StringComparer.Ordinal);
@@ -150,7 +158,7 @@ namespace WeaponWorkshop
             var data = selectionUI != null ? selectionUI.FindTest(id) : null;
             SpawnFailureReason = "주문에서 요구한 사격 테스트 연결을 확인하세요.";
             if (testController == null || data == null) return false;
-            bool ready = testController.ReadyForOrder(data, player, customerBell.Current, out var error);
+            bool ready = testController.ReadyForOrder(data, player, customer, out var error);
             SpawnFailureReason = error;
             return ready;
         }
