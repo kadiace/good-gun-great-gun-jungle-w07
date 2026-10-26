@@ -271,7 +271,7 @@ namespace WeaponWorkshop
             order.optionalDialogues = optionalDialogues.ToArray();
         }
 
-        private void ShowRequestDialogue(bool justHeardMandatory = false, string justHeardOptional = null)
+        private void ShowRequestDialogue(bool justHeardMandatory = false)
         {
             dialogueIndex = 0;
             var order = profile.OrderState;
@@ -320,7 +320,7 @@ namespace WeaponWorkshop
                         OnboardingManager.NotifyShootingOrder(this);
                         dialoguePhase = 2;
                         dialogueRequestId = null;
-                        ShowRequestDialogue(justHeardOptional: optional.requirementId);
+                        ShowRequestDialogue();
                     });
                     return;
                 }
@@ -332,8 +332,7 @@ namespace WeaponWorkshop
             var actions = new List<System.Action>();
             foreach (var optional in order.optionalDialogues)
             {
-                if (optional.requirementId != justHeardOptional)
-                    lines.Add(optional.revealed ? optional.explicitRequest : $"<b>{optional.hint}</b>");
+                lines.Add(optional.revealed ? optional.explicitRequest : $"<b>{optional.hint}</b>");
                 if (optional.revealed) continue;
                 labels.Add(optional.question);
                 actions.Add(() =>
