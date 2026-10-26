@@ -199,10 +199,21 @@ namespace WeaponWorkshop
         private void PrepareRequestDialogue()
         {
             var order = profile.OrderState;
-            if (order.mandatoryDialogue != null && order.optionalDialogues != null) return;
             var data = TableManager.Instance.CustomerOrder;
             var requests = TableManager.Instance.CustomerRequest;
             string mandatoryId = CanonicalRequestId(profile.RequestIds[0]);
+            bool valid = order.mandatoryDialogue != null && order.mandatoryDialogue.requirementId == mandatoryId &&
+                !string.IsNullOrEmpty(order.mandatoryDialogue.explicitRequest) && order.optionalDialogues != null;
+            if (valid)
+                for (int index = 1; index < profile.RequestIds.Length; index++)
+                {
+                    string id = CanonicalRequestId(profile.RequestIds[index]);
+                    if (id != mandatoryId && !System.Array.Exists(order.optionalDialogues, row =>
+                        row != null && row.requirementId == id && !string.IsNullOrEmpty(row.question)))
+                    { valid = false; break; }
+                }
+            if (valid) return;
+            var previousOptionalDialogues = order.optionalDialogues;
             CustomerOrderData.MandatoryDialogue mandatory = null;
             foreach (var row in data.mandatoryDialogues)
                 if (row != null && CanonicalRequestId(row.requirementId) == mandatoryId) { mandatory = row; break; }
@@ -231,7 +242,9 @@ namespace WeaponWorkshop
                 optionalDialogues.Add(new CustomerOrderState.OptionalDialogueState
                 {
                     requirementId = id, hint = hint, question = variant?.question ?? "예? " + hint + "?",
-                    explicitRequest = variant?.explicitRequest ?? requests.Phrase(id) + " 부탁드려요."
+                    explicitRequest = variant?.explicitRequest ?? requests.Phrase(id) + " 부탁드려요.",
+                    revealed = System.Array.Exists(previousOptionalDialogues ?? System.Array.Empty<CustomerOrderState.OptionalDialogueState>(),
+                        row => row != null && row.requirementId == id && row.revealed)
                 });
             }
             order.optionalDialogues = optionalDialogues.ToArray();
@@ -242,8 +255,7 @@ namespace WeaponWorkshop
             dialogueIndex = 0;
             var order = profile.OrderState;
             var mandatory = order.mandatoryDialogue;
-            if (dialoguePhase < 2 && !string.IsNullOrEmpty(
-                TableManager.Instance.CustomerRequest.FindRequest(mandatory.requirementId)?.tagId))
+            if (dialoguePhase < 2 && string.IsNullOrEmpty(mandatory.intro))
             {
                 HasTalked = true;
                 order.mandatoryRevealed = true;
