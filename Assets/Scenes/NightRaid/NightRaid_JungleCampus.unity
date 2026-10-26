@@ -376891,6 +376891,7 @@ GameObject:
   - component: {fileID: 1215052962}
   - component: {fileID: 1215052961}
   - component: {fileID: 1215052960}
+  - component: {fileID: 1215052964}
   m_Layer: 0
   m_Name: SlotMachine
   m_TagString: Untagged
@@ -376911,9 +376912,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.InteractionLabel
   title: "\uC2AC\uB86F\uBA38\uC2E0"
-  unavailableCondition: "$500 \uC774\uC0C1\uC774\uC5B4\uC57C \uB2F9\uAE38 \uC218
-    \uC788\uC2B5\uB2C8\uB2E4.\n\uB2F9\uCCA8\uAE08:\n\uAE30\uBCF8/\uC5F0\uC7A5 $1,000\n\uC5F0\uC0AC/\uAD00\uD1B5
-    $2,000\n\uD3ED\uBC1C $5,000\n\uBC29\uC0AC $50,000"
+  unavailableCondition: "\uC2AC\uB86F\uBA38\uC2E0 \uD2F0\uCF13 1\uAC1C\uB9CC \uBC1B\uC2B5\uB2C8\uB2E4."
 --- !u!65 &1215052961
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -376948,6 +376947,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.SlotMachineReels
   featureEnabled: 1
+  indestructible: 1
+  ticketsOnly: 1
   reels:
   - {fileID: 1682749217}
   - {fileID: 144757550}
@@ -376978,6 +376979,19 @@ Transform:
   - {fileID: 1478396180}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!114 &1215052964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1215052959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfa79816cb9e468eaf1a4789d3e4f234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.PickupOutline
+  highlightWhenAimed: 1
 --- !u!1 &1215085943
 GameObject:
   m_ObjectHideFlags: 0
