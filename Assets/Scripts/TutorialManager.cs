@@ -26,6 +26,8 @@ namespace WeaponWorkshop
         private DestructibleTarget shootingTarget;
         private readonly Queue<Customer> pendingWarnings = new Queue<Customer>();
         private bool warningOpen;
+        private bool warningTurning;
+        private TutorialStep completedStepAfterWarning;
         private Coroutine warningTurn;
         [SerializeField, Min(.01f)] private float warningTurnDuration = .25f;
         [SerializeField] private string blockedInteractionMessage = "튜토리얼 중에는 안내된 대상과만 상호작용할 수 있습니다.";
@@ -205,7 +207,7 @@ namespace WeaponWorkshop
         {
             if (day == null || dayZeroOwner != null) return;
             dayZeroOwner = day;
-            warningOpen = false; pendingWarnings.Clear();
+            warningOpen = false; warningTurning = false; completedStepAfterWarning = null; pendingWarnings.Clear();
             ResolvePresentation();
             if (selection == null || !selection.Show(() => { LogTutorialSkipped(); EndDayZero(); }, StartDayZeroSequence)) StartDayZeroSequence();
         }
@@ -521,6 +523,8 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
+            // 경고 확인 콜백 없이 창이 닫혀도 완료 판정이 영구 차단되지 않게 정리한다.
+            if (warningOpen && !warningTurning && (dialogue == null || !dialogue.IsOpen)) CompleteCustomerWarning();
             if (stepIntroductionOpen && CurrentStep != null && dayZeroOwner != null &&
                 CurrentStep.id == "close-and-settle" &&
                 CurrentStep.completion == TutorialCompletion.SettlementClosed && IsActionStepComplete())
@@ -536,6 +540,7 @@ namespace WeaponWorkshop
             var customer = pendingWarnings.Dequeue();
             if (customer == null) return;
             warningOpen = true;
+            warningTurning = true;
             if (GameManager.Instance != null) GameManager.Instance.SetDialogue(true);
             warningTurn = StartCoroutine(TurnToCustomer(customer));
         }
@@ -583,8 +588,18 @@ namespace WeaponWorkshop
                 }
             }
             warningTurn = null;
-            warningOpen = dialogue.Show(customerWarning, "죄송합니다!", () => { warningOpen = false; dialogue.Hide(); }, "손님");
-            if (!warningOpen && GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
+            warningTurning = false;
+            warningOpen = dialogue.Show(customerWarning, "죄송합니다!", CompleteCustomerWarning, "손님");
+            if (!warningOpen) CompleteCustomerWarning();
+        }
+        private void CompleteCustomerWarning()
+        {
+            warningOpen = false;
+            if (dialogue != null) dialogue.Hide();
+            if (GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
+            var completedStep = completedStepAfterWarning;
+            completedStepAfterWarning = null;
+            if (completedStep != null && completedStep == CurrentStep) Advance();
         }
         private void ClearShootingTarget()
         {
@@ -684,6 +699,12 @@ namespace WeaponWorkshop
         }
         private void Advance()
         {
+            // 표적 명중 등 일회성 완료는 보존하고, 피격 경고를 확인한 뒤 다음 대사를 연다.
+            if (warningOpen)
+            {
+                completedStepAfterWarning = CurrentStep;
+                return;
+            }
             LogStepCompleted();
             if (CurrentStep != null && CurrentStep.restoreWithheldBalanceOnComplete && withheldBalance > 0)
             {
@@ -1035,6 +1056,8 @@ namespace WeaponWorkshop
             RaidEnemyCore.Spawned -= HandleRaidEnemySpawned;
             if (warningTurn != null) StopCoroutine(warningTurn);
             warningTurn = null;
+            warningTurning = false;
+            completedStepAfterWarning = null;
             waiting.Clear(); ReleaseDialogue();
             RestoreRetirementPresentation();
             if (warningOpen && dialogue != null) dialogue.Hide();
