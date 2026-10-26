@@ -82,6 +82,7 @@ namespace WeaponWorkshop
 
         private void NotifyIfCustomOrder()
         {
+            OnboardingManager.NotifyShootingOrder(this);
             if (profile == null) return;
             var onboarding = TableManager.Instance.Onboarding;
             var requests = TableManager.Instance.CustomerRequest;
@@ -123,8 +124,10 @@ namespace WeaponWorkshop
             if (!HasTalked || weapon == null || profile == null) return;
             var table = TableManager.Instance.CustomerRequest;
             var snapshot = new CustomerRequestInfo.WeaponSnapshot(weapon);
+            bool revealed = false;
             foreach (string id in profile.RequestIds)
-                if (!IsRequestVisible(id) && table.MeetsRequest(id, snapshot)) revealedRequests.Add(id);
+                if (!IsRequestVisible(id) && table.MeetsRequest(id, snapshot)) revealed |= revealedRequests.Add(id);
+            if (revealed) OnboardingManager.NotifyShootingOrder(this);
         }
 
         /// <summary>
@@ -340,7 +343,11 @@ namespace WeaponWorkshop
                             {
                                 revealedRequests.Add(id);
                                 DialogueUI.Instance.Show("<b>" + TableManager.Instance.CustomerRequest.Phrase(id) + "</b> 부탁드려요.",
-                                    "알겠습니다", () => ShowLine(index, submissionHolder));
+                                    "알겠습니다", () =>
+                                    {
+                                        OnboardingManager.NotifyShootingOrder(this);
+                                        ShowLine(index, submissionHolder);
+                                    });
                             };
                             System.Array.Copy(oldLabels, 0, labels, 1, oldLabels.Length);
                             System.Array.Copy(oldActions, 0, actions, 1, oldActions.Length);

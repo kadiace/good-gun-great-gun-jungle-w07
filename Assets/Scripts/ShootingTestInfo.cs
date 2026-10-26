@@ -4,8 +4,21 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
+    public enum ShootingTestGoal { Destruction, HitCount }
+
     public static class ShootingTestInfo
     {
+        public static bool CountsHits(this ShootingTestTableData.Entry row)
+            => row != null && row.goalType == nameof(ShootingTestGoal.HitCount);
+
+        private static bool HasValidGoal(ShootingTestTableData.Entry row)
+        {
+            if (row.CountsHits()) return row.requiredHits > 0;
+            // 방식이 없는 기존 호환 데이터는 파괴율로 해석한다.
+            return (string.IsNullOrEmpty(row.goalType) || row.goalType == nameof(ShootingTestGoal.Destruction)) &&
+                row.requiredDestruction > 0f && row.requiredDestruction <= 1f;
+        }
+
         public static ShootingTestTableData.Entry Find(this ShootingTestTableData table, string id)
         {
             if (!string.IsNullOrEmpty(id))
@@ -17,7 +30,7 @@ namespace WeaponWorkshop
         {
             var row = table.Find(id);
             return row != null && !string.IsNullOrWhiteSpace(row.id) && row.enabled && !string.IsNullOrWhiteSpace(row.name) &&
-                row.timeLimit > 0f && !float.IsInfinity(row.timeLimit) && row.requiredDestruction > 0f && row.requiredDestruction <= 1f &&
+                row.timeLimit > 0f && !float.IsInfinity(row.timeLimit) && HasValidGoal(row) &&
                 HasValidModuleRequirements(row);
         }
         public static bool TryGetModuleKind(ShootingTestTableData.ModuleRequirement requirement, out ModuleKind kind)

@@ -129,6 +129,12 @@ namespace WeaponWorkshop
                     objective = choiceOpen ? step.objectiveWhileChoiceOpen : step.objective;
                 }
             }
+            else if (OnboardingManager.IsShootingGuideVisible)
+            {
+                GameManager game = GameManager.Instance;
+                if (game != null && game.UI != null && !game.InDialogue && !game.IsPaused && !game.InManual && !game.UI.IsChoiceOpen)
+                    objective = OnboardingManager.ShootingObjective;
+            }
             else if (NightRaidController.Instance != null && NightRaidController.Instance.IsInRaid)
             {
                 objective = m_raidObjective;
@@ -140,7 +146,7 @@ namespace WeaponWorkshop
                     : m_dayManager.IsAwaitingOpening ? m_openingObjective : m_businessObjective;
             }
 
-            bool tutorialObjective = tutorial != null && tutorial.IsTutorialActive;
+            bool tutorialObjective = tutorial != null && tutorial.IsTutorialActive || OnboardingManager.IsShootingGuideVisible;
             m_view.SetCompact(tutorialObjective);
 
             bool hasObjective = !string.IsNullOrWhiteSpace(objective);

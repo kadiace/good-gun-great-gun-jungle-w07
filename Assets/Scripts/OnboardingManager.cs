@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    public sealed class OnboardingManager : MonoBehaviour
+    public sealed partial class OnboardingManager : MonoBehaviour
     {
         private const float DialogueInputLockSeconds = 0.5f;
 
@@ -15,6 +15,8 @@ namespace WeaponWorkshop
             public CubeBuilder Builder;
             public bool IsCustom;
             public bool IsStroke;
+            public bool IsShooting;
+            public bool IsShootingResult;
         }
 
         private static OnboardingManager instance;
@@ -124,8 +126,11 @@ namespace WeaponWorkshop
                 if (session != null) session.WorkbenchEntered += OnWorkbenchEntered;
             }
 
+            UpdateShootingGuide(player);
+
             if (current != null || waiting.Count == 0 || TutorialManager.Instance == null ||
                 TutorialManager.Instance.IsTutorialActive || GameManager.GameplayBlocked) return;
+            PrioritizeShortPrompts();
             if (waiting.Peek().IsCustom)
             {
                 if (!HasCurrentCustomOrder())
@@ -207,6 +212,11 @@ namespace WeaponWorkshop
             if (runningSequence != null) Destroy(runningSequence);
             runningSequence = null;
             if (completed == null) return;
+            if (completed.IsShooting)
+            {
+                CompleteShootingPrompt(completed.IsShootingResult, succeeded);
+                return;
+            }
             if (!succeeded)
             {
                 if (completed.IsCustom)
@@ -235,7 +245,7 @@ namespace WeaponWorkshop
 
         private void RemovePrompts(bool custom)
         {
-            if (current != null && current.IsCustom == custom)
+            if (current != null && !current.IsShooting && current.IsCustom == custom)
             {
                 if (current.IsStroke && current.Builder != null) current.Builder.CancelOnboardingStroke();
                 TutorialManager.Instance?.Cancel(this);
@@ -247,13 +257,14 @@ namespace WeaponWorkshop
             for (int i = 0; i < count; i++)
             {
                 var prompt = waiting.Dequeue();
-                if (prompt.IsCustom != custom) waiting.Enqueue(prompt);
+                if (prompt.IsShooting || prompt.IsCustom != custom) waiting.Enqueue(prompt);
                 else if (prompt.IsStroke && prompt.Builder != null) prompt.Builder.CancelOnboardingStroke();
             }
         }
 
         private void OnDestroy()
         {
+            AbortShootingGuide();
             if (session != null) session.WorkbenchEntered -= OnWorkbenchEntered;
             if (current != null && current.IsStroke && current.Builder != null) current.Builder.CancelOnboardingStroke();
             foreach (var prompt in waiting)
@@ -269,6 +280,7 @@ namespace WeaponWorkshop
             instance = null;
             shownModules.Clear();
             customStarted = false;
+            shootingGuideCompleted = false;
         }
     }
 }

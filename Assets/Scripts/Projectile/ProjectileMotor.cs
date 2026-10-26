@@ -415,6 +415,9 @@ namespace WeaponWorkshop
             TargetHealth target = GetComponentInParents<TargetHealth>(hit.collider);
             bool firstHitOnTarget = target != null && !hitTargets.Contains(target);
             bool firstHitOnStructure = structure != null && hitStructures.Add(structure);
+            // 같은 탄의 여러 콜라이더·관통 구간·도탄 중복을 제외하고 직접 명중만 전달한다.
+            if (firstHitOnStructure && structure.TryGetComponent<ShootingTestTarget>(out var testTarget))
+                testTarget.NotifyBulletHit(WeaponSource);
             // 명중률 지표: 탄 하나당 처음 맞은 순간만 센다.
             if (!hitCounted && (structure != null || target != null))
             {

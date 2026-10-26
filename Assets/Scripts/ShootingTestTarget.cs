@@ -9,6 +9,21 @@ namespace WeaponWorkshop
         [SerializeField] private string displayName;
         [SerializeField] private bool protectedTarget;
         private DestructibleTarget target;
+        private ShootingTestController controller;
+        public int HitCount { get; private set; }
+
+        internal void Bind(ShootingTestController owner)
+        {
+            controller = owner;
+            HitCount = 0;
+        }
+
+        internal void NotifyBulletHit(Transform weaponSource)
+        {
+            if (controller != null && controller.CanCountBulletHit(this, weaponSource) && HitCount < controller.Definition.RequiredHits)
+                HitCount++;
+        }
+
         public string DisplayName => displayName;
         public bool IsProtected => protectedTarget;
         public DestructibleTarget Target => target != null ? target : target = GetComponent<DestructibleTarget>();

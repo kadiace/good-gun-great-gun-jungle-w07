@@ -123,7 +123,7 @@ public class _DayManager : MonoBehaviour
     }
     private void Update()
     {
-        if (!businessRunning || IsNight) return;
+        if (!businessRunning || IsNight || OnboardingManager.IsShootingGuideActive) return;
         businessRemaining = Mathf.Max(0f, businessRemaining - Time.deltaTime);
         if (businessRemaining <= 0f) CloseShop();
     }

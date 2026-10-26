@@ -1,5 +1,20 @@
 {
   "customRequestIds": ["color/crimson-3"],
+  "shootingGuide": {
+    "testIds": ["around-cover", "behind-barrier"],
+    "preferredTestId": "around-cover",
+    "minimumPenetration": 2,
+    "introduction": "고객이 {0}를 요청했네요! 총을 준비하고 제한 시간 안에 표적을 파괴하는 방법을 알아봅시다. 관통 모듈은 발사 경로에 연결해야 효과가 있으며, 관통 테스트에서는 높은 관통력이 도움이 됩니다.",
+    "prepareObjective": "작업대에서 발사 경로의 관통력이 {1} 이상인 총을 만드세요.",
+    "hitCountIntroduction": "고객이 {0}를 요청했네요! {2} 관통력과 관계없이 총알이 표적에 직접 맞으면 명중으로 인정됩니다.",
+    "hitCountPrepareObjective": "작업대에서 총알을 발사할 수 있는 총을 준비하세요.",
+    "equipObjective": "작업대에서 나와 준비한 총을 장착하세요.",
+    "openObjective": "총을 든 채 상점의 테스트 장치와 상호작용하세요.",
+    "selectObjective": "주문에서 요구한 {0}를 선택하세요.",
+    "fireObjective": "{0}: {2}",
+    "passed": "테스트를 통과했습니다! 합격은 이 총의 현재 구성에 기록됩니다. 모듈 구성을 바꾸면 다시 테스트해야 합니다.",
+    "failed": "테스트를 통과하지 못했거나 중단했습니다. 작업대에서 총을 수정하고 재시도할 수 있습니다. 시험을 취소했거나 선택창을 닫았다면 테스트 장치에서 시험을 다시 선택하세요."
+  },
   "modules": [
     { "moduleId": 2, "title": "연장", "description": "마우스를 움직여 총알이 나가는 방향을 선택하세요." },
     { "moduleId": 3, "title": "두 방향 분할", "description": "마우스를 움직여 마주 보는 두 출력 방향의 축을 선택하세요." },

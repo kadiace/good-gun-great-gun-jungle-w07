@@ -93,7 +93,11 @@ namespace WeaponWorkshop
             targets = stage.GetComponentsInChildren<ShootingTestTarget>(true);
             destructibles = stage.GetComponentsInChildren<DestructibleTarget>(true);
             int goals = 0;
-            foreach (var target in targets) if (!target.IsProtected && target.gameObject.activeSelf) goals++;
+            foreach (var target in targets)
+            {
+                target.Bind(this);
+                if (!target.IsProtected && target.gameObject.activeSelf) goals++;
+            }
             if (goals == 0) { DestroyLayout(); error = "테스트에 목표 표적이 없습니다."; return false; }
             foreach (var target in destructibles) target.DamageProtected = true;
             layout.SetActive(true);
@@ -109,8 +113,10 @@ namespace WeaponWorkshop
         public void Begin()
         {
             if (State != TestState.Prepared || layout == null) return;
+            OnboardingManager.NotifyShootingTestStarted(this);
             if (!HasOriginalWeapon()) { Finish(false, "테스트 중 총을 내려놓거나 교체했습니다."); return; }
-            foreach (var target in destructibles) target.DamageProtected = false;
+            // 명중 시험은 충돌을 유지하고 모든 파괴·범위 피해를 차단한다.
+            foreach (var target in destructibles) target.DamageProtected = definition.CountsHits;
             RemainingSeconds = definition.TimeLimit;
             nextSummary = 0f;
             State = TestState.Running;
@@ -122,6 +128,13 @@ namespace WeaponWorkshop
             var retryData = definition;
             if (Prepare(retryData, player, out var error)) Begin();
             else GameManager.Instance?.UI?.ShowNotification(error);
+        }
+
+        internal bool CanCountBulletHit(ShootingTestTarget target, Transform weaponSource)
+        {
+            return State == TestState.Running && RemainingSeconds > 0f && definition != null && definition.CountsHits &&
+                shotSource != null && weaponSource == shotSource && HasOriginalWeapon() && target != null &&
+                !target.IsProtected && System.Array.IndexOf(targets, target) >= 0;
         }
 
         private void LateUpdate()
@@ -142,7 +155,8 @@ namespace WeaponWorkshop
                 else
                 {
                     goals++;
-                    if (target.Destruction >= definition.RequiredDestruction) complete++;
+                    if (definition.CountsHits ? target.HitCount >= definition.RequiredHits :
+                        target.Destruction >= definition.RequiredDestruction) complete++;
                 }
             }
             if (Time.time >= nextSummary)
@@ -157,13 +171,18 @@ namespace WeaponWorkshop
         private void BuildSummary(int complete, int goals)
         {
             summary.Clear();
-            summary.Append("목표 ").Append(complete).Append('/').Append(goals).Append(" · 각 목표 ")
-                .Append(Mathf.RoundToInt(definition.RequiredDestruction * 100f)).Append("% 파괴\n");
+            summary.Append("목표 ").Append(complete).Append('/').Append(goals).Append(" · 각 목표 ");
+            if (definition.CountsHits) summary.Append(definition.RequiredHits).Append("회 명중\n");
+            else summary.Append(Mathf.RoundToInt(definition.RequiredDestruction * 100f)).Append("% 파괴\n");
             foreach (var target in targets)
             {
                 if (target == null || target.IsProtected) continue;
-                summary.Append(target.DisplayName).Append(' ').Append(Mathf.RoundToInt(target.Destruction * 100f)).Append("% · ")
-                    .Append(target.ResistanceDescription).Append('\n');
+                summary.Append(target.DisplayName).Append(' ');
+                if (definition.CountsHits)
+                    summary.Append("명중 ").Append(target.HitCount).Append('/').Append(definition.RequiredHits).Append('\n');
+                else
+                    summary.Append(Mathf.RoundToInt(target.Destruction * 100f)).Append("% · ")
+                        .Append(target.ResistanceDescription).Append('\n');
             }
             summary.Append(definition.Instructions);
             StatusText = summary.ToString();
@@ -180,6 +199,7 @@ namespace WeaponWorkshop
             if (!passed) RemainingSeconds = definition.TimeLimit;
             ClearShots(); DestroyLayout();
             GameManager.Instance?.UI?.ShowNotification(reason);
+            OnboardingManager.NotifyShootingTestEnded(this, passed);
         }
 
         private bool HasOriginalWeapon() => holder != null && holder.isActiveAndEnabled && weapon != null &&
@@ -218,6 +238,7 @@ namespace WeaponWorkshop
         public void Cancel()
         {
             bool wasActive = IsActive;
+            if (wasActive) OnboardingManager.NotifyShootingTestEnded(this, false);
             State = TestState.Idle;
             UnsubscribeWeapon();
             if (wasActive) ClearShots();
