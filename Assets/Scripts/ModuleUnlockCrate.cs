@@ -38,6 +38,8 @@ namespace WeaponWorkshop
             if (claimed || body == null || body.InitialCellCount <= 0 || body.RemainingCellCount >= body.InitialCellCount) return;
             if (pickupPrefab == null) return;
             claimed = true;
+            // 잔해는 유지하고, 공통 시선 판정에서 상자 상호작용만 제외한다.
+            enabled = false;
             if (classificationLabel != null) classificationLabel.SetActive(false);
             var pickup = Instantiate(pickupPrefab, transform.position + Vector3.up * 0.3f, Quaternion.identity, transform.parent);
             if (objective != null) objective.Target = pickup.transform;
