@@ -240,6 +240,8 @@ namespace WeaponWorkshop
         }
         private void OnPresetStored(int slot, string code)
         {
+            // Stored also refreshes the browser when a slot is cleared; an empty slot is not a saved weapon.
+            if (string.IsNullOrEmpty(code)) return;
             if (CanRecordAction) Write(new ShopPresetLogEvent
             { slot = slot + 1, weaponCode = code, weaponCodeStatus = "ok" }, "preset_saved", ActiveOrder);
         }

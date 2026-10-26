@@ -26,6 +26,23 @@ namespace WeaponWorkshop
             codes[slot] = WeaponShareCode.Export(weapon);
             Stored?.Invoke(slot, codes[slot]);
         }
+        /// <summary>유효한 공유 코드를 슬롯에 저장합니다. 잘못된 코드는 ArgumentException으로 거부합니다.</summary>
+        public void StoreCode(int slot, string code)
+        {
+            Initialize();
+            if (!string.IsNullOrEmpty(code)) WeaponShareCode.Decode(code);
+            codes[slot] = code;
+            Stored?.Invoke(slot, codes[slot]);
+        }
+        /// <summary>슬롯을 비웁니다. 비어 있으면 false를 반환하고, 비웠으면 Stored(null)을 알립니다.</summary>
+        public bool Clear(int slot)
+        {
+            Initialize();
+            if (slot < 0 || slot >= SlotCount || string.IsNullOrEmpty(codes[slot])) return false;
+            codes[slot] = null;
+            Stored?.Invoke(slot, null);
+            return true;
+        }
         public string[] Capture() { Initialize(); return (string[])codes.Clone(); }
         public void Restore(string[] saved)
         {

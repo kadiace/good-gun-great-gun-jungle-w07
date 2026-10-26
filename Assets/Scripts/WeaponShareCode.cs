@@ -35,6 +35,9 @@ namespace WeaponWorkshop
         public static string Export(EquipableWeapon weapon)
             => CompactExport(new Blueprint { name = weapon.WeaponName, blocks = CollectBlocks(weapon) });
 
+        /// <summary>블루프린트를 공유 코드로 다시 인코딩한다(저장본 이름 변경 등 수정용).</summary>
+        public static string Encode(Blueprint blueprint) => CompactExport(blueprint);
+
         private static Block[] CollectBlocks(EquipableWeapon weapon)
         {
             if (weapon == null) throw new ArgumentException("무기가 없습니다.");
