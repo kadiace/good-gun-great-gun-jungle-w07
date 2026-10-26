@@ -28,9 +28,13 @@ namespace WeaponWorkshop
 
         public void ClearAll()
         {
+            bool changed = faces.Count > 0;
             foreach (PaintedFace painted in faces.Values) DestroyPaintedFace(painted);
             faces.Clear();
+            if (changed) NotifyPaintChanged();
         }
+
+        private void NotifyPaintChanged() => GetComponentInParent<CubeAssembly>()?.InvalidateAppearance();
 
         public Material GetMaterial(Vector3Int face)
             => faces.TryGetValue(face, out PaintedFace painted) && painted.renderer != null
@@ -47,10 +51,12 @@ namespace WeaponWorkshop
                 {
                     if (painted.renderer.sharedMaterial == material) return false;
                     painted.renderer.sharedMaterial = material;
+                    NotifyPaintChanged();
                     return true;
                 }
                 faces.Remove(face);
                 DestroyPaintedFace(painted);
+                NotifyPaintChanged();
                 return true;
             }
             if (material == null || !TryCreateFaceMesh(face, out Mesh mesh)) return false;
@@ -62,6 +68,7 @@ namespace WeaponWorkshop
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             faces.Add(face, new PaintedFace { gameObject = faceObject, mesh = mesh, renderer = renderer });
+            NotifyPaintChanged();
             return true;
         }
 

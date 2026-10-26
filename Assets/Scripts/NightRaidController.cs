@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering.Universal;
 using Unity.Profiling;
 using LogKit;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -34,6 +35,7 @@ namespace WeaponWorkshop
         [SerializeField] private string standaloneWorkshopScene = "Main";
         public static NightRaidController Instance { get; private set; }
         public bool IsBusy => mapOpen || transitioning || inRaid;
+        public bool IsMapOpen => mapOpen;
         public bool IsInRaid => inRaid;
         private bool mapOpen, transitioning, inRaid, returnOpen, openedFromPreparation, entryRestoreFailed;
         private bool returningAfterDeath;
@@ -577,6 +579,8 @@ namespace WeaponWorkshop
             player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             playerWeaponHolder = player != null ? player.GetComponent<WeaponHolder>() : null;
             raidCamera = playerWeaponHolder != null ? playerWeaponHolder.AimCamera : null;
+            // Core light rays sample opaque depth to stay hidden behind intact armour, including on mobile URP.
+            if (raidCamera != null) raidCamera.GetUniversalAdditionalCameraData().requiresDepthTexture = true;
             playerHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
             if (player == null || area.SpawnPoint == null)
             { ui.ShowError("습격 플레이어 또는 시작 위치 연결이 없습니다."); return; }

@@ -1353,7 +1353,8 @@ namespace WeaponWorkshop
         private void MarkCollisionColumn(int column)
         {
             collisionDirty = true;
-            if (allColumnsDirty) return;
+            // 아직 처리하지 않은 열은 전체 갱신에서 반영하고, 이미 지난 열의 추가 삭제는 다시 갱신한다.
+            if (allColumnsDirty && (collisionColumns == null || column >= collisionColumnCursor)) return;
             if (!dirtyColumnFlags[column])
             { dirtyColumnFlags[column] = true; dirtyColumns.Add(column); }
         }
@@ -1395,27 +1396,24 @@ namespace WeaponWorkshop
                     processed++;
                 }
                 collisionColumnCursor = 0;
+                allColumnsDirty = false;
             }
-            else
+            // 전체 갱신 도중 이미 처리한 열에서 발생한 변경도 끝내야 완료로 본다.
+            int index = 0;
+            while (index < dirtyColumns.Count)
             {
-                int index = 0;
-                while (index < dirtyColumns.Count)
-                {
-                    if (processed > 0 && !ignoreBudget && DestructionFrameBudget.IsExhausted) break;
-                    int column = dirtyColumns[index++];
-                    UpdateCollisionColumn(column);
-                    dirtyColumnFlags[column] = false;
-                    processed++;
-                }
-                if (index < dirtyColumns.Count)
-                {
-                    dirtyColumns.RemoveRange(0, index);
-                    return false;
-                }
-                dirtyColumns.Clear();
+                if (processed > 0 && !ignoreBudget && DestructionFrameBudget.IsExhausted) break;
+                int column = dirtyColumns[index++];
+                UpdateCollisionColumn(column);
+                dirtyColumnFlags[column] = false;
+                processed++;
             }
-            foreach (int column in dirtyColumns) dirtyColumnFlags[column] = false;
-            dirtyColumns.Clear(); allColumnsDirty = false; collisionDirty = false;
+            if (index < dirtyColumns.Count)
+            {
+                dirtyColumns.RemoveRange(0, index);
+                return false;
+            }
+            dirtyColumns.Clear(); collisionDirty = false;
             return true;
         }
         private void UpdateCollisionColumn(int column)

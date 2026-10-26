@@ -47,6 +47,30 @@ namespace WeaponWorkshop
             return false;
         }
 
+        public static bool TryRequestBundle(this CustomerOrderData.Pool pool, string id, int day, out List<string> bundle)
+        {
+            var result = new List<string>();
+            var visiting = new HashSet<string>(StringComparer.Ordinal);
+            bool valid = Visit(id);
+            bundle = result;
+            return valid;
+
+            bool Visit(string requestId)
+            {
+                string canonical = TableManager.Instance.CustomerRequest.FindRequest(requestId)?.id;
+                if (canonical == null || visiting.Contains(canonical)) return false;
+                if (result.Contains(canonical)) return true;
+                var entry = pool.FindEntry(canonical);
+                if (entry == null || entry.unlockDay > day) return false;
+                visiting.Add(canonical);
+                foreach (string required in entry.requiredRequestIds ?? Array.Empty<string>())
+                    if (!Visit(required)) return false;
+                visiting.Remove(canonical);
+                result.Add(canonical);
+                return true;
+            }
+        }
+
         /// <summary>
         /// 손님 표의 값을 독립적인 런타임 주문으로 복사합니다. 튜토리얼 거절 뒤 요구사항도 원본과 분리합니다.
         /// </summary>
@@ -94,6 +118,7 @@ namespace WeaponWorkshop
                 {
                     CheckRequests(requests, new[] { entry?.id }, "손님 풀 " + pool.id);
                     CheckRequests(requests, entry?.excludes, "손님 풀 " + pool.id);
+                    CheckRequests(requests, entry?.requiredRequestIds, "필수 동반 요청 " + pool.id);
                 }
             }
         }

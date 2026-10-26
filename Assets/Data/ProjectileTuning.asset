@@ -22,13 +22,16 @@ MonoBehaviour:
     m_Bits: 819
   muzzleFlashEffect: {fileID: 3318018436952283046, guid: 97b79d0929b545e485dbe8b963558888, type: 3}
   shotgunSpreadDegrees: 10
-  chargeSecondsPerLevel: 0.5
+  chargeSecondsPerLevel: 1
+  chargeSecondsPerExtraStage: 0.33333334
   chargeBaseStages: 3
   chargeStagesPerExtraModule: 1
   chargeFirstStageMultiplier: 1.1
   chargeStageStep: 0.2
   chargeMultiplierPerExtraModule: 0.1
   chargeMaxStageBonus: 0.3
+  chargeScaleGrowthPerSecond: 0.6
+  chargeBurstInterval: 0.1
   chargeEffect: {fileID: 2758758016587575475, guid: 7a68471177a262040abf09b8c861a998, type: 3}
   chargeShakeDistance: 0.012
   flameRange: 6

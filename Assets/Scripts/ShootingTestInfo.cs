@@ -28,9 +28,43 @@ namespace WeaponWorkshop
         }
         private static bool HasValidModuleRequirements(ShootingTestTableData.Entry row)
         {
+            foreach (string name in row.requiredUnlockModules ?? Array.Empty<string>())
+                if (!TryUnlockKind(name, out _)) return false;
             foreach (var requirement in row.requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
                 if (!TryGetModuleKind(requirement, out _)) return false;
             return true;
+        }
+        private static bool TryUnlockKind(string name, out ModuleKind kind)
+            => Enum.TryParse(name, false, out kind) && Enum.IsDefined(typeof(ModuleKind), kind);
+
+        // 주문 등장과 시험 시작이 같은 해금 조건을 사용한다. 무기의 실제 장착 모듈은 검사하지 않는다.
+        public static bool CanStart(this ShootingTestTableData table, string id, PlayerModuleUnlocks unlocks)
+        {
+            if (!table.IsAvailable(id)) return false;
+            var row = table.Find(id);
+            foreach (string name in row.requiredUnlockModules ?? Array.Empty<string>())
+                if (!TryUnlockKind(name, out var kind) || unlocks == null || !unlocks.IsUnlocked(kind)) return false;
+            foreach (var requirement in row.requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
+                if (!TryGetModuleKind(requirement, out var kind) || unlocks == null || !unlocks.IsUnlocked(kind)) return false;
+            return true;
+        }
+
+        public static string UnlockDescription(this ShootingTestTableData table, string id, PlayerModuleUnlocks unlocks)
+        {
+            var names = new List<string>();
+            var row = table.Find(id);
+            foreach (string name in row?.requiredUnlockModules ?? Array.Empty<string>()) AddName(name);
+            foreach (var requirement in row?.requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
+                AddName(requirement?.kind);
+            return names.Count == 0 ? "" : string.Join("·", names) + " 모듈 해금 필요";
+
+            void AddName(string name)
+            {
+                if (!TryUnlockKind(name, out var kind) || (unlocks != null && unlocks.IsUnlocked(kind))) return;
+                var module = unlocks != null ? unlocks.FindModule(kind) : null;
+                string label = module != null ? module.DisplayName : name;
+                if (!names.Contains(label)) names.Add(label);
+            }
         }
         public static void Validate(ShootingTestTableData table)
         {

@@ -19,11 +19,16 @@ namespace WeaponWorkshop
         private readonly List<WeaponTypeData> matchedTypes = new List<WeaponTypeData>();
         private WeaponStats currentStats;
         private bool dirty = true;
+        private bool recalculating;
+        private CubeAssembly assembly;
+        private PowerCore core;
+        private uint calculatedRevision;
+        private TableManager calculatedTables;
 
-        public WeaponStats CurrentStats => currentStats;
+        public WeaponStats CurrentStats { get { EnsureCurrent(); return currentStats; } }
         public CoreBaseStats BaseStats => baseStats;
-        public IReadOnlyList<ModuleData> Modules => modules;
-        public IReadOnlyList<WeaponTypeData> MatchedTypes => matchedTypes;
+        public IReadOnlyList<ModuleData> Modules { get { EnsureCurrent(); return modules; } }
+        public IReadOnlyList<WeaponTypeData> MatchedTypes { get { EnsureCurrent(); return matchedTypes; } }
         public event System.Action<StatCollector> StatsChanged;
 
         private void Awake()
@@ -37,44 +42,64 @@ namespace WeaponWorkshop
             Recalculate();
         }
 
-        private void OnTransformChildrenChanged() => dirty = true;
+        internal void MarkDirty() => dirty = true;
+        private void OnTransformChildrenChanged() => MarkDirty();
+        private void OnValidate() { dirty = true; WeaponAnalysis.NotifyConfigurationChanged(); }
+
+        private void EnsureCurrent()
+        {
+            if (recalculating) return;
+            if (assembly == null) TryGetComponent(out assembly);
+            if (dirty || (assembly != null && calculatedRevision != assembly.Analysis.Revision) ||
+                !ReferenceEquals(calculatedTables, TableManager.Instance)) Recalculate();
+        }
 
         private void LateUpdate()
         {
-            if (dirty) Recalculate();
+            EnsureCurrent();
         }
 
         public void Recalculate()
         {
-            dirty = false;
-            currentStats = baseStats != null ? baseStats.Stats : new WeaponStats { fireRate = 1f };
-            modules.Clear();
-            // 배열을 새로 만들지 않도록 스캔 결과를 재사용 목록에 받는다.
-            moduleScan.Clear();
-            GetComponentsInChildren(false, moduleScan);
-            foreach (ModuleStats module in moduleScan)
+            if (recalculating) return;
+            recalculating = true;
+            try
             {
-                // 삭제 대기 중인 블록은 비활성 상태이므로 GetComponentsInChildren에서 제외된다.
-                if (module.Data == null) continue;
-                modules.Add(module.Data);
-            }
+                if (assembly == null) TryGetComponent(out assembly);
+                if (core == null) TryGetComponent(out core);
+                if (statsSource == null) TryGetComponent(out statsSource);
+                currentStats = baseStats != null ? baseStats.Stats : new WeaponStats { fireRate = 1f };
+                modules.Clear();
+                // 배열을 새로 만들지 않도록 스캔 결과를 재사용 목록에 받는다.
+                moduleScan.Clear();
+                GetComponentsInChildren(false, moduleScan);
+                foreach (ModuleStats module in moduleScan)
+                {
+                    // 삭제 대기 중인 블록은 비활성 상태이므로 GetComponentsInChildren에서 제외된다.
+                    if (module.Data == null) continue;
+                    modules.Add(module.Data);
+                }
 
-            var assembly = GetComponent<CubeAssembly>();
-            currentStats = WeaponAssemblyStats.Calculate(assembly, currentStats);
-            // Set the base before reading real muzzle stats; path effects never come from a stale whole-weapon cache.
-            if (statsSource != null && baseStats != null) statsSource.SetWeaponStats(baseStats.Stats);
-            var snapshot = new CustomerRequestInfo.WeaponSnapshot(GetComponent<PowerCore>());
-            matchedTypes.Clear();
-            if (weaponTypes != null)
-                foreach (WeaponTypeData type in weaponTypes)
-                    if (type != null && TableManager.Instance.CustomerRequest.MeetsTag(type.TableId, snapshot)) matchedTypes.Add(type);
+                // Set the base before reading real muzzle stats; path effects never come from a stale whole-weapon cache.
+                if (statsSource != null && baseStats != null) statsSource.SetWeaponStats(baseStats.Stats);
+                currentStats = assembly != null ? assembly.Analysis.GetWholeStats(currentStats) : currentStats;
+                var snapshot = CustomerRequestInfo.GetSnapshot(core);
+                matchedTypes.Clear();
+                if (weaponTypes != null)
+                    foreach (WeaponTypeData type in weaponTypes)
+                        if (type != null && TableManager.Instance.CustomerRequest.MeetsTag(type.TableId, snapshot)) matchedTypes.Add(type);
 
-            // Projectiles get only the core base; each muzzle adds the modules on its own route.
-            if (statsSource != null && baseStats != null)
-            {
-                statsSource.SetWeaponStats(baseStats.Stats);
-                statsSource.SetBaseDamage(baseStats.BaseDamage);
+                // Projectiles get only the core base; each muzzle adds the modules on its own route.
+                if (statsSource != null && baseStats != null)
+                {
+                    statsSource.SetWeaponStats(baseStats.Stats);
+                    statsSource.SetBaseDamage(baseStats.BaseDamage);
+                }
+                calculatedRevision = assembly != null ? assembly.Analysis.Revision : 0;
+                calculatedTables = TableManager.Instance;
+                dirty = false;
             }
+            finally { recalculating = false; }
             StatsChanged?.Invoke(this);
         }
     }

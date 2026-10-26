@@ -116,6 +116,7 @@ namespace WeaponWorkshop
             EquipableWeapon weapon = session != null && session.IsEditing && session.ActiveWorkbench != null
                 ? session.ActiveWorkbench.CurrentWeapon
                 : holder != null ? holder.EquippedWeapon : null;
+            if (!isTutorialTagMode) customer.RevealCompletedRequests(weapon);
             if (Time.unscaledTime < m_nextUpdate && m_previousCustomer == customer && m_previousWeapon == weapon &&
                 m_previousStep == currentStep)
             {
@@ -153,16 +154,18 @@ namespace WeaponWorkshop
 
             if (m_save == null) m_save = Object.FindFirstObjectByType<GameSaveController>();
             var quote = CustomerRewardInfo.Calculate(customer.Profile, weapon, CustomerRewardInfo.SaleMultiplier(m_save), snapshot);
+            int weaponValue = CustomerRewardInfo.CurrentWeaponValue(weapon);
             m_rows.Clear();
-            AddRow("손님 요청사항", true, 0, true);
+            AddRow($"예상 보수 금액: ${quote.price:N0}", true, 0, true);
+            AddRow($"현재 총기 가치: ${weaponValue:N0}", true, 0, true);
+            string bonus = quote.matchedRequests > 0 && quote.multiplier > 1f
+                ? $" (야간 습격 보너스 x {quote.multiplier:0.##} 적용)" : string.Empty;
+            long profit = (long)quote.price - weaponValue;
+            AddRow($"예상 수익: {(profit < 0 ? "-" : "")}${System.Math.Abs(profit):N0}{bonus}", true, 0, true);
             if (customer.Profile != null && customer.Profile.IsDifficult)
             {
-                float percent = TableManager.Instance.CustomerOrder.sale.difficultCustomerRatio * 100f;
-                AddRow($"제출 보상: 제작비의 {percent:0.#}%\n현재 지급액 ${quote.price:N0}", true, 0, true);
-            }
-            else
-            {
-                AddRow($"현재 지급액 ${quote.price:N0} / 최대 ${quote.maximumPrice:N0}\n계약 보상 배율 ×{quote.multiplier:0.##}", true, 0, true);
+                float percent = TableManager.Instance.CustomerOrder.sale.failedSaleRatio * 100f;
+                AddRow($"진상 손님: 총기 가치의 {percent:0.#}% 지급", true, 0, true);
             }
             string[] ids = customer.Profile != null ? customer.Profile.RequestIds : null;
             if (ids == null)
@@ -177,6 +180,7 @@ namespace WeaponWorkshop
             {
                 foreach (string id in ids)
                 {
+                    if (!customer.IsRequestVisible(id)) continue;
                     AddRequestRows(table, id, snapshot, CustomerRewardInfo.ContractReward(customer.Profile, id));
                 }
             }
@@ -194,24 +198,17 @@ namespace WeaponWorkshop
                 return;
             }
 
-            CustomerRequestData.Tag tag = _table.FindTag(request.tagId);
-            bool grouped = tag != null || request.conditions == null || request.conditions.Length != 1 ||
-                (request.requiredTestIds != null && request.requiredTestIds.Length > 0);
-            int depth = grouped ? 1 : 0;
-            if (grouped)
-            {
-                AddRow((tag != null ? tag.name + " 태그" : request.name) + $" · ${_reward:N0}", _table.MeetsRequest(_id, _snapshot), 0);
-            }
+            AddRow($"{_table.Phrase(_id)} (달성 시 보수: ${_reward:N0})", _table.MeetsRequest(_id, _snapshot), 0);
 
             foreach (CustomerRequestData.Condition condition in _table.Conditions(request))
             {
                 if (condition == null)
                 {
-                    AddRow("요청 조건을 확인할 수 없습니다.", false, depth);
+                    AddRow("- 요청 조건을 확인할 수 없습니다.", false, 1);
                 }
                 else
                 {
-                    AddRow(Describe(condition, _snapshot.Value(condition)) + (grouped ? "" : $" · ${_reward:N0}"), _snapshot.Meets(condition), depth);
+                    AddRow("- " + Describe(condition, _snapshot.Value(condition)), _snapshot.Meets(condition), 1);
                 }
             }
 
@@ -219,7 +216,7 @@ namespace WeaponWorkshop
             {
                 ShootingTestTableData.Entry test = TableManager.Instance.ShootingTestTable.Find(testId);
                 bool passed = _snapshot.HasPassedTest(testId);
-                AddRow((test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, depth);
+                AddRow("- " + (test?.name ?? "미등록 사격 테스트") + ": " + (passed ? "통과" : "미통과"), passed, 1);
             }
         }
 

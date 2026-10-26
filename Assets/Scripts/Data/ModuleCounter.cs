@@ -43,7 +43,7 @@ namespace WeaponWorkshop
         {
             type = default;
             if (block == null) return false;
-            ModuleStats module = block.GetComponent<ModuleStats>();
+            block.TryGetComponent<ModuleStats>(out var module);
             if (module == null || module.Data == null || module.Data.ModuleType == StatType.Weight) return false;
             type = module.Data.ModuleType;
             return true;
@@ -60,7 +60,7 @@ namespace WeaponWorkshop
             => kind != ModuleKind.Extension && kind != ModuleKind.SplitTwo && kind != ModuleKind.SplitFour;
 
         public static int TotalCount(CubeAssembly assembly, ModuleKind kind)
-            => TotalCounts(assembly).TryGetValue(kind, out int count) ? count : 0;
+            => assembly != null ? assembly.Analysis.TotalCount(kind) : 0;
 
         public static int MaxPathCount(CubeAssembly assembly, ModuleKind kind)
             => MaxPathCounts(assembly).TryGetValue(kind, out int count) ? count : 0;
@@ -79,14 +79,7 @@ namespace WeaponWorkshop
         /// <summary>Every kind's total count (kinds with zero modules are omitted).</summary>
         public static Dictionary<ModuleKind, int> TotalCounts(CubeAssembly assembly)
         {
-            var counts = new Dictionary<ModuleKind, int>();
-            if (assembly == null) return counts;
-            foreach (PlacedBlock block in assembly.GetComponentsInChildren<PlacedBlock>())
-            {
-                if (block.transform.parent != assembly.transform || !TryGetKind(block, out ModuleKind kind)) continue;
-                counts[kind] = counts.TryGetValue(kind, out int count) ? count + 1 : 1;
-            }
-            return counts;
+            return assembly != null ? assembly.Analysis.CopyTotalCounts() : new Dictionary<ModuleKind, int>();
         }
 
         /// <summary>Every kind's highest count on a single firing path (zero kinds omitted).</summary>
@@ -95,7 +88,7 @@ namespace WeaponWorkshop
             var best = new Dictionary<ModuleKind, int>();
             if (assembly == null) return best;
             var pathCounts = new Dictionary<ModuleKind, int>();
-            foreach (var muzzle in assembly.GetProjectilePaths())
+            foreach (var muzzle in assembly.Analysis.Paths)
             {
                 pathCounts.Clear();
                 foreach (PlacedBlock block in muzzle.path)
@@ -120,7 +113,7 @@ namespace WeaponWorkshop
         {
             if (assembly == null) return 0;
             int best = 0;
-            foreach (var muzzle in assembly.GetProjectilePaths())
+            foreach (var muzzle in assembly.Analysis.Paths)
             {
                 int count = 0;
                 foreach (PlacedBlock block in muzzle.path)

@@ -10,7 +10,7 @@ namespace WeaponWorkshop
         [SerializeField] private TargetBell bell;
         [SerializeField] private Transform layoutPoint;
         [SerializeField, Min(.1f)] private float retryDistance = 3f;
-        private ShootingTestData definition;
+        private ShootingTestBinding definition;
         private GameObject layout;
         private ShootingTestTarget[] targets;
         private DestructibleTarget[] destructibles;
@@ -25,7 +25,7 @@ namespace WeaponWorkshop
         private float nextSummary;
         public TargetBell Bell => bell;
         public TestState State { get; private set; }
-        public ShootingTestData Definition => definition;
+        public ShootingTestBinding Definition => definition;
         public float RemainingSeconds { get; private set; }
         public string StatusText { get; private set; } = "";
         public int NonForwardMuzzles { get; private set; }
@@ -37,13 +37,17 @@ namespace WeaponWorkshop
 
         private void Awake() { State = TestState.Idle; RemainingSeconds = 0f; }
 
-        public bool Prepare(ShootingTestData data, FirstPersonPlayer sourcePlayer, out string error)
+        public bool Prepare(ShootingTestBinding data, FirstPersonPlayer sourcePlayer, out string error)
         {
             error = null;
             if (IsActive) { error = "진행 중인 테스트를 먼저 종료하세요."; return false; }
             if (data == null || !data.IsAvailable || data.LayoutPrefab == null || layoutPoint == null || sourcePlayer == null || bell == null ||
                 data.TimeLimit <= 0f || float.IsNaN(data.TimeLimit) || float.IsInfinity(data.TimeLimit))
             { error = "사격 테스트 설정을 확인하세요."; return false; }
+            var tests = TableManager.Instance.ShootingTestTable;
+            var unlocks = sourcePlayer.GetComponent<PlayerModuleUnlocks>();
+            if (!tests.CanStart(data.Id, unlocks))
+            { error = tests.UnlockDescription(data.Id, unlocks); return false; }
             var sourceHolder = sourcePlayer.GetComponent<WeaponHolder>();
             var equipped = sourceHolder != null ? sourceHolder.EquippedWeapon : null;
             if (equipped == null || equipped.IsMoving) { error = "테스트할 총을 손에 들고 시작하세요."; return false; }
@@ -97,7 +101,7 @@ namespace WeaponWorkshop
             State = TestState.Prepared;
             holder.EquippedWeaponChanged += OnEquippedWeaponChanged;
             weapon.AssemblyChanged += OnAssemblyChanged;
-            StatusText = data.Instructions;
+            BuildSummary(0, goals);
             playerTest.Bind(this); hud.Bind(this);
             return true;
         }
@@ -158,9 +162,10 @@ namespace WeaponWorkshop
             foreach (var target in targets)
             {
                 if (target == null || target.IsProtected) continue;
-                summary.Append(target.DisplayName).Append(' ').Append(Mathf.RoundToInt(target.Destruction * 100f)).Append("%  ");
+                summary.Append(target.DisplayName).Append(' ').Append(Mathf.RoundToInt(target.Destruction * 100f)).Append("% · ")
+                    .Append(target.ResistanceDescription).Append('\n');
             }
-            summary.Append("\n").Append(definition.Instructions);
+            summary.Append(definition.Instructions);
             StatusText = summary.ToString();
         }
 

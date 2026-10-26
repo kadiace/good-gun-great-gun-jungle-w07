@@ -21,10 +21,7 @@ namespace WeaponWorkshop
                 foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
                 {
                     var tests = TableManager.Instance.ShootingTestTable;
-                    if (!tests.IsAvailable(testId)) return false;
-                    foreach (var requirement in tests.Find(testId).requiredModules ?? Array.Empty<ShootingTestTableData.ModuleRequirement>())
-                        if (!ShootingTestInfo.TryGetModuleKind(requirement, out var kind) ||
-                            unlocks == null || !unlocks.IsUnlocked(kind) || unlocks.FindModule(kind) == null) return false;
+                    if (!tests.CanStart(testId, unlocks)) return false;
                 }
                 foreach (var condition in table.Conditions(row))
                 {
@@ -35,6 +32,9 @@ namespace WeaponWorkshop
                         case GunMeasure.Shape:
                         case GunMeasure.PaintedFaces:
                         case GunMeasure.PaintedColorFaces:
+                        case GunMeasure.StickerFaces:
+                        case GunMeasure.Keyrings:
+                        case GunMeasure.BasicCore:
                             break; // 제작비·영역·도색은 특정 스탯 모듈 해금을 요구하지 않는다.
                         case GunMeasure.ColorModules:
                             if (unlocks == null || !unlocks.IsUnlocked(ModuleKind.Color)) return false;
@@ -90,11 +90,13 @@ namespace WeaponWorkshop
                         case GunMeasure.SplitTwoBlocks: Need(ModuleKind.SplitTwo, Mathf.CeilToInt(condition.min), need); break;
                         case GunMeasure.SplitFourBlocks: Need(ModuleKind.SplitFour, Mathf.CeilToInt(condition.min), need); break;
                         case GunMeasure.ConstructionCost:
-                            constructionMinimum = Mathf.Max(constructionMinimum, Mathf.CeilToInt(condition.min));
+                            constructionMinimum = Mathf.Max(constructionMinimum, Mathf.FloorToInt(condition.min) +
+                                (condition.minExclusive ? 1 : condition.min % 1f > 0 ? 1 : 0));
                             break;
                         case GunMeasure.TotalModules: case GunMeasure.Muzzles:
                         case GunMeasure.Shape:
-                        case GunMeasure.PaintedFaces: case GunMeasure.PaintedColorFaces: break;
+                         case GunMeasure.PaintedFaces: case GunMeasure.PaintedColorFaces:
+                         case GunMeasure.StickerFaces: case GunMeasure.Keyrings: case GunMeasure.BasicCore: break;
                         case GunMeasure.ColorModules: Need(ModuleKind.Color, Mathf.CeilToInt(condition.min), need); break;
                         default:
                             if (!ModuleCounter.TryToKind(condition.Stat, out var kind)) break;

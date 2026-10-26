@@ -9,6 +9,26 @@
       "minRequests": 1,
       "maxRequests": 3,
       "requests": [
+        {"id":"module/pure","unlockDay":1},
+        {"id":"module/nine-barrel","unlockDay":1},
+        {"id":"module/speed","unlockDay":1},
+        {"id":"module/spin","unlockDay":1},
+        {"id":"module/water","unlockDay":1},
+        {"id":"module/charge","unlockDay":1},
+        {"id":"module/ricochet","unlockDay":1},
+        {"id":"module/heat","unlockDay":1},
+        {"id":"module/gravity","unlockDay":1},
+        {"id":"module/homing","unlockDay":1},
+        {"id":"module/basic-core","unlockDay":1},
+        {"id":"custom/sticker","unlockDay":1},
+        {"id":"custom/keyring","unlockDay":1},
+        {"id":"construction/premium","unlockDay":1},
+        {"id":"construction/value","unlockDay":1},
+        {"id":"module/stat-modules/exact-0","unlockDay":1},
+        {"id":"module/fire-rate/min-1","unlockDay":1},
+        {"id":"module/penetration/min-1","unlockDay":1},
+        {"id":"module/shotgun/min-1","unlockDay":1},
+        {"id":"module/explosion","unlockDay":1},
         {
           "id": "construction/cost-1500",
           "unlockDay": 2
@@ -22,16 +42,11 @@
           "unlockDay": 2
         },
         {
-          "id": "module/scope/min-1",
-          "unlockDay": 1
-        },
-        {
           "id": "module/split-two/min-1",
-          "unlockDay": 1
-        },
-        {
-          "id": "module/split-four/min-1",
-          "unlockDay": 1
+          "unlockDay": 1,
+          "requiredRequestIds": [
+            "shooting-test/around-cover"
+          ]
         },
         {
           "id": "tag/assault-rifle",
@@ -43,11 +58,11 @@
         },
         {
           "id": "tag/flamethrower",
-          "unlockDay": 2
+          "unlockDay": 1
         },
         {
           "id": "tag/gravity-gun",
-          "unlockDay": 7
+          "unlockDay": 1
         },
         {
           "id": "tag/grenade-launcher",
@@ -55,27 +70,22 @@
         },
         {
           "id": "tag/homing",
-          "unlockDay": 5
+          "unlockDay": 1
         },
         {
           "id": "tag/mini-nuke",
           "unlockDay": 1,
-          "excludes": [
-            "tag/handgun",
-            "tag/grenade-launcher"
+          "requiredRequestIds": [
+            "shooting-test/around-cover"
           ]
         },
         {
           "id": "tag/handgun",
-          "unlockDay": 1,
-          "excludes": [
-            "module/scope/min-1",
-            "tag/mini-nuke"
-          ]
+          "unlockDay": 1
         },
         {
           "id": "tag/ricochet",
-          "unlockDay": 4
+          "unlockDay": 1
         },
         {
           "id": "module/shotgun/min-1",
@@ -83,7 +93,7 @@
         },
         {
           "id": "tag/shotgun",
-          "unlockDay": 3
+          "unlockDay": 1
         },
         {
           "id": "tag/sniper-rifle",
@@ -91,23 +101,33 @@
         },
         {
           "id": "tag/spin",
-          "unlockDay": 6
+          "unlockDay": 1,
+          "requiredRequestIds": [
+            "shooting-test/around-cover"
+          ]
         },
         {
           "id": "tag/water-gun",
-          "unlockDay": 3
+          "unlockDay": 1
         },
         {
           "id": "shooting-test/around-cover",
-          "unlockDay": 4
+          "unlockDay": 2
         },
         {
           "id": "shooting-test/behind-barrier",
-          "unlockDay": 5
+          "unlockDay": 2
         },
         {
           "id": "shooting-test/wide-targets",
-          "unlockDay": 6
+          "unlockDay": 4
+        },
+        {
+          "id": "module/split-four/min-1",
+          "unlockDay": 1,
+          "requiredRequestIds": [
+            "shooting-test/around-cover"
+          ]
         }
       ],
       "orderTemplates": [
@@ -767,7 +787,7 @@
         "저격총 태그와 유도 태그를 함께 원해요!"
       ],
       "endsClear": true,
-      "happyLine": "백숙을 삶아먹으라~[Personne n'échappe à mon regard]",
+      "happyLine": "백숙을 삶아먹으라~ 내 눈을 피할 수는 없지!",
       "angryLine": "아 이게 안맞네;",
       "unlockDay": 5,
       "isDifficult": false

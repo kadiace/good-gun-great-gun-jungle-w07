@@ -1851,7 +1851,7 @@ MonoBehaviour:
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: 
+    description: "\uC624\uB298\uC758 \uC601\uC5C5 \uC815\uC0B0\uC744 \uB9C8\uCCE4\uC2B5\uB2C8\uB2E4. \uC790\uB9AC\uC138\uB97C \uB0B4\uC9C0\uBABB\uD558\uBA74 \uAC8C\uC784 \uC624\uBC84\uAC00 \uB429\uB2C8\uB2E4."
     confirmOnBackgroundClick: 0
     dialogueInputLockSeconds: 0
     objective: "\uC601\uC5C5 \uC815\uC0B0\uC744 \uD655\uC778\uD558\uACE0 \uC815\uC0B0
@@ -1898,13 +1898,11 @@ MonoBehaviour:
       \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
     allowedActions:
     - none
-  - id: customer-variety
+  - id: raid-retry
     setBalanceOnStart: -1
     restoreWithheldBalanceOnComplete: 0
     title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "\uC774\uCC98\uB7FC \uC190\uB2D8\uC740 \uC800\uB9C8\uB2E4 \uB2E4\uC591\uD55C
-      \uC694\uAD6C\uB97C \uD569\uB2C8\uB2E4.\n\uC0C1\uD669\uC744 \uC0B4\uD53C\uBA70
-      \uC720\uC5F0\uD558\uAC8C \uB300\uCC98\uD558\uC138\uC694."
+    description: "\uC774\uC81C \uC791\uC5C5\uB300\uC5D0\uC11C \uB098\uB9CC\uC758 \uBB34\uAE30\uB97C \uB9CC\uB4E4 \uC2DC\uAC04\uC785\uB2C8\uB2E4."
     confirmOnBackgroundClick: 0
     dialogueInputLockSeconds: 0
     objective: 
@@ -1941,112 +1939,6 @@ MonoBehaviour:
     preparedWeaponPrefab: {fileID: 0}
     preparedWeaponOpenCells: []
     discardHeldWeapon: 1
-    allowedModuleIds: 01000000080000000500000006000000
-    restrictQuickslotChange: 0
-    requiredQuickslotNumber: 2
-    requiredSignal: 
-    strictAllowedActions: 0
-    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
-      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
-    allowedActions: []
-  - id: settlement-introduction
-    setBalanceOnStart: -1
-    restoreWithheldBalanceOnComplete: 0
-    title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "\uC624\uB298\uC758 \uC601\uC5C5 \uC815\uC0B0\uC744 \uB9C8\uCCE4\uC2B5\uB2C8\uB2E4.\n\uADF8\uB0A0\uC758
-      \uC790\uB9AC\uC138\uB97C \uB0BC \uB3C8\uC774 \uBD80\uC871\uD558\uBA74 \uAC8C\uC784
-      \uC624\uBC84\uAC00 \uB429\uB2C8\uB2E4.\n\uC774\uC81C \uBC24\uC744 \uC900\uBE44\uD560
-      \uCC28\uB840\uC785\uB2C8\uB2E4. \uC57C\uAC04 \uC2B5\uACA9\uC744 \uB5A0\uB098\uAC70\uB098
-      \uB2E4\uC74C \uB0A0 \uC544\uCE68\uC744 \uC120\uD0DD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
-    confirmOnBackgroundClick: 0
-    dialogueInputLockSeconds: 0
-    objective: 
-    showDescriptionBeforeObjective: 0
-    allowWorkbenchReentry: 0
-    objectiveWhileChoiceOpen: 
-    choiceGuidance: 
-    completion: 0
-    target: 0
-    targetLabel: 
-    requiresWorkbenchEditing: 0
-    requiredRotationDegrees: 45
-    rotationGuide: 0
-    buttonGuide: 0
-    showMovementKeycaps: 0
-    showPlacementHints: 0
-    openCoreFace: {x: 0, y: 0, z: 1}
-    hintCells: []
-    requiredModuleId: 0
-    requiredTagId: 
-    showTagRequirement: 0
-    keepRecipeHighlight: 0
-    requiredCustomerCount: 0
-    requiredTargetDistance: 5
-    requiredCell: {x: 0, y: 0, z: 1}
-    requireOutputDirection: 0
-    excludeRequiredOutputDirection: 0
-    requiredOutputDirection: {x: 0, y: 0, z: 1}
-    restrictPlacement: 0
-    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
-      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
-    wrongModuleMessage: 
-    prepareBlockedCore: 0
-    preparedWeaponPrefab: {fileID: 0}
-    preparedWeaponOpenCells: []
-    discardHeldWeapon: 0
-    allowedModuleIds: 01000000080000000500000006000000
-    restrictQuickslotChange: 0
-    requiredQuickslotNumber: 2
-    requiredSignal: 
-    strictAllowedActions: 0
-    blockedActionMessage: "\uC9C0\uAE08\uC740 \uC548\uB0B4\uB41C \uD589\uB3D9\uB9CC
-      \uC9C4\uD589\uD574 \uC8FC\uC138\uC694."
-    allowedActions:
-    - none
-  - id: raid-retry
-    setBalanceOnStart: -1
-    restoreWithheldBalanceOnComplete: 0
-    title: "\uD29C\uD1A0\uB9AC\uC5BC"
-    description: "\uC601\uC5C5 \uC815\uC0B0\uC744 \uB9C8\uCCE4\uC2B5\uB2C8\uB2E4.
-      \uC774\uC81C \uC57C\uAC04 \uC2B5\uACA9\uC5D0 \uAC00\uC838\uAC08 \uBB34\uAE30\uB97C
-      \uC900\uBE44\uD569\uB2C8\uB2E4. \uC900\uBE44\uAC00 \uB05D\uB09C \uB4A4\uC5D0\uB9CC
-      \uC2B5\uACA9 \uC785\uAD6C\uB85C \uC774\uB3D9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
-    confirmOnBackgroundClick: 0
-    dialogueInputLockSeconds: 0
-    objective: 
-    showDescriptionBeforeObjective: 0
-    allowWorkbenchReentry: 0
-    objectiveWhileChoiceOpen: 
-    choiceGuidance: 
-    completion: 0
-    target: 0
-    targetLabel: 
-    requiresWorkbenchEditing: 0
-    requiredRotationDegrees: 45
-    rotationGuide: 0
-    buttonGuide: 0
-    showMovementKeycaps: 0
-    showPlacementHints: 0
-    openCoreFace: {x: 0, y: 0, z: 1}
-    hintCells: []
-    requiredModuleId: 0
-    requiredTagId: 
-    showTagRequirement: 0
-    keepRecipeHighlight: 0
-    requiredCustomerCount: 0
-    requiredTargetDistance: 5
-    requiredCell: {x: 0, y: 0, z: 1}
-    requireOutputDirection: 0
-    excludeRequiredOutputDirection: 0
-    requiredOutputDirection: {x: 0, y: 0, z: 1}
-    restrictPlacement: 0
-    blockedPlacementMessage: "\uC548\uB0B4\uB41C \uC704\uCE58\uC640 \uBC29\uD5A5\uC5D0
-      \uBAA8\uB4C8\uC744 \uC124\uCE58\uD574 \uBCF4\uC138\uC694."
-    wrongModuleMessage: 
-    prepareBlockedCore: 0
-    preparedWeaponPrefab: {fileID: 0}
-    preparedWeaponOpenCells: []
-    discardHeldWeapon: 0
     allowedModuleIds: 01000000080000000500000006000000
     restrictQuickslotChange: 0
     requiredQuickslotNumber: 2

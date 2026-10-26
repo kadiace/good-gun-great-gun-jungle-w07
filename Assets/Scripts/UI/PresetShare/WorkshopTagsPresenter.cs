@@ -7,25 +7,30 @@ namespace WeaponWorkshop
 {
     /// <summary>
     /// 공방 태그·스탯(무게, 판매가, 태그) 표시 로직을 담당하는 Presenter입니다.
-    /// 습격 임시 보상은 RaidTempRewardPresenter가 별도 처리하며, 이 Presenter는 공방 편집 모드일 때만 갱신합니다.
+    /// 습격 임시 보상은 별도 처리하며, 작업대 또는 장착 무기의 변경된 분석 결과를 표시합니다.
     /// </summary>
     public sealed class WorkshopTagsPresenter : IDisposable
     {
         private readonly WorkshopTagsView m_view;
         private readonly UIManager m_uiManager;
-        private readonly ShopCatalog m_shopCatalog;
         private readonly WeaponTypeData[] m_tagData;
         private readonly RaidModuleIcon[] m_raidModuleIcons;
         private readonly Sprite m_raidFallbackIcon;
 
         private PowerCore m_lastCore;
-        private float m_nextRefresh;
+        private uint m_lastRevision;
+        private TableManager m_lastTables;
+        private EquipableWeapon m_targetWeapon;
+        private PowerCore m_targetCore;
+        private FirstPersonPlayer m_cachedPlayer;
+        private WorkshopSession m_session;
         private float m_lastWeight = float.NaN;
         private int m_lastPrice = int.MinValue;
         private readonly List<CustomerRequestData.Tag> m_appliedTags = new List<CustomerRequestData.Tag>();
         private readonly List<CustomerRequestData.Tag> m_badgeTags = new List<CustomerRequestData.Tag>();
         private readonly List<WeaponTypeData> m_matchedTags = new List<WeaponTypeData>();
         private bool m_badgesDrawn;
+        private bool m_panelVisible;
         private bool m_isInitialized;
         private bool m_hasLoggedDependencyError;
 
@@ -34,7 +39,6 @@ namespace WeaponWorkshop
         {
             m_view = _view;
             m_uiManager = _uiManager;
-            m_shopCatalog = _shopCatalog;
             m_tagData = _tagData;
             m_raidModuleIcons = _raidModuleIcons;
             m_raidFallbackIcon = _raidFallbackIcon;
@@ -82,7 +86,12 @@ namespace WeaponWorkshop
             }
 
             m_lastCore = null;
-            m_nextRefresh = 0f;
+            m_panelVisible = false;
+            m_lastTables = null;
+            m_targetWeapon = null;
+            m_targetCore = null;
+            m_cachedPlayer = null;
+            m_session = null;
             m_lastWeight = float.NaN;
             m_lastPrice = int.MinValue;
             m_appliedTags.Clear();
@@ -93,7 +102,7 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 매 프레임 공방 편집 모드에서 태그·스탯을 갱신합니다.
+        /// 변경된 무기의 태그·스탯을 갱신합니다.
         /// 습격 중이면 RaidTempRewardPresenter가 별도 표시하므로 건너뜁니다.
         /// </summary>
         public void Tick()
@@ -106,6 +115,7 @@ namespace WeaponWorkshop
             if (m_uiManager == null)
             {
                 m_view.SetPanelVisible(false);
+                m_panelVisible = false;
                 return;
             }
 
@@ -113,26 +123,37 @@ namespace WeaponWorkshop
             if (raid != null && raid.IsInRaid)
             {
                 m_view.SetPanelVisible(false);
+                m_panelVisible = false;
                 return;
             }
 
             var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
-            var session = player != null ? player.GetComponent<WorkshopSession>() : null;
-            var bench = session != null && session.IsEditing ? session.ActiveWorkbench : null;
+            if (m_cachedPlayer != player)
+            {
+                m_cachedPlayer = player;
+                m_session = player != null ? player.GetComponent<WorkshopSession>() : null;
+            }
+            var bench = m_session != null && m_session.IsEditing ? m_session.ActiveWorkbench : null;
             var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             var weapon = bench != null ? bench.CurrentWeapon : holder != null ? holder.EquippedWeapon : null;
-            var core = weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null;
+            if (m_targetWeapon != weapon || (weapon != null && m_targetCore == null))
+            {
+                m_targetWeapon = weapon;
+                m_targetCore = weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null;
+            }
+            var core = m_targetCore;
             bool visible = core != null;
 
-            if (m_view != null && m_view.gameObject.activeInHierarchy != visible)
+            if (m_view != null && m_panelVisible != visible)
             {
                 m_view.SetPanelVisible(visible);
+                m_panelVisible = visible;
             }
 
             if (!visible)
             {
                 m_lastCore = null;
-                m_nextRefresh = 0f;
+                m_lastTables = null;
                 m_lastWeight = float.NaN;
                 m_lastPrice = int.MinValue;
                 m_appliedTags.Clear();
@@ -140,13 +161,15 @@ namespace WeaponWorkshop
                 return;
             }
 
-            if (m_lastCore == core && Time.unscaledTime < m_nextRefresh)
+            core.TryGetComponent<CubeAssembly>(out var assembly);
+            var tables = TableManager.Instance;
+            uint revision = assembly != null ? assembly.Analysis.Revision : 0;
+            if (assembly != null && m_lastCore == core && m_lastRevision == revision && ReferenceEquals(m_lastTables, tables))
             {
                 return;
             }
 
             m_lastCore = core;
-            m_nextRefresh = Time.unscaledTime + 0.1f;
 
             var stats = core.GetCurrentStats();
             if (m_view != null && m_lastWeight != stats.weight)
@@ -155,7 +178,8 @@ namespace WeaponWorkshop
                 m_view.SetWeightText($"무게  {stats.weight:0.##}");
             }
 
-            GetMatchedTags(core, m_matchedTags);
+            var snapshot = CustomerRequestInfo.GetSnapshot(core);
+            GetMatchedTags(snapshot, m_matchedTags);
 
             if (m_view != null && m_tagData != null)
             {
@@ -167,7 +191,6 @@ namespace WeaponWorkshop
                     {
                         if (tag != null)
                         {
-                            var snapshot = new CustomerRequestInfo.WeaponSnapshot(core);
                             if (table.MeetsTag(tag.id, snapshot))
                             {
                                 m_badgeTags.Add(tag);
@@ -190,15 +213,16 @@ namespace WeaponWorkshop
 
             if (m_view != null)
             {
-                var collector = core.GetComponent<StatCollector>();
-                int price = m_shopCatalog != null && collector != null
-                    ? m_shopCatalog.GetSellPrice(collector.Modules, m_matchedTags) : 0;
+                core.TryGetComponent<StatCollector>(out var collector);
+                int price = collector != null ? ModulePriceTotal(collector.Modules) : 0;
                 if (price != m_lastPrice)
                 {
                     m_lastPrice = price;
                     m_view.SetSalePriceText($"총기 가치  <nobr>${price:N0}</nobr>");
                 }
             }
+            m_lastRevision = assembly != null ? assembly.Analysis.Revision : revision;
+            m_lastTables = tables;
         }
 
         /// <summary>
@@ -206,13 +230,16 @@ namespace WeaponWorkshop
         /// </summary>
         public void HandleDisabled()
         {
+            m_panelVisible = false;
             if (m_view != null)
             {
                 m_view.SetPanelVisible(false);
             }
 
             m_lastCore = null;
-            m_nextRefresh = 0f;
+            m_lastTables = null;
+            m_targetWeapon = null;
+            m_targetCore = null;
             m_lastWeight = float.NaN;
             m_lastPrice = int.MinValue;
             m_appliedTags.Clear();
@@ -220,14 +247,16 @@ namespace WeaponWorkshop
         }
 
         private void GetMatchedTags(PowerCore _core, List<WeaponTypeData> _result)
+            => GetMatchedTags(_core != null ? CustomerRequestInfo.GetSnapshot(_core) : null, _result);
+
+        private void GetMatchedTags(CustomerRequestInfo.WeaponSnapshot snapshot, List<WeaponTypeData> _result)
         {
             _result.Clear();
-            if (_core == null || m_tagData == null || m_tagData.Length == 0)
+            if (snapshot == null || !snapshot.HasWeapon || m_tagData == null || m_tagData.Length == 0)
             {
                 return;
             }
 
-            var snapshot = new CustomerRequestInfo.WeaponSnapshot(_core);
             var table = TableManager.Instance?.CustomerRequest;
             if (table == null)
             {
@@ -241,6 +270,22 @@ namespace WeaponWorkshop
                     _result.Add(tag);
                 }
             }
+        }
+
+        public int GetWeaponValue(EquipableWeapon weapon)
+        {
+            if (weapon == null) return 0;
+            PowerCore core = weapon.GetComponentInChildren<PowerCore>(true);
+            if (core == null || !core.TryGetComponent<StatCollector>(out var collector)) return 0;
+            return ModulePriceTotal(collector.Modules);
+        }
+
+        private static int ModulePriceTotal(IEnumerable<ModuleData> modules)
+        {
+            long total = 0;
+            foreach (ModuleData module in modules)
+                if (module != null) total += module.BuyPrice;
+            return (int)Math.Min(total, int.MaxValue);
         }
 
         private static bool SameTags(List<CustomerRequestData.Tag> _current, List<CustomerRequestData.Tag> _applied)
@@ -265,6 +310,7 @@ namespace WeaponWorkshop
             if (m_view != null)
             {
                 m_view.SetPanelVisible(true);
+                m_panelVisible = true;
             }
         }
 
@@ -282,6 +328,7 @@ namespace WeaponWorkshop
             {
                 m_view.LeaveRaidRewards();
             }
+            HandleDisabled();
         }
 
         /// <summary>

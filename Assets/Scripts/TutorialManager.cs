@@ -309,16 +309,25 @@ namespace WeaponWorkshop
                 BeginRetirementFinalStep(step);
                 return;
             }
+            bool isSettlementIntro = dayZeroOwner != null &&
+                step.id == "close-and-settle" &&
+                step.completion == TutorialCompletion.SettlementClosed &&
+                !string.IsNullOrWhiteSpace(step.description);
             if (step.completion == TutorialCompletion.Confirmation ||
                 (step.completion == TutorialCompletion.Signal && step.showDescriptionBeforeObjective &&
-                    !string.IsNullOrWhiteSpace(step.description)))
+                    !string.IsNullOrWhiteSpace(step.description)) ||
+                isSettlementIntro)
             {
                 if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
-                stepIntroductionOpen = step.completion == TutorialCompletion.Signal;
+                stepIntroductionOpen = step.completion == TutorialCompletion.Signal || isSettlementIntro;
                 ownsDialogue = true;
                 if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼", step.confirmOnBackgroundClick,
                         step.dialogueInputLockSeconds))
                 { ownsDialogue = false; Finish("error"); }
+                if (isSettlementIntro)
+                {
+                    dialogue.SetClickBlockerActive(false);
+                }
             }
             else if (step.completion == TutorialCompletion.RaidTankSpawned)
             {
@@ -327,6 +336,88 @@ namespace WeaponWorkshop
             }
             else ReleaseDialogue();
         }
+        /// <summary>
+        /// 0일차 삭제 모드 관련 안내 대화(delete-introduction, disable-delete-introduction) 중 E 단축 입력을 허용할 수 있는 상태인지 판정합니다.
+        /// 안내 대화가 열려 있고 작업대 편집 상태여야 하며, 일시정지나 선택창·화면 전환 중에는 허용하지 않습니다.
+        /// </summary>
+        /// <param name="targetDeleteMode">단축 입력 처리 시 설정할 삭제 모드 목표 상태(켜기: true, 끄기: false)입니다.</param>
+        public bool CanShortcutDeleteModeGuide(out bool targetDeleteMode)
+        {
+            targetDeleteMode = false;
+            if (!IsGuidedDayZero || CurrentStep == null) return false;
+            if (CurrentStep.completion != TutorialCompletion.Confirmation) return false;
+            if (!ownsDialogue || dialogue == null || !dialogue.IsOpen) return false;
+            if (GameManager.Instance == null || GameManager.Instance.IsPaused || GameManager.Instance.UI.IsChoiceOpen) return false;
+            if (dayTransition != null && dayTransition.IsTransitioning) return false;
+
+            var player = TutorialPlayer;
+            var session = player != null ? player.GetComponent<WorkshopSession>() : null;
+            if (session == null || !session.IsInWorkshop) return false;
+            if (workbench != null && session.ActiveWorkbench != null && session.ActiveWorkbench != workbench) return false;
+
+            if (CurrentStep.id == "delete-introduction")
+            {
+                targetDeleteMode = true;
+                return true;
+            }
+            if (CurrentStep.id == "disable-delete-introduction")
+            {
+                targetDeleteMode = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 0일차 삭제 모드 켜기 안내 대화(delete-introduction) 중 E 단축 입력 허용 여부입니다.
+        /// </summary>
+        public bool CanShortcutDeleteIntroduction => CanShortcutDeleteModeGuide(out bool target) && target;
+
+        /// <summary>
+        /// 0일차 삭제 모드 안내 대화 중 E 단축 입력을 받아 대사를 닫고 명시적 목표 모드(켜기/끄기)를 설정한 뒤 다음 실습으로 진행합니다.
+        /// 모드가 이미 목표 상태라면 상태를 유지하고, 안내 대사와 해당 모드 전환 단계를 순차 진행합니다.
+        /// </summary>
+        /// <param name="builder">현재 편집 중인 작업대의 큐브 빌더입니다.</param>
+        /// <param name="targetDeleteMode">설정할 삭제 모드 목표 상태(켜기: true, 끄기: false)입니다.</param>
+        public void CompleteDeleteModeGuideShortcut(CubeBuilder builder = null, bool targetDeleteMode = true)
+        {
+            if (!CanShortcutDeleteModeGuide(out bool expectedTarget) || expectedTarget != targetDeleteMode) return;
+
+            if (builder == null)
+            {
+                builder = TutorialPlayer != null ? TutorialPlayer.GetComponentInChildren<CubeBuilder>(true) : null;
+            }
+
+            if (builder != null)
+            {
+                builder.SetDeleteMode(targetDeleteMode);
+            }
+
+            ReleaseDialogue();
+            Advance();
+
+            if (CurrentStep != null)
+            {
+                if (targetDeleteMode && CurrentStep.id == "enable-delete-mode")
+                {
+                    Advance();
+                }
+                else if (!targetDeleteMode && CurrentStep.id == "disable-delete-mode")
+                {
+                    Advance();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 0일차 삭제 모드 켜기 안내 대화(delete-introduction) 단축 입력을 처리합니다.
+        /// </summary>
+        public void CompleteDeleteIntroductionShortcut(CubeBuilder builder = null)
+        {
+            CompleteDeleteModeGuideShortcut(builder, true);
+        }
+
         public bool ShowLoanGuide(FeedbackUI feedback)
         {
             var step = CurrentStep;
@@ -425,6 +516,12 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
+            if (stepIntroductionOpen && CurrentStep != null && dayZeroOwner != null &&
+                CurrentStep.id == "close-and-settle" &&
+                CurrentStep.completion == TutorialCompletion.SettlementClosed && IsActionStepComplete())
+            {
+                ReleaseDialogue();
+            }
             bool saleCompleted = CurrentStep != null && (CurrentStep.completion == TutorialCompletion.CustomerSold ||
                 CurrentStep.completion == TutorialCompletion.CustomerKilled);
             if (!stepIntroductionOpen && (!GameManager.GameplayBlocked || saleCompleted) &&

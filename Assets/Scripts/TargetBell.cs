@@ -172,7 +172,7 @@ namespace WeaponWorkshop
             if (spawnedRoot != null) Destroy(spawnedRoot.gameObject);
         }
         public GameObject DefaultTargetPrefab => targetPrefab != null ? targetPrefab.gameObject : null;
-        public bool PrepareTest(ShootingTestData data, FirstPersonPlayer player)
+        public bool PrepareTest(ShootingTestBinding data, FirstPersonPlayer player)
         {
             SpawnFailureReason = null;
             if (!isActiveAndEnabled || testController == null)

@@ -12,6 +12,10 @@ namespace WeaponWorkshop
         [SerializeField] private ModuleCatalog catalog;
         [SerializeField, Tooltip("재료 상자 후보 지점. 표의 materialCrates개를 겹치지 않게 무작위로 고른다.")]
         private Transform[] materialSpawnPoints;
+        [SerializeField, Tooltip("랜덤 재료 상자 제외 영역의 바닥 중심점. 비어 있으면 제외하지 않습니다.")]
+        private Transform[] _materialExclusionPoints;
+        [SerializeField, Tooltip("제외 영역 전체 크기(X 너비, Y 높이, Z 깊이). 월드 축을 기준으로 바닥 중심에서 위로 적용합니다.")]
+        private Vector3 _materialExclusionSize = new Vector3(3f, 2f, 3f);
         [SerializeField, Tooltip("모듈 상자 고정 지점. 지점마다 모듈을 지정한다.")]
         private RaidModuleCrateSpot[] moduleSpots;
         [SerializeField, Tooltip("보상 행을 찾을 씬 이름. 비우면 이 씬 이름을 쓴다(연습 씬은 원본 스테이지 이름).")]
@@ -105,7 +109,7 @@ namespace WeaponWorkshop
         {
             var available = new List<Transform>();
             foreach (Transform point in materialSpawnPoints ?? System.Array.Empty<Transform>())
-                if (point != null && !available.Contains(point)) available.Add(point);
+                if (point != null && !available.Contains(point) && !IsMaterialSpawnExcluded(point.position)) available.Add(point);
             int count = Mathf.Min(Mathf.Max(0, reward.materialCrates), available.Count);
             if (count < reward.materialCrates)
                 Debug.LogWarning($"{RewardScene}의 재료 상자 지점({available.Count})이 표의 상자 수({reward.materialCrates})보다 적습니다.", this);
@@ -117,6 +121,26 @@ namespace WeaponWorkshop
                 available[i] = point;
                 SpawnMaterialCrate(point, reward.materialPerCrate);
             }
+        }
+
+        /// <summary>
+        /// 랜덤 재료 상자의 생성 중심이 지정한 바닥 기준 제외 영역에 들어오는지 확인합니다.
+        /// 모듈 대체 상자와 고정 상자는 이 판정을 호출하지 않아 기존 위치를 유지합니다.
+        /// </summary>
+        private bool IsMaterialSpawnExcluded(Vector3 position)
+        {
+            if (_materialExclusionPoints == null) return false;
+            float halfWidth = Mathf.Max(0f, _materialExclusionSize.x) * .5f;
+            float height = Mathf.Max(0f, _materialExclusionSize.y);
+            float halfDepth = Mathf.Max(0f, _materialExclusionSize.z) * .5f;
+            foreach (Transform point in _materialExclusionPoints)
+            {
+                if (point == null) continue;
+                Vector3 offset = position - point.position;
+                if (Mathf.Abs(offset.x) <= halfWidth && Mathf.Abs(offset.z) <= halfDepth &&
+                    offset.y >= 0f && offset.y <= height) return true;
+            }
+            return false;
         }
 
         private void SpawnMaterialCrate(Transform point, int amount)

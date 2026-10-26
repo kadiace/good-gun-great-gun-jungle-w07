@@ -45,7 +45,7 @@ namespace WeaponWorkshop
         {
             get
             {
-                ModuleStats stats = GetComponent<ModuleStats>();
+                TryGetComponent<ModuleStats>(out var stats);
                 return stats != null && stats.Data != null && stats.Data.ModuleType == StatType.Scope;
             }
         }
@@ -53,9 +53,9 @@ namespace WeaponWorkshop
         public Vector3Int[] GetOutputDirections()
         {
             if (kind == BlockKind.Blocker || IsSight) return System.Array.Empty<Vector3Int>();
-            SplitModule split = GetComponent<SplitModule>();
+            TryGetComponent<SplitModule>(out var split);
             if (split != null) return split.GetOutputDirections();
-            ExtensionModule extension = GetComponent<ExtensionModule>();
+            TryGetComponent<ExtensionModule>(out var extension);
             return extension != null ? new[] { extension.OutputDirection } : new Vector3Int[0];
         }
 
@@ -71,9 +71,14 @@ namespace WeaponWorkshop
             return travelDirection == orientationNormal;
         }
 
-        public bool IgnoresInputFace => GetOutputDirections().Length == 0 || IsSight || GetComponent<TriggerModule>() != null;
+        public bool IgnoresInputFace => GetOutputDirections().Length == 0 || IsSight || TryGetComponent<TriggerModule>(out _);
 
-        public void Configure(BlockKind value) => kind = value;
+        public void Configure(BlockKind value)
+        {
+            if (kind == value) return;
+            kind = value;
+            GetComponentInParent<CubeAssembly>()?.InvalidateAnalysis();
+        }
 
         public void SetModuleSource(int slot, GameObject prefab)
         {
@@ -93,8 +98,12 @@ namespace WeaponWorkshop
         private void OnEnable()
         {
             RefreshDraw();
+            GetComponentInParent<CubeAssembly>()?.InvalidateAnalysis();
             GetComponentInParent<EquipableWeapon>()?.IgnorePlayerCollisions(this);
         }
+
+        private void OnDisable() => GetComponentInParent<CubeAssembly>()?.InvalidateAnalysis();
+        private void OnValidate() => WeaponAnalysis.NotifyConfigurationChanged();
 
         public void RefreshDraw()
         {

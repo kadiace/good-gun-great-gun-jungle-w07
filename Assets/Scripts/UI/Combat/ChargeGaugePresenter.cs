@@ -35,11 +35,13 @@ namespace WeaponWorkshop
             FirstPersonPlayer player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             WeaponHolder holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             EquipableWeapon weapon = holder != null ? holder.EquippedWeapon : null;
-            bool visible = weapon != null && weapon.IsCharging && weapon.MaxChargeLevel > 0;
-            m_view.SetCharge(visible,
-                weapon != null ? weapon.ChargeProgress : 0f,
-                weapon != null ? weapon.ChargeLevel : 0,
-                weapon != null ? weapon.MaxChargeLevel : 0);
+            if (weapon == null || !weapon.IsCharging)
+            {
+                m_view.Hide();
+                return;
+            }
+            weapon.GetChargeState(out float progress, out int level, out int maximum);
+            m_view.SetCharge(maximum > 0, progress, level, maximum);
         }
     }
 }
