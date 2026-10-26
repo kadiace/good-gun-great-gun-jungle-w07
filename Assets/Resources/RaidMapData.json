@@ -74,9 +74,25 @@
       "maximumReinforcedTanks": 1
     },
     {
+      "entryCost": 4000,
+      "name": "정글랩",
+      "selectionOrder": 5,
+      "scene": "NightRaid_JungleCampus",
+      "reward": {
+        "firstClearSaleBonus": 0.7,
+        "materialCrates": 20,
+        "materialPerCrate": 25,
+        "dollarsPerMaterialPickup": 100,
+        "moduleCodes": []
+      },
+      "helicopters": true,
+      "tanks": true,
+      "maximumReinforcedTanks": 4
+    },
+    {
       "name": "정글 캠퍼스 (개선)",
       "scene": "NightRaid_JungleCampus_improve",
-      "selectionOrder": 5,
+      "selectionOrder": 6,
       "inheritsFrom": "NightRaid_Airport"
     }
   ]
