@@ -18,7 +18,9 @@ namespace WeaponWorkshop
         [SerializeField, Min(.1f), Tooltip("장착 정면 화살표 길이(코어 셀 단위)")]
         private float forwardArrowLength = 1.5f;
         [SerializeField, Min(0f), Tooltip("가장 앞선 모듈 끝과 정면 화살표 사이 간격(셀 단위)")]
-        private float forwardArrowGap = .12f;
+        private float forwardArrowGap = .3f;
+        [SerializeField, Min(0f), Tooltip("장착 정면 문구와 화살표 사이 간격(Canvas 기준 픽셀)")]
+        private float forwardLabelGap = 12f;
         [SerializeField, Min(.1f), Tooltip("실제 총구의 직선 방향 안내 길이(셀 단위). 탄도 시뮬레이션은 하지 않습니다.")]
         private float muzzleLineLength = 4f;
         private struct Marker
@@ -61,6 +63,8 @@ namespace WeaponWorkshop
                 forwardLabel.enableAutoSizing = true;
                 forwardLabel.fontSizeMin = 9f;
                 forwardLabel.fontSizeMax = 18f;
+                forwardLabel.outlineColor = new Color32(20, 20, 20, 255);
+                forwardLabel.outlineWidth = .15f;
                 forwardLabel.gameObject.SetActive(false);
             }
             SetVerticesDirty();
@@ -151,15 +155,22 @@ namespace WeaponWorkshop
         {
             if (forwardLabel == null || canvas == null)
             { HideForwardLabel(); return; }
-            Vector3 anchor = IsOnScreen(ForwardTipWorld) ? ForwardTipWorld : ForwardMarkerWorld;
-            if (!IsOnScreen(anchor)) { HideForwardLabel(); return; }
-            Vector2 point = Project(anchor);
-            float gapPixels = DiamondPixels * .5f + ScreenSize * .004f;
-            Vector2 gap = ScreenSizeInLocal(new Vector2(gapPixels, 0f));
+            if (!TryProjectSegment(ForwardMarkerWorld, ForwardTipWorld, out Vector2 start, out Vector2 end))
+            { HideForwardLabel(); return; }
+            Vector2 arrowWidth = ScreenSizeInLocal(Vector2.one * ScreenSize * .014f);
+            float markerHalfHeight = arrowWidth.y * .5f;
+            if ((end - start).magnitude <= arrowWidth.x)
+            {
+                if (!IsOnScreen(ForwardMarkerWorld)) { HideForwardLabel(); return; }
+                start = end = Project(ForwardMarkerWorld);
+                markerHalfHeight = ScreenSizeInLocal(Vector2.one * DiamondPixels).y * .5f;
+            }
+            Vector2 gap = ScreenSizeInLocal(Vector2.up * forwardLabelGap * canvas.scaleFactor);
             RectTransform labelRect = forwardLabel.rectTransform;
-            labelRect.pivot = new Vector2(0f, .5f);
-            forwardLabel.alignment = TextAlignmentOptions.Left;
-            Vector2 local = point + gap;
+            labelRect.pivot = new Vector2(.5f, 0f);
+            forwardLabel.alignment = TextAlignmentOptions.Center;
+            // 화면상 가장 높은 화살표 끝보다 위에 문구 전체를 둔다. 위/아래로 회전해도 선과 겹치지 않는다.
+            Vector2 local = new Vector2((start.x + end.x) * .5f, Mathf.Max(start.y, end.y) + markerHalfHeight + gap.y);
             labelRect.localPosition = new Vector3(local.x, local.y, 0f);
             labelRect.sizeDelta = ScreenSizeInLocal(new Vector2(viewCamera.pixelWidth * .14f, viewCamera.pixelHeight * .03f));
             forwardLabel.color = DirectionTint(forwardColor, Vector3Int.forward);

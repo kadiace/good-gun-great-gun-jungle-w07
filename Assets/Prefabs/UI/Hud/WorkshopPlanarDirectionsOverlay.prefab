@@ -84,7 +84,8 @@ MonoBehaviour:
   forwardLabel: {fileID: 6451772667438051260}
   forwardDiamondSizeRatio: 0.006
   forwardArrowLength: 1.5
-  forwardArrowGap: 0.12
+  forwardArrowGap: 0.3
+  forwardLabelGap: 12
   muzzleLineLength: 4
 --- !u!1 &6451772667438051263
 GameObject:

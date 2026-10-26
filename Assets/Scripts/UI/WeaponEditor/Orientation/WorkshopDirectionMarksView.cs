@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -51,6 +52,10 @@ namespace WeaponWorkshop
         public void Initialize()
         {
             CacheGraphics();
+            // 정면 문구는 공용 화살표의 '장착 정면'만 사용한다. 상단 축 UI와 방향 아이콘은 유지한다.
+            if (frontMark != null)
+                foreach (TMP_Text label in frontMark.GetComponentsInChildren<TMP_Text>(true))
+                    label.gameObject.SetActive(false);
             SetFrontOpacity(DEFAULT_FRONT_OPACITY);
         }
 

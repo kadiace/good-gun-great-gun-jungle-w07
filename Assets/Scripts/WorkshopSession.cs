@@ -20,6 +20,10 @@ namespace WeaponWorkshop
         private InputAction rotate, look, point, zoom, pan, layerModifier;
         public WorkshopPlanarView PlanarView { get; private set; }
         private bool rotationDrag, rollDrag;
+        private bool panDrag;
+        private Vector2 previousPanPointer;
+        private Transform panTarget;
+        private Vector3 originalDisplayPosition;
         private float rotationDragDegrees;
         private Vector2 previousRollOffset;
         public bool IsEditing => IsInWorkshop && !IsTransitioning;
@@ -82,8 +86,10 @@ namespace WeaponWorkshop
                     return;
                 }
                 if (!TutorialManager.TryAction("reset-rotation")) return;
-                rotationDrag = false;
+                CancelRotationDrag();
                 if (PlanarView.Is2D) { PlanarView.ResetFraming(); return; }
+                ResetDisplayPosition();
+                builder?.CancelPlacementPreview();
                 activeWorkbench.ResetRotation();
                 if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("rotation-reset", activeWorkbench);
             };
@@ -139,6 +145,9 @@ namespace WeaponWorkshop
                 !bench.CanInteract() || !HasCoreForWorkbench(bench)) return false;
             if (!bench.ExchangeWeapon(weaponHolder)) return false;
             activeWorkbench = bench;
+            panTarget = bench.RotationTarget;
+            originalDisplayPosition = panTarget.localPosition;
+            panDrag = false;
             originalFieldOfView = playerCamera.fieldOfView;
             hasOriginalFieldOfView = true;
             SetMode(true, animate);
@@ -186,7 +195,12 @@ namespace WeaponWorkshop
         private void SetMode(bool workshop, bool animate = false)
         {
             UIInputPolicy.SetInWorkshop(workshop);
-            if (!workshop) PlanarView?.Restore3D();
+            if (!workshop)
+            {
+                PlanarView?.Restore3D();
+                ResetDisplayPosition();
+                panTarget = null;
+            }
             if (!workshop && activeWorkbench != null) WorkbenchExited?.Invoke(activeWorkbench.CurrentWeapon);
             if (cameraMove != null) StopCoroutine(cameraMove);
             cameraMove = null;
@@ -244,7 +258,7 @@ namespace WeaponWorkshop
 
         private void SetEditing(bool editing)
         {
-            rotationDrag = false;
+            CancelRotationDrag();
             UIInputPolicy.SetWorkshopEditing(editing);
             if (builder != null)
             {
@@ -260,14 +274,20 @@ namespace WeaponWorkshop
             if (workshopUI != null) workshopUI.SetWorkshopUI(editing);
         }
 
-        public void CancelRotationDrag() => rotationDrag = false;
+        public void CancelRotationDrag() => rotationDrag = panDrag = false;
+
+        private void ResetDisplayPosition()
+        {
+            panDrag = false;
+            if (panTarget != null) panTarget.localPosition = originalDisplayPosition;
+        }
 
         private bool SlotDragActive => builder != null && builder.IsFavoriteDragging;
 
         private void BeginRotation()
         {
             rotationDragDegrees = 0f;
-            if (!IsEditing || GameManager.GameplayBlocked || PlanarView.Is2D) return;
+            if (!IsEditing || GameManager.GameplayBlocked || PlanarView.Is2D || pan.IsPressed()) return;
             if (SlotDragActive)
             {
                 return;
@@ -284,7 +304,7 @@ namespace WeaponWorkshop
         {
             bool completedDrag = rotationDrag;
             rotationDrag = false;
-            if (!completedDrag || !IsEditing || GameManager.GameplayBlocked || !Application.isFocused || SlotDragActive)
+            if (!completedDrag || !IsEditing || GameManager.GameplayBlocked || !Application.isFocused || SlotDragActive || pan.IsPressed())
             {
                 return;
             }
@@ -295,23 +315,29 @@ namespace WeaponWorkshop
         {
             if (IsInWorkshop && !activeWorkbench.CanInteract())
             {
+                CancelRotationDrag();
                 if (TutorialManager.ActionAllowed("exit")) Leave();
                 return;
             }
             if (!IsEditing || GameManager.GameplayBlocked || !Application.isFocused)
-            { rotationDrag = false; PlanarView?.StopPan(); return; }
+            { CancelRotationDrag(); PlanarView?.StopPan(); return; }
             if (PlanarView.Is2D && ((builder != null && builder.IsCustomMode) || !TutorialManager.ActionAllowed("view-mode")))
                 PlanarView.Restore3D();
             if (SlotDragActive)
             {
-                rotationDrag = false;
+                CancelRotationDrag();
                 PlanarView?.StopPan();
                 return;
             }
             if (PlanarView.Is2D)
             {
-                rotationDrag = false;
+                CancelRotationDrag();
                 PlanarView.UpdateInput(pan, point, zoom, layerModifier);
+                return;
+            }
+            if (UpdateWorkshopPan())
+            {
+                rotationDrag = false;
                 return;
             }
             ApplyWorkshopZoom();
@@ -345,6 +371,34 @@ namespace WeaponWorkshop
             UIInputPolicy.RefreshCursor();
         }
 
+        private bool UpdateWorkshopPan()
+        {
+            Vector2 pointer = point.ReadValue<Vector2>();
+            if (pan.WasPressedThisFrame() && !rotate.IsPressed() && panTarget != null &&
+                activeWorkbench.CurrentCore != null && RotationViewport.Contains(pointer) &&
+                (builder == null || !builder.IsPointerOverInterface(pointer)) && TutorialManager.TryAction("pan"))
+            {
+                panDrag = true;
+                previousPanPointer = pointer;
+                builder?.CancelPlacementPreview();
+            }
+            if (!pan.IsPressed() || !TutorialManager.ActionAllowed("pan")) panDrag = false;
+            var core = activeWorkbench.CurrentCore;
+            if (panDrag && panTarget != null && core != null)
+            {
+                // 코어 깊이의 화면 평면에서 포인터와 같은 픽셀 거리만큼 이동한다.
+                float depth = Mathf.Max(playerCamera.nearClipPlane,
+                    Vector3.Dot(core.transform.position - playerCamera.transform.position, playerCamera.transform.forward));
+                float unitsPerPixel = 2f * depth * Mathf.Tan(playerCamera.fieldOfView * Mathf.Deg2Rad * .5f) /
+                    Mathf.Max(1f, playerCamera.pixelHeight);
+                Vector2 delta = pointer - previousPanPointer;
+                panTarget.position += (playerCamera.transform.right * delta.x + playerCamera.transform.up * delta.y) * unitsPerPixel;
+                previousPanPointer = pointer;
+            }
+            else panDrag = false;
+            return pan.IsPressed();
+        }
+
         private void ApplyWorkshopZoom()
         {
             Vector2 scroll = zoom.ReadValue<Vector2>();
@@ -373,6 +427,6 @@ namespace WeaponWorkshop
             if (Application.isFocused) UIInputPolicy.RefreshCursor();
         }
         private void OnApplicationFocus(bool focused)
-        { rotationDrag = false; PlanarView?.StopPan(); if (focused && controls != null) UIInputPolicy.RefreshCursor(); }
+        { CancelRotationDrag(); PlanarView?.StopPan(); if (focused && controls != null) UIInputPolicy.RefreshCursor(); }
     }
 }

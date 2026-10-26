@@ -111,13 +111,13 @@ namespace WeaponWorkshop
             if (wallet.ModuleCredits < Credits)
             {
                 FailureReason = WorkshopPlacementFailureReason.CreditsInsufficient;
-                Error = "부품이 부족합니다.";
+                Error = $"부품이 {(long)Credits - wallet.ModuleCredits:N0}개 부족합니다.";
                 return;
             }
             if (wallet.Balance < Dollars)
             {
                 FailureReason = WorkshopPlacementFailureReason.DollarsInsufficient;
-                Error = "설치 비용이 부족합니다";
+                Error = $"설치 비용이 ${(long)Dollars - wallet.Balance:N0} 부족합니다.";
                 return;
             }
             FailureReason = WorkshopPlacementFailureReason.None;

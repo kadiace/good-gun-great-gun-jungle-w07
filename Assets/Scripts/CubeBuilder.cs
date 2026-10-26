@@ -332,6 +332,7 @@ namespace WeaponWorkshop
             InputAction attach = controls.FindAction("Attach", true);
             attach.started += _ =>
             {
+                if (controls.FindAction("Pan", true).IsPressed()) return;
                 if (TryBeginPlanarStroke()) return;
                 paintPointerHeld = false;
                 bool canUseSurface = paintingMode && !GameManager.GameplayBlocked &&
@@ -366,7 +367,7 @@ namespace WeaponWorkshop
             {
                 if (strokeActive) return;
                 if (GameManager.GameplayBlocked || favoriteDragActive ||
-                    (UsingPlanarView && (planarView.IsPanning || controls.FindAction("Pan", true).IsPressed())) ||
+                    controls.FindAction("Pan", true).IsPressed() || (UsingPlanarView && planarView.IsPanning) ||
                     IsPointerOverUI(AimPoint())) return;
                 if (!paintingMode && (paletteOpen || colorPickerOpen))
                 { TutorialManager.Instance?.NotifyBlockedAction(); return; }
@@ -495,7 +496,8 @@ namespace WeaponWorkshop
             }
             if (paintingMode && !stickerToolActive && paintPointerHeld)
             {
-                if (controls.FindAction("Rotate", true).IsPressed() || IsPointerOverUI(AimPoint()))
+                if (controls.FindAction("Rotate", true).IsPressed() || controls.FindAction("Pan", true).IsPressed() ||
+                    IsPointerOverUI(AimPoint()))
                 {
                     paintPointerHeld = false;
                     return;
@@ -515,7 +517,8 @@ namespace WeaponWorkshop
             if (UsingPlanarView) return;
             if (paintingMode || paletteOpen || colorPickerOpen || favoriteDragActive || preview != null ||
                 GameManager.GameplayBlocked || view == null || controls == null ||
-                controls.FindAction("Rotate", true).IsPressed() || IsPointerOverUI(AimPoint())) return;
+                controls.FindAction("Rotate", true).IsPressed() || controls.FindAction("Pan", true).IsPressed() ||
+                IsPointerOverUI(AimPoint())) return;
             var pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer) || !TryGetSurfaceHit(pointer, out var hit)) return;
             var assembly = hit.collider.GetComponentInParent<CubeAssembly>();
