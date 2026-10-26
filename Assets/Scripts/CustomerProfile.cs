@@ -12,7 +12,7 @@ namespace WeaponWorkshop
         SplitTwoBlocks,  // 총에 달린 2방향 분할 블록 개수 (stat 무시)
         SplitFourBlocks, // 총에 달린 4방향 분할 블록 개수 (stat 무시)
         Muzzles,          // 실제로 발사되는 총구(경로) 수 (stat 무시)
-        ConstructionCost, Shape, PaintedFaces, PaintedColorFaces, ColorModules
+        ConstructionCost, Shape, PaintedFaces, PaintedColorFaces, ColorModules, StickerFaces, Keyrings, BasicCore
     }
 
     [System.Serializable]

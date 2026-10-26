@@ -33,27 +33,47 @@ namespace WeaponWorkshop
             var pool = Row;
             var picked = new List<string>();
             var candidates = new List<string>();
+            var bundles = new Dictionary<string, List<string>>();
             foreach (var entry in pool.requests ?? System.Array.Empty<CustomerOrderData.PoolRequest>())
             {
                 string id = table.FindRequest(entry?.id)?.id;
                 if (id == null || entry.unlockDay > day || candidates.Contains(id)) continue;
-                if (CustomerModuleRequirements.Allows(new[] { id }, unlocks, CoreStats) &&
-                    (canTakeLoan || CustomerModuleRequirements.DollarCost(new[] { id }, unlocks, CoreStats) <= money)) candidates.Add(id);
+                if (!pool.TryRequestBundle(id, day, out var bundle)) continue;
+                if (CanAppend(bundle)) { candidates.Add(id); bundles.Add(id, bundle); }
             }
-            int count = Mathf.Min(Random.Range(min, Mathf.Max(min, max) + 1), candidates.Count);
-            for (int i = 0; i < count && candidates.Count > 0; i++)
+            var tags = candidates.FindAll(id => !string.IsNullOrEmpty(table.FindRequest(id).tagId));
+            if (tags.Count == 0)
             {
-                int index = Random.Range(0, candidates.Count);
-                string next = candidates[index];
-                picked.Add(next);
-                candidates.RemoveAt(index);
-                // 같이 만족할 수 없는 요구사항은 후보에서 뺀다 (예: 권총 태그 + 스코프).
-                candidates.RemoveAll(c => pool.Conflicts(next, c));
-                if (!canTakeLoan) candidates.RemoveAll(c => DollarCost(picked, c, unlocks) > money);
+                Debug.LogError("생성 가능한 필수 태그가 없습니다.", this);
+                return null;
+            }
+            int count = Mathf.Min(Random.Range(Mathf.Max(1, min), Mathf.Max(1, max) + 1), candidates.Count);
+            while (picked.Count < count && candidates.Count > 0)
+            {
+                var choices = picked.Count == 0 ? tags : candidates;
+                string next = choices[Random.Range(0, choices.Count)];
+                // 태그를 먼저 유지한다. 필수 동반 요청은 중복 없이 추가하며 요청 수보다 우선한다.
+                if (!picked.Contains(next)) picked.Add(next);
+                foreach (string required in bundles[next]) if (!picked.Contains(required)) picked.Add(required);
+                candidates.RemoveAll(c => picked.Contains(c) || !CanAppend(bundles[c]));
+            }
+
+            bool CanAppend(List<string> bundle)
+            {
+                var combined = new List<string>(picked);
+                foreach (string id in bundle) if (!combined.Contains(id)) combined.Add(id);
+                for (int i = 0; i < combined.Count; i++)
+                    for (int j = i + 1; j < combined.Count; j++)
+                        if (pool.Conflicts(combined[i], combined[j])) return false;
+                string[] ids = combined.ToArray();
+                return CustomerModuleRequirements.Allows(ids, unlocks, CoreStats) &&
+                    (canTakeLoan || CustomerModuleRequirements.DollarCost(ids, unlocks, CoreStats) <= money);
             }
 
             var phrases = new List<string>();
-            foreach (string request in picked) phrases.Add(table.Phrase(request));
+            foreach (string request in picked)
+                phrases.Add("<b>" + (string.IsNullOrEmpty(table.FindRequest(request).tagId)
+                    ? table.FindRequest(request).name : table.Phrase(request)) + "</b>");
 
             CustomerProfile profile = CreateInstance<CustomerProfile>();
             profile.name = "Endless_" + string.Join("+", phrases);
@@ -63,17 +83,11 @@ namespace WeaponWorkshop
             profile.Lines = new[] { phrases.Count == 0 ? "기본 총 하나 주세요. 특별한 조건은 없어요."
                 : string.Format(Pick(templates, "{0} 주세요."), string.Join(", ", phrases)) };
             profile.EndsClear = true;
-            profile.RequestIds = picked.Count == 0 ? new[] { CustomerRewardInfo.BasicRequestId } : picked.ToArray();
+            profile.RequestIds = picked.ToArray();
             profile.HappyLine = Pick(pool.happyLines, null);
             profile.AngryLine = Pick(pool.angryLines, null);
             profile.portrait = Pick(portraits, null);
             return profile;
-        }
-
-        // 이미 고른 요구사항에 extra를 더했을 때의 필요 모듈 구매액.
-        private int DollarCost(List<string> picked, string extra, PlayerModuleUnlocks unlocks)
-        {
-            return CustomerModuleRequirements.DollarCost(new List<string>(picked) { extra }.ToArray(), unlocks, CoreStats);
         }
 
         private static T Pick<T>(T[] items, T fallback)

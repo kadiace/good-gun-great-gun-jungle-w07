@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using LogKit;
 
@@ -18,9 +19,11 @@ namespace WeaponWorkshop
         private Vector3 exitPoint;
         private Vector3 portraitRest;
         private int saveStage, dialogueIndex, soldPrice;
+        private readonly HashSet<string> revealedRequests = new HashSet<string>();
 
         public CustomerSave CaptureSave() => new CustomerSave { stage = saveStage, line = dialogueIndex,
-            price = soldPrice, talked = HasTalked, satisfied = SaleSatisfied, position = transform.position };
+            price = soldPrice, talked = HasTalked, satisfied = SaleSatisfied, position = transform.position,
+            revealedRequests = new List<string>(revealedRequests).ToArray() };
 
         public void RestoreSave(CustomerSave state, CustomerProfile savedProfile, Vector3 counter, Vector3 exit)
         {
@@ -28,6 +31,8 @@ namespace WeaponWorkshop
             StopAllCoroutines();
             transform.position = state.position;
             HasTalked = state.talked; SaleSatisfied = state.satisfied; soldPrice = state.price;
+            revealedRequests.Clear();
+            foreach (string id in state.revealedRequests ?? System.Array.Empty<string>()) revealedRequests.Add(id);
             if (HasTalked && state.stage == 1) NotifyIfCustomOrder();
             saveStage = state.stage; dialogueIndex = state.line; atCounter = state.stage == 1 || state.stage == 2;
             if (state.stage == 0) StartCoroutine(WalkTo(counter, () => { atCounter = true; saveStage = 1; }));
@@ -70,6 +75,7 @@ namespace WeaponWorkshop
             if (portrait != null && profile != null && profile.portrait != null) portrait.sprite = profile.portrait;
             FitPortrait();
             saveStage = 0;
+            revealedRequests.Clear();
             exitPoint = exit;
             StartCoroutine(WalkTo(counterPoint, () => { atCounter = true; saveStage = 1; }));
         }
@@ -108,6 +114,18 @@ namespace WeaponWorkshop
 
         // 요구 조건 체크. 판매 전에 외부(UI 등)에서도 호출 가능.
         public bool CheckWeapon(EquipableWeapon weapon) => profile != null && profile.Check(weapon);
+
+        public bool IsRequestVisible(string id) => profile != null && (profile.OrderState?.generatedDay == 0 ||
+            !string.IsNullOrEmpty(TableManager.Instance.CustomerRequest.FindRequest(id)?.tagId) || revealedRequests.Contains(id));
+
+        public void RevealCompletedRequests(EquipableWeapon weapon)
+        {
+            if (!HasTalked || weapon == null || profile == null) return;
+            var table = TableManager.Instance.CustomerRequest;
+            var snapshot = new CustomerRequestInfo.WeaponSnapshot(weapon);
+            foreach (string id in profile.RequestIds)
+                if (!IsRequestVisible(id) && table.MeetsRequest(id, snapshot)) revealedRequests.Add(id);
+        }
 
         /// <summary>
         /// 제출한 무기를 판매하고 대금과 손님 완료를 기존 이벤트로 전달합니다. Day0 첫 제출 거절은 무기를 꺼내기 전에 처리합니다.
@@ -277,7 +295,23 @@ namespace WeaponWorkshop
             dialogueIndex = index;
             bool last = index >= profile.Lines.Length - 1;
             string answer = last && profile.EndsClear ? Okay : Huh;
-            DialogueUI.Instance.Show(profile.Lines[index], answer, () =>
+            string line = profile.Lines[index];
+            if (profile.OrderState != null && profile.OrderState.generatedDay > 0 && !profile.IsDifficult)
+            {
+                var table = TableManager.Instance.CustomerRequest;
+                var mandatory = new List<string>();
+                var optional = new List<string>();
+                foreach (string id in profile.RequestIds)
+                {
+                    var request = table.FindRequest(id);
+                    if (request == null) continue;
+                    if (!string.IsNullOrEmpty(request.tagId)) mandatory.Add("<b>" + table.Phrase(id) + "</b>");
+                    else optional.Add("<b>" + VagueRequest(request) + "</b>");
+                }
+                line = string.Join(", ", mandatory) + " 총을 부탁드려요." +
+                    (optional.Count > 0 ? " 그리고 " + string.Join(", ", optional) + "." : "");
+            }
+            DialogueUI.Instance.Show(line, answer, () =>
             {
                 if (!last) { ShowLine(index + 1, submissionHolder); return; }
                 // 튜토리얼은 처음 주문을 들었을 때만.
@@ -294,12 +328,39 @@ namespace WeaponWorkshop
                         System.Action[] actions = hasWeapon
                             ? new System.Action[] { () => { close(); if (submissionHolder.EquippedWeapon != null) Sell(submissionHolder); }, close }
                             : new System.Action[] { close };
-                        DialogueUI.Instance.ShowChoices(profile.Lines[index], labels, actions);
+                        foreach (string id in profile.RequestIds)
+                        {
+                            var request = TableManager.Instance.CustomerRequest.FindRequest(id);
+                            if (request == null || !string.IsNullOrEmpty(request.tagId) || revealedRequests.Contains(id)) continue;
+                            var oldLabels = labels;
+                            var oldActions = actions;
+                            labels = new string[oldLabels.Length + 1]; actions = new System.Action[oldActions.Length + 1];
+                            labels[0] = "예? " + VagueRequest(request) + "?";
+                            actions[0] = () =>
+                            {
+                                revealedRequests.Add(id);
+                                DialogueUI.Instance.Show("<b>" + TableManager.Instance.CustomerRequest.Phrase(id) + "</b> 부탁드려요.",
+                                    "알겠습니다", () => ShowLine(index, submissionHolder));
+                            };
+                            System.Array.Copy(oldLabels, 0, labels, 1, oldLabels.Length);
+                            System.Array.Copy(oldActions, 0, actions, 1, oldActions.Length);
+                            break;
+                        }
+                        DialogueUI.Instance.ShowChoices(line, labels, actions);
                     }
                     else { talking = false; DialogueUI.Instance.Hide(); }
+                    // 신호가 다음 튜토리얼 대화를 즉시 열 수 있으므로 손님 대화 처리를 먼저 끝낸다.
                     if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
                 });
             });
+        }
+
+        private static string VagueRequest(CustomerRequestData.Request request)
+        {
+            if (request.id.StartsWith("construction/")) return "예산에 맞는 걸로 해주세요";
+            if (request.id.StartsWith("custom/") || request.id.StartsWith("color/") || request.id.StartsWith("shape/"))
+                return "겉모습에도 신경 써 주세요";
+            return "발사 느낌도 좀 특별했으면 해요";
         }
 
         private void OnDestroy()

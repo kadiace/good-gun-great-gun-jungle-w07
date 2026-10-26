@@ -5,15 +5,15 @@
       "name": "기본 총 납품",
       "phrase": "기본 총 한 정",
       "tagId": "",
-      "reward": 25,
+      "reward": 100,
       "rewardPerDay": 0,
       "requiredTestIds": [],
       "conditions": []
     },
     {
       "id": "construction/cost-1500",
-      "name": "제작비 요구",
-      "phrase": "제작비 $1,500 이상",
+      "name": "중급기",
+      "phrase": "제작비 $1,500 초과 $3,000 이하",
       "tagId": "",
       "requiredTestIds": [],
       "conditions": [
@@ -23,16 +23,17 @@
           "measure": "ConstructionCost",
           "stat": "",
           "min": 1500,
-          "max": 3.4028235e+38
+          "max": 3000,
+          "minExclusive": true
         }
       ],
-      "reward": 750,
+      "reward": 2275,
       "rewardPerDay": 0
     },
     {
       "id": "shape/cat",
-      "name": "고양이 영역",
-      "phrase": "고양이 영역 안 자유 배치",
+      "name": "형상",
+      "phrase": "실루엣과 정확히 일치",
       "tagId": "",
       "requiredTestIds": [],
       "conditions": [
@@ -46,13 +47,13 @@
           "max": 1
         }
       ],
-      "reward": 120,
+      "reward": 300,
       "rewardPerDay": 0
     },
     {
       "id": "color/crimson-3",
-      "name": "크림슨 도색",
-      "phrase": "크림슨 3면 이상",
+      "name": "도색",
+      "phrase": "3면 이상 도색",
       "tagId": "",
       "requiredTestIds": [],
       "conditions": [
@@ -67,9 +68,17 @@
           "max": 3.4028235e+38
         }
       ],
-      "reward": 30,
+      "reward": 300,
       "rewardPerDay": 0
     },
+    {"id":"color/orange-3","name":"도색","phrase":"3면 이상 도색","reward":300,"conditions":[{"id":"paint-orange-3","label":"오렌지 도색 면","measure":"PaintedColorFaces","colorHex":"#DC7339","colorTolerance":0.06,"min":3}]},
+    {"id":"color/yellow-3","name":"도색","phrase":"3면 이상 도색","reward":300,"conditions":[{"id":"paint-yellow-3","label":"옐로 도색 면","measure":"PaintedColorFaces","colorHex":"#E5B83C","colorTolerance":0.06,"min":3}]},
+    {"id":"color/lime-3","name":"도색","phrase":"3면 이상 도색","reward":300,"conditions":[{"id":"paint-lime-3","label":"라임 도색 면","measure":"PaintedColorFaces","colorHex":"#91BF45","colorTolerance":0.06,"min":3}]},
+    {"id":"color/emerald-3","name":"도색","phrase":"3면 이상 도색","reward":300,"conditions":[{"id":"paint-emerald-3","label":"에메랄드 도색 면","measure":"PaintedColorFaces","colorHex":"#2E9972","colorTolerance":0.06,"min":3}]},
+    {"id":"color/cyan-3","name":"도색","phrase":"3면 이상 도색","reward":300,"conditions":[{"id":"paint-cyan-3","label":"시안 도색 면","measure":"PaintedColorFaces","colorHex":"#43AFC0","colorTolerance":0.06,"min":3}]},
+    {"id":"color/cobalt-blue-3","name":"도색","phrase":"3면 이상 도색","reward":300,"conditions":[{"id":"paint-cobalt-blue-3","label":"코발트 블루 도색 면","measure":"PaintedColorFaces","colorHex":"#386CAC","colorTolerance":0.06,"min":3}]},
+    {"id":"color/violet-3","name":"도색","phrase":"3면 이상 도색","reward":300,"conditions":[{"id":"paint-violet-3","label":"바이올렛 도색 면","measure":"PaintedColorFaces","colorHex":"#7552A3","colorTolerance":0.06,"min":3}]},
+    {"id":"color/pink-3","name":"도색","phrase":"3면 이상 도색","reward":300,"conditions":[{"id":"paint-pink-3","label":"핑크 도색 면","measure":"PaintedColorFaces","colorHex":"#D77BA6","colorTolerance":0.06,"min":3}]},
     {
       "id": "module/explosion/min-2",
       "name": "폭발 모듈 개수",
@@ -89,7 +98,7 @@
         "module/explosion/min-2/d5-3-student",
         "08dbc26e0a7043288f412d911e86341d"
       ],
-      "reward": 525,
+      "reward": 775,
       "rewardPerDay": 0
     },
     {
@@ -113,7 +122,7 @@
         "module/fire-rate/min-1/d1-3-split-two",
         "81148a6e113140c18bfdab5b9d6201d6"
       ],
-      "reward": 75,
+      "reward": 300,
       "rewardPerDay": 0
     },
     {
@@ -143,7 +152,7 @@
         "module/penetration/min-1/d1-5-combo",
         "0de1724fb39d46cc88a0316007dc3e2f"
       ],
-      "reward": 275,
+      "reward": 775,
       "rewardPerDay": 0
     },
     {
@@ -205,7 +214,7 @@
         }
       ],
       "legacyIds": [],
-      "reward": 175,
+      "reward": 475,
       "rewardPerDay": 0
     },
     {
@@ -307,7 +316,7 @@
         "module/split-two/min-1/d5-5-real-gun",
         "81d72487c62c42bb8a2c996de2071c0d"
       ],
-      "reward": 125,
+      "reward": 325,
       "rewardPerDay": 0
     },
     {
@@ -330,13 +339,29 @@
         "module/stat-modules/exact-0/d1-1-base-core",
         "c0fbdc9111b6474fbe47321706b603fd"
       ],
-      "reward": 25,
+      "reward": 300,
       "rewardPerDay": 0
     },
+    {"id":"module/pure","name":"순정","phrase":"한 발사 경로의 스택 모듈 0개","reward":300,"conditions":[{"id":"pure","label":"스택 모듈","measure":"TotalModules","min":0,"max":0}]},
+    {"id":"module/nine-barrel","name":"나인배럴","phrase":"발사 총구 9개 이상","reward":600,"conditions":[{"id":"nine-muzzles","label":"발사 총구","measure":"Muzzles","min":9}]},
+    {"id":"module/speed","name":"고속","phrase":"가속 1 이상","reward":300,"conditions":[{"id":"speed","label":"가속","measure":"PathModules","stat":"Speed","min":1}]},
+    {"id":"module/spin","name":"회전","phrase":"회전 1 이상","reward":325,"conditions":[{"id":"spin","label":"회전","measure":"PathModules","stat":"Spin","min":1}]},
+    {"id":"module/water","name":"물","phrase":"물 1 이상","reward":300,"conditions":[{"id":"water","label":"물","measure":"PathModules","stat":"Water","min":1}]},
+    {"id":"module/charge","name":"충전식","phrase":"차지 1 이상","reward":475,"conditions":[{"id":"charge","label":"차지","measure":"PathModules","stat":"Charge","min":1}]},
+    {"id":"module/ricochet","name":"도탄","phrase":"반사 1 이상","reward":475,"conditions":[{"id":"ricochet","label":"반사","measure":"PathModules","stat":"Ricochet","min":1}]},
+    {"id":"module/explosion","name":"폭발탄","phrase":"폭발 1 이상","reward":775,"conditions":[{"id":"explosion","label":"폭발","measure":"PathModules","stat":"Explosion","min":1}]},
+    {"id":"module/heat","name":"화염","phrase":"발열 1 이상","reward":775,"conditions":[{"id":"heat","label":"발열","measure":"PathModules","stat":"Heat","min":1}]},
+    {"id":"module/gravity","name":"중력탄","phrase":"중력 1 이상","reward":775,"conditions":[{"id":"gravity","label":"중력","measure":"PathModules","stat":"Gravity","min":1}]},
+    {"id":"module/homing","name":"유도탄","phrase":"유도 1 이상","reward":775,"conditions":[{"id":"homing","label":"유도","measure":"PathModules","stat":"Homing","min":1}]},
+    {"id":"module/basic-core","name":"기본","phrase":"기본 코어","reward":200,"conditions":[{"id":"basic-core","label":"기본 코어","measure":"BasicCore","min":1}]},
+    {"id":"custom/sticker","name":"스티커","phrase":"스티커 3면 이상","reward":300,"conditions":[{"id":"sticker-faces","label":"스티커 면","measure":"StickerFaces","min":3}]},
+    {"id":"custom/keyring","name":"키링","phrase":"키링 1개","reward":300,"conditions":[{"id":"keyring-count","label":"키링","measure":"Keyrings","min":1}]},
+    {"id":"construction/premium","name":"프리미엄","phrase":"제작비 $3,000 초과","reward":4525,"conditions":[{"id":"premium-cost","label":"제작비($)","measure":"ConstructionCost","min":3000,"minExclusive":true}]},
+    {"id":"construction/value","name":"가성비","phrase":"제작비 $1,500 이하","reward":300,"conditions":[{"id":"value-cost","label":"제작비($)","measure":"ConstructionCost","min":0,"max":1500}]},
     {
       "id": "shooting-test/around-cover",
-      "name": "엄폐 뒤 표적 테스트 통과",
-      "phrase": "엄폐 뒤 표적 테스트를 통과한 총",
+      "name": "정면 사격 테스트 통과",
+      "phrase": "정면 사격 테스트를 통과한 총",
       "tagId": "",
       "requiredTestIds": [
         "around-cover"
@@ -348,8 +373,8 @@
     },
     {
       "id": "shooting-test/behind-barrier",
-      "name": "장애물 뒤 표적 테스트 통과",
-      "phrase": "장애물 뒤 표적 테스트를 통과한 총",
+      "name": "관통 사격 테스트 통과",
+      "phrase": "관통 사격 테스트를 통과한 총",
       "tagId": "",
       "requiredTestIds": [
         "behind-barrier"
@@ -361,8 +386,8 @@
     },
     {
       "id": "shooting-test/wide-targets",
-      "name": "넓게 흩어진 표적 테스트 통과",
-      "phrase": "넓게 흩어진 표적 테스트를 통과한 총",
+      "name": "폭발 사격 테스트 통과",
+      "phrase": "폭발 사격 테스트를 통과한 총",
       "tagId": "",
       "requiredTestIds": [
         "wide-targets"
@@ -406,7 +431,7 @@
         "tag/assault-rifle/legacy",
         "a953407380ff6594a942af751bf23efb"
       ],
-      "reward": 435,
+      "reward": 2175,
       "rewardPerDay": 0
     },
     {
@@ -421,7 +446,7 @@
         "tag/charge/legacy",
         "db5262cea8401e542a56f9a2812196a3"
       ],
-      "reward": 175,
+      "reward": 850,
       "rewardPerDay": 0
     },
     {
@@ -436,7 +461,7 @@
         "tag/flamethrower/legacy",
         "c45e9713dbf2ac3469b4a59283112118"
       ],
-      "reward": 275,
+      "reward": 1125,
       "rewardPerDay": 0
     },
     {
@@ -451,7 +476,7 @@
         "tag/gravity-gun/legacy",
         "6bfd82587bbb4a640a1dcc436cacd347"
       ],
-      "reward": 275,
+      "reward": 1225,
       "rewardPerDay": 0
     },
     {
@@ -466,7 +491,7 @@
         "tag/grenade-launcher/legacy",
         "982660b8fcc3c1340adfa1edcdfb1257"
       ],
-      "reward": 275,
+      "reward": 4500,
       "rewardPerDay": 0
     },
     {
@@ -481,7 +506,7 @@
         "tag/handgun/legacy",
         "afce91ece9f68f44b92e48a1652ea36b"
       ],
-      "reward": 25,
+      "reward": 300,
       "rewardPerDay": 0
     },
     {
@@ -496,7 +521,7 @@
         "tag/homing/legacy",
         "a577397affb1dba46a5ab05ee475eec6"
       ],
-      "reward": 275,
+      "reward": 3225,
       "rewardPerDay": 0
     },
     {
@@ -509,7 +534,7 @@
       "legacyIds": [
         "a0eed031913cef84eab19bafbe2ff4df"
       ],
-      "reward": 2775,
+      "reward": 1300,
       "rewardPerDay": 0
     },
     {
@@ -524,7 +549,7 @@
         "tag/ricochet/legacy",
         "fdd2d5a8251468842be3744e7dba689f"
       ],
-      "reward": 175,
+      "reward": 475,
       "rewardPerDay": 0
     },
     {
@@ -539,7 +564,7 @@
         "tag/shotgun/legacy",
         "70d86a3c50472dd47b261b990ddd9210"
       ],
-      "reward": 2675,
+      "reward": 5175,
       "rewardPerDay": 0
     },
     {
@@ -554,7 +579,7 @@
         "tag/sniper-rifle/legacy",
         "d6d6fd1701a033d4b849c531f7f4f5f1"
       ],
-      "reward": 480,
+      "reward": 2175,
       "rewardPerDay": 0
     },
     {
@@ -569,7 +594,7 @@
         "tag/spin/legacy",
         "60c861d406fb6fd48a48e2649ddcb52b"
       ],
-      "reward": 125,
+      "reward": 1850,
       "rewardPerDay": 0
     },
     {
@@ -584,7 +609,7 @@
         "tag/water-gun/legacy",
         "48aeae95d13c1f643817498a6dae1573"
       ],
-      "reward": 50,
+      "reward": 300,
       "rewardPerDay": 0
     }
   ],

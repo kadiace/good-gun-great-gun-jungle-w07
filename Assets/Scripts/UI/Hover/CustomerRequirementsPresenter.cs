@@ -116,6 +116,7 @@ namespace WeaponWorkshop
             EquipableWeapon weapon = session != null && session.IsEditing && session.ActiveWorkbench != null
                 ? session.ActiveWorkbench.CurrentWeapon
                 : holder != null ? holder.EquippedWeapon : null;
+            if (!isTutorialTagMode) customer.RevealCompletedRequests(weapon);
             if (Time.unscaledTime < m_nextUpdate && m_previousCustomer == customer && m_previousWeapon == weapon &&
                 m_previousStep == currentStep)
             {
@@ -179,6 +180,7 @@ namespace WeaponWorkshop
             {
                 foreach (string id in ids)
                 {
+                    if (!customer.IsRequestVisible(id)) continue;
                     AddRequestRows(table, id, snapshot, CustomerRewardInfo.ContractReward(customer.Profile, id));
                 }
             }

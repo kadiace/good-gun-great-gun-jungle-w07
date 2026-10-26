@@ -11,7 +11,7 @@ namespace WeaponWorkshop
 {
     /// <summary>
     /// 사격장 표적 선택창의 저작된 참조, 버튼·입력 이벤트 전달, 표시 갱신과 시작 숨김만 담당하는 View입니다.
-    /// TargetBell·GameManager·ShootingTestData 같은 도메인은 Presenter가 소유합니다.
+    /// TargetBell·GameManager·ShootingTestBinding 같은 도메인은 Presenter가 소유합니다.
     /// </summary>
     public sealed class TargetSelectionView : MonoBehaviour
     {

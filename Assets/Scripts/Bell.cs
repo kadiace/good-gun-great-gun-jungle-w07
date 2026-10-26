@@ -110,7 +110,7 @@ namespace WeaponWorkshop
         }
 
         private bool CanSpawn() =>
-            isActiveAndEnabled && (dayManager == null || !dayManager.IsNight) && current == null && waiting.Count > 0 && spawnPoint != null && counterPoint != null && exitPoint != null;
+            isActiveAndEnabled && (dayManager == null || dayManager.CanAcceptCustomers) && current == null && waiting.Count > 0 && spawnPoint != null && counterPoint != null && exitPoint != null;
 
         private bool SpawnNext()
         {
@@ -136,6 +136,7 @@ namespace WeaponWorkshop
             ReleaseCustomer();
             dayManager?.CompletedGuest(0, dissatisfied: dissatisfied);
             SaleCompleted?.Invoke(price);
+            dayManager?.CloseShopAfterCustomer();
             dayManager?.RefreshRemainingCustomers();
             dayManager?.RefillCustomers();
             SpawnNext();
@@ -147,6 +148,7 @@ namespace WeaponWorkshop
             ReleaseCustomer();
             dayManager?.CompletedGuest(0, killed: true);
             CustomerKilled?.Invoke();
+            dayManager?.CloseShopAfterCustomer();
             dayManager?.RefreshRemainingCustomers();
             dayManager?.RefillCustomers();
             SpawnNext();

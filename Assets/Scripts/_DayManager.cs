@@ -16,6 +16,7 @@ public class _DayManager : MonoBehaviour
     public float BusinessRemaining => businessRemaining;
     public float BusinessDuration => businessDuration;
     public bool BusinessRunning => businessRunning;
+    public bool CanAcceptCustomers => !IsNight && (DayNumber == 0 || businessRunning && businessRemaining > 0f);
     [SerializeField, Tooltip("일차 번호로 조회할 CustomerDay 에셋 목록")] private CustomerDay[] customerDays;
     [SerializeField] private CustomerDay tutorialDay;
     [SerializeField, Min(0), Tooltip("0은 튜토리얼 일차. 내용 작성 전에는 기존 1일차 시작을 유지합니다.")]
@@ -125,7 +126,7 @@ public class _DayManager : MonoBehaviour
     {
         if (!businessRunning || IsNight) return;
         businessRemaining = Mathf.Max(0f, businessRemaining - Time.deltaTime);
-        if (businessRemaining <= 0f) CloseShop();
+        if (businessRemaining <= 0f && (customerBell == null || customerBell.Current == null)) CloseShop();
     }
     private void OnEnable()
     {
@@ -235,6 +236,10 @@ public class _DayManager : MonoBehaviour
         return selected;
     }
     public void CloseShop() => CloseShop(false);
+    public void CloseShopAfterCustomer()
+    {
+        if (businessRunning && businessRemaining <= 0f) CloseShop();
+    }
     public void CloseShop(bool manual)
     {
         if (IsNight || IsAwaitingOpening || isSettled || !HasRequiredReferences()) return;
@@ -350,9 +355,13 @@ public class _DayManager : MonoBehaviour
             ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday);
             if (!ApplyCustomerDay(CurrentCustomerDay)) return false;
         }
-        if (!customerBell.StartBusiness()) return false;
         businessRemaining = businessDuration;
         businessRunning = DayNumber != 0;
+        if (!customerBell.StartBusiness())
+        {
+            businessRunning = false;
+            return false;
+        }
         BusinessOpened?.Invoke(DayNumber, Money);
         Changed?.Invoke();
         return true;
@@ -791,11 +800,18 @@ public class _DayManager : MonoBehaviour
         day.CopyRuntimeFrom(source);
         if (source.customers == null) return day;
         day.customers = (CustomerProfile[])source.customers.Clone();
-        if (source.day == 0 || endlessRequests == null || !source.UseRequestPool) return day;
+        if (source.day == 0 || endlessRequests == null) return day;
+        if (!source.UseRequestPool)
+        {
+            for (int i = 0; i < day.customers.Length; i++)
+                if (day.customers[i] != null && !day.customers[i].IsDifficult &&
+                    !HasMandatoryTag(day.customers[i])) day.customers[i] = CreateCombination(source.day, day.MinRequests, day.MaxRequests);
+            return day;
+        }
         var specials = new List<CustomerProfile>();
         int generated = source.ExtraGenerated;
         foreach (CustomerProfile profile in source.customers)
-            if (profile != null && !IsSpecial(profile)) generated++;
+            if (profile != null && (!IsSpecial(profile) || (!profile.IsDifficult && !HasMandatoryTag(profile)))) generated++;
             else specials.Add(profile); // null도 그대로 넘겨 ApplyCustomerDay가 에러를 띄우게 함
         int total = specials.Count + generated;
         var customers = new CustomerProfile[total];
@@ -853,7 +869,8 @@ public class _DayManager : MonoBehaviour
             foreach (CustomerDay day in customerDays)
                 if (day != null && day.customers != null)
                     foreach (CustomerProfile profile in day.customers)
-                        if (profile != null && (endlessRequests == null || IsSpecial(profile)) &&
+                        if (profile != null && (endlessRequests == null || (IsSpecial(profile) &&
+                            (profile.IsDifficult || HasMandatoryTag(profile)))) &&
                             !ContainsProfile(exclude, profile) && !IsDeferred(profile) && seen.Add(profile)) endlessBag.Add(profile);
         for (int i = endlessBag.Count - 1; i > 0; i--)
         {
@@ -868,6 +885,14 @@ public class _DayManager : MonoBehaviour
     // '예?'를 눌러야 말하는 손님 또는 진상. 일반 손님은 무한 모드에서 조합으로 대체됨.
     private static bool IsSpecial(CustomerProfile profile)
         => !profile.EndsClear || profile.Lines.Length > 1;
+
+    private static bool HasMandatoryTag(CustomerProfile profile)
+    {
+        var table = TableManager.Instance.CustomerRequest;
+        foreach (string id in profile.RequestIds)
+            if (!string.IsNullOrEmpty(table.FindRequest(id)?.tagId)) return true;
+        return false;
+    }
 
     private bool HasAnyCustomer()
     {
