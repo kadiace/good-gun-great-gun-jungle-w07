@@ -613,6 +613,8 @@ namespace WeaponWorkshop
                 return false;
             if (step.allowWorkbenchReentry && (component == workbench ||
                 workbench != null && component == workbench.CurrentWeapon)) return true;
+            if (step.id == "first-resell" && component is Customer customer &&
+                customerBell != null && customer == customerBell.Current) return true;
             if (step.id == "raid-acquire-core" && (component == mainCoreDispenser || (component is CoreDispenser dispenser && dispenser.IsBasicCoreDispenser)))
                 return true;
             var current = CurrentInteractionTarget;

@@ -103,7 +103,7 @@ namespace WeaponWorkshop
             bool isTutorialTagMode = tutorialTag != null;
 
             Customer customer = m_bell != null ? m_bell.Current : null;
-            if (!isTutorialTagMode && (customer == null || !customer.HasActiveOrder))
+            if (!isTutorialTagMode && (customer == null || !customer.HasActiveOrder || !customer.HasHeardMandatoryRequest))
             {
                 m_view.HideRows();
                 ResetCache();

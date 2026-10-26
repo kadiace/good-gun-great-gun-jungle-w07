@@ -42,7 +42,7 @@ namespace WeaponWorkshop
             if (UsesRequestDialogue)
             {
                 PrepareRequestDialogue();
-                profile.OrderState.mandatoryRevealed = true;
+                if (HasTalked) profile.OrderState.mandatoryRevealed = true;
                 foreach (var optional in profile.OrderState.optionalDialogues)
                     optional.revealed |= revealedRequests.Contains(optional.requirementId);
             }
@@ -89,6 +89,7 @@ namespace WeaponWorkshop
         public CustomerProfile Profile => profile;
         public bool HasTalked { get; private set; }
         public bool HasActiveOrder => (HasTalked || UsesRequestDialogue) && atCounter && !deathStarted && saveStage < 3;
+        public bool HasHeardMandatoryRequest => !UsesRequestDialogue || profile.OrderState.mandatoryRevealed;
         public bool SaleSatisfied { get; private set; }
         public Transform OutlineRoot => transform;
 
@@ -109,7 +110,6 @@ namespace WeaponWorkshop
             if (UsesRequestDialogue)
             {
                 PrepareRequestDialogue();
-                profile.OrderState.mandatoryRevealed = true;
             }
             exitPoint = exit;
             StartCoroutine(WalkTo(counterPoint, () => { atCounter = true; saveStage = 1; }));
@@ -164,7 +164,7 @@ namespace WeaponWorkshop
                 !string.IsNullOrEmpty(TableManager.Instance.CustomerRequest.FindRequest(id)?.tagId) || revealedRequests.Contains(id);
             string canonical = CanonicalRequestId(id);
             var order = profile.OrderState;
-            if (order.mandatoryDialogue.requirementId == canonical) return true;
+            if (order.mandatoryDialogue.requirementId == canonical) return order.mandatoryRevealed;
             foreach (var optional in order.optionalDialogues)
                 if (optional.requirementId == canonical) return optional.revealed;
             return false;
@@ -246,16 +246,13 @@ namespace WeaponWorkshop
             {
                 if (string.IsNullOrEmpty(mandatory.intro))
                 {
-                    dialoguePhase = 2;
-                    HasTalked = true;
-                    NotifyIfCustomOrder();
+                    dialoguePhase = 1;
                     ShowRequestDialogue();
                     return;
                 }
                 DialogueUI.Instance.Show(mandatory.intro, mandatory.introResponse, () =>
                 {
                     dialoguePhase = 1;
-                    order.mandatoryRevealed = true;
                     ShowRequestDialogue();
                 });
                 return;
@@ -269,6 +266,7 @@ namespace WeaponWorkshop
                     dialoguePhase = 2;
                     ShowRequestDialogue();
                 });
+                order.mandatoryRevealed = true;
                 return;
             }
             if (dialoguePhase == 3)
@@ -493,6 +491,19 @@ namespace WeaponWorkshop
                 DialogueUI.Instance.ShowChoices(profile.Lines[0],
                     hasWeapon ? new[] { "총기 제출", "닫기" } : new[] { "닫기" },
                     hasWeapon
+                        ? new System.Action[] { () => { close(); if (submissionHolder.EquippedWeapon != null) Sell(submissionHolder); }, close }
+                        : new System.Action[] { close });
+                return;
+            }
+            if (HasTalked && TutorialManager.Instance != null &&
+                TutorialManager.Instance.CurrentStep?.id == "first-resell")
+            {
+                bool canSubmit = submissionHolder != null && submissionHolder.EquippedWeapon != null &&
+                    CheckWeapon(submissionHolder.EquippedWeapon);
+                System.Action close = () => { talking = false; DialogueUI.Instance.Hide(); };
+                DialogueUI.Instance.ShowChoices("관통 모듈 1개요.",
+                    canSubmit ? new[] { "총기 제출하기", "닫기" } : new[] { "닫기" },
+                    canSubmit
                         ? new System.Action[] { () => { close(); if (submissionHolder.EquippedWeapon != null) Sell(submissionHolder); }, close }
                         : new System.Action[] { close });
                 return;
