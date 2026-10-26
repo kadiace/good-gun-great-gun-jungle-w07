@@ -10,6 +10,8 @@ namespace WeaponWorkshop
     public class SlotMachineReels : MonoBehaviour, IInteractable
     {
         [SerializeField] private bool featureEnabled = false;
+        [SerializeField] private bool indestructible;
+        [SerializeField] private bool ticketsOnly;
         [SerializeField] private Transform[] reels;
         [SerializeField] private Transform lever;
         [SerializeField] private Renderer marquee;
@@ -50,9 +52,9 @@ namespace WeaponWorkshop
         public void RestoreDamage(int count, int day, bool atNight)
         {
             destructionCount = Mathf.Max(0, count);
-            destroyedDay = day;
+            destroyedDay = indestructible ? -1 : day;
             destroyedAtNight = atNight;
-            destroyed = day >= 0;
+            destroyed = !indestructible && day >= 0;
             penetrationResistance = explosionResistance = 1f + 2f * Mathf.Max(0, destructionCount - (destroyed ? 1 : 0));
             RefreshDamageState();
         }
@@ -137,7 +139,7 @@ namespace WeaponWorkshop
         /// </summary>
         public void ReceiveAttack(float penetration, float explosion, bool explosionHit)
         {
-            if (!featureEnabled || !isActiveAndEnabled) return;
+            if (!featureEnabled || !isActiveAndEnabled || indestructible) return;
             if (destroyed || (explosionHit ? explosion < explosionResistance : penetration < penetrationResistance)) return;
             float requiredPenetration = penetrationResistance;
             float requiredExplosion = explosionResistance;
@@ -179,7 +181,7 @@ namespace WeaponWorkshop
         {
             PlayerWallet wallet = interactor != null ? PlayerWallet.ForPlayer(interactor.Player) : null;
             return featureEnabled && isActiveAndEnabled && !destroyed && !GameManager.GameplayBlocked &&
-                wallet != null && (spinning || wallet.SlotTickets > 0 || wallet.CanAfford(SpinPrice));
+                wallet != null && (spinning || wallet.SlotTickets > 0 || (!ticketsOnly && wallet.CanAfford(SpinPrice)));
         }
 
         public bool Interact(Interaction interactor)
@@ -197,32 +199,35 @@ namespace WeaponWorkshop
             {
                 if (!wallet.TrySpendSlotTicket()) return false;
             }
-            else if (!wallet.TryPurchase(SpinPrice, () => true)) return false;
+            else if (ticketsOnly || !wallet.TryPurchase(SpinPrice, () => true)) return false;
             int[] result = ChooseResult();
             completedSpins = Mathf.Min(3, completedSpins + 1);
             spinning = true;
             skipRequested = false;
             LogSpin(result, balanceBefore, wallet.Balance, paidWithTicket);
-            StartCoroutine(Spin(result, wallet));
+            StartCoroutine(Spin(result, wallet, interactor.Player));
             return true;
         }
 
         public string GetHoverDescription(PlayerWallet wallet)
         {
-            string resistance = $"관통 내성 {penetrationResistance:0.##} / 폭발 내성 {explosionResistance:0.##}";
+            string resistance = indestructible ? "" : $"관통 내성 {penetrationResistance:0.##} / 폭발 내성 {explosionResistance:0.##}\n";
             if (destroyed)
             {
                 string when = dayManager != null && dayManager.DayNumber > destroyedDay &&
                     destroyedAtNight && !dayManager.IsNight ? "오늘 밤" :
                     $"다음 날 {(destroyedAtNight ? "밤" : "낮")}";
-                return resistance + $"\n파괴되어 수리 중입니다. {when}에 사용할 수 있습니다.";
+                return resistance + $"파괴되어 수리 중입니다. {when}에 사용할 수 있습니다.";
             }
-            if (spinning) return resistance + "\n회전 중... (F로 건너뛰기)";
+            if (spinning) return resistance + "회전 중... (F로 건너뛰기)";
             string ticketAmount = wallet == null || wallet.SlotTickets == 0
                 ? "<color=#FF0000>1개</color>" : "1개";
+            if (ticketsOnly)
+                return resistance + $"슬롯머신 티켓 {ticketAmount}만 받습니다.\n당첨금:\n" +
+                    "기본 $500\n연장 $1,000\n연사 $2,000\n관통 $4,000\n폭발 $5,000\n방사 $50,000";
             string amount = wallet == null || (wallet.SlotTickets == 0 && !wallet.CanAfford(SpinPrice))
                 ? "<color=#FF0000>$1000</color>" : "$1000";
-            return resistance + $"\n슬롯머신 티켓 {ticketAmount} 또는 {amount}을 소모해 당길 수 있습니다.\n" +
+            return resistance + $"슬롯머신 티켓 {ticketAmount} 또는 {amount}을 소모해 당길 수 있습니다.\n" +
                 "슬롯머신 티켓이 있으면 먼저 사용합니다.\n당첨금:\n" +
                 "기본 $500\n연장 $1,000\n연사 $2,000\n관통 $4,000\n폭발 $5,000\n방사 $50,000";
         }
@@ -256,13 +261,13 @@ namespace WeaponWorkshop
 
         private static int[] ChooseResult()
         {
-            int roll = Random.Range(0, 1000);
-            if (roll < 614) return ChooseMiss();
-            int symbol = roll < 814 ? 0 :
-                roll < 914 ? 1 :
-                roll < 964 ? 2 :
-                roll < 989 ? 3 :
-                roll < 999 ? 5 : 4;
+            int roll = Random.Range(0, 2500);
+            if (roll < 571) return ChooseMiss();
+            int symbol = roll < 1571 ? 0 :
+                roll < 2071 ? 1 :
+                roll < 2321 ? 2 :
+                roll < 2446 ? 3 :
+                roll < 2496 ? 5 : 4;
             return new[] { symbol, symbol, symbol };
         }
 
@@ -279,7 +284,7 @@ namespace WeaponWorkshop
         /// 결과 심볼에 맞춰 릴을 회전시키고 정해진 시간표대로 순차 정지한다.
         /// result와 wallet을 사용하며 정지음·당첨 지급 또는 실패음을 처리한 뒤 회전을 종료 상태로 둔다.
         /// </summary>
-        private IEnumerator Spin(int[] result, PlayerWallet wallet)
+        private IEnumerator Spin(int[] result, PlayerWallet wallet, FirstPersonPlayer collector)
         {
             if (marquee != null && glowingMarquee != null) marquee.sharedMaterial = glowingMarquee;
             if (lever != null) SlotMachineSound.PlayLever(transform.position);
@@ -344,7 +349,12 @@ namespace WeaponWorkshop
             skipRequested = false;
             if (result[0] == result[1] && result[1] == result[2])
             {
-                wallet.Credit(Prizes[result[0]]);
+                NightRaidController raid = NightRaidController.Instance;
+                if (raid != null && raid.IsInRaid)
+                {
+                    if (!raid.TryCollectSlotMachineDollar(collector, Prizes[result[0]])) yield break;
+                }
+                else wallet.Credit(Prizes[result[0]]);
                 SlotMachineSound.PlayPayout(transform.position);
                 if (payoutBills != null) payoutBills.Emit(48);
                 FeedbackUI.For(this)?.ShowNotification($"{Symbols[result[0]]} 당첨! ${Prizes[result[0]]:N0}");

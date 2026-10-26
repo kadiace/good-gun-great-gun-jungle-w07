@@ -246,6 +246,11 @@ namespace WeaponWorkshop
                 m_panel.SetActive(false);
             }
 
+            if (m_regionButtons != null && m_regionButtons.Length > 4 && m_regionButtons[4] != null)
+            {
+                m_regionButtons[4].gameObject.SetActive(false);
+            }
+
             if (m_regionInfo != null)
             {
                 m_regionInfo.text = DEFAULT_REGION_INFO;

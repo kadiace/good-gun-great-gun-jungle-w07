@@ -56,6 +56,7 @@ namespace WeaponWorkshop
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
         private int raidEarnedDollars;
+        private int raidSlotMachineDollars;
         private int earnedSlotTickets, collectedSlotTickets;
         private int raidEarnedParts, raidEarnedTickets;
         private readonly System.Collections.Generic.List<int> raidEarnedModules = new System.Collections.Generic.List<int>();
@@ -92,7 +93,9 @@ namespace WeaponWorkshop
             var text = new System.Text.StringBuilder(training ? "획득 정산 (튜토리얼 연습)\n\n" : "획득 정산\n\n");
             if (training) text.AppendLine("연습 습격의 획득물은 공방에 반영되지 않습니다.").AppendLine();
             text.Append("슬롯머신 티켓  +").Append(earnedSlotTickets).AppendLine();
-            text.Append("돈  +").Append(raidEarnedDollars).AppendLine();
+            text.Append("돈  +").Append(raidEarnedDollars - raidSlotMachineDollars).AppendLine();
+            if (raidSlotMachineDollars > 0)
+                text.Append("슬롯 머신 보상  +").Append(raidSlotMachineDollars).AppendLine();
             foreach (int id in unlocks.CaptureUnlockedModules())
                 if (System.Array.IndexOf(raidStartingModules, id) < 0)
                     if (!modules.Contains(id)) modules.Add(id);
@@ -321,6 +324,14 @@ namespace WeaponWorkshop
         {
             if (!CanCollectRaidReward(collector, amount)) return false;
             raidEarnedDollars = (int)System.Math.Min(int.MaxValue, (long)raidEarnedDollars + amount);
+            return true;
+        }
+
+        public bool TryCollectSlotMachineDollar(FirstPersonPlayer collector, int amount)
+        {
+            int before = raidEarnedDollars;
+            if (!TryCollectDollar(collector, amount)) return false;
+            raidSlotMachineDollars += raidEarnedDollars - before;
             return true;
         }
 
@@ -607,7 +618,7 @@ namespace WeaponWorkshop
             inRaid = true;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
-            enemyKills = materialCrateCredits = raidEarnedDollars = 0;
+            enemyKills = materialCrateCredits = raidEarnedDollars = raidSlotMachineDollars = 0;
             raidEarnedParts = raidEarnedTickets = 0;
             pendingMaterialPickups.Clear();
             raidEarnedModules.Clear();
