@@ -16,6 +16,11 @@ namespace WeaponWorkshop
         public event Action<object, FeedbackCloseReason> Closed;
 
         public bool IsChoiceOpen => m_presenter != null && m_presenter.IsOpen;
+
+        /// <summary>
+        /// 확인창 브리지가 활성화되어 있고 확인창 프레젠터와 뷰가 실제로 표시 중인지 여부를 반환합니다.
+        /// </summary>
+        public bool IsChoiceVisible => isActiveAndEnabled && IsChoiceOpen && m_choiceView != null && m_choiceView.IsVisible;
         public bool IsChoiceInputSuspended => m_presenter != null && m_presenter.IsChoiceInputSuspended;
         public RectTransform TutorialConfirmButton => m_presenter != null ? m_presenter.TutorialConfirmButton : null;
 

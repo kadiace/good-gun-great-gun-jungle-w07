@@ -27,6 +27,11 @@ namespace WeaponWorkshop
 
         public bool IsOpen => m_presenter != null && m_presenter.IsOpen;
 
+        /// <summary>
+        /// 레시피 열람 브리지가 활성화되어 있고 레시피 패널이 계층 구조상 실제로 표시 중인지 여부를 반환합니다.
+        /// </summary>
+        public bool IsReadingVisible => isActiveAndEnabled && IsOpen && panel != null && panel.activeInHierarchy;
+
         public RectTransform TutorialButton => m_view != null ? m_view.TutorialButton : null;
 
         private void Awake()

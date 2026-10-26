@@ -122,10 +122,44 @@ public class _DayManager : MonoBehaviour
         businessRemaining = businessDuration;
         businessRunning = false;
     }
+    /// <summary>
+    /// 대화·확인창·매뉴얼·레시피·표적 선택 등 대상 설명 및 열람 화면이 실제로 표시 중인지 검사합니다.
+    /// 대상 화면 중 하나라도 열려 있으면 영업 시계 차감을 막기 위해 true를 반환합니다.
+    /// </summary>
+    private bool IsBusinessClockReadingBlocked()
+    {
+        GameManager gm = gameManager != null ? gameManager : GameManager.Instance;
+        if (gm == null) return false;
+
+        UIManager ui = gm.UI;
+        if (ui != null)
+        {
+            DialogueUI dialogue = ui.Screen<DialogueUI>();
+            if (dialogue != null && dialogue.IsReadingVisible) return true;
+
+            FeedbackUI feedback = ui.Screen<FeedbackUI>();
+            if (feedback != null && feedback.IsChoiceVisible) return true;
+
+            WeaponRecipeUI recipe = ui.Screen<WeaponRecipeUI>();
+            if (recipe != null && recipe.IsReadingVisible) return true;
+
+            TargetSelectionUI targetSelection = ui.Screen<TargetSelectionUI>();
+            if (targetSelection != null && targetSelection.IsReadingVisible) return true;
+        }
+
+        FirstPersonPlayer player = gm.Player;
+        if (player != null)
+        {
+            PlayerManualReader manualReader = player.GetComponent<PlayerManualReader>();
+            if (manualReader != null && manualReader.isActiveAndEnabled && manualReader.IsReading) return true;
+        }
+
+        return false;
+    }
+
     private void Update()
     {
-        if (!businessRunning || IsNight || OnboardingManager.IsShootingGuideActive ||
-            OnboardingManager.IsCustomGuideActive) return;
+        if (!businessRunning || IsNight || IsBusinessClockReadingBlocked()) return;
         businessRemaining = Mathf.Max(0f, businessRemaining - Time.deltaTime);
         if (businessRemaining <= 0f && (customerBell == null || customerBell.Current == null)) CloseShop();
     }

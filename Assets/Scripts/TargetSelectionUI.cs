@@ -20,6 +20,11 @@ namespace WeaponWorkshop
 
         private TargetSelectionPresenter m_presenter;
 
+        /// <summary>
+        /// 표적·사격 시험 선택 브리지가 활성화되어 있고 프레젠터 초기화 및 패널이 계층 구조상 실제로 표시 중인지 여부를 반환합니다.
+        /// </summary>
+        public bool IsReadingVisible => isActiveAndEnabled && m_presenter != null && panel != null && panel.activeInHierarchy;
+
         public int GetSavePrefabIndex(GameObject prefab)
         {
             return prefab == customTargetPrefab ? -2 : System.Array.IndexOf(targetPrefabs, prefab);

@@ -33,7 +33,7 @@ namespace WeaponWorkshop
             {
                 if (instance == null || !instance.isActiveAndEnabled) return false;
                 if (instance.current != null && instance.current.IsCustom) return true;
-                // 단계 사이에도 다음 커스텀 안내가 남아 있으면 영업 시간을 멈춘다.
+                // 현재 진행 중이거나 대기 중인 커스텀 안내 단계가 남아 있는지 확인한다.
                 foreach (var prompt in instance.waiting)
                     if (prompt.IsCustom) return true;
                 return false;

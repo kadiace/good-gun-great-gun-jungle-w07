@@ -30,6 +30,11 @@ namespace WeaponWorkshop
 
         public bool IsOpen => m_presenter != null ? m_presenter.IsOpen : box != null && box.activeSelf;
 
+        /// <summary>
+        /// 대화창 브리지가 활성화되어 있고 대화 상자가 계층 구조상 실제로 표시 중인지 여부를 반환합니다.
+        /// </summary>
+        public bool IsReadingVisible => isActiveAndEnabled && IsOpen && box != null && box.activeInHierarchy;
+
         public RectTransform TutorialButton
         {
             get

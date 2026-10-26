@@ -50,6 +50,11 @@ namespace WeaponWorkshop
         public bool IsInteractPressed => m_interactAction != null && m_interactAction.IsPressed();
         public bool IsAdvancePressed => m_advanceAction != null && m_advanceAction.IsPressed();
         public bool IsYesButtonAvailable => m_yesButton != null && m_yesButton.isActiveAndEnabled && m_yesButton.interactable;
+
+        /// <summary>
+        /// 확인창 View가 활성화되어 있고 확인 패널이 계층 구조상 실제로 표시 중인지 여부를 반환합니다.
+        /// </summary>
+        public bool IsVisible => isActiveAndEnabled && m_choicePanel != null && m_choicePanel.activeInHierarchy;
         public RectTransform TutorialConfirmButton => m_yesButton != null && m_yesButton.interactable ? m_yesButton.transform as RectTransform : null;
 
         private void Awake()
