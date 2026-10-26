@@ -213,8 +213,7 @@ namespace WeaponWorkshop
 
             if (m_view != null)
             {
-                core.TryGetComponent<StatCollector>(out var collector);
-                int price = collector != null ? ModulePriceTotal(collector.Modules) : 0;
+                int price = GetWeaponValue(weapon);
                 if (price != m_lastPrice)
                 {
                     m_lastPrice = price;
@@ -273,20 +272,7 @@ namespace WeaponWorkshop
         }
 
         public int GetWeaponValue(EquipableWeapon weapon)
-        {
-            if (weapon == null) return 0;
-            PowerCore core = weapon.GetComponentInChildren<PowerCore>(true);
-            if (core == null || !core.TryGetComponent<StatCollector>(out var collector)) return 0;
-            return ModulePriceTotal(collector.Modules);
-        }
-
-        private static int ModulePriceTotal(IEnumerable<ModuleData> modules)
-        {
-            long total = 0;
-            foreach (ModuleData module in modules)
-                if (module != null) total += module.BuyPrice;
-            return (int)Math.Min(total, int.MaxValue);
-        }
+            => CustomerRewardInfo.CurrentWeaponValue(weapon);
 
         private static bool SameTags(List<CustomerRequestData.Tag> _current, List<CustomerRequestData.Tag> _applied)
         {
