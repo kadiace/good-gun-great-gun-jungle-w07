@@ -55,6 +55,21 @@ namespace WeaponWorkshop
             public int unlockDay;
         }
         public Sale sale = new Sale();
+        [Serializable] public sealed class MandatoryDialogue
+        {
+            public string requirementId, intro, introResponse, explicitRequest;
+        }
+        [Serializable] public sealed class OptionalDialogueVariant
+        {
+            public string hint, question, explicitRequest;
+        }
+        [Serializable] public sealed class OptionalDialogue
+        {
+            public string requirementId;
+            public OptionalDialogueVariant[] variants = Array.Empty<OptionalDialogueVariant>();
+        }
+        public MandatoryDialogue[] mandatoryDialogues = Array.Empty<MandatoryDialogue>();
+        public OptionalDialogue[] optionalDialogues = Array.Empty<OptionalDialogue>();
         public Pool[] pools = Array.Empty<Pool>();
         public Day[] days = Array.Empty<Day>();
         public Guest[] guests = Array.Empty<Guest>();

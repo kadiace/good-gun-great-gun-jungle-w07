@@ -23,15 +23,12 @@ namespace WeaponWorkshop
         public int MinRequests => Row.minRequests;
         public int MaxRequests => Row.maxRequests;
 
-        // day 일차에 등장할 수 있는 요구사항만 min~max개 조합.
-        // 대출 가능한 날에는 잔액이 부족한 주문도 허용한다. 실제 대출은 플레이어가 선택한다.
         public CustomerProfile Create(int day, int min, int max, PlayerModuleUnlocks unlocks = null,
             int money = int.MaxValue, bool canTakeLoan = false)
         {
             money = Mathf.Max(0, money);
             var table = TableManager.Instance.CustomerRequest;
             var pool = Row;
-            var picked = new List<string>();
             var candidates = new List<string>();
             var bundles = new Dictionary<string, List<string>>();
             foreach (var entry in pool.requests ?? System.Array.Empty<CustomerOrderData.PoolRequest>())
@@ -39,35 +36,93 @@ namespace WeaponWorkshop
                 string id = table.FindRequest(entry?.id)?.id;
                 if (id == null || entry.unlockDay > day || candidates.Contains(id)) continue;
                 if (!pool.TryRequestBundle(id, day, out var bundle)) continue;
-                if (CanAppend(bundle)) { candidates.Add(id); bundles.Add(id, bundle); }
+                if (CustomerModuleRequirements.Allows(bundle.ToArray(), unlocks, CoreStats))
+                { candidates.Add(id); bundles.Add(id, bundle); }
             }
             var tags = candidates.FindAll(id => !string.IsNullOrEmpty(table.FindRequest(id).tagId));
-            if (tags.Count == 0)
+            var optional = candidates.FindAll(id => string.IsNullOrEmpty(table.FindRequest(id).tagId));
+            // 모든 조합을 섞은 뒤 처음 만족하는 조합을 고른다. 전체 조합을 매번 검사하면 손님 한 명을 만드는 데 수 초가 걸리므로,
+            // 유효 조합이 앞에 나오면 조기 종료하고 무작위 순서 덕분에 유효 조합 사이의 분포는 균등하게 유지된다.
+            var combinations = new List<string[]>(tags.Count * optional.Count * optional.Count);
+            foreach (string tag in tags)
+                for (int first = 0; first < optional.Count; first++)
+                    for (int second = first + 1; second < optional.Count; second++)
+                        combinations.Add(new[] { tag, optional[first], optional[second] });
+            for (int index = combinations.Count - 1; index > 0; index--)
             {
-                Debug.LogError("생성 가능한 필수 태그가 없습니다.", this);
+                int swapIndex = Random.Range(0, index + 1);
+                var swap = combinations[index];
+                combinations[index] = combinations[swapIndex];
+                combinations[swapIndex] = swap;
+            }
+            string[] picked = null;
+            foreach (var ids in combinations)
+            {
+                if (!CanCombine(ids)) continue;
+                picked = ids;
+                break;
+            }
+            if (picked == null)
+            {
+                Debug.LogError($"Customer request pool '{poolId}' has no feasible tag + two distinct optional requests for day {day}.", this);
                 return null;
             }
-            int count = Mathf.Min(Random.Range(Mathf.Max(1, min), Mathf.Max(1, max) + 1), candidates.Count);
-            while (picked.Count < count && candidates.Count > 0)
+
+            bool CanCombine(string[] ids)
             {
-                var choices = picked.Count == 0 ? tags : candidates;
-                string next = choices[Random.Range(0, choices.Count)];
-                // 태그를 먼저 유지한다. 필수 동반 요청은 중복 없이 추가하며 요청 수보다 우선한다.
-                if (!picked.Contains(next)) picked.Add(next);
-                foreach (string required in bundles[next]) if (!picked.Contains(required)) picked.Add(required);
-                candidates.RemoveAll(c => picked.Contains(c) || !CanAppend(bundles[c]));
+                var mandatory = table.FindRequest(ids[0]);
+                foreach (string id in ids)
+                    foreach (string required in bundles[id])
+                        if (System.Array.IndexOf(ids, required) < 0) return false;
+                for (int index = 1; index < ids.Length; index++)
+                {
+                    var optionalRequest = table.FindRequest(ids[index]);
+                    foreach (var optionalCondition in table.Conditions(optionalRequest))
+                        foreach (var tagCondition in table.Conditions(mandatory))
+                            if (optionalCondition.Measure == tagCondition.Measure &&
+                                optionalCondition.Stat == tagCondition.Stat &&
+                                optionalCondition.min <= tagCondition.min &&
+                                optionalCondition.max >= tagCondition.max &&
+                                optionalRequest.conditions.Length == 1) return false;
+                }
+                var firstOptional = table.FindRequest(ids[1]);
+                var secondOptional = table.FindRequest(ids[2]);
+                if (firstOptional.conditions.Length == 1 && secondOptional.conditions.Length == 1)
+                {
+                    var firstCondition = firstOptional.conditions[0];
+                    var secondCondition = secondOptional.conditions[0];
+                    if (firstCondition.Measure == secondCondition.Measure && firstCondition.Stat == secondCondition.Stat &&
+                        firstCondition.colorHex == secondCondition.colorHex &&
+                        ((firstCondition.min <= secondCondition.min && firstCondition.max >= secondCondition.max) ||
+                         (secondCondition.min <= firstCondition.min && secondCondition.max >= firstCondition.max))) return false;
+                }
+                for (int first = 0; first < ids.Length; first++)
+                    for (int second = first + 1; second < ids.Length; second++)
+                    {
+                        if (pool.Conflicts(ids[first], ids[second])) return false;
+                        if (!ConditionsOverlap(table.FindRequest(ids[first]), table.FindRequest(ids[second]))) return false;
+                    }
+                return CustomerModuleRequirements.IsFeasible(ids, unlocks, CoreStats, out int dollars) &&
+                    (canTakeLoan || dollars <= money);
             }
 
-            bool CanAppend(List<string> bundle)
+            // 같은 측정값의 조건 범위가 겹치지 않으면 동시에 만족할 수 없는 주문이다.
+            // 예: 제작비 3000 초과 + 1500 이하. 색 조건은 부위별로 따로 칠할 수 있어 제외한다.
+            bool ConditionsOverlap(CustomerRequestData.Request first, CustomerRequestData.Request second)
             {
-                var combined = new List<string>(picked);
-                foreach (string id in bundle) if (!combined.Contains(id)) combined.Add(id);
-                for (int i = 0; i < combined.Count; i++)
-                    for (int j = i + 1; j < combined.Count; j++)
-                        if (pool.Conflicts(combined[i], combined[j])) return false;
-                string[] ids = combined.ToArray();
-                return CustomerModuleRequirements.Allows(ids, unlocks, CoreStats) &&
-                    (canTakeLoan || CustomerModuleRequirements.DollarCost(ids, unlocks, CoreStats) <= money);
+                foreach (var a in first.conditions ?? System.Array.Empty<CustomerRequestData.Condition>())
+                    foreach (var b in second.conditions ?? System.Array.Empty<CustomerRequestData.Condition>())
+                    {
+                        if (a == null || b == null || a.Measure != b.Measure || a.Stat != b.Stat) continue;
+                        if (a.Measure == GunMeasure.PaintedColorFaces || a.Measure == GunMeasure.Shape) continue;
+                        double lower = System.Math.Max(a.min, b.min);
+                        double upper = System.Math.Min(a.max, b.max);
+                        bool lowerExclusive = (a.min >= b.min && a.minExclusive) || (b.min >= a.min && b.minExclusive);
+                        bool upperExclusive = (a.max <= b.max && a.maxExclusive) || (b.max <= a.max && b.maxExclusive);
+                        if (lower < upper || (lower == upper && !lowerExclusive && !upperExclusive)) continue;
+                        return false;
+                    }
+                return true;
             }
 
             var phrases = new List<string>();
@@ -77,13 +132,13 @@ namespace WeaponWorkshop
 
             CustomerProfile profile = CreateInstance<CustomerProfile>();
             profile.name = "Endless_" + string.Join("+", phrases);
-            var templates = picked.Count > 1 && pool.multiRequestTemplates != null && pool.multiRequestTemplates.Length > 0
+            var templates = pool.multiRequestTemplates != null && pool.multiRequestTemplates.Length > 0
                 ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(pool.orderTemplates ?? new string[0], pool.multiRequestTemplates))
                 : pool.orderTemplates;
             profile.Lines = new[] { phrases.Count == 0 ? "기본 총 하나 주세요. 특별한 조건은 없어요."
                 : string.Format(Pick(templates, "{0} 주세요."), string.Join(", ", phrases)) };
             profile.EndsClear = true;
-            profile.RequestIds = picked.ToArray();
+            profile.RequestIds = picked;
             profile.HappyLine = Pick(pool.happyLines, null);
             profile.AngryLine = Pick(pool.angryLines, null);
             profile.portrait = Pick(portraits, null);

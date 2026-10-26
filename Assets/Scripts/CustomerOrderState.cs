@@ -10,6 +10,14 @@ namespace WeaponWorkshop
         public int generatedDay = -1;
         // 요청 ID가 키다. 배열 위치에는 의미가 없으며 계약한 기본액은 저장·연기 후에도 유지한다.
         public RequestReward[] rewards;
+        public CustomerOrderData.MandatoryDialogue mandatoryDialogue;
+        public OptionalDialogueState[] optionalDialogues;
+        public bool mandatoryRevealed;
+        [Serializable] public sealed class OptionalDialogueState
+        {
+            public string requirementId, hint, question, explicitRequest;
+            public bool revealed;
+        }
         [Serializable] public sealed class RequestReward
         {
             public string requestId;
@@ -27,6 +35,18 @@ namespace WeaponWorkshop
         public CustomerOrderState Copy(bool fromSave = false) => new CustomerOrderState
         {
             orderId = orderId, generatedDay = generatedDay,
+            mandatoryRevealed = mandatoryRevealed,
+            mandatoryDialogue = mandatoryDialogue == null ? null : new CustomerOrderData.MandatoryDialogue
+            {
+                requirementId = mandatoryDialogue.requirementId, intro = mandatoryDialogue.intro,
+                introResponse = mandatoryDialogue.introResponse, explicitRequest = mandatoryDialogue.explicitRequest
+            },
+            optionalDialogues = optionalDialogues == null ? null : Array.ConvertAll(optionalDialogues,
+                row => row == null ? null : new OptionalDialogueState
+                {
+                    requirementId = row.requirementId, hint = row.hint, question = row.question,
+                    explicitRequest = row.explicitRequest, revealed = row.revealed
+                }),
             rewards = rewards == null ? null : Array.ConvertAll(rewards,
                 row => row == null ? null : new RequestReward { requestId = row.requestId, amount = row.amount }),
             creationLogged = creationLogged, completionLogged = completionLogged,

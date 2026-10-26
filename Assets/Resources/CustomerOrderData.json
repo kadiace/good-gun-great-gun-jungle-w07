@@ -9,8 +9,8 @@
       "minRequests": 1,
       "maxRequests": 3,
       "requests": [
-        {"id":"module/pure","unlockDay":1},
         {"id":"module/nine-barrel","unlockDay":1},
+        {"id":"module/double-barrel","unlockDay":1},
         {"id":"module/speed","unlockDay":1},
         {"id":"module/spin","unlockDay":1},
         {"id":"module/water","unlockDay":1},
@@ -19,12 +19,10 @@
         {"id":"module/heat","unlockDay":1},
         {"id":"module/gravity","unlockDay":1},
         {"id":"module/homing","unlockDay":1},
-        {"id":"module/basic-core","unlockDay":1},
         {"id":"custom/sticker","unlockDay":1},
         {"id":"custom/keyring","unlockDay":1},
         {"id":"construction/premium","unlockDay":1},
         {"id":"construction/value","unlockDay":1},
-        {"id":"module/stat-modules/exact-0","unlockDay":1},
         {"id":"module/fire-rate/min-1","unlockDay":1},
         {"id":"module/penetration/min-1","unlockDay":1},
         {"id":"module/shotgun/min-1","unlockDay":1},
@@ -49,13 +47,6 @@
         {"id":"color/cobalt-blue-3","unlockDay":2},
         {"id":"color/violet-3","unlockDay":2},
         {"id":"color/pink-3","unlockDay":2},
-        {
-          "id": "module/split-two/min-1",
-          "unlockDay": 1,
-          "requiredRequestIds": [
-            "shooting-test/around-cover"
-          ]
-        },
         {
           "id": "tag/assault-rifle",
           "unlockDay": 1
@@ -82,10 +73,7 @@
         },
         {
           "id": "tag/mini-nuke",
-          "unlockDay": 1,
-          "requiredRequestIds": [
-            "shooting-test/around-cover"
-          ]
+          "unlockDay": 1
         },
         {
           "id": "tag/handgun",
@@ -94,10 +82,6 @@
         {
           "id": "tag/ricochet",
           "unlockDay": 1
-        },
-        {
-          "id": "module/shotgun/min-1",
-          "unlockDay": 2
         },
         {
           "id": "tag/shotgun",
@@ -109,33 +93,11 @@
         },
         {
           "id": "tag/spin",
-          "unlockDay": 1,
-          "requiredRequestIds": [
-            "shooting-test/around-cover"
-          ]
+          "unlockDay": 1
         },
         {
           "id": "tag/water-gun",
           "unlockDay": 1
-        },
-        {
-          "id": "shooting-test/around-cover",
-          "unlockDay": 2
-        },
-        {
-          "id": "shooting-test/behind-barrier",
-          "unlockDay": 2
-        },
-        {
-          "id": "shooting-test/wide-targets",
-          "unlockDay": 4
-        },
-        {
-          "id": "module/split-four/min-1",
-          "unlockDay": 1,
-          "requiredRequestIds": [
-            "shooting-test/around-cover"
-          ]
         }
       ],
       "orderTemplates": [
@@ -162,6 +124,56 @@
         "제가 말한 게 하나도 안 들어갔잖아요!"
       ]
     }
+  ],
+  "mandatoryDialogues": [
+    {"requirementId":"tag/gravity-gun","intro":"아돈 빠가돈나스키!(Огонь по готовности!)","introResponse":"...예?","explicitRequest":"중력건 태그가 붙는 총이요."},
+    {"requirementId":"tag/ricochet","intro":"","introResponse":"","explicitRequest":"도탄 태그가 붙은 총을 원해요."},
+    {"requirementId":"tag/spin","intro":"회전하는 총열... 압도적인 발사수... 훌륭한 대화 수단이 필요해...","introResponse":"대화 수단이라면 제 손에도 들려있죠.","explicitRequest":"개틀링건 태그가 붙은 총으로 부탁해요!"},
+    {"requirementId":"tag/homing","intro":"소개합니다, 제리코 미사일.","introResponse":"미사일이요?","explicitRequest":"스팅어 태그가 붙은 총으로 부탁해요."},
+    {"requirementId":"tag/charge","intro":"","introResponse":"","explicitRequest":"파티용 연기가 나오는, 스모킹건 태그가 필요해요."},
+    {"requirementId":"tag/mini-nuke","intro":"평범한 물총로는 안 되겠어요.","introResponse":"그럼 어떻게 해드릴까요?","explicitRequest":"워터블래스트 태그가 붙은 총으로 부탁해요!"},
+    {"requirementId":"tag/water-gun","intro":"워터밤 때 쓸 물총 만들어주세요.","introResponse":"물총이요?","explicitRequest":"물총 태그가 붙은 걸로 주세요!"},
+    {"requirementId":"tag/flamethrower","intro":"내게 축구는... 살인이다... 파이어 토네이도!!","introResponse":"...축구요?","explicitRequest":"화염방사기 태그가 붙은 총이요!"},
+    {"requirementId":"tag/grenade-launcher","intro":"여기 소믈리에 있나요?","introResponse":"...소믈리에요?","explicitRequest":"유탄발사기 태그가 붙은 총으로 맞춰주세요."},
+    {"requirementId":"tag/sniper-rifle","intro":"","introResponse":"","explicitRequest":"저격소총 태그가 붙은 총으로 주세요."},
+    {"requirementId":"tag/shotgun","intro":"탕! 이게 진짜 총이었으면 당신은 죽었습니다.","introResponse":"위험한 분이시네요...","explicitRequest":"산탄총 태그가 붙은 총으로 주세요."},
+    {"requirementId":"tag/assault-rifle","intro":"","introResponse":"","explicitRequest":"돌격소총 태그가 붙은 총으로 부탁해요."},
+    {"requirementId":"tag/handgun","intro":"","introResponse":"","explicitRequest":"권총 태그가 붙은 총으로 부탁해요."},
+    {"requirementId":"module/pure","intro":"","introResponse":"","explicitRequest":"처음이라 잘 몰라서요. 개조 안 한 기본 코어 그대로 주세요."},
+    {"requirementId":"module/penetration/min-1","intro":"","introResponse":"","explicitRequest":"관통 모듈을 1개 이상 달아주세요."},
+    {"requirementId":"module/fire-rate/min-1","intro":"","introResponse":"","explicitRequest":"연사 모듈을 1개 이상 달아주세요."},
+    {"requirementId":"module/double-barrel","intro":"","introResponse":"","explicitRequest":"발사 총구가 2개 이상이면 좋겠어요."}
+  ],
+  "optionalDialogues": [
+    {"requirementId":"module/nine-barrel","variants":[{"hint":"남자의 로망! 나인배럴이 필요해요.","question":"나인배럴이요?","explicitRequest":"발사 총구가 9개 이상이면 좋겠어요."}]},
+    {"requirementId":"module/double-barrel","variants":[{"hint":"역시 총은 더블배럴이죠.","question":"더블배럴이요?","explicitRequest":"발사 총구가 2개 이상이면 좋겠어요."}]},
+    {"requirementId":"module/fire-rate/min-1","variants":[{"hint":"빠르게 연속으로 쏠 수 있었으면 좋겠어요.","question":"얼마나 빠르게요?","explicitRequest":"연사 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/speed","variants":[{"hint":"총알이 좀 더 빨랐으면 좋겠어요.","question":"탄속이요?","explicitRequest":"가속 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/penetration/min-1","variants":[{"hint":"철갑도 뚫을 수 있었으면 좋겠어요.","question":"철갑도 뚫는다니요?","explicitRequest":"관통 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/spin","variants":[{"hint":"총열이 돌아갔으면 좋겠어요.","question":"총열이 돌아간다구요?","explicitRequest":"회전 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/water","variants":[{"hint":"맞으면 흠뻑 젖는 총이요.","question":"흠뻑 젖는다구요?","explicitRequest":"물 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/charge","variants":[{"hint":"모아서 한 번에 쏘고 싶어요.","question":"모아서 쏜다구요?","explicitRequest":"차지 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/shotgun/min-1","variants":[{"hint":"총알이 넓게 퍼졌으면 좋겠어요.","question":"넓게 퍼진다구요?","explicitRequest":"방사 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/ricochet","variants":[{"hint":"벽에 맞아도 튕겨 나갔으면 좋겠어요.","question":"튕겨 나간다구요?","explicitRequest":"반사 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/explosion","variants":[{"hint":"맞으면 폭발했으면 좋겠어요.","question":"폭발한다구요?","explicitRequest":"폭발 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/heat","variants":[{"hint":"총알에 불이 붙었으면 좋겠어요.","question":"불이 붙는다구요?","explicitRequest":"발열 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/gravity","variants":[{"hint":"적을 끌어당길 수 있었으면 좋겠어요.","question":"끌어당긴다구요?","explicitRequest":"중력 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/homing","variants":[{"hint":"총알이 알아서 따라갔으면 좋겠어요.","question":"알아서 따라간다구요?","explicitRequest":"유도 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"custom/sticker","variants":[{"hint":"총에 뭔가 붙여서 꾸미고 싶어요.","question":"뭘 붙여드릴까요?","explicitRequest":"스티커를 3면 이상 붙여주세요."}]},
+    {"requirementId":"custom/keyring","variants":[{"hint":"총에 작은 장식 하나 달아주세요.","question":"작은 장식이요?","explicitRequest":"키링을 1개 달아주세요."}]},
+    {"requirementId":"shape/cat","variants":[{"hint":"이 그림처럼 만들어주세요.","question":"어떤 모양이요?","explicitRequest":"제시된 실루엣과 정확히 일치하게 만들어주세요."}]},
+    {"requirementId":"color/crimson-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"크림슨 도색을 3면 이상 해주세요."},{"hint":"제 총엔 피가 흘렀으면 좋겠어요.","question":"피가 흐른다구요?","explicitRequest":"크림슨 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"color/orange-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"오렌지 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"color/yellow-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"옐로 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"color/lime-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"라임 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"color/emerald-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"에메랄드 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"color/cyan-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"시안 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"color/cobalt-blue-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"코발트 블루 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"color/violet-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"바이올렛 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"color/pink-3","variants":[{"hint":"총이 너무 밋밋하지 않았으면 좋겠어요.","question":"어떻게 꾸며드릴까요?","explicitRequest":"핑크 도색을 3면 이상 해주세요."}]},
+    {"requirementId":"construction/premium","variants":[{"hint":"돈은 아끼지 않을게요.","question":"예산은 어느 정도인가요?","explicitRequest":"제작비가 $3,000을 초과하면 좋겠어요."}]},
+    {"requirementId":"construction/cost-1500","variants":[{"hint":"너무 비싸지도, 싸지도 않은 걸로 주세요.","question":"어느 정도 가격인가요?","explicitRequest":"제작비가 $1,500 초과, $3,000 이하였으면 좋겠어요."}]},
+    {"requirementId":"construction/value","variants":[{"hint":"예산이 좀 부족해서요.","question":"예산이 얼마인가요?","explicitRequest":"제작비가 $1,500 이하면 좋겠어요."}]}
   ],
   "days": [
     {
@@ -347,7 +359,7 @@
       "id": "25b5381ef8e155343bbafe08fae3af6d",
       "name": "D1_1_BaseCore",
       "requestIds": [
-        "module/stat-modules/exact-0"
+        "module/pure"
       ],
       "lines": [
         "처음이라 잘 몰라서요. 개조 안 한 기본 코어 그대로 주세요."
@@ -364,7 +376,7 @@
         "module/penetration/min-1"
       ],
       "lines": [
-        "관통 모듈을 하나 이상 달아주세요."
+        "관통 모듈을 1개 이상 달아주세요."
       ],
       "endsClear": true,
       "happyLine": "관통 모듈 딱 붙어있네요. 감사합니다!",
@@ -378,7 +390,7 @@
         "module/fire-rate/min-1"
       ],
       "lines": [
-        "연사 모듈이 들어간 총이요."
+        "연사 모듈을 1개 이상 달아주세요."
       ],
       "endsClear": true,
       "happyLine": "드르륵! 이거예요 이거!",
@@ -389,10 +401,10 @@
       "id": "19eb28f21e576bd40bdd9363439fb11a",
       "name": "D1_4_MoreMuzzles",
       "requestIds": [
-        "module/split-four/min-2"
+        "module/double-barrel"
       ],
       "lines": [
-        "총구가 8개 이상인 총 부탁드려요. 방사 모듈 말고, 4방향 분할로요!"
+        "발사 총구가 2개 이상이면 좋겠어요."
       ],
       "endsClear": true,
       "happyLine": "총구가 우수수! 마음에 들어요.",
@@ -404,10 +416,10 @@
       "name": "D1_5_Combo",
       "requestIds": [
         "module/penetration/min-1",
-        "module/split-four/min-1"
+        "module/nine-barrel"
       ],
       "lines": [
-        "관통 모듈이랑 4방향 분할 모듈, 둘 다 써서 만들어주세요."
+        "관통 모듈을 1개 이상 달아주세요. 남자의 로망! 나인배럴이 필요해요."
       ],
       "endsClear": true,
       "happyLine": "둘 다 들어갔네요. 완벽한 조합!",
