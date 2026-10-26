@@ -33,7 +33,7 @@ namespace WeaponWorkshop
         public string ResultReason { get; private set; } = "";
         public int NonForwardMuzzles { get; private set; }
         public bool IsActive => State == TestState.Prepared || State == TestState.Running;
-        public bool CanRetryNearby => (State == TestState.Failed || State == TestState.Ready) && player != null && bell != null &&
+        public bool CanRetryNearby => (State == TestState.Failed || State == TestState.Passed || State == TestState.Ready) && player != null && bell != null &&
             Vector3.Distance(player.transform.position, bell.transform.position) <= retryDistance;
         public bool CanRetryWithWeapon => CanRetryNearby && holder != null && holder.EquippedWeapon != null &&
             holder.EquippedWeapon.IsEquipped && !holder.EquippedWeapon.IsMoving;
@@ -47,8 +47,7 @@ namespace WeaponWorkshop
             if (data == null || !data.IsAvailable || sourcePlayer == null || customer == null ||
                 !customer.HasActiveOrder || bell == null || !bell.AllowsTest(data.Id))
             { error = "사격 테스트 주문과 연결을 확인하세요."; return false; }
-            if (definition == data && player == sourcePlayer && requiredOrder == customer &&
-                State != TestState.Idle && State != TestState.Passed)
+            if (definition == data && player == sourcePlayer && requiredOrder == customer && State != TestState.Idle)
                 return true;
             var sourcePlayerTest = sourcePlayer.GetComponent<PlayerShootingTest>();
             var sourceHUD = GameManager.Instance?.UI?.Screen<ShootingTestHUD>();
