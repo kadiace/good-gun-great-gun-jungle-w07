@@ -321,11 +321,11 @@ namespace WeaponWorkshop
             {
                 if (tutorial.RaidPresetSaveRequested || step.buttonGuide == TutorialButtonGuide.PresetFirst)
                 {
-                    SelectBrowserSlot(0);
+                    SelectBrowserSlot(TutorialManager.RaidPresetSaveSlot);
                 }
                 else if (step.buttonGuide == TutorialButtonGuide.PresetSecond)
                 {
-                    SelectBrowserSlot(1);
+                    SelectBrowserSlot(TutorialManager.RaidPresetLoadSlot);
                 }
             }
         }
@@ -382,7 +382,7 @@ namespace WeaponWorkshop
                 return;
             }
 
-            if (TutorialManager.Instance != null && TutorialManager.Instance.RaidPresetSaveRequested && m_selectedSlot != 0)
+            if (TutorialManager.Instance != null && TutorialManager.Instance.RaidPresetSaveRequested && m_selectedSlot != TutorialManager.RaidPresetSaveSlot)
             {
                 return;
             }
@@ -910,7 +910,7 @@ namespace WeaponWorkshop
             return m_browserOpen && m_selectedSlot >= 0 && BrowserEditing && !BrowserInputBlocked &&
                 TutorialManager.ActionAllowed("preset-save") &&
                 !(TutorialManager.Instance != null && TutorialManager.Instance.RaidPresetSaveRequested &&
-                    m_selectedSlot != 0);
+                    m_selectedSlot != TutorialManager.RaidPresetSaveSlot);
         }
 
         private bool LoadInteractable()
