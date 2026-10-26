@@ -145,13 +145,12 @@ namespace WeaponWorkshop
             {
                 ShootingTestBinding data = m_timedTests[i];
                 bool mandatory = data != null && required.Contains(data.Id);
-                bool interactable = _source.TestController != null && data != null && data.IsAvailable && tests.CanStart(data.Id, unlocks);
+                bool interactable = _source.TestController != null && data != null && data.IsAvailable && tests.CanStart(data.Id, unlocks) &&
+                    OnboardingManager.AllowsShootingGuideTest(_source, data.Id);
                 string label = data == null
                     ? "미설정 테스트"
-                    : (mandatory ? "<color=#FFE28A>[주문 필수]</color> " : "") + data.DisplayName + " · " +
+                    : (mandatory ? "<color=#FFFFFF>[주문 필수]</color> " : "") + data.DisplayName + " · " +
                       data.TimeLimit.ToString("0") + "초";
-                if (data != null && !tests.CanStart(data.Id, unlocks))
-                    label += " · " + tests.UnlockDescription(data.Id, unlocks);
                 m_view.SetTimedTestRow(i, label, interactable, mandatory);
             }
 
@@ -177,6 +176,19 @@ namespace WeaponWorkshop
                 m_view.FocusButton(selected);
             }
 
+            RectTransform guidedButton = null;
+            for (int i = 0; i < m_timedTests.Length; i++)
+            {
+                var data = m_timedTests[i];
+                if (data != null && OnboardingManager.IsShootingGuideActive &&
+                    OnboardingManager.AllowsShootingGuideTest(_source, data.Id))
+                {
+                    var button = m_view.GetTimedTestButton(i);
+                    if (button != null) guidedButton = button.transform as RectTransform;
+                }
+            }
+            OnboardingManager.NotifyShootingSelectionOpened(_source, guidedButton);
+
             return true;
         }
 
@@ -185,6 +197,13 @@ namespace WeaponWorkshop
         /// </summary>
         public void Close()
         {
+            Close(false);
+        }
+
+        private void Close(bool startingTest)
+        {
+            if (!startingTest && m_bell != null && m_view != null && m_view.IsPanelSelfActive)
+                OnboardingManager.NotifyShootingSelectionClosed(m_bell);
             if (m_view != null)
             {
                 m_view.Hide();
@@ -243,13 +262,18 @@ namespace WeaponWorkshop
             FirstPersonPlayer player = GameManager.Instance != null
                 ? GameManager.Instance.Player
                 : null;
+            if (!OnboardingManager.CanPrepareShootingGuideTest(source, m_timedTests[_index].Id, player, out var guideError))
+            {
+                m_view.SetStatus(guideError);
+                return;
+            }
             if (!source.PrepareTest(m_timedTests[_index], player))
             {
                 m_view.SetStatus(source.SpawnFailureReason);
                 return;
             }
 
-            Close();
+            Close(true);
             source.TestController.Begin();
         }
 

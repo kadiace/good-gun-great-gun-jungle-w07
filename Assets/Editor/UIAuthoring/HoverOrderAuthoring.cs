@@ -165,7 +165,7 @@ namespace WeaponWorkshop.EditorTools
             viewSo.FindProperty("m_scanLoadingText").objectReferenceValue = scanLoadingText;
             viewSo.FindProperty("m_moduleCrateScanHint").objectReferenceValue = scanHint;
 
-            // 습격 결과 화면의 모듈 상세 툴팁이 결과 화면 위에 그려지도록 패널에 정렬 Canvas를 둔다(평소 비활성).
+            // HUD 호버와 결과 화면 툴팁이 다른 UI 위에 표시되도록 독립 정렬 Canvas를 둔다.
             GameObject panel = bridgeSo.FindProperty("panel").objectReferenceValue as GameObject;
             if (panel != null)
             {
@@ -176,8 +176,8 @@ namespace WeaponWorkshop.EditorTools
                 }
 
                 sortingCanvas.overrideSorting = true;
-                sortingCanvas.sortingOrder = 500;
-                sortingCanvas.enabled = false;
+                sortingCanvas.sortingOrder = short.MaxValue;
+                sortingCanvas.enabled = true;
                 viewSo.FindProperty("m_resultSortingCanvas").objectReferenceValue = sortingCanvas;
             }
 

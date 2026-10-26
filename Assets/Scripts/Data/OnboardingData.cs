@@ -23,8 +23,19 @@ namespace WeaponWorkshop
             public string targetPath;
         }
 
-        public string[] customRequestIds = Array.Empty<string>();
+        [Serializable]
+        public sealed class ShootingGuide
+        {
+            public string[] testIds = Array.Empty<string>();
+            public string preferredTestId;
+            public float minimumPenetration;
+            public string introduction, prepareObjective, equipObjective, openObjective;
+            public string hitCountIntroduction, hitCountPrepareObjective;
+            public string selectObjective, fireObjective, passed, failed;
+        }
+
         public Module[] modules = Array.Empty<Module>();
         public CustomStep[] customSteps = Array.Empty<CustomStep>();
+        public ShootingGuide shootingGuide = new ShootingGuide();
     }
 }

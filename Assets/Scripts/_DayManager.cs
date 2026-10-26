@@ -124,7 +124,8 @@ public class _DayManager : MonoBehaviour
     }
     private void Update()
     {
-        if (!businessRunning || IsNight) return;
+        if (!businessRunning || IsNight || OnboardingManager.IsShootingGuideActive ||
+            OnboardingManager.IsCustomGuideActive) return;
         businessRemaining = Mathf.Max(0f, businessRemaining - Time.deltaTime);
         if (businessRemaining <= 0f && (customerBell == null || customerBell.Current == null)) CloseShop();
     }
@@ -350,7 +351,7 @@ public class _DayManager : MonoBehaviour
     {
         if (!IsAwaitingOpening || GameManager.GameplayBlocked || !HasRequiredReferences()) return false;
         // 잔액·대출 가능 여부는 영업 시작 시점 기준. 대기열을 다시 넣으므로 종 시작 전에 판정한다.
-        if (DayNumber != 0 && CurrentCustomerDay != null && CurrentCustomerDay.customers != null)
+        if (DayNumber >= 2 && CurrentCustomerDay != null && CurrentCustomerDay.customers != null)
         {
             ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday);
             if (!ApplyCustomerDay(CurrentCustomerDay)) return false;
@@ -564,20 +565,6 @@ public class _DayManager : MonoBehaviour
             for (int i = 0; i < restoredDay.customers.Length; i++)
                 restoredDay.customers[i] = CreateRuntimeOrder(restoredDay.customers[i], data.day, restored: true);
         }
-        for (int i = 0; i < restoredDay.customers.Length; i++)
-        {
-            bool currentOrder = i == data.currentCustomer && data.customer != null && data.customer.stage < 3;
-            if (i < data.nextCustomer && !currentOrder) continue;
-            var profile = restoredDay.customers[i];
-            if (CanServe(profile, data.day)) continue;
-            if (TryFindProfile(profile, out _, out _) && !IsDeferred(profile)) deferredCustomers.Add(profile);
-            restoredDay.customers[i] = CreateCombination(data.day, restoredDay.MinRequests, restoredDay.MaxRequests);
-            if (currentOrder)
-            {
-                data.customer = new CustomerSave { stage = data.customer.stage == 0 ? 0 : 1, position = data.customer.position };
-                data.confirmation = false;
-            }
-        }
         if (!ApplyCustomerDay(restoredDay)) return;
         DayNumber = data.day; CompletedGuests = data.completed; DissatisfiedGuests = data.dissatisfied;
         KilledGuests = data.killed; TodayIncome = data.income; TodaySoldConstructionCost = data.soldConstructionCost;
@@ -712,20 +699,22 @@ public class _DayManager : MonoBehaviour
     // 손님 한 명 처리 후 남은 손님을 잔액·대출 가능 여부로 재판정하고, 못 받는 손님은 미룬다.
     public void RefreshRemainingCustomers()
     {
-        if (DayNumber == 0 || IsNight || CurrentCustomerDay == null || CurrentCustomerDay.customers == null || customerBell == null) return;
+        if (DayNumber < 2 || IsNight || CurrentCustomerDay == null || CurrentCustomerDay.customers == null || customerBell == null) return;
         ApplyDeferrals(CurrentCustomerDay, DayNumber, CanServeToday, customerBell.NextCustomerIndex);
         PrepareRuntimeOrders(CurrentCustomerDay);
         customerBell.ReplaceRemaining(CurrentCustomerDay.customers);
     }
 
+    // 1일차도 고정 5명을 마친 뒤에는 남은 영업 시간 동안 일반 손님을 계속 생성한다.
     public void RefillCustomers()
     {
-        if (!businessRunning || IsNight || CurrentCustomerDay == null || customerBell == null ||
+        if (DayNumber < 1 || !CanAcceptCustomers || !businessRunning || CurrentCustomerDay == null || customerBell == null ||
             customerBell.RemainingCustomers > 0) return;
+        var next = CreateCombination(DayNumber, CurrentCustomerDay.MinRequests, CurrentCustomerDay.MaxRequests);
+        if (next == null) return;
         var orders = new CustomerProfile[CurrentCustomerDay.customers.Length + 1];
         Array.Copy(CurrentCustomerDay.customers, orders, orders.Length - 1);
-        orders[orders.Length - 1] = CreateRuntimeOrder(CreateCombination(DayNumber,
-            CurrentCustomerDay.MinRequests, CurrentCustomerDay.MaxRequests), DayNumber);
+        orders[orders.Length - 1] = CreateRuntimeOrder(next, DayNumber);
         CurrentCustomerDay.customers = orders;
         dailyGuestCount = orders.Length;
         customerBell.ReplaceRemaining(orders);
@@ -734,16 +723,27 @@ public class _DayManager : MonoBehaviour
 
     // 모듈 해금은 필수. 잔액이 부족해도 오늘 대출을 사용할 수 있으면 주문을 허용한다.
     private bool CanServeToday(CustomerProfile profile, int day)
-        => CanServe(profile, day) && wallet != null &&
-            (wallet.CanTakeLoan(day) || wallet.CanAfford(CustomerModuleRequirements.DollarCost(profile, ModuleUnlocks,
-                endlessRequests != null ? endlessRequests.CoreStats : default)));
+    {
+        if (!CanServe(profile, day) || wallet == null) return false;
+        var core = endlessRequests != null ? endlessRequests.CoreStats : default;
+        int dollars;
+        if (IsSpecial(profile)) dollars = CustomerModuleRequirements.DollarCost(profile, ModuleUnlocks, core);
+        else if (!CustomerModuleRequirements.IsFeasible(profile.RequestIds, ModuleUnlocks, core, out dollars)) return false;
+        return wallet.CanTakeLoan(day) || wallet.CanAfford(dollars);
+    }
 
     private CustomerProfile CreateCombination(int day, int min = -1, int max = -1)
-        => endlessRequests == null ? ScriptableObject.CreateInstance<CustomerProfile>()
-            : endlessRequests.Create(day,
+    {
+        if (endlessRequests == null)
+        {
+            Debug.LogError("Customer request pool is not assigned; no generated order was created.", this);
+            return null;
+        }
+        return endlessRequests.Create(day,
                 min < 0 ? endlessRequests.MinRequests : min,
                 max < 0 ? endlessRequests.MaxRequests : max,
                 ModuleUnlocks, Money, wallet != null && wallet.CanTakeLoan(day));
+    }
 
     private CustomerDay PrepareDay(int dayNumber)
     {
@@ -752,7 +752,7 @@ public class _DayManager : MonoBehaviour
         if (day?.customers != null)
             for (int i = 0; i < day.customers.Length; i++)
                 day.customers[i] = CreateRuntimeOrder(day.customers[i], dayNumber);
-        if (dayNumber != 0 && day != null && day.customers != null) ApplyDeferrals(day, dayNumber, CanServe);
+        if (dayNumber >= 2 && day != null && day.customers != null) ApplyDeferrals(day, dayNumber, CanServe);
         return day;
     }
 
@@ -774,7 +774,7 @@ public class _DayManager : MonoBehaviour
         }
         foreach (var profile in pending)
         {
-            if (!canServe(profile, dayNumber)) continue;
+            if (!IsSpecial(profile) || !canServe(profile, dayNumber)) continue;
             int existing = Array.FindIndex(day.customers, from, candidate => SameProfile(candidate, profile));
             if (existing >= 0)
             {
@@ -790,6 +790,10 @@ public class _DayManager : MonoBehaviour
                 break;
             }
         }
+        var remaining = new List<CustomerProfile>(day.customers);
+        for (int index = remaining.Count - 1; index >= from; index--)
+            if (remaining[index] == null) remaining.RemoveAt(index);
+        day.customers = remaining.ToArray();
     }
 
     // 정해진 일차: '예?'/진상은 그대로, 일반 손님 자리만 그 일차 해금 범위의 요구사항 조합 손님으로 교체한 복사본.
@@ -800,18 +804,19 @@ public class _DayManager : MonoBehaviour
         day.CopyRuntimeFrom(source);
         if (source.customers == null) return day;
         day.customers = (CustomerProfile[])source.customers.Clone();
-        if (source.day == 0 || endlessRequests == null) return day;
+        if (source.day <= 1) return day;
         if (!source.UseRequestPool)
         {
             for (int i = 0; i < day.customers.Length; i++)
-                if (day.customers[i] != null && !day.customers[i].IsDifficult &&
-                    !HasMandatoryTag(day.customers[i])) day.customers[i] = CreateCombination(source.day, day.MinRequests, day.MaxRequests);
+                if (day.customers[i] != null && !IsSpecial(day.customers[i]))
+                    day.customers[i] = CreateCombination(source.day, day.MinRequests, day.MaxRequests);
+            day.customers = Array.FindAll(day.customers, profile => profile != null);
             return day;
         }
         var specials = new List<CustomerProfile>();
         int generated = source.ExtraGenerated;
         foreach (CustomerProfile profile in source.customers)
-            if (profile != null && (!IsSpecial(profile) || (!profile.IsDifficult && !HasMandatoryTag(profile)))) generated++;
+            if (profile != null && !IsSpecial(profile)) generated++;
             else specials.Add(profile); // null도 그대로 넘겨 ApplyCustomerDay가 에러를 띄우게 함
         int total = specials.Count + generated;
         var customers = new CustomerProfile[total];
@@ -820,10 +825,9 @@ public class _DayManager : MonoBehaviour
         {
             // '예?' 손님을 목록 순서대로 하루 전체에 고르게 펼침. 첫 손님은 조합 손님이 오도록.
             bool special = next < specials.Count && (t + 1) * specials.Count / total > t * specials.Count / total;
-            customers[t] = special ? specials[next++] : endlessRequests.Create(source.day, source.MinRequests, source.MaxRequests,
-                ModuleUnlocks, Money, wallet != null && wallet.CanTakeLoan(source.day));
+            customers[t] = special ? specials[next++] : CreateCombination(source.day, source.MinRequests, source.MaxRequests);
         }
-        day.customers = customers;
+        day.customers = Array.FindAll(customers, profile => profile != null);
         return day;
     }
 
@@ -833,16 +837,21 @@ public class _DayManager : MonoBehaviour
         var today = new List<CustomerProfile>();
         endlessBag.RemoveAll(IsDeferred);
         foreach (var profile in deferredCustomers)
-            if (today.Count < endlessGuestsPerDay && CanServe(profile, dayNumber)) today.Add(profile);
+            if (today.Count < endlessGuestsPerDay && IsSpecial(profile) && CanServeToday(profile, dayNumber)) today.Add(profile);
         while (today.Count < endlessGuestsPerDay)
         {
             // 일반 손님은 요구사항 조합으로 새로 만들고, '예?'/진상 손님은 대기열에서 꺼냄.
             if (endlessRequests != null && UnityEngine.Random.value < generatedRatio)
-            { today.Add(CreateCombination(dayNumber)); continue; }
-            if (endlessBag.Count == 0 && !RefillEndlessBag(today))
+            {
+                var generated = CreateCombination(dayNumber);
+                if (generated != null) { today.Add(generated); continue; }
+            }
+            if (endlessBag.Count == 0 && !RefillEndlessBag(today, dayNumber))
             {
                 if (endlessRequests == null) break;
-                today.Add(CreateCombination(dayNumber));
+                var generated = CreateCombination(dayNumber);
+                if (generated == null) break;
+                today.Add(generated);
                 continue;
             }
             int last = endlessBag.Count - 1;
@@ -861,7 +870,7 @@ public class _DayManager : MonoBehaviour
         return day;
     }
 
-    private bool RefillEndlessBag(List<CustomerProfile> exclude)
+    private bool RefillEndlessBag(List<CustomerProfile> exclude, int dayNumber)
     {
         var seen = new HashSet<CustomerProfile>(exclude);
         seen.UnionWith(deferredCustomers);
@@ -869,8 +878,7 @@ public class _DayManager : MonoBehaviour
             foreach (CustomerDay day in customerDays)
                 if (day != null && day.customers != null)
                     foreach (CustomerProfile profile in day.customers)
-                        if (profile != null && (endlessRequests == null || (IsSpecial(profile) &&
-                            (profile.IsDifficult || HasMandatoryTag(profile)))) &&
+                        if (profile != null && IsSpecial(profile) && CanServeToday(profile, dayNumber) &&
                             !ContainsProfile(exclude, profile) && !IsDeferred(profile) && seen.Add(profile)) endlessBag.Add(profile);
         for (int i = endlessBag.Count - 1; i > 0; i--)
         {
@@ -884,15 +892,7 @@ public class _DayManager : MonoBehaviour
 
     // '예?'를 눌러야 말하는 손님 또는 진상. 일반 손님은 무한 모드에서 조합으로 대체됨.
     private static bool IsSpecial(CustomerProfile profile)
-        => !profile.EndsClear || profile.Lines.Length > 1;
-
-    private static bool HasMandatoryTag(CustomerProfile profile)
-    {
-        var table = TableManager.Instance.CustomerRequest;
-        foreach (string id in profile.RequestIds)
-            if (!string.IsNullOrEmpty(table.FindRequest(id)?.tagId)) return true;
-        return false;
-    }
+        => profile.IsDifficult || profile.RequestIds.Length == 0;
 
     private bool HasAnyCustomer()
     {

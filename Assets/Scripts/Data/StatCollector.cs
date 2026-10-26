@@ -85,9 +85,14 @@ namespace WeaponWorkshop
                 currentStats = assembly != null ? assembly.Analysis.GetWholeStats(currentStats) : currentStats;
                 var snapshot = CustomerRequestInfo.GetSnapshot(core);
                 matchedTypes.Clear();
+                EquipableWeapon playerWeapon = GetComponentInParent<EquipableWeapon>();
                 if (weaponTypes != null)
                     foreach (WeaponTypeData type in weaponTypes)
-                        if (type != null && TableManager.Instance.CustomerRequest.MeetsTag(type.TableId, snapshot)) matchedTypes.Add(type);
+                        if (type != null && TableManager.Instance.CustomerRequest.MeetsTag(type.TableId, snapshot))
+                        {
+                            matchedTypes.Add(type);
+                            if (playerWeapon != null) TagExperience.Mark(type.TableId);
+                        }
 
                 // Projectiles get only the core base; each muzzle adds the modules on its own route.
                 if (statsSource != null && baseStats != null)

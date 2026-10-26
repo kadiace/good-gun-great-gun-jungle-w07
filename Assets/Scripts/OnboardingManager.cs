@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    public sealed class OnboardingManager : MonoBehaviour
+    public sealed partial class OnboardingManager : MonoBehaviour
     {
         private const float DialogueInputLockSeconds = 0.5f;
 
@@ -15,6 +15,8 @@ namespace WeaponWorkshop
             public CubeBuilder Builder;
             public bool IsCustom;
             public bool IsStroke;
+            public bool IsShooting;
+            public bool IsShootingResult;
         }
 
         private static OnboardingManager instance;
@@ -25,12 +27,39 @@ namespace WeaponWorkshop
         private Prompt current;
         private WorkshopSession session;
 
+        public static bool IsCustomGuideActive
+        {
+            get
+            {
+                if (instance == null || !instance.isActiveAndEnabled) return false;
+                if (instance.current != null && instance.current.IsCustom) return true;
+                // 단계 사이에도 다음 커스텀 안내가 남아 있으면 영업 시간을 멈춘다.
+                foreach (var prompt in instance.waiting)
+                    if (prompt.IsCustom) return true;
+                return false;
+            }
+        }
+
         public static bool IsChoosingModuleDirection(CubeBuilder builder) =>
             instance != null && instance.current != null && !instance.current.IsCustom &&
             !instance.current.IsStroke && instance.current.Builder == builder &&
             DialogueUI.Instance != null && DialogueUI.Instance.IsOpen;
 
-        public static void NotifyModulePlacementAttempt(int moduleId, CubeBuilder builder)
+        public static bool NeedsModuleOnboarding(int moduleId)
+        {
+            if (!Application.isPlaying || shownModules.Contains(moduleId)) return false;
+            var tutorial = TutorialManager.Instance;
+            if (tutorial == null || tutorial.IsTutorialActive) return false;
+            var table = TableManager.Instance != null ? TableManager.Instance.Onboarding : null;
+            if (table == null || table.modules == null) return false;
+            foreach (var module in table.modules)
+                if (module != null && module.moduleId == moduleId) return true;
+            return false;
+        }
+
+        public static bool HasShownModule(int moduleId) => shownModules.Contains(moduleId);
+
+        public static bool NotifyModulePlacementAttempt(int moduleId, CubeBuilder builder)
             => QueueModulePlacementAttempt(moduleId, builder, false);
 
         public static bool NotifyModuleStrokeAttempt(int moduleId, CubeBuilder builder)
@@ -70,12 +99,10 @@ namespace WeaponWorkshop
             var customer = bell != null ? bell.Current : null;
             if (customer == null || !customer.HasActiveOrder || customer.Profile == null) return false;
 
-            var onboarding = TableManager.Instance.Onboarding;
             var requests = TableManager.Instance.CustomerRequest;
             foreach (string requestId in customer.Profile.RequestIds)
             {
-                string canonical = requests.FindRequest(requestId)?.id;
-                if (System.Array.IndexOf(onboarding.customRequestIds, canonical) >= 0) return true;
+                if (requests.IsCustomRequest(requestId)) return true;
             }
             return false;
         }
@@ -124,8 +151,11 @@ namespace WeaponWorkshop
                 if (session != null) session.WorkbenchEntered += OnWorkbenchEntered;
             }
 
+            UpdateShootingGuide(player);
+
             if (current != null || waiting.Count == 0 || TutorialManager.Instance == null ||
                 TutorialManager.Instance.IsTutorialActive || GameManager.GameplayBlocked) return;
+            PrioritizeShortPrompts();
             if (waiting.Peek().IsCustom)
             {
                 if (!HasCurrentCustomOrder())
@@ -207,6 +237,11 @@ namespace WeaponWorkshop
             if (runningSequence != null) Destroy(runningSequence);
             runningSequence = null;
             if (completed == null) return;
+            if (completed.IsShooting)
+            {
+                CompleteShootingPrompt(completed.IsShootingResult, succeeded);
+                return;
+            }
             if (!succeeded)
             {
                 if (completed.IsCustom)
@@ -218,6 +253,7 @@ namespace WeaponWorkshop
                 {
                     shownModules.Remove(completed.ModuleId);
                     if (completed.IsStroke && completed.Builder != null) completed.Builder.CancelOnboardingStroke();
+                    else if (completed.Builder != null) completed.Builder.CancelOnboardingPlacement(completed.ModuleId);
                 }
                 return;
             }
@@ -235,9 +271,10 @@ namespace WeaponWorkshop
 
         private void RemovePrompts(bool custom)
         {
-            if (current != null && current.IsCustom == custom)
+            if (current != null && !current.IsShooting && current.IsCustom == custom)
             {
                 if (current.IsStroke && current.Builder != null) current.Builder.CancelOnboardingStroke();
+                else if (current.Builder != null) current.Builder.CancelOnboardingPlacement(current.ModuleId);
                 TutorialManager.Instance?.Cancel(this);
                 if (runningSequence != null) Destroy(runningSequence);
                 runningSequence = null;
@@ -247,17 +284,29 @@ namespace WeaponWorkshop
             for (int i = 0; i < count; i++)
             {
                 var prompt = waiting.Dequeue();
-                if (prompt.IsCustom != custom) waiting.Enqueue(prompt);
+                if (prompt.IsShooting || prompt.IsCustom != custom) waiting.Enqueue(prompt);
                 else if (prompt.IsStroke && prompt.Builder != null) prompt.Builder.CancelOnboardingStroke();
+                else if (prompt.Builder != null) prompt.Builder.CancelOnboardingPlacement(prompt.ModuleId);
             }
         }
 
         private void OnDestroy()
         {
+            AbortShootingGuide();
             if (session != null) session.WorkbenchEntered -= OnWorkbenchEntered;
-            if (current != null && current.IsStroke && current.Builder != null) current.Builder.CancelOnboardingStroke();
+            if (current != null && current.Builder != null)
+            {
+                if (current.IsStroke) current.Builder.CancelOnboardingStroke();
+                else current.Builder.CancelOnboardingPlacement(current.ModuleId);
+            }
             foreach (var prompt in waiting)
-                if (prompt.IsStroke && prompt.Builder != null) prompt.Builder.CancelOnboardingStroke();
+            {
+                if (prompt.Builder != null)
+                {
+                    if (prompt.IsStroke) prompt.Builder.CancelOnboardingStroke();
+                    else prompt.Builder.CancelOnboardingPlacement(prompt.ModuleId);
+                }
+            }
             TutorialManager.Instance?.Cancel(this);
             if (runningSequence != null) Destroy(runningSequence);
             if (instance == this) instance = null;
@@ -269,6 +318,7 @@ namespace WeaponWorkshop
             instance = null;
             shownModules.Clear();
             customStarted = false;
+            shootingGuideCompleted = false;
         }
     }
 }

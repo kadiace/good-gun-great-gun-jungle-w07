@@ -103,8 +103,8 @@
     },
     {
       "id": "module/fire-rate/min-1",
-      "name": "연사 모듈 개수",
-      "phrase": "",
+      "name": "속사",
+      "phrase": "연사 모듈 1개 이상",
       "tagId": "",
       "requiredTestIds": [],
       "conditions": [
@@ -127,8 +127,8 @@
     },
     {
       "id": "module/penetration/min-1",
-      "name": "관통 모듈 개수",
-      "phrase": "",
+      "name": "철갑탄",
+      "phrase": "관통 모듈 1개 이상",
       "tagId": "",
       "requiredTestIds": [],
       "conditions": [
@@ -200,7 +200,7 @@
     },
     {
       "id": "module/shotgun/min-1",
-      "name": "방사 모듈 개수",
+      "name": "방사형",
       "phrase": "방사 모듈이 연결된 총",
       "tagId": "",
       "requiredTestIds": [],
@@ -342,8 +342,9 @@
       "reward": 300,
       "rewardPerDay": 0
     },
-    {"id":"module/pure","name":"순정","phrase":"한 발사 경로의 스택 모듈 0개","reward":300,"conditions":[{"id":"pure","label":"스택 모듈","measure":"TotalModules","min":0,"max":0}]},
+    {"id":"module/pure","name":"순정","phrase":"모든 발사 경로의 스탯 모듈 0개","reward":300,"legacyIds":["module/basic-core"],"conditions":[{"id":"pure","label":"발사 경로 최대 스탯 모듈 개수","measure":"TotalModules","min":0,"max":0}]},
     {"id":"module/nine-barrel","name":"나인배럴","phrase":"발사 총구 9개 이상","reward":600,"conditions":[{"id":"nine-muzzles","label":"발사 총구","measure":"Muzzles","min":9}]},
+    {"id":"module/double-barrel","name":"더블배럴","phrase":"발사 총구 2개 이상","reward":325,"conditions":[{"id":"double-muzzles","label":"발사 총구","measure":"Muzzles","min":2}]},
     {"id":"module/speed","name":"고속","phrase":"가속 1 이상","reward":300,"conditions":[{"id":"speed","label":"가속","measure":"PathModules","stat":"Speed","min":1}]},
     {"id":"module/spin","name":"회전","phrase":"회전 1 이상","reward":325,"conditions":[{"id":"spin","label":"회전","measure":"PathModules","stat":"Spin","min":1}]},
     {"id":"module/water","name":"물","phrase":"물 1 이상","reward":300,"conditions":[{"id":"water","label":"물","measure":"PathModules","stat":"Water","min":1}]},
@@ -353,7 +354,6 @@
     {"id":"module/heat","name":"화염","phrase":"발열 1 이상","reward":775,"conditions":[{"id":"heat","label":"발열","measure":"PathModules","stat":"Heat","min":1}]},
     {"id":"module/gravity","name":"중력탄","phrase":"중력 1 이상","reward":775,"conditions":[{"id":"gravity","label":"중력","measure":"PathModules","stat":"Gravity","min":1}]},
     {"id":"module/homing","name":"유도탄","phrase":"유도 1 이상","reward":775,"conditions":[{"id":"homing","label":"유도","measure":"PathModules","stat":"Homing","min":1}]},
-    {"id":"module/basic-core","name":"기본","phrase":"기본 코어","reward":200,"conditions":[{"id":"basic-core","label":"기본 코어","measure":"BasicCore","min":1}]},
     {"id":"custom/sticker","name":"스티커","phrase":"스티커 3면 이상","reward":300,"conditions":[{"id":"sticker-faces","label":"스티커 면","measure":"StickerFaces","min":3}]},
     {"id":"custom/keyring","name":"키링","phrase":"키링 1개","reward":300,"conditions":[{"id":"keyring-count","label":"키링","measure":"Keyrings","min":1}]},
     {"id":"construction/premium","name":"프리미엄","phrase":"제작비 $3,000 초과","reward":4525,"conditions":[{"id":"premium-cost","label":"제작비($)","measure":"ConstructionCost","min":3000,"minExclusive":true}]},

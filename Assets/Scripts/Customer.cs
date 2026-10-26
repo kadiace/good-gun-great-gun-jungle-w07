@@ -20,10 +20,16 @@ namespace WeaponWorkshop
         private Vector3 portraitRest;
         private int saveStage, dialogueIndex, soldPrice;
         private readonly HashSet<string> revealedRequests = new HashSet<string>();
+        private int dialoguePhase;
+        private string dialogueRequestId;
+        private WeaponHolder dialogueHolder;
+        private bool UsesRequestDialogue => profile != null && profile.OrderState != null &&
+            profile.OrderState.generatedDay > 0 && !profile.IsDifficult && profile.RequestIds.Length > 0;
 
         public CustomerSave CaptureSave() => new CustomerSave { stage = saveStage, line = dialogueIndex,
             price = soldPrice, talked = HasTalked, satisfied = SaleSatisfied, position = transform.position,
-            revealedRequests = new List<string>(revealedRequests).ToArray() };
+            revealedRequests = new List<string>(revealedRequests).ToArray(),
+            dialoguePhase = dialoguePhase, dialogueRequestId = dialogueRequestId };
 
         public void RestoreSave(CustomerSave state, CustomerProfile savedProfile, Vector3 counter, Vector3 exit)
         {
@@ -33,10 +39,28 @@ namespace WeaponWorkshop
             HasTalked = state.talked; SaleSatisfied = state.satisfied; soldPrice = state.price;
             revealedRequests.Clear();
             foreach (string id in state.revealedRequests ?? System.Array.Empty<string>()) revealedRequests.Add(id);
+            if (UsesRequestDialogue)
+            {
+                PrepareRequestDialogue();
+                profile.OrderState.mandatoryRevealed = true;
+                foreach (var optional in profile.OrderState.optionalDialogues)
+                    optional.revealed |= revealedRequests.Contains(optional.requirementId);
+            }
+            dialoguePhase = state.dialoguePhase > 0 ? state.dialoguePhase : (HasTalked ? 2 : 0);
+            dialogueRequestId = state.dialogueRequestId;
             if (HasTalked && state.stage == 1) NotifyIfCustomOrder();
             saveStage = state.stage; dialogueIndex = state.line; atCounter = state.stage == 1 || state.stage == 2;
             if (state.stage == 0) StartCoroutine(WalkTo(counter, () => { atCounter = true; saveStage = 1; }));
-            else if (state.stage == 2) { talking = true; ShowLine(state.line); }
+            else if (state.stage == 2)
+            {
+                talking = true;
+                if (UsesRequestDialogue)
+                {
+                    dialogueHolder = FindFirstObjectByType<FirstPersonPlayer>()?.GetComponent<WeaponHolder>();
+                    ShowRequestDialogue();
+                }
+                else ShowLine(state.line);
+            }
             else if (state.stage == 3) ShowSaleReaction(state.price);
             else if (state.stage == 4) LeaveAfterSale(state.price);
         }
@@ -64,7 +88,7 @@ namespace WeaponWorkshop
         public event System.Action<CustomerProfile, EquipableWeapon, int, bool, int> WeaponSold;
         public CustomerProfile Profile => profile;
         public bool HasTalked { get; private set; }
-        public bool HasActiveOrder => HasTalked && atCounter && !deathStarted && saveStage < 3;
+        public bool HasActiveOrder => (HasTalked || UsesRequestDialogue) && atCounter && !deathStarted && saveStage < 3;
         public bool SaleSatisfied { get; private set; }
         public Transform OutlineRoot => transform;
 
@@ -76,19 +100,29 @@ namespace WeaponWorkshop
             FitPortrait();
             saveStage = 0;
             revealedRequests.Clear();
+            HasTalked = false;
+            talking = false;
+            atCounter = false;
+            dialoguePhase = 0;
+            dialogueRequestId = null;
+            dialogueHolder = null;
+            if (UsesRequestDialogue)
+            {
+                PrepareRequestDialogue();
+                profile.OrderState.mandatoryRevealed = true;
+            }
             exitPoint = exit;
             StartCoroutine(WalkTo(counterPoint, () => { atCounter = true; saveStage = 1; }));
         }
 
         private void NotifyIfCustomOrder()
         {
+            OnboardingManager.NotifyShootingOrder(this);
             if (profile == null) return;
-            var onboarding = TableManager.Instance.Onboarding;
             var requests = TableManager.Instance.CustomerRequest;
             foreach (string requestId in profile.RequestIds)
             {
-                string canonical = requests.FindRequest(requestId)?.id;
-                if (System.Array.IndexOf(onboarding.customRequestIds, canonical) < 0) continue;
+                if (!requests.IsCustomRequest(requestId)) continue;
                 OnboardingManager.NotifyCustomOrder();
                 break;
             }
@@ -108,23 +142,187 @@ namespace WeaponWorkshop
         public bool Use(WeaponHolder holder)
         {
             if (!atCounter || talking || profile == null) return false;
-            Talk(HasTalked ? holder : null);
+            if (UsesRequestDialogue)
+            {
+                dialogueHolder = holder;
+                dialoguePhase = HasTalked ? 2 : 0;
+                saveStage = 2;
+                talking = true;
+                ShowRequestDialogue();
+            }
+            else Talk(HasTalked ? holder : null);
             return true;
         }
 
         // 요구 조건 체크. 판매 전에 외부(UI 등)에서도 호출 가능.
         public bool CheckWeapon(EquipableWeapon weapon) => profile != null && profile.Check(weapon);
 
-        public bool IsRequestVisible(string id) => profile != null && (profile.OrderState?.generatedDay == 0 ||
-            !string.IsNullOrEmpty(TableManager.Instance.CustomerRequest.FindRequest(id)?.tagId) || revealedRequests.Contains(id));
+        public bool IsRequestVisible(string id)
+        {
+            if (profile == null) return false;
+            if (!UsesRequestDialogue) return profile.OrderState?.generatedDay == 0 ||
+                !string.IsNullOrEmpty(TableManager.Instance.CustomerRequest.FindRequest(id)?.tagId) || revealedRequests.Contains(id);
+            string canonical = CanonicalRequestId(id);
+            var order = profile.OrderState;
+            if (order.mandatoryDialogue.requirementId == canonical) return true;
+            foreach (var optional in order.optionalDialogues)
+                if (optional.requirementId == canonical) return optional.revealed;
+            return false;
+        }
 
         public void RevealCompletedRequests(EquipableWeapon weapon)
         {
-            if (!HasTalked || weapon == null || profile == null) return;
+            if (!HasActiveOrder || weapon == null || profile == null) return;
             var table = TableManager.Instance.CustomerRequest;
             var snapshot = new CustomerRequestInfo.WeaponSnapshot(weapon);
+            bool revealed = false;
             foreach (string id in profile.RequestIds)
-                if (!IsRequestVisible(id) && table.MeetsRequest(id, snapshot)) revealedRequests.Add(id);
+            {
+                if (IsRequestVisible(id) || !table.MeetsRequest(id, snapshot)) continue;
+                revealed |= RevealRequest(id);
+            }
+            if (revealed) OnboardingManager.NotifyShootingOrder(this);
+        }
+
+        private static string CanonicalRequestId(string id) => TableManager.Instance.CustomerRequest.FindRequest(id)?.id ?? id;
+
+        private bool RevealRequest(string id)
+        {
+            string canonical = CanonicalRequestId(id);
+            bool added = revealedRequests.Add(canonical);
+            if (!UsesRequestDialogue) return added;
+            foreach (var optional in profile.OrderState.optionalDialogues)
+                if (optional.requirementId == canonical) optional.revealed = true;
+            return added;
+        }
+
+        private void PrepareRequestDialogue()
+        {
+            var order = profile.OrderState;
+            if (order.mandatoryDialogue != null && order.optionalDialogues != null) return;
+            var data = TableManager.Instance.CustomerOrder;
+            var requests = TableManager.Instance.CustomerRequest;
+            string mandatoryId = CanonicalRequestId(profile.RequestIds[0]);
+            CustomerOrderData.MandatoryDialogue mandatory = null;
+            foreach (var row in data.mandatoryDialogues)
+                if (row != null && CanonicalRequestId(row.requirementId) == mandatoryId) { mandatory = row; break; }
+            order.mandatoryDialogue = new CustomerOrderData.MandatoryDialogue
+            {
+                requirementId = mandatoryId,
+                intro = mandatory?.intro ?? requests.Phrase(mandatoryId) + " 총을 부탁드려요.",
+                introResponse = mandatory?.introResponse ?? Huh,
+                explicitRequest = mandatory?.explicitRequest ?? requests.Phrase(mandatoryId) + " 부탁드려요."
+            };
+            var optionalDialogues = new List<CustomerOrderState.OptionalDialogueState>();
+            var seen = new HashSet<string> { mandatoryId };
+            for (int index = 1; index < profile.RequestIds.Length; index++)
+            {
+                string id = CanonicalRequestId(profile.RequestIds[index]);
+                if (!seen.Add(id)) continue;
+                CustomerOrderData.OptionalDialogueVariant variant = null;
+                foreach (var row in data.optionalDialogues)
+                {
+                    if (row == null || CanonicalRequestId(row.requirementId) != id || row.variants == null || row.variants.Length == 0) continue;
+                    variant = row.variants[Random.Range(0, row.variants.Length)];
+                    break;
+                }
+                var request = requests.FindRequest(id);
+                string hint = variant?.hint ?? (request != null ? VagueRequest(request) : requests.Phrase(id));
+                optionalDialogues.Add(new CustomerOrderState.OptionalDialogueState
+                {
+                    requirementId = id, hint = hint, question = variant?.question ?? "예? " + hint + "?",
+                    explicitRequest = variant?.explicitRequest ?? requests.Phrase(id) + " 부탁드려요."
+                });
+            }
+            order.optionalDialogues = optionalDialogues.ToArray();
+        }
+
+        private void ShowRequestDialogue()
+        {
+            dialogueIndex = 0;
+            var order = profile.OrderState;
+            var mandatory = order.mandatoryDialogue;
+            if (dialoguePhase == 0)
+            {
+                if (string.IsNullOrEmpty(mandatory.intro))
+                {
+                    dialoguePhase = 2;
+                    HasTalked = true;
+                    NotifyIfCustomOrder();
+                    ShowRequestDialogue();
+                    return;
+                }
+                DialogueUI.Instance.Show(mandatory.intro, mandatory.introResponse, () =>
+                {
+                    dialoguePhase = 1;
+                    order.mandatoryRevealed = true;
+                    ShowRequestDialogue();
+                });
+                return;
+            }
+            if (dialoguePhase == 1)
+            {
+                DialogueUI.Instance.Show(mandatory.explicitRequest, Okay, () =>
+                {
+                    HasTalked = true;
+                    NotifyIfCustomOrder();
+                    dialoguePhase = 2;
+                    ShowRequestDialogue();
+                });
+                return;
+            }
+            if (dialoguePhase == 3)
+            {
+                foreach (var optional in order.optionalDialogues)
+                {
+                    if (optional.requirementId != dialogueRequestId) continue;
+                    DialogueUI.Instance.Show(optional.explicitRequest, Okay, () =>
+                    {
+                        dialoguePhase = 2;
+                        dialogueRequestId = null;
+                        ShowRequestDialogue();
+                    });
+                    return;
+                }
+                dialoguePhase = 2;
+            }
+            var lines = new List<string> { $"<b>{mandatory.explicitRequest}</b>" };
+            var labels = new List<string>();
+            var actions = new List<System.Action>();
+            foreach (var optional in order.optionalDialogues)
+            {
+                lines.Add(optional.revealed ? optional.explicitRequest : $"<b>{optional.hint}</b>");
+                if (optional.revealed) continue;
+                labels.Add(optional.question);
+                actions.Add(() =>
+                {
+                    RevealRequest(optional.requirementId);
+                    dialogueRequestId = optional.requirementId;
+                    dialoguePhase = 3;
+                    ShowRequestDialogue();
+                });
+            }
+            if (dialogueHolder != null && dialogueHolder.EquippedWeapon != null)
+            {
+                labels.Add("총기 제출하기");
+                actions.Add(() =>
+                {
+                    CloseRequestDialogue();
+                    if (dialogueHolder != null && dialogueHolder.EquippedWeapon != null) Sell(dialogueHolder);
+                });
+            }
+            labels.Add("닫기");
+            actions.Add(CloseRequestDialogue);
+            DialogueUI.Instance.ShowChoices(string.Join("\n", lines), labels.ToArray(), actions.ToArray());
+        }
+
+        private void CloseRequestDialogue()
+        {
+            talking = false;
+            saveStage = 1;
+            dialoguePhase = 2;
+            dialogueRequestId = null;
+            DialogueUI.Instance.Hide();
         }
 
         /// <summary>
@@ -340,7 +538,11 @@ namespace WeaponWorkshop
                             {
                                 revealedRequests.Add(id);
                                 DialogueUI.Instance.Show("<b>" + TableManager.Instance.CustomerRequest.Phrase(id) + "</b> 부탁드려요.",
-                                    "알겠습니다", () => ShowLine(index, submissionHolder));
+                                    "알겠습니다", () =>
+                                    {
+                                        OnboardingManager.NotifyShootingOrder(this);
+                                        ShowLine(index, submissionHolder);
+                                    });
                             };
                             System.Array.Copy(oldLabels, 0, labels, 1, oldLabels.Length);
                             System.Array.Copy(oldActions, 0, actions, 1, oldActions.Length);

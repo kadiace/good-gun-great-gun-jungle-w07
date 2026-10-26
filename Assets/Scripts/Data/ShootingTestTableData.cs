@@ -15,6 +15,8 @@ namespace WeaponWorkshop
         public sealed class Entry
         {
             public string id, name, instructions, failureHint;
+            public string goalType;
+            public int requiredHits;
             public bool enabled = true;
             public float timeLimit, requiredDestruction;
             public string[] requiredUnlockModules = Array.Empty<string>();

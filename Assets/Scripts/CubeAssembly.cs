@@ -386,6 +386,7 @@ namespace WeaponWorkshop
             GameObject prefab = GetPrefab(slot);
             PlacedBlock sight = prefab != null ? prefab.GetComponent<PlacedBlock>() : null;
             if (sight != null && sight.IsSight) return true;
+            if (HasTriggerModulePrefab(prefab)) return true;
             Vector3Int[] outputs;
             if (IsSingleOutput(slot)) outputs = new[] { outputDirection };
             else if (slot == 3) outputs = new[] { outputDirection, -outputDirection };

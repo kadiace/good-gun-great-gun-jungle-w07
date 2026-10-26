@@ -256,7 +256,7 @@ MonoBehaviour:
   deleteMode: 0
   eraseModeUI: {fileID: 0}
   moduleCatalog: {fileID: 11400000, guid: 9ba20ad561a32444ba7c6c150b2af8ea, type: 2}
-  favorites: 010000000200000003000000040000000500000006000000
+  favorites: 010000000200000003000000040000000500000006000000080000000c0000000e00000011000000
   hoverPreviewMaterial: {fileID: 2100000, guid: 2244735490d61c14c8f8442ee35a6429, type: 2}
   erasePreviewMaterial: {fileID: 2100000, guid: 14bfe90ac585a344fa85af8e7f4efa26, type: 2}
 --- !u!1 &5674124453514101819

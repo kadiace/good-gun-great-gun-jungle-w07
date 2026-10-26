@@ -105,11 +105,12 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// 실패 상태에서만 취소하고 처리 여부를 돌려줍니다.
+        /// 종료 결과를 닫고 처리 여부를 돌려줍니다. 기존 Esc 취소 경로를 재사용합니다.
         /// </summary>
         public bool CloseRetry()
         {
-            if (m_controller == null || m_controller.State != ShootingTestController.TestState.Failed)
+            if (m_controller == null || (m_controller.State != ShootingTestController.TestState.Failed &&
+                m_controller.State != ShootingTestController.TestState.Passed))
             {
                 return false;
             }
@@ -159,27 +160,28 @@ namespace WeaponWorkshop
                 return;
             }
 
-            bool failed = controller.State == ShootingTestController.TestState.Failed;
-            string timer = (failed ? "다음 시도 " : "남은 시간 ") + controller.RemainingSeconds.ToString("0.0") + "초";
-            Color timerColor = !failed && controller.RemainingSeconds <= TIMER_WARNING_SECONDS
-                ? new Color(1f, .35f, .25f)
-                : Color.white;
-
-            string details = controller.StatusText ?? "";
-            if (controller.NonForwardMuzzles > 0)
+            if (controller.State == ShootingTestController.TestState.Prepared ||
+                controller.State == ShootingTestController.TestState.Running)
             {
-                details += "\n* 현재 일부 총구가 전방을 향해 있지 않습니다 (" + controller.NonForwardMuzzles + "개).";
+                Color timerColor = controller.RemainingSeconds <= TIMER_WARNING_SECONDS
+                    ? new Color(1f, .35f, .25f) : Color.white;
+                m_view.SetContent(controller.Definition.DisplayName,
+                    "남은 시간 " + controller.RemainingSeconds.ToString("0.0") + "초", timerColor, controller.StatusText, null);
+                return;
             }
-
-            string retry = failed
-                ? (controller.CanRetryWithWeapon
-                    ? "F: 같은 테스트 즉시 재시도 · Esc: 종료"
-                    : controller.CanRetryNearby
-                        ? "테스트할 총을 손에 든 뒤 F: 재시도 · Esc: 종료"
-                        : "테이블 근처로 돌아와 F: 재시도 · Esc: 종료")
-                : "공격 종류와 관계없이 모든 표적을 각각 기준 이상 파괴하세요.";
-
-            m_view.SetContent(controller.Definition.DisplayName, timer, timerColor, details, retry);
+            if (controller.State == ShootingTestController.TestState.Passed)
+            {
+                m_view.SetContent(controller.Definition.DisplayName, null, Color.white,
+                    "<color=#55FF55>사격 시험 통과!</color>",
+                    "Esc: 닫기 · " + PASSED_AUTO_CANCEL_SECONDS.ToString("0") + "초 후 자동 종료");
+                return;
+            }
+            string retry = controller.CanRetryWithWeapon
+                ? "F: 같은 테스트 즉시 재시도 · Esc: 종료"
+                : controller.CanRetryNearby
+                    ? "총을 장착한 뒤 F: 재시도 · Esc: 종료"
+                    : "테이블 근처에서 총을 들고 F: 재시도 · Esc: 종료";
+            m_view.SetContent(controller.Definition.DisplayName, null, Color.white, controller.ResultReason, retry);
         }
 
         /// <summary>

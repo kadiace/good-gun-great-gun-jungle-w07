@@ -19,5 +19,7 @@ namespace WeaponWorkshop
         public string FailureHint => Definition?.failureHint ?? "";
         public float TimeLimit => Definition?.timeLimit ?? 0f;
         public float RequiredDestruction => Definition?.requiredDestruction ?? 0f;
+        public bool CountsHits => Definition.CountsHits();
+        public int RequiredHits => Definition?.requiredHits ?? 0;
     }
 }

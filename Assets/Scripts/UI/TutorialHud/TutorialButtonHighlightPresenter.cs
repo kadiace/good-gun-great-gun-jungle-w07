@@ -179,6 +179,12 @@ namespace WeaponWorkshop
                 }
             }
 
+            if (OnboardingManager.IsShootingGuideVisible)
+            {
+                var game = GameManager.Instance;
+                if (game != null && game.InTargetSelection && !game.IsPaused && !game.InDialogue &&
+                    (m_feedback == null || !m_feedback.IsChoiceOpen)) Add(OnboardingManager.ShootingTestButton);
+            }
             m_view.ShowTargets(m_targets);
             RectTransform spotlight = null;
             if (m_presets != null)

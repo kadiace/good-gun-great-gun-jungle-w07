@@ -299,6 +299,15 @@ namespace WeaponWorkshop
                 body.WakeUp();
             }
             Changed?.Invoke();
+            bool isSettlementIntro = dayZeroOwner != null &&
+                step.id == "close-and-settle" &&
+                step.completion == TutorialCompletion.SettlementClosed &&
+                !string.IsNullOrWhiteSpace(step.description);
+            if (isSettlementIntro)
+            {
+                if (!dayZeroOwner.IsNight) dayZeroOwner.CloseShop();
+                else if (!dayZeroOwner.IsSettlementOpen) dayZeroOwner.ShowSettlement();
+            }
             if (step.completion == TutorialCompletion.RetirementIntroduction)
             {
                 if (!BeginRetirementIntroduction(step)) Finish("error");
@@ -309,10 +318,6 @@ namespace WeaponWorkshop
                 BeginRetirementFinalStep(step);
                 return;
             }
-            bool isSettlementIntro = dayZeroOwner != null &&
-                step.id == "close-and-settle" &&
-                step.completion == TutorialCompletion.SettlementClosed &&
-                !string.IsNullOrWhiteSpace(step.description);
             if (step.completion == TutorialCompletion.Confirmation ||
                 (step.completion == TutorialCompletion.Signal && step.showDescriptionBeforeObjective &&
                     !string.IsNullOrWhiteSpace(step.description)) ||

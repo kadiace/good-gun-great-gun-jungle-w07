@@ -1221,10 +1221,10 @@ RectTransform:
   - {fileID: 1768961091288703203}
   m_Father: {fileID: 6081847594898388500}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 75}
-  m_SizeDelta: {x: 465, y: 315}
+  m_AnchorMin: {x: 0.337, y: 0.2982593}
+  m_AnchorMax: {x: 0.6635211, y: 0.71000004}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7006139554833174127
 CanvasRenderer:
@@ -3637,6 +3637,7 @@ MonoBehaviour:
   m_spawnButton: {fileID: 5306612187749919824}
   m_cleanupButton: {fileID: 4865196108215602293}
   m_statusText: {fileID: 7573037095556856413}
+  m_layoutReferenceSize: {x: 465, y: 315}
 --- !u!1 &6503477750662271531
 GameObject:
   m_ObjectHideFlags: 0
@@ -4083,7 +4084,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: -13.5}
-  m_SizeDelta: {x: 427.5, y: 27}
+  m_SizeDelta: {x: 427.5, y: 30}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &215608086153770218
 CanvasRenderer:
@@ -4140,12 +4141,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 21
+  m_fontSize: 24
   m_fontSizeBase: 28
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 10.5
-  m_fontSizeMax: 33
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 18
+  m_fontSizeMax: 24
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 4096

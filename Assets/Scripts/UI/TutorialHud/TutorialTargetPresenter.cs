@@ -93,6 +93,18 @@ namespace WeaponWorkshop
             }
 
             TutorialManager tutorial = TutorialManager.Instance;
+            if (OnboardingManager.IsShootingGuideVisible)
+            {
+                GameManager game = GameManager.Instance;
+                var player = game != null ? game.Player : null;
+                var workshop = player != null ? player.GetComponent<WorkshopSession>() : null;
+                Component guidedTarget = OnboardingManager.ShootingTarget;
+                if (guidedTarget == null || GameManager.GameplayBlocked || workshop != null && workshop.IsInWorkshop)
+                    m_view.Hide();
+                else
+                    m_view.ShowTarget(guidedTarget, OnboardingManager.ShootingTargetLabel);
+                return;
+            }
             TutorialStep step = tutorial != null ? tutorial.CurrentStep : null;
             Component target = tutorial != null ? tutorial.CurrentInteractionTarget : null;
             if (tutorial != null && tutorial.IsEditingTutorialWorkbench)

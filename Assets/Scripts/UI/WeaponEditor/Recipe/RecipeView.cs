@@ -229,7 +229,7 @@ namespace WeaponWorkshop
             }
 
             canvasRect.GetWorldCorners(m_canvasCorners);
-            float bottom = weaponInfo.InverseTransformPoint(m_canvasCorners[0]).y + 18f;
+            float bottom = weaponInfo.InverseTransformPoint(m_canvasCorners[0]).y + 200f;
             // Exclude the old recipe height when calculating remaining screen space.
             RectTransform panelRect = panel.transform as RectTransform;
             float headerHeight = weaponInfo.rect.height - (panelRect != null ? panelRect.rect.height : 0f);
