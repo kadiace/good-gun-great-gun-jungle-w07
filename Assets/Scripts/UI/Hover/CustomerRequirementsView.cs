@@ -165,9 +165,9 @@ namespace WeaponWorkshop
                 row.Status.text != status ||
                 row.Status.gameObject.activeSelf == _data.Heading ||
                 row.Description.fontStyle != (_data.Heading ? FontStyles.Bold : FontStyles.Normal) ||
-                layout.padding.left != Mathf.RoundToInt(_data.Depth * 10.5f);
+                layout.padding.left != Mathf.RoundToInt(_data.Depth * 21f);
             row.Rect.gameObject.SetActive(true);
-            layout.padding.left = Mathf.RoundToInt(_data.Depth * 10.5f);
+            layout.padding.left = Mathf.RoundToInt(_data.Depth * 21f);
             Color color = _data.Heading ? Color.white : _data.Met ? new Color(.5f, .88f, .65f) : new Color(1f, .63f, .56f);
             row.Status.text = status;
             row.Status.gameObject.SetActive(!_data.Heading);

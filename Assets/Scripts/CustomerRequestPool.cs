@@ -9,6 +9,14 @@ namespace WeaponWorkshop
     [CreateAssetMenu(menuName = "Weapon Workshop/Customer Request Pool")]
     public sealed class CustomerRequestPool : ScriptableObject
     {
+        [System.Serializable]
+        public sealed class PortraitAsset
+        {
+            [Tooltip("에셋 GUID. 주문 표의 초상화 규칙 키와 같다.")]
+            public string portraitId;
+            public Sprite sprite;
+        }
+
         [SerializeField, HideInInspector] private string poolId;
         public string PoolId => poolId;
         [Tooltip("조합 재료. 각 요구사항의 request 문구가 주문 대사에 들어감")]
@@ -17,7 +25,7 @@ namespace WeaponWorkshop
         [SerializeField, Tooltip("코어 기본 스탯으로 이미 만족하는 주문 조건은 모듈 해금을 요구하지 않음")]
         private CoreBaseStats coreBaseStats;
         public WeaponStats CoreStats => coreBaseStats != null ? coreBaseStats.Stats : default;
-        public Sprite[] portraits;
+        public PortraitAsset[] portraits;
 
         private CustomerOrderData.Pool Row => TableManager.Instance.CustomerOrder.FindPool(poolId) ?? new CustomerOrderData.Pool();
         public int MinRequests => Row.minRequests;
@@ -153,8 +161,68 @@ namespace WeaponWorkshop
             profile.RequestIds = picked;
             profile.HappyLine = Pick(pool.happyLines, null);
             profile.AngryLine = Pick(pool.angryLines, null);
-            profile.portrait = Pick(portraits, null);
+            profile.portrait = PickPortrait(pool, table.FindRequest(picked[0]).tagId, picked);
             return profile;
+        }
+
+        public int IndexOfPortrait(Sprite sprite)
+        {
+            if (portraits == null) return -1;
+            for (int index = 0; index < portraits.Length; index++)
+                if (portraits[index] != null && portraits[index].sprite == sprite) return index;
+            return -1;
+        }
+
+        public Sprite PortraitAt(int index)
+            => portraits != null && index >= 0 && index < portraits.Length && portraits[index] != null
+                ? portraits[index].sprite : null;
+
+        private Sprite PickPortrait(CustomerOrderData.Pool pool, string tagId, string[] picked)
+        {
+            var rules = pool?.portraitRules ?? System.Array.Empty<CustomerOrderData.PortraitRule>();
+            bool exclusive = false;
+            foreach (var rule in rules)
+                if (rule != null && Contains(rule.exclusiveTagIds, tagId)) { exclusive = true; break; }
+
+            var candidates = new List<Sprite>();
+            foreach (var asset in portraits ?? System.Array.Empty<PortraitAsset>())
+            {
+                if (asset == null || asset.sprite == null) continue;
+                var rule = FindRule(rules, asset.portraitId);
+                // 이 태그를 독점하는 초상화가 있으면 그 초상화만 쓴다. 예: 화염방사기 → 마법사·불장난.
+                if (exclusive)
+                {
+                    if (rule != null && Contains(rule.exclusiveTagIds, tagId)) candidates.Add(asset.sprite);
+                }
+                else if (rule == null || Matches(rule, tagId, picked)) candidates.Add(asset.sprite);
+            }
+            if (candidates.Count == 0)
+                foreach (var asset in portraits ?? System.Array.Empty<PortraitAsset>())
+                    if (asset != null && asset.sprite != null) candidates.Add(asset.sprite);
+            return Pick(candidates.ToArray(), null);
+        }
+
+        private static CustomerOrderData.PortraitRule FindRule(CustomerOrderData.PortraitRule[] rules, string portraitId)
+        {
+            if (string.IsNullOrEmpty(portraitId)) return null;
+            foreach (var rule in rules)
+                if (rule != null && rule.portraitId == portraitId) return rule;
+            return null;
+        }
+
+        private static bool Matches(CustomerOrderData.PortraitRule rule, string tagId, string[] picked)
+        {
+            if (rule.tagIds != null && rule.tagIds.Length > 0 && !Contains(rule.tagIds, tagId)) return false;
+            foreach (string required in rule.requiresRequestIds ?? System.Array.Empty<string>())
+                if (System.Array.IndexOf(picked, required) < 0) return false;
+            return true;
+        }
+
+        private static bool Contains(string[] ids, string id)
+        {
+            foreach (string candidate in ids ?? System.Array.Empty<string>())
+                if (candidate == id) return true;
+            return false;
         }
 
         private static T Pick<T>(T[] items, T fallback)

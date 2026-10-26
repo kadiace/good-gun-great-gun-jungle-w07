@@ -23,7 +23,6 @@ namespace WeaponWorkshop
         private const float ChoiceMinHeight = 39f;
         private const float ChoiceMinLineHeight = 40f;
         private const float ChoiceMaxWidth = 620f;
-        private const float ChoiceBoxWidth = 560f;
         private const float ChoiceMaxBoxHeight = 520f;
         private const float ChoiceLineInset = 36f;
 
@@ -264,7 +263,8 @@ namespace WeaponWorkshop
 
             m_answerButton.gameObject.SetActive(false);
             RectTransform original = (RectTransform)m_answerButton.transform;
-            float boxWidth = ChoiceBoxWidth;
+            CaptureAuthoredLayout();
+            float boxWidth = m_authoredBoxSize.x;
             float buttonWidth = Mathf.Min(ChoiceMaxWidth, boxWidth - ChoiceSideMargin * 2f);
             var heights = new float[_labels.Length];
             for (int i = 0; i < _labels.Length; i++)
@@ -298,16 +298,12 @@ namespace WeaponWorkshop
             CaptureAuthoredLayout();
             float stackHeight = ChoiceGap * Mathf.Max(0, _heights.Length - 1);
             foreach (float height in _heights) stackHeight += height;
-            m_line.enableAutoSizing = false;
-            m_line.fontSize = ChoiceFontSize;
-            float lineWidth = Mathf.Max(80f, ChoiceBoxWidth - ChoiceLineInset);
+            float lineWidth = Mathf.Max(80f, m_authoredBoxSize.x - ChoiceLineInset);
             float lineHeight = Mathf.Max(ChoiceMinLineHeight,
                 m_line.GetPreferredValues(m_line.text, lineWidth, 0f).y + ChoiceTextPadding);
-            m_line.enableAutoSizing = m_authoredLineAutoSize;
-            m_line.fontSize = m_authoredLineFontSize;
             float boxHeight = Mathf.Min(ChoiceMaxBoxHeight, Mathf.Max(m_authoredBoxSize.y,
                 ChoiceTopPadding + lineHeight + ChoiceGap + stackHeight + ChoiceBottomMargin));
-            m_boxRect.sizeDelta = new Vector2(ChoiceBoxWidth, boxHeight);
+            m_boxRect.sizeDelta = new Vector2(m_authoredBoxSize.x, boxHeight);
             m_lineRect.anchorMin = new Vector2(0f, 1f);
             m_lineRect.anchorMax = new Vector2(1f, 1f);
             m_lineRect.pivot = new Vector2(0.5f, 1f);
@@ -385,7 +381,11 @@ namespace WeaponWorkshop
             foreach (var button in m_choiceButtons)
             {
                 if (button != null && button.gameObject == selected) EventSystem.current.SetSelectedGameObject(null);
-                if (button != null) Destroy(button.gameObject);
+                if (button != null)
+                {
+                    button.gameObject.SetActive(false);
+                    Destroy(button.gameObject);
+                }
             }
             m_choiceButtons.Clear();
         }

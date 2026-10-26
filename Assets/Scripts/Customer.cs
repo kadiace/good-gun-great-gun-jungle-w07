@@ -42,7 +42,7 @@ namespace WeaponWorkshop
             if (UsesRequestDialogue)
             {
                 PrepareRequestDialogue();
-                profile.OrderState.mandatoryRevealed = true;
+                if (HasTalked) profile.OrderState.mandatoryRevealed = true;
                 foreach (var optional in profile.OrderState.optionalDialogues)
                     optional.revealed |= revealedRequests.Contains(optional.requirementId);
             }
@@ -89,6 +89,7 @@ namespace WeaponWorkshop
         public CustomerProfile Profile => profile;
         public bool HasTalked { get; private set; }
         public bool HasActiveOrder => (HasTalked || UsesRequestDialogue) && atCounter && !deathStarted && saveStage < 3;
+        public bool HasHeardMandatoryRequest => !UsesRequestDialogue || profile.OrderState.mandatoryRevealed;
         public bool SaleSatisfied { get; private set; }
         public Transform OutlineRoot => transform;
 
@@ -109,7 +110,6 @@ namespace WeaponWorkshop
             if (UsesRequestDialogue)
             {
                 PrepareRequestDialogue();
-                profile.OrderState.mandatoryRevealed = true;
             }
             WarnIfShootingTestMissing();
             exitPoint = exit;
@@ -185,7 +185,7 @@ namespace WeaponWorkshop
                 !string.IsNullOrEmpty(TableManager.Instance.CustomerRequest.FindRequest(id)?.tagId) || revealedRequests.Contains(id);
             string canonical = CanonicalRequestId(id);
             var order = profile.OrderState;
-            if (order.mandatoryDialogue.requirementId == canonical) return true;
+            if (order.mandatoryDialogue.requirementId == canonical) return order.mandatoryRevealed;
             foreach (var optional in order.optionalDialogues)
                 if (optional.requirementId == canonical) return optional.revealed;
             return false;
@@ -220,10 +220,21 @@ namespace WeaponWorkshop
         private void PrepareRequestDialogue()
         {
             var order = profile.OrderState;
-            if (order.mandatoryDialogue != null && order.optionalDialogues != null) return;
             var data = TableManager.Instance.CustomerOrder;
             var requests = TableManager.Instance.CustomerRequest;
             string mandatoryId = CanonicalRequestId(profile.RequestIds[0]);
+            bool valid = order.mandatoryDialogue != null && order.mandatoryDialogue.requirementId == mandatoryId &&
+                !string.IsNullOrEmpty(order.mandatoryDialogue.explicitRequest) && order.optionalDialogues != null;
+            if (valid)
+                for (int index = 1; index < profile.RequestIds.Length; index++)
+                {
+                    string id = CanonicalRequestId(profile.RequestIds[index]);
+                    if (id != mandatoryId && !System.Array.Exists(order.optionalDialogues, row =>
+                        row != null && row.requirementId == id && !string.IsNullOrEmpty(row.question)))
+                    { valid = false; break; }
+                }
+            if (valid) return;
+            var previousOptionalDialogues = order.optionalDialogues;
             CustomerOrderData.MandatoryDialogue mandatory = null;
             foreach (var row in data.mandatoryDialogues)
                 if (row != null && CanonicalRequestId(row.requirementId) == mandatoryId) { mandatory = row; break; }
@@ -252,31 +263,37 @@ namespace WeaponWorkshop
                 optionalDialogues.Add(new CustomerOrderState.OptionalDialogueState
                 {
                     requirementId = id, hint = hint, question = variant?.question ?? "예? " + hint + "?",
-                    explicitRequest = variant?.explicitRequest ?? requests.Phrase(id) + " 부탁드려요."
+                    explicitRequest = variant?.explicitRequest ?? requests.Phrase(id) + " 부탁드려요.",
+                    revealed = System.Array.Exists(previousOptionalDialogues ?? System.Array.Empty<CustomerOrderState.OptionalDialogueState>(),
+                        row => row != null && row.requirementId == id && row.revealed)
                 });
             }
             order.optionalDialogues = optionalDialogues.ToArray();
         }
 
-        private void ShowRequestDialogue()
+        private void ShowRequestDialogue(bool justHeardMandatory = false, string justHeardOptional = null)
         {
             dialogueIndex = 0;
             var order = profile.OrderState;
             var mandatory = order.mandatoryDialogue;
+            if (dialoguePhase < 2 && string.IsNullOrEmpty(mandatory.intro))
+            {
+                HasTalked = true;
+                order.mandatoryRevealed = true;
+                NotifyIfCustomOrder();
+                dialoguePhase = 2;
+            }
             if (dialoguePhase == 0)
             {
                 if (string.IsNullOrEmpty(mandatory.intro))
                 {
-                    dialoguePhase = 2;
-                    HasTalked = true;
-                    NotifyIfCustomOrder();
+                    dialoguePhase = 1;
                     ShowRequestDialogue();
                     return;
                 }
                 DialogueUI.Instance.Show(mandatory.intro, mandatory.introResponse, () =>
                 {
                     dialoguePhase = 1;
-                    order.mandatoryRevealed = true;
                     ShowRequestDialogue();
                 });
                 return;
@@ -288,8 +305,9 @@ namespace WeaponWorkshop
                     HasTalked = true;
                     NotifyIfCustomOrder();
                     dialoguePhase = 2;
-                    ShowRequestDialogue();
+                    ShowRequestDialogue(true);
                 });
+                order.mandatoryRevealed = true;
                 return;
             }
             if (dialoguePhase == 3)
@@ -301,18 +319,20 @@ namespace WeaponWorkshop
                     {
                         dialoguePhase = 2;
                         dialogueRequestId = null;
-                        ShowRequestDialogue();
+                        ShowRequestDialogue(justHeardOptional: optional.requirementId);
                     });
                     return;
                 }
                 dialoguePhase = 2;
             }
-            var lines = new List<string> { $"<b>{mandatory.explicitRequest}</b>" };
+            var lines = new List<string>();
+            if (!justHeardMandatory) lines.Add($"<b>{mandatory.explicitRequest}</b>");
             var labels = new List<string>();
             var actions = new List<System.Action>();
             foreach (var optional in order.optionalDialogues)
             {
-                lines.Add(optional.revealed ? optional.explicitRequest : $"<b>{optional.hint}</b>");
+                if (optional.requirementId != justHeardOptional)
+                    lines.Add(optional.revealed ? optional.explicitRequest : $"<b>{optional.hint}</b>");
                 if (optional.revealed) continue;
                 labels.Add(optional.question);
                 actions.Add(() =>
@@ -334,7 +354,8 @@ namespace WeaponWorkshop
             }
             labels.Add("닫기");
             actions.Add(CloseRequestDialogue);
-            DialogueUI.Instance.ShowChoices(string.Join("\n", lines), labels.ToArray(), actions.ToArray());
+            DialogueUI.Instance.ShowChoices(lines.Count > 0 ? string.Join("\n", lines) : "주문을 확인해 주세요.",
+                labels.ToArray(), actions.ToArray());
         }
 
         private void CloseRequestDialogue()
@@ -506,10 +527,35 @@ namespace WeaponWorkshop
         {
             saveStage = 2;
             talking = true;
+            if (HasTalked && TutorialManager.Instance != null &&
+                TutorialManager.Instance.CurrentStep?.id == "first-sell")
+            {
+                bool hasWeapon = submissionHolder != null && submissionHolder.EquippedWeapon != null;
+                System.Action close = () => { talking = false; DialogueUI.Instance.Hide(); };
+                DialogueUI.Instance.ShowChoices(profile.Lines[0],
+                    hasWeapon ? new[] { "총기 제출", "닫기" } : new[] { "닫기" },
+                    hasWeapon
+                        ? new System.Action[] { () => { close(); if (submissionHolder.EquippedWeapon != null) Sell(submissionHolder); }, close }
+                        : new System.Action[] { close });
+                return;
+            }
+            if (HasTalked && TutorialManager.Instance != null &&
+                TutorialManager.Instance.CurrentStep?.id == "first-resell")
+            {
+                bool canSubmit = submissionHolder != null && submissionHolder.EquippedWeapon != null &&
+                    CheckWeapon(submissionHolder.EquippedWeapon);
+                System.Action close = () => { talking = false; DialogueUI.Instance.Hide(); };
+                DialogueUI.Instance.ShowChoices("관통 모듈 1개요.",
+                    canSubmit ? new[] { "총기 제출하기", "닫기" } : new[] { "닫기" },
+                    canSubmit
+                        ? new System.Action[] { () => { close(); if (submissionHolder.EquippedWeapon != null) Sell(submissionHolder); }, close }
+                        : new System.Action[] { close });
+                return;
+            }
             ShowLine(0, submissionHolder);
         }
 
-        private void ShowLine(int index, WeaponHolder submissionHolder = null)
+        private void ShowLine(int index, WeaponHolder submissionHolder = null, bool skipSpokenLine = false)
         {
             dialogueIndex = index;
             bool last = index >= profile.Lines.Length - 1;
@@ -530,7 +576,24 @@ namespace WeaponWorkshop
                 line = string.Join(", ", mandatory) + " 총을 부탁드려요." +
                     (optional.Count > 0 ? " 그리고 " + string.Join(", ", optional) + "." : "");
             }
-            DialogueUI.Instance.Show(line, answer, () =>
+            if (!HasTalked && TutorialManager.Instance != null &&
+                TutorialManager.Instance.CurrentStep?.id == "greet-customer")
+            {
+                DialogueUI.Instance.ShowChoices(line, new[] { "닫기" }, new System.Action[]
+                {
+                    () =>
+                    {
+                        HasTalked = true;
+                        saveStage = 1;
+                        talking = false;
+                        DialogueUI.Instance.Hide();
+                        NotifyIfCustomOrder();
+                        TutorialManager.Instance?.NotifySignal("customer-greeted", this);
+                    }
+                });
+                return;
+            }
+            System.Action advance = () =>
             {
                 if (!last) { ShowLine(index + 1, submissionHolder); return; }
                 // 튜토리얼은 처음 주문을 들었을 때만.
@@ -562,20 +625,22 @@ namespace WeaponWorkshop
                                     "알겠습니다", () =>
                                     {
                                         OnboardingManager.NotifyShootingOrder(this);
-                                        ShowLine(index, submissionHolder);
+                                        ShowLine(index, submissionHolder, true);
                                     });
                             };
                             System.Array.Copy(oldLabels, 0, labels, 1, oldLabels.Length);
                             System.Array.Copy(oldActions, 0, actions, 1, oldActions.Length);
                             break;
                         }
-                        DialogueUI.Instance.ShowChoices(line, labels, actions);
+                        DialogueUI.Instance.ShowChoices("주문을 확인해 주세요.", labels, actions);
                     }
                     else { talking = false; DialogueUI.Instance.Hide(); }
                     // 신호가 다음 튜토리얼 대화를 즉시 열 수 있으므로 손님 대화 처리를 먼저 끝낸다.
                     if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-greeted", this);
                 });
-            });
+            };
+            if (skipSpokenLine) advance();
+            else DialogueUI.Instance.Show(line, answer, advance);
         }
 
         private static string VagueRequest(CustomerRequestData.Request request)
