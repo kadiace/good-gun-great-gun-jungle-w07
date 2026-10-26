@@ -162,6 +162,28 @@ namespace WeaponWorkshop
             if (ids == null) return null;
             return Array.ConvertAll(ids, id => table.FindRequest(id)?.id ?? id);
         }
+        public static bool HasMuzzleOrSplitCondition(this CustomerRequestData table, CustomerRequestData.Request request)
+        {
+            if (request == null) return false;
+            string id = request.id ?? string.Empty;
+            if (id == "module/double-barrel" || id == "module/nine-barrel" ||
+                id.StartsWith("module/split-two", StringComparison.Ordinal) ||
+                id.StartsWith("module/split-four", StringComparison.Ordinal)) return true;
+            // 요청 자체뿐 아니라 태그 내부의 조건도 포함한다.
+            foreach (var condition in table.Conditions(request))
+            {
+                if (condition == null) continue;
+                if (condition.Measure == GunMeasure.Muzzles && condition.min > 1f ||
+                    condition.Measure == GunMeasure.SplitTwoBlocks && condition.min > 0f ||
+                    condition.Measure == GunMeasure.SplitFourBlocks && condition.min > 0f) return true;
+            }
+            return false;
+        }
+
+        public static bool IsShootingTestRequest(this CustomerRequestData.Request request)
+            => request != null && ((request.requiredTestIds != null && request.requiredTestIds.Length > 0) ||
+                (request.id != null && request.id.StartsWith("shooting-test/", StringComparison.Ordinal)));
+
         public static bool IsCustomRequest(this CustomerRequestData table, string id)
         {
             foreach (var condition in table.Conditions(table.FindRequest(id)))

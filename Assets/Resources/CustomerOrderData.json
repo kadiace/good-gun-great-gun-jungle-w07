@@ -11,6 +11,11 @@
       "requests": [
         {"id":"module/nine-barrel","unlockDay":1},
         {"id":"module/double-barrel","unlockDay":1},
+        {"id":"module/split-two/min-1","unlockDay":2},
+        {"id":"module/split-four/min-1","unlockDay":2},
+        {"id":"shooting-test/around-cover","unlockDay":1},
+        {"id":"shooting-test/behind-barrier","unlockDay":2},
+        {"id":"shooting-test/wide-targets","unlockDay":2},
         {"id":"module/speed","unlockDay":1},
         {"id":"module/spin","unlockDay":1},
         {"id":"module/water","unlockDay":1},
@@ -146,6 +151,11 @@
     {"requirementId":"module/double-barrel","intro":"","introResponse":"","explicitRequest":"발사 총구가 2개 이상이면 좋겠어요."}
   ],
   "optionalDialogues": [
+    {"requirementId":"module/split-two/min-1","variants":[{"hint":"두 갈래로 뻗어나가는 총을 원해요.","question":"두 갈래라구요?","explicitRequest":"2방향 분할 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"module/split-four/min-1","variants":[{"hint":"사방으로 총알이 뿜어져 나왔으면 해요.","question":"사방으로요?","explicitRequest":"4방향 분할 모듈을 1개 이상 달아주세요."}]},
+    {"requirementId":"shooting-test/around-cover","variants":[{"hint":"사격장에서 손맛을 직접 검증해보고 싶어요.","question":"사격 시험이요?","explicitRequest":"정면 사격 테스트를 통과한 총으로 주세요."}]},
+    {"requirementId":"shooting-test/behind-barrier","variants":[{"hint":"단단한 표적도 뚫어낸 검증된 총이었으면 해요.","question":"사격 시험이요?","explicitRequest":"관통 사격 테스트를 통과한 총으로 주세요."}]},
+    {"requirementId":"shooting-test/wide-targets","variants":[{"hint":"넓은 범위 표적도 문제없는지 시험해보고 싶어요.","question":"사격 시험이요?","explicitRequest":"폭발 사격 테스트를 통과한 총으로 주세요."}]},
     {"requirementId":"module/nine-barrel","variants":[{"hint":"남자의 로망! 나인배럴이 필요해요.","question":"나인배럴이요?","explicitRequest":"발사 총구가 9개 이상이면 좋겠어요."}]},
     {"requirementId":"module/double-barrel","variants":[{"hint":"역시 총은 더블배럴이죠.","question":"더블배럴이요?","explicitRequest":"발사 총구가 2개 이상이면 좋겠어요."}]},
     {"requirementId":"module/fire-rate/min-1","variants":[{"hint":"빠르게 연속으로 쏠 수 있었으면 좋겠어요.","question":"얼마나 빠르게요?","explicitRequest":"연사 모듈을 1개 이상 달아주세요."}]},
@@ -331,7 +341,8 @@
       "id": "1353401e1a4304d4d9e377490fe26882",
       "name": "D0_4_MoreMuzzles",
       "requestIds": [
-        "module/split-four/min-2"
+        "module/split-four/min-2",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "총구가 8개 이상인 총 부탁드려요. 방사 모듈 말고, 4방향 분할로요!"
@@ -346,7 +357,8 @@
       "name": "D0_5_Combo",
       "requestIds": [
         "module/penetration/min-1",
-        "module/split-four/min-1"
+        "module/split-four/min-1",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "관통 모듈이랑 4방향 분할 모듈, 둘 다 써서 만들어주세요."
@@ -402,7 +414,8 @@
       "id": "19eb28f21e576bd40bdd9363439fb11a",
       "name": "D1_4_MoreMuzzles",
       "requestIds": [
-        "module/double-barrel"
+        "module/double-barrel",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "발사 총구가 2개 이상이면 좋겠어요."
@@ -417,7 +430,8 @@
       "name": "D1_5_Combo",
       "requestIds": [
         "module/penetration/min-1",
-        "module/nine-barrel"
+        "module/nine-barrel",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "관통 모듈을 1개 이상 달아주세요. 남자의 로망! 나인배럴이 필요해요."
@@ -544,7 +558,8 @@
       "name": "D3_1_DoubleBarrelAR",
       "requestIds": [
         "tag/assault-rifle",
-        "module/split-two/min-1"
+        "module/split-two/min-1",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "더블배럴 돌격소총이요.",
@@ -560,7 +575,8 @@
       "name": "D3_2_QuadShotgun",
       "requestIds": [
         "tag/shotgun",
-        "module/split-four/min-1"
+        "module/split-four/min-1",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "산탄총 태그에, 4방향 분할로 네 갈래를 내주세요!"
@@ -650,7 +666,8 @@
       "name": "D3_8_Flamer",
       "requestIds": [
         "tag/flamethrower",
-        "module/split-two/min-1"
+        "module/split-two/min-1",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "3 - 2 - 1, fire!",
@@ -740,7 +757,8 @@
       "name": "D4_5_RipAndTear",
       "requestIds": [
         "tag/shotgun",
-        "module/split-two/min-1"
+        "module/split-two/min-1",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "강한 화력...... 강한 총기..... 찢고 뜯는다..",
@@ -755,7 +773,8 @@
       "id": "d5629a5fb5df7874ebefe9e24bd959af",
       "name": "D4_6_Rotation",
       "requestIds": [
-        "tag/spin"
+        "tag/spin",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "돌려 돌려 돌림판~",
@@ -908,7 +927,8 @@
       "name": "D5_5_RealGun",
       "requestIds": [
         "tag/shotgun",
-        "module/split-two/min-1"
+        "module/split-two/min-1",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "탕! 이게 진짜 총이었으면 당신은 죽었습니다.",
@@ -924,7 +944,8 @@
       "name": "D5_6_FlameTornado",
       "requestIds": [
         "tag/flamethrower",
-        "tag/spin"
+        "tag/spin",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "내게 축구는... 살인이다... 파이어 토네이도!!",
@@ -1050,7 +1071,8 @@
       "name": "D6_5_Minigun",
       "requestIds": [
         "tag/spin",
-        "tag/assault-rifle"
+        "tag/assault-rifle",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "터미네이터2에서 슈왈제네거가 미니건 들고 쏘는 장면 알아요? 너무 멋있어서 저도 하나 살려구요",
@@ -1070,7 +1092,8 @@
         "tag/gravity-gun",
         "tag/spin",
         "tag/homing",
-        "tag/charge"
+        "tag/charge",
+        "shooting-test/around-cover"
       ],
       "lines": [
         "이 가게에서 제일 좋은 거 다 넣어주세요.",

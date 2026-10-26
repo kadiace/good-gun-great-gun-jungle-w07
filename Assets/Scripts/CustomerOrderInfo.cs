@@ -99,7 +99,7 @@ namespace WeaponWorkshop
             if (float.IsNaN(table.sale.difficultCustomerRatio) || float.IsInfinity(table.sale.difficultCustomerRatio) ||
                 table.sale.difficultCustomerRatio < 0f) Debug.LogError("진상 손님 보상 비율을 확인하세요.");
             if (float.IsNaN(table.sale.failedSaleRatio) || float.IsInfinity(table.sale.failedSaleRatio) ||
-                table.sale.failedSaleRatio < 0f) Debug.LogError("대실패 보상 비율을 확인하세요.");
+                table.sale.failedSaleRatio < 0f) Debug.LogError("필수 요구사항 미충족 시 제작비 지급 비율을 확인하세요.");
             var days = new HashSet<int>();
             foreach (var row in table.days ?? Array.Empty<CustomerOrderData.Day>())
                 if (row == null || !days.Add(row.day)) Debug.LogError("주문 표에 빈/중복 일차가 있습니다.");

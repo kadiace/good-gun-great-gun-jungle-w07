@@ -13,13 +13,13 @@ namespace WeaponWorkshop
         {
             public readonly int baseReward, maximumBaseReward, price, maximumPrice, matchedRequests;
             public readonly float multiplier;
-            public Quote(long reward, long maximum, int matched, float saleMultiplier, int weaponValue = 0, float failedRatio = 0.5f)
+            public Quote(long reward, long maximum, int matched, float saleMultiplier,
+                int weaponPayout = 0, int maximumWeaponPayout = 0)
             {
                 baseReward = Clamp(reward); maximumBaseReward = Clamp(maximum);
                 matchedRequests = matched; multiplier = saleMultiplier;
-                price = matched > 0 ? Clamp((long)Scale(baseReward, multiplier) + weaponValue)
-                    : baseReward > 0 ? Scale(baseReward, multiplier) : Scale(weaponValue, failedRatio);
-                maximumPrice = Clamp((long)Scale(maximumBaseReward, multiplier) + (matched > 0 ? weaponValue : 0));
+                price = Clamp((long)Scale(baseReward, multiplier) + weaponPayout);
+                maximumPrice = Clamp((long)Scale(maximumBaseReward, multiplier) + maximumWeaponPayout);
             }
         }
 
@@ -64,34 +64,46 @@ namespace WeaponWorkshop
             if (profile == null) return new Quote(0, 0, 0, multiplier);
             if (profile.IsDifficult)
             {
-                return new Quote(0, 0, 0, 1f, CurrentWeaponValue(weapon),
-                    TableManager.Instance.CustomerOrder.sale.failedSaleRatio);
+                int payout = Scale(CurrentWeaponValue(weapon), TableManager.Instance.CustomerOrder.sale.failedSaleRatio);
+                return new Quote(0, 0, 0, 1f, payout, payout);
             }
             var table = TableManager.Instance.CustomerRequest;
             var snapshot = weaponSnapshot ?? new CustomerRequestInfo.WeaponSnapshot(weapon);
+            string mandatoryId = profile.OrderState?.mandatoryDialogue?.requirementId;
+            bool hasMandatoryDialogue = !string.IsNullOrEmpty(mandatoryId);
+            // 필수/선택 대화 구분이 없는 기존 주문·0일차는 모든 요청을 필수로 취급한다.
+            bool mandatoryMet = hasMandatoryDialogue ? table.MeetsRequest(mandatoryId, snapshot) : snapshot.HasWeapon;
             var seen = new HashSet<string>(StringComparer.Ordinal);
             long rewardTotal = 0, maximum = 0;
             int matched = 0;
             foreach (string id in profile.RequestIds)
             {
                 var request = table.FindRequest(id);
-                if (request == null || !seen.Add(request.id)) continue;
+                if (request == null)
+                {
+                    if (!hasMandatoryDialogue) mandatoryMet = false;
+                    continue;
+                }
+                if (!seen.Add(request.id)) continue;
                 int reward = ContractReward(profile, request.id);
                 maximum += reward;
-                if (!table.MeetsRequest(request.id, snapshot)) continue;
+                if (!table.MeetsRequest(request.id, snapshot))
+                {
+                    if (!hasMandatoryDialogue) mandatoryMet = false;
+                    continue;
+                }
                 rewardTotal += reward;
                 matched++;
             }
             int value = CurrentWeaponValue(weapon);
-            return new Quote(rewardTotal, maximum, matched, multiplier, value,
-                TableManager.Instance.CustomerOrder.sale.failedSaleRatio);
+            int weaponPayout = mandatoryMet ? value : Scale(value, TableManager.Instance.CustomerOrder.sale.failedSaleRatio);
+            return new Quote(rewardTotal, maximum, matched, multiplier, weaponPayout, value);
         }
 
         public static int CurrentWeaponValue(EquipableWeapon weapon)
         {
-            if (weapon == null) return 0;
-            var tagsUI = UnityEngine.Object.FindFirstObjectByType<WorkshopTagsUI>();
-            return tagsUI != null ? tagsUI.GetWeaponValue(weapon) : 0;
+            // 코어·기본 블록을 포함한 실제 달러 결제액. 삭제로 환불된 비용은 이미 차감되어 있다.
+            return weapon != null ? weapon.PaidConstructionCost : 0;
         }
 
         public static bool ValidSavedRewards(CustomerOrderState state, string[] requestIds)

@@ -12,7 +12,7 @@ namespace WeaponWorkshop
         {
             // 진상에게 총을 제출할 때의 제작비 회수 비율. 일반 주문은 요청별 정액을 합산한다.
             public float difficultCustomerRatio = 0.5f;
-            // 일반 주문에서 요청을 하나도 충족하지 못했을 때(대실패) 제작비에 곱하는 지급 비율. 클리어 배율은 적용하지 않는다.
+            // 일반 주문에서 필수 요구사항을 모두 충족하지 못했을 때 제작비에 곱하는 지급 비율. 클리어 배율은 적용하지 않는다.
             public float failedSaleRatio = 0.5f;
         }
         [Serializable] public sealed class PoolRequest

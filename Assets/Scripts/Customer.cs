@@ -111,8 +111,29 @@ namespace WeaponWorkshop
                 PrepareRequestDialogue();
                 profile.OrderState.mandatoryRevealed = true;
             }
+            WarnIfShootingTestMissing();
             exitPoint = exit;
             StartCoroutine(WalkTo(counterPoint, () => { atCounter = true; saveStage = 1; }));
+        }
+
+        private void WarnIfShootingTestMissing()
+        {
+            if (!UsesRequestDialogue) return;
+            var table = TableManager.Instance.CustomerRequest;
+            var order = profile.OrderState;
+            string mandatoryId = table.FindRequest(order.mandatoryDialogue.requirementId)?.id;
+            bool requiresTest = false, hasOptionalTest = false;
+            foreach (string id in profile.RequestIds)
+            {
+                var request = table.FindRequest(id);
+                requiresTest |= table.HasMuzzleOrSplitCondition(request);
+                hasOptionalTest |= request != null && request.id != mandatoryId && request.IsShootingTestRequest();
+            }
+            if (!requiresTest || hasOptionalTest) return;
+            Debug.LogWarning($"[OrderShootingTest] 사격 테스트 선택 요구 누락: " +
+                $"day={order.generatedDay}, profile={profile.name}, profileId={profile.ProfileId}, " +
+                $"orderId={order.orderId}, restored={order.restored}, mandatory={mandatoryId}, " +
+                $"requests=[{string.Join(",", profile.RequestIds)}]", this);
         }
 
         private void NotifyIfCustomOrder()
