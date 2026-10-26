@@ -18,6 +18,9 @@ namespace WeaponWorkshop
             for (int i = 0; i < codes.Length; i++)
                 if (defaults != null && i < defaults.Length && defaults[i] != null)
                     codes[i] = WeaponShareCode.Export(defaults[i]);
+            // 프리팹 기본값이 없는 슬롯은 기본 프리셋 표의 공유 코드로 채운다.
+            for (int i = 0; i < codes.Length; i++)
+                if (string.IsNullOrEmpty(codes[i])) codes[i] = PresetDefaultInfo.CodeFor(TableManager.Instance.PresetDefault, i);
         }
         public string GetCode(int slot) { Initialize(); return codes[slot]; }
         public void Store(int slot, EquipableWeapon weapon)

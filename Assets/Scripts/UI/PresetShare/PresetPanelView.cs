@@ -92,8 +92,8 @@ namespace WeaponWorkshop
         {
             get
             {
-                // 열려 있으면 슬롯 0, 닫혀 있으면 상단 열기 버튼(첫 클릭이 열기+선택이 된다).
-                return (IsBrowserOpen ? BrowserSlotRect(0) : null) ?? OpenButtonRect;
+                // 열려 있으면 퇴장 저장 슬롯(5번), 닫혀 있으면 상단 열기 버튼(첫 클릭이 열기+선택이 된다).
+                return (IsBrowserOpen ? BrowserSlotRect(TutorialManager.RaidPresetSaveSlot) : null) ?? OpenButtonRect;
             }
         }
 
@@ -101,7 +101,7 @@ namespace WeaponWorkshop
         {
             get
             {
-                return (IsBrowserOpen ? BrowserSlotRect(1) : null) ?? OpenButtonRect;
+                return (IsBrowserOpen ? BrowserSlotRect(TutorialManager.RaidPresetLoadSlot) : null) ?? OpenButtonRect;
             }
         }
 

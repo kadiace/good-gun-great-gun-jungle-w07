@@ -46,6 +46,9 @@ namespace WeaponWorkshop
         private static int originalSlotMachineDestructions, originalSlotMachineDestroyedDay;
         private static bool originalSlotMachineDestroyedAtNight;
         public const string TrainingScene = "Tutorial_WoodenHouse";
+        // 0일차 야간 준비에서 퇴장 저장을 요구하는 슬롯(5번)과 튜토리얼이 불러오게 하는 슬롯(4번). 0 기반 인덱스.
+        public const int RaidPresetSaveSlot = 4;
+        public const int RaidPresetLoadSlot = 3;
         public bool IsGuidedDayZero => dayZeroOwner != null || trainingSequence != null;
         public static bool TrainingRaidPending => trainingSequence != null && !trainingReturning;
         public static bool TrainingReturnPending => trainingSequence != null && trainingReturning;
@@ -67,7 +70,7 @@ namespace WeaponWorkshop
         private Component PresetDispenserOneTarget()
         {
             foreach (var dispenser in FindObjectsByType<CoreDispenser>(FindObjectsSortMode.None))
-                if (dispenser.PresetSlot == 0) return dispenser;
+                if (dispenser.PresetSlot == RaidPresetSaveSlot) return dispenser;
             return null;
         }
         public static bool ActionAllowed(string action) => Instance == null || Instance.AllowsAction(action);
@@ -87,7 +90,7 @@ namespace WeaponWorkshop
             originalSlotMachineDestroyedDay = slotMachine != null ? slotMachine.DestroyedDay : -1;
             originalSlotMachineDestroyedAtNight = slotMachine != null && slotMachine.DestroyedAtNight;
             var emptyFirst = (string[])originalPresets.Clone();
-            emptyFirst[0] = null;
+            emptyFirst[RaidPresetSaveSlot] = null;
             player.GetComponent<WeaponPresets>().Restore(emptyFirst);
             practiceEconomy = true;
             wallet.RestoreBalance(Mathf.Max(originalMoney, practiceMoney));
@@ -100,7 +103,7 @@ namespace WeaponWorkshop
         /// <param name="slot">저장한 프리셋의 0 기반 슬롯 번호입니다.</param>
         public void RecordTutorialPresetSaved(int slot)
         {
-            if (IsGuidedDayZero && slot == 0)
+            if (IsGuidedDayZero && slot == RaidPresetSaveSlot)
             {
                 _trainingPresetOneSaved = true;
                 _raidExitSaveRequested = false;
@@ -123,7 +126,7 @@ namespace WeaponWorkshop
                 ResolvePresentation();
                 if (dialogue != null)
                 {
-                    ownsDialogue = dialogue.Show("작업대를 나가기 전에 현재 무기를 프리셋 1번에 저장하세요.", "확인",
+                    ownsDialogue = dialogue.Show("작업대를 나가기 전에 현재 무기를 프리셋 5번에 저장하세요.", "확인",
                         ReleaseDialogue, "튜토리얼");
                 }
             }
@@ -131,7 +134,7 @@ namespace WeaponWorkshop
         }
 
         /// <summary>
-        /// Day0에서 프리셋 1번 저장 후 작업대를 나가면 퇴장 완료 신호를 보냅니다. 무기는 작업대에 남고 쓰레기통 실습 단계에서 다룹니다.
+        /// Day0에서 프리셋 5번 저장 후 작업대를 나가면 퇴장 완료 신호를 보냅니다. 무기는 작업대에 남고 쓰레기통 실습 단계에서 다룹니다.
         /// </summary>
         public void NotifyTutorialWorkbenchExited()
         {

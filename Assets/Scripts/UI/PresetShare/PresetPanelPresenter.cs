@@ -347,8 +347,8 @@ namespace WeaponWorkshop
                 return;
             }
 
-            // 습격 퇴장 저장 안내 중에는 1번 슬롯만 선택할 수 있다(기존 동작 유지).
-            if (TutorialManager.Instance != null && TutorialManager.Instance.RaidPresetSaveRequested && _slot != 0)
+            // 습격 퇴장 저장 안내 중에는 저장 안내 슬롯(5번)만 선택할 수 있다.
+            if (TutorialManager.Instance != null && TutorialManager.Instance.RaidPresetSaveRequested && _slot != TutorialManager.RaidPresetSaveSlot)
             {
                 return;
             }
@@ -488,7 +488,7 @@ namespace WeaponWorkshop
                 int loadedSlot = m_selectedSlot;
                 TutorialManager tutorial = TutorialManager.Instance;
                 CloseBrowser();
-                if (loadedSlot == 1 && tutorial != null && tutorial.CurrentStep != null &&
+                if (loadedSlot == TutorialManager.RaidPresetLoadSlot && tutorial != null && tutorial.CurrentStep != null &&
                     tutorial.CurrentStep.id == "raid-load-preset-two")
                 {
                     tutorial.NotifySignal("preset-two-loaded");
@@ -897,7 +897,7 @@ namespace WeaponWorkshop
                 return false;
             }
 
-            if (TutorialManager.Instance != null && TutorialManager.Instance.RaidPresetSaveRequested && _slot != 0)
+            if (TutorialManager.Instance != null && TutorialManager.Instance.RaidPresetSaveRequested && _slot != TutorialManager.RaidPresetSaveSlot)
             {
                 return false;
             }

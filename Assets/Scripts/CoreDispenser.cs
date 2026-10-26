@@ -66,7 +66,8 @@ namespace WeaponWorkshop
                 var blueprint = WeaponShareCode.Decode(code);
                 var assembly = weaponPreview.GetComponent<CubeAssembly>();
                 var player = GameManager.Instance.Player;
-                var plan = WeaponShareCode.Resolve(blueprint, assembly, player.GetComponent<PlayerModuleUnlocks>(), CorePrice, out _, out _);
+                // 프리셋 미리보기는 해금 전 모듈도 보여 준다(불러오기·구매는 기존 검사 유지).
+                var plan = WeaponShareCode.Resolve(blueprint, assembly, player.GetComponent<PlayerModuleUnlocks>(), CorePrice, out _, out _, includeLocked: true);
                 if (!assembly.RestoreLayout(plan))
                 {
                     return;
@@ -311,7 +312,7 @@ namespace WeaponWorkshop
                 TutorialManager.Instance.NotifySignal("core-picked-up", this);
             }
 
-            if (TutorialManager.Instance != null && presetSlot == 0 &&
+            if (TutorialManager.Instance != null && presetSlot == TutorialManager.RaidPresetSaveSlot &&
                 TutorialManager.Instance.CurrentStep != null && TutorialManager.Instance.CurrentStep.id == "raid-pick-up")
             {
                 TutorialManager.Instance.NotifySignal("raid-preset-one-equipped", this);

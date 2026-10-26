@@ -647,7 +647,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaults:
   - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   - {fileID: 7072533542750884013, guid: dedd8c0e65baf9f4c99cec0e7974b6fc, type: 3}
+  - {fileID: 0}
   - {fileID: 5289095822269353493, guid: 7bbe612ef5fe0804985e7bb33baacbd6, type: 3}
 --- !u!114 &4157956253638915225
 MonoBehaviour:
