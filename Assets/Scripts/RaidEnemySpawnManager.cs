@@ -17,7 +17,7 @@ namespace WeaponWorkshop
         private float spawnInterval = 30f;
         private bool alerted;
         [SerializeField, Min(1)] private int helicoptersPerWave = 1;
-        [SerializeField, Min(1)] private int tanksPerWave = 1;
+        [SerializeField, Min(0)] private int tanksPerWave = 1;
         [SerializeField, Min(1)] private int maximumHelicopters = 4;
         [SerializeField, Min(1)] private int maximumTanks = 4;
         private float spawnRemaining;

@@ -184,6 +184,15 @@ namespace WeaponWorkshop
             => request != null && ((request.requiredTestIds != null && request.requiredTestIds.Length > 0) ||
                 (request.id != null && request.id.StartsWith("shooting-test/", StringComparison.Ordinal)));
 
+        public static bool RequiresWater(this CustomerRequestData table, CustomerRequestData.Request request)
+        {
+            // 스탯을 측정하는 조건만 본다. 분할 개수 등에 남은 Water 값은 물 요구가 아니다.
+            foreach (var condition in table.Conditions(request))
+                if (ValidCondition(condition) && RequiresStat(condition.Measure) && condition.Stat == StatType.Water &&
+                    (condition.min > 0f || (condition.min == 0f && condition.minExclusive))) return true;
+            return false;
+        }
+
         public static bool IsCustomRequest(this CustomerRequestData table, string id)
         {
             foreach (var condition in table.Conditions(table.FindRequest(id)))

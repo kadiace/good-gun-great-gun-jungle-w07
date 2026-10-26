@@ -7,6 +7,8 @@ namespace WeaponWorkshop
     public sealed class PickupOutline : MonoBehaviour
     {
         public float WidthMultiplier { get; set; } = 1f;
+        [SerializeField] private bool highlightWhenAimed;
+        public bool HighlightWhenAimed => highlightWhenAimed;
         private static readonly List<PickupOutline> active = new List<PickupOutline>();
         public static IReadOnlyList<PickupOutline> Active => active;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

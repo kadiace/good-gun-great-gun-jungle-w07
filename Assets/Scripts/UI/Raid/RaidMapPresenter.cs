@@ -8,6 +8,7 @@ namespace WeaponWorkshop
     public sealed class RaidMapPresenter : IDisposable
     {
         private const string PRESENTER_NAME = "RaidMapPresenter";
+        private const string JUNGLE_CAMPUS_SCENE = "NightRaid_JungleCampus";
 
         private readonly RaidMapView m_view;
         private readonly NightRaidController m_controller;
@@ -118,6 +119,11 @@ namespace WeaponWorkshop
             {
                 int index = m_slotControllerIndex[slot];
                 bool listed = index >= 0 && index < regionCount;
+                bool unlocked = listed && m_controller.IsRegionUnlocked(index);
+                if (string.Equals(m_view.RegionSceneKey(slot), JUNGLE_CAMPUS_SCENE, StringComparison.Ordinal))
+                {
+                    listed &= unlocked;
+                }
                 m_view.SetRegionListed(slot, listed);
                 if (!listed)
                 {
@@ -131,7 +137,7 @@ namespace WeaponWorkshop
                     (m_save == null || !m_save.HasClearedRaid(region.scene));
                 m_view.SetRegionFirstClearMark(slot, firstClearAvailable);
                 // 이전 순번 지역을 클리어해야 다음 지역에 들어갈 수 있다(develop 지역 해금 규칙).
-                m_view.SetRegionInteractable(slot, show && m_controller.IsRegionUnlocked(index) && CanAffordEntry(index) &&
+                m_view.SetRegionInteractable(slot, show && unlocked && CanAffordEntry(index) &&
                     (TutorialManager.Instance == null || TutorialManager.Instance.AllowsRaidRegion(index)));
             }
         }

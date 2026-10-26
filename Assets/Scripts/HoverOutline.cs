@@ -83,7 +83,7 @@ namespace WeaponWorkshop
             if (Target != null)
             {
                 var pickup = Target.GetComponent<PickupOutline>();
-                DrawTarget(Target, targetAvailable ? outlineColor : Color.white,
+                DrawTarget(Target, targetAvailable || (pickup != null && pickup.HighlightWhenAimed) ? outlineColor : Color.white,
                     pickup != null ? pickup.WidthMultiplier : 1f);
             }
         }
