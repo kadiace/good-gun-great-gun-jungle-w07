@@ -27,6 +27,19 @@ namespace WeaponWorkshop
         private Prompt current;
         private WorkshopSession session;
 
+        public static bool IsCustomGuideActive
+        {
+            get
+            {
+                if (instance == null || !instance.isActiveAndEnabled) return false;
+                if (instance.current != null && instance.current.IsCustom) return true;
+                // 단계 사이에도 다음 커스텀 안내가 남아 있으면 영업 시간을 멈춘다.
+                foreach (var prompt in instance.waiting)
+                    if (prompt.IsCustom) return true;
+                return false;
+            }
+        }
+
         public static bool IsChoosingModuleDirection(CubeBuilder builder) =>
             instance != null && instance.current != null && !instance.current.IsCustom &&
             !instance.current.IsStroke && instance.current.Builder == builder &&
