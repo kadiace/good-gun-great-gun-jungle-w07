@@ -47,37 +47,40 @@ namespace WeaponWorkshop
             return false;
         }
 
-        /// <summary>판매 보너스로 치는 요청 수. 요청 행의 saleBonus 기본값에 손님 행의 예외를 적용한다.</summary>
-        public static int SaleBonusCount(this CustomerOrderData.Guest guest)
+        public static bool TryRequestBundle(this CustomerOrderData.Pool pool, string id, int day, out List<string> bundle)
         {
-            if (guest == null) return 0;
-            var requests = TableManager.Instance.CustomerRequest;
-            int count = 0;
-            foreach (string id in guest.requestIds ?? Array.Empty<string>())
+            var result = new List<string>();
+            var visiting = new HashSet<string>(StringComparer.Ordinal);
+            bool valid = Visit(id);
+            bundle = result;
+            return valid;
+
+            bool Visit(string requestId)
             {
-                string canonical = requests.FindRequest(id)?.id;
-                bool bonus = requests.FindRequest(id)?.saleBonus == true;
-                if (Contains(guest.noBonusRequestIds, canonical)) bonus = false;
-                if (Contains(guest.bonusRequestIds, canonical)) bonus = true;
-                if (bonus) count++;
+                string canonical = TableManager.Instance.CustomerRequest.FindRequest(requestId)?.id;
+                if (canonical == null || visiting.Contains(canonical)) return false;
+                if (result.Contains(canonical)) return true;
+                var entry = pool.FindEntry(canonical);
+                if (entry == null || entry.unlockDay > day) return false;
+                visiting.Add(canonical);
+                foreach (string required in entry.requiredRequestIds ?? Array.Empty<string>())
+                    if (!Visit(required)) return false;
+                visiting.Remove(canonical);
+                result.Add(canonical);
+                return true;
             }
-            return count;
-        }
-        private static bool Contains(string[] ids, string canonical)
-        {
-            if (canonical == null) return false;
-            foreach (string id in ids ?? Array.Empty<string>())
-                if (TableManager.Instance.CustomerRequest.FindRequest(id)?.id == canonical) return true;
-            return false;
         }
 
+        /// <summary>
+        /// 손님 표의 값을 독립적인 런타임 주문으로 복사합니다. 튜토리얼 거절 뒤 요구사항도 원본과 분리합니다.
+        /// </summary>
         public static CustomerOrderData.Guest Copy(CustomerOrderData.Guest source) => source == null ? new CustomerOrderData.Guest() : new CustomerOrderData.Guest
         {
-            id = source.id, name = source.name, price = source.price, endsClear = source.endsClear,
+            id = source.id, name = source.name, isDifficult = source.isDifficult, endsClear = source.endsClear,
             happyLine = source.happyLine, angryLine = source.angryLine, unlockDay = source.unlockDay,
+            tutorialRejectionLine = source.tutorialRejectionLine,
+            tutorialFollowupRequestIds = (string[])(source.tutorialFollowupRequestIds ?? Array.Empty<string>()).Clone(),
             requestIds = (string[])(source.requestIds ?? Array.Empty<string>()).Clone(),
-            noBonusRequestIds = (string[])(source.noBonusRequestIds ?? Array.Empty<string>()).Clone(),
-            bonusRequestIds = (string[])(source.bonusRequestIds ?? Array.Empty<string>()).Clone(),
             lines = (string[])(source.lines ?? Array.Empty<string>()).Clone(),
         };
         public static CustomerOrderData.Day Copy(CustomerOrderData.Day source) => source == null ? new CustomerOrderData.Day() : new CustomerOrderData.Day
@@ -87,9 +90,16 @@ namespace WeaponWorkshop
         };
 
         // 로드 직후 한 번 호출한다. 요청 표가 먼저 로드되어 있어야 한다.
+        /// <summary>
+        /// 주문 표의 식별자와 요청 참조를 점검합니다. 튜토리얼 거절 이후의 요청도 같은 요청 표를 참조해야 합니다.
+        /// </summary>
         public static void Validate(CustomerOrderData table, CustomerRequestData requests)
         {
             if (table.sale == null) table.sale = new CustomerOrderData.Sale();
+            if (float.IsNaN(table.sale.difficultCustomerRatio) || float.IsInfinity(table.sale.difficultCustomerRatio) ||
+                table.sale.difficultCustomerRatio < 0f) Debug.LogError("진상 손님 보상 비율을 확인하세요.");
+            if (float.IsNaN(table.sale.failedSaleRatio) || float.IsInfinity(table.sale.failedSaleRatio) ||
+                table.sale.failedSaleRatio < 0f) Debug.LogError("필수 요구사항 미충족 시 제작비 지급 비율을 확인하세요.");
             var days = new HashSet<int>();
             foreach (var row in table.days ?? Array.Empty<CustomerOrderData.Day>())
                 if (row == null || !days.Add(row.day)) Debug.LogError("주문 표에 빈/중복 일차가 있습니다.");
@@ -97,11 +107,9 @@ namespace WeaponWorkshop
             foreach (var row in table.guests ?? Array.Empty<CustomerOrderData.Guest>())
             {
                 if (row == null || string.IsNullOrEmpty(row.id) || !guests.Add(row.id)) { Debug.LogError("주문 표에 빈/중복 손님 ID가 있습니다."); continue; }
-                if (row.price < 0) Debug.LogError("주문 표 손님 보상이 음수입니다: " + row.name);
                 if (row.lines == null || row.lines.Length == 0) Debug.LogError("주문 표 손님 대사가 없습니다: " + row.name);
                 CheckRequests(requests, row.requestIds, "손님 " + row.name);
-                CheckRequests(requests, row.noBonusRequestIds, "손님 " + row.name);
-                CheckRequests(requests, row.bonusRequestIds, "손님 " + row.name);
+                CheckRequests(requests, row.tutorialFollowupRequestIds, "튜토리얼 후속 주문 " + row.name);
             }
             foreach (var pool in table.pools ?? Array.Empty<CustomerOrderData.Pool>())
             {
@@ -110,6 +118,19 @@ namespace WeaponWorkshop
                 {
                     CheckRequests(requests, new[] { entry?.id }, "손님 풀 " + pool.id);
                     CheckRequests(requests, entry?.excludes, "손님 풀 " + pool.id);
+                    CheckRequests(requests, entry?.requiredRequestIds, "필수 동반 요청 " + pool.id);
+                }
+                var portraitIds = new HashSet<string>();
+                foreach (var rule in pool.portraitRules ?? Array.Empty<CustomerOrderData.PortraitRule>())
+                {
+                    if (rule == null || string.IsNullOrEmpty(rule.portraitId))
+                    { Debug.LogError("주문 표 손님 풀에 빈 초상화 규칙이 있습니다: " + pool.id); continue; }
+                    if (!portraitIds.Add(rule.portraitId)) Debug.LogError("주문 표 손님 풀에 중복 초상화 규칙이 있습니다: " + rule.portraitId);
+                    foreach (string tagId in rule.tagIds ?? Array.Empty<string>())
+                        if (requests.FindTag(tagId) == null) Debug.LogError($"주문 표 손님 풀 {pool.id}의 초상화 태그 ID가 요청 표에 없습니다: {tagId}");
+                    foreach (string tagId in rule.exclusiveTagIds ?? Array.Empty<string>())
+                        if (requests.FindTag(tagId) == null) Debug.LogError($"주문 표 손님 풀 {pool.id}의 독점 초상화 태그 ID가 요청 표에 없습니다: {tagId}");
+                    CheckRequests(requests, rule.requiresRequestIds, "초상화 규칙 " + pool.id);
                 }
             }
         }

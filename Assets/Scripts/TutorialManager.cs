@@ -26,9 +26,13 @@ namespace WeaponWorkshop
         private DestructibleTarget shootingTarget;
         private readonly Queue<Customer> pendingWarnings = new Queue<Customer>();
         private bool warningOpen;
+        private bool warningTurning;
+        private TutorialStep completedStepAfterWarning;
         private Coroutine warningTurn;
         [SerializeField, Min(.01f)] private float warningTurnDuration = .25f;
         [SerializeField] private string blockedInteractionMessage = "튜토리얼 중에는 안내된 대상과만 상호작용할 수 있습니다.";
+        [Header("야간 습격 준비")]
+        [SerializeField] private WeaponDisposal _raidDisposal;
         [Header("튜토리얼 은퇴 소개")]
         [SerializeField] private Transform _retirementShotPoint;
         [SerializeField] private GameObject[] _retirementHudElements = Array.Empty<GameObject>();
@@ -77,6 +81,7 @@ namespace WeaponWorkshop
             public TutorialSequence sequence;
             public Component owner;
             public Action done;
+            public Action<bool> completed;
         }
         private readonly Queue<Request> waiting = new Queue<Request>();
         private Request current;
@@ -108,7 +113,11 @@ namespace WeaponWorkshop
                     case TutorialTarget.RaidExit: return RaidExitTarget();
                     case TutorialTarget.RaidMaterialCrate: return RaidMaterialCrateTarget();
                     case TutorialTarget.RaidTank: return RaidTankTarget();
-                    default: return null;
+                    case TutorialTarget.PresetDispenserOne: return PresetDispenserOneTarget();
+                    case TutorialTarget.RaidDisposal: return _raidDisposal;
+                    default:
+                        if (step.id == "raid-acquire-core") return mainCoreDispenser;
+                        return null;
                 }
             }
         }
@@ -190,15 +199,15 @@ namespace WeaponWorkshop
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
             if (ui == null) ui = FindFirstObjectByType<UIManager>(FindObjectsInactive.Include);
             if (ui == null) return;
-            if (dialogue == null) dialogue = ui.GetComponentInChildren<DialogueUI>(true);
-            if (selection == null) selection = ui.GetComponent<TutorialSkipUI>();
-            if (dayTransition == null) dayTransition = ui.GetComponent<DayTransitionUI>();
+            if (dialogue == null) dialogue = ui.Screen<DialogueUI>();
+            if (selection == null) selection = ui.Screen<TutorialSkipUI>();
+            if (dayTransition == null) dayTransition = ui.Screen<DayTransitionUI>();
         }
         public void BeginDayZero(_DayManager day)
         {
             if (day == null || dayZeroOwner != null) return;
             dayZeroOwner = day;
-            warningOpen = false; pendingWarnings.Clear();
+            warningOpen = false; warningTurning = false; completedStepAfterWarning = null; pendingWarnings.Clear();
             ResolvePresentation();
             if (selection == null || !selection.Show(() => { LogTutorialSkipped(); EndDayZero(); }, StartDayZeroSequence)) StartDayZeroSequence();
         }
@@ -246,21 +255,21 @@ namespace WeaponWorkshop
         }
         private void PrepareFirstDay()
         {
-            var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            if (ui != null && ui.Player != null)
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
+            if (player != null)
             {
-                var session = ui.Player.GetComponent<WorkshopSession>();
+                var session = player.GetComponent<WorkshopSession>();
                 if (session != null) session.LeaveImmediately();
             }
             EndPractice();
         }
-        public static void Run(TutorialSequence sequence, Component owner, Action done = null)
+        public static void Run(TutorialSequence sequence, Component owner, Action done = null, Action<bool> completed = null)
         {
             if (sequence == null || sequence.steps == null || sequence.steps.Length == 0 || Instance == null || !Instance.isActiveAndEnabled)
-            { done?.Invoke(); return; }
+            { completed?.Invoke(false); done?.Invoke(); return; }
             // The authored day-zero sequence replaces legacy customer hints during its entire lifetime.
-            if (Instance.dayZeroOwner != null && owner != Instance.dayZeroOwner) { done?.Invoke(); return; }
-            Instance.waiting.Enqueue(new Request { sequence = sequence, owner = owner, done = done });
+            if (Instance.dayZeroOwner != null && owner != Instance.dayZeroOwner) { completed?.Invoke(false); done?.Invoke(); return; }
+            Instance.waiting.Enqueue(new Request { sequence = sequence, owner = owner, done = done, completed = completed });
             Instance.BeginNext();
         }
         private void BeginNext()
@@ -292,6 +301,15 @@ namespace WeaponWorkshop
                 body.WakeUp();
             }
             Changed?.Invoke();
+            bool isSettlementIntro = dayZeroOwner != null &&
+                step.id == "close-and-settle" &&
+                step.completion == TutorialCompletion.SettlementClosed &&
+                !string.IsNullOrWhiteSpace(step.description);
+            if (isSettlementIntro)
+            {
+                if (!dayZeroOwner.IsNight) dayZeroOwner.CloseShop();
+                else if (!dayZeroOwner.IsSettlementOpen) dayZeroOwner.ShowSettlement();
+            }
             if (step.completion == TutorialCompletion.RetirementIntroduction)
             {
                 if (!BeginRetirementIntroduction(step)) Finish("error");
@@ -304,13 +322,19 @@ namespace WeaponWorkshop
             }
             if (step.completion == TutorialCompletion.Confirmation ||
                 (step.completion == TutorialCompletion.Signal && step.showDescriptionBeforeObjective &&
-                    !string.IsNullOrWhiteSpace(step.description)))
+                    !string.IsNullOrWhiteSpace(step.description)) ||
+                isSettlementIntro)
             {
                 if (dialogue == null) { Debug.LogError("튜토리얼 대화 UI 연결이 없습니다.", this); Finish(); return; }
-                stepIntroductionOpen = step.completion == TutorialCompletion.Signal;
+                stepIntroductionOpen = step.completion == TutorialCompletion.Signal || isSettlementIntro;
                 ownsDialogue = true;
-                if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼"))
+                if (!dialogue.Show(step.description, "확인", Confirm, "튜토리얼", step.confirmOnBackgroundClick,
+                        step.dialogueInputLockSeconds))
                 { ownsDialogue = false; Finish("error"); }
+                if (isSettlementIntro)
+                {
+                    dialogue.SetClickBlockerActive(false);
+                }
             }
             else if (step.completion == TutorialCompletion.RaidTankSpawned)
             {
@@ -319,6 +343,88 @@ namespace WeaponWorkshop
             }
             else ReleaseDialogue();
         }
+        /// <summary>
+        /// 0일차 삭제 모드 관련 안내 대화(delete-introduction, disable-delete-introduction) 중 E 단축 입력을 허용할 수 있는 상태인지 판정합니다.
+        /// 안내 대화가 열려 있고 작업대 편집 상태여야 하며, 일시정지나 선택창·화면 전환 중에는 허용하지 않습니다.
+        /// </summary>
+        /// <param name="targetDeleteMode">단축 입력 처리 시 설정할 삭제 모드 목표 상태(켜기: true, 끄기: false)입니다.</param>
+        public bool CanShortcutDeleteModeGuide(out bool targetDeleteMode)
+        {
+            targetDeleteMode = false;
+            if (!IsGuidedDayZero || CurrentStep == null) return false;
+            if (CurrentStep.completion != TutorialCompletion.Confirmation) return false;
+            if (!ownsDialogue || dialogue == null || !dialogue.IsOpen) return false;
+            if (GameManager.Instance == null || GameManager.Instance.IsPaused || UIInputPolicy.IsChoiceOpen) return false;
+            if (dayTransition != null && dayTransition.IsTransitioning) return false;
+
+            var player = TutorialPlayer;
+            var session = player != null ? player.GetComponent<WorkshopSession>() : null;
+            if (session == null || !session.IsInWorkshop) return false;
+            if (workbench != null && session.ActiveWorkbench != null && session.ActiveWorkbench != workbench) return false;
+
+            if (CurrentStep.id == "delete-introduction")
+            {
+                targetDeleteMode = true;
+                return true;
+            }
+            if (CurrentStep.id == "disable-delete-introduction")
+            {
+                targetDeleteMode = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 0일차 삭제 모드 켜기 안내 대화(delete-introduction) 중 E 단축 입력 허용 여부입니다.
+        /// </summary>
+        public bool CanShortcutDeleteIntroduction => CanShortcutDeleteModeGuide(out bool target) && target;
+
+        /// <summary>
+        /// 0일차 삭제 모드 안내 대화 중 E 단축 입력을 받아 대사를 닫고 명시적 목표 모드(켜기/끄기)를 설정한 뒤 다음 실습으로 진행합니다.
+        /// 모드가 이미 목표 상태라면 상태를 유지하고, 안내 대사와 해당 모드 전환 단계를 순차 진행합니다.
+        /// </summary>
+        /// <param name="builder">현재 편집 중인 작업대의 큐브 빌더입니다.</param>
+        /// <param name="targetDeleteMode">설정할 삭제 모드 목표 상태(켜기: true, 끄기: false)입니다.</param>
+        public void CompleteDeleteModeGuideShortcut(CubeBuilder builder = null, bool targetDeleteMode = true)
+        {
+            if (!CanShortcutDeleteModeGuide(out bool expectedTarget) || expectedTarget != targetDeleteMode) return;
+
+            if (builder == null)
+            {
+                builder = TutorialPlayer != null ? TutorialPlayer.GetComponentInChildren<CubeBuilder>(true) : null;
+            }
+
+            if (builder != null)
+            {
+                builder.SetDeleteMode(targetDeleteMode);
+            }
+
+            ReleaseDialogue();
+            Advance();
+
+            if (CurrentStep != null)
+            {
+                if (targetDeleteMode && CurrentStep.id == "enable-delete-mode")
+                {
+                    Advance();
+                }
+                else if (!targetDeleteMode && CurrentStep.id == "disable-delete-mode")
+                {
+                    Advance();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 0일차 삭제 모드 켜기 안내 대화(delete-introduction) 단축 입력을 처리합니다.
+        /// </summary>
+        public void CompleteDeleteIntroductionShortcut(CubeBuilder builder = null)
+        {
+            CompleteDeleteModeGuideShortcut(builder, true);
+        }
+
         public bool ShowLoanGuide(FeedbackUI feedback)
         {
             var step = CurrentStep;
@@ -417,6 +523,14 @@ namespace WeaponWorkshop
         }
         private void LateUpdate()
         {
+            // 경고 확인 콜백 없이 창이 닫혀도 완료 판정이 영구 차단되지 않게 정리한다.
+            if (warningOpen && !warningTurning && (dialogue == null || !dialogue.IsOpen)) CompleteCustomerWarning();
+            if (stepIntroductionOpen && CurrentStep != null && dayZeroOwner != null &&
+                CurrentStep.id == "close-and-settle" &&
+                CurrentStep.completion == TutorialCompletion.SettlementClosed && IsActionStepComplete())
+            {
+                ReleaseDialogue();
+            }
             bool saleCompleted = CurrentStep != null && (CurrentStep.completion == TutorialCompletion.CustomerSold ||
                 CurrentStep.completion == TutorialCompletion.CustomerKilled);
             if (!stepIntroductionOpen && (!GameManager.GameplayBlocked || saleCompleted) &&
@@ -426,6 +540,7 @@ namespace WeaponWorkshop
             var customer = pendingWarnings.Dequeue();
             if (customer == null) return;
             warningOpen = true;
+            warningTurning = true;
             if (GameManager.Instance != null) GameManager.Instance.SetDialogue(true);
             warningTurn = StartCoroutine(TurnToCustomer(customer));
         }
@@ -450,8 +565,7 @@ namespace WeaponWorkshop
         }
         private System.Collections.IEnumerator TurnToCustomer(Customer customer)
         {
-            var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            var player = ui != null ? ui.Player : null;
+            var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             if (player != null && player.ViewPoint != null)
             {
                 Vector3 direction = customer.transform.position + Vector3.up - player.ViewPoint.position;
@@ -474,8 +588,18 @@ namespace WeaponWorkshop
                 }
             }
             warningTurn = null;
-            warningOpen = dialogue.Show(customerWarning, "죄송합니다!", () => { warningOpen = false; dialogue.Hide(); }, "손님");
-            if (!warningOpen && GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
+            warningTurning = false;
+            warningOpen = dialogue.Show(customerWarning, "죄송합니다!", CompleteCustomerWarning, "손님");
+            if (!warningOpen) CompleteCustomerWarning();
+        }
+        private void CompleteCustomerWarning()
+        {
+            warningOpen = false;
+            if (dialogue != null) dialogue.Hide();
+            if (GameManager.Instance != null) GameManager.Instance.SetDialogue(false);
+            var completedStep = completedStepAfterWarning;
+            completedStepAfterWarning = null;
+            if (completedStep != null && completedStep == CurrentStep) Advance();
         }
         private void ClearShootingTarget()
         {
@@ -490,6 +614,9 @@ namespace WeaponWorkshop
                 string.Equals(step.requiredSignal, signal, StringComparison.Ordinal) &&
                 (step.target == TutorialTarget.None || (source != null && source == CurrentInteractionTarget))) Advance();
         }
+        /// <summary>
+        /// 현재 목표의 상호작용 대상을 허용합니다. 재제작을 허용한 판매 목표에서는 작업대와 작업대 무기도 사용할 수 있으며, 디스펜서가 목표일 때는 소유한 프리셋 무기 미리보기도 허용합니다.
+        /// </summary>
         public bool AllowsInteraction(IInteractable target)
         {
             if (!IsTutorialActive) return true;
@@ -498,7 +625,15 @@ namespace WeaponWorkshop
             if (step.completion == TutorialCompletion.RaidTankSpawned) return true;
             if (step.completion == TutorialCompletion.CustomerKilled || !(target is Component component) || component == null)
                 return false;
+            if (step.allowWorkbenchReentry && (component == workbench ||
+                workbench != null && component == workbench.CurrentWeapon)) return true;
+            if (step.id == "first-resell" && component is Customer customer &&
+                customerBell != null && customer == customerBell.Current) return true;
+            if (step.id == "raid-acquire-core" && (component == mainCoreDispenser || (component is CoreDispenser dispenser && dispenser.IsBasicCoreDispenser)))
+                return true;
             var current = CurrentInteractionTarget;
+            if (component is PresetWeaponPreview preview && current is CoreDispenser dispenserTarget && dispenserTarget.OwnsSavedPreview(preview))
+                return true;
             // 습격 픽업 목표는 상자 파괴 뒤 Transform으로 바뀌므로 컴포넌트 동일성만으로 비교하지 않는다.
             return component == current ||
                 current is Component currentComponent && currentComponent != null && component.transform == currentComponent.transform;
@@ -564,6 +699,12 @@ namespace WeaponWorkshop
         }
         private void Advance()
         {
+            // 표적 명중 등 일회성 완료는 보존하고, 피격 경고를 확인한 뒤 다음 대사를 연다.
+            if (warningOpen)
+            {
+                completedStepAfterWarning = CurrentStep;
+                return;
+            }
             LogStepCompleted();
             if (CurrentStep != null && CurrentStep.restoreWithheldBalanceOnComplete && withheldBalance > 0)
             {
@@ -629,7 +770,9 @@ namespace WeaponWorkshop
         {
             LogTutorialEnded(reason);
             var done = current?.done;
+            var completed = current?.completed;
             ReleaseDialogue(); current = null; StepIndex = 0; Changed?.Invoke();
+            completed?.Invoke(reason == "completed");
             done?.Invoke(); BeginNext();
         }
         /// <summary>
@@ -913,6 +1056,8 @@ namespace WeaponWorkshop
             RaidEnemyCore.Spawned -= HandleRaidEnemySpawned;
             if (warningTurn != null) StopCoroutine(warningTurn);
             warningTurn = null;
+            warningTurning = false;
+            completedStepAfterWarning = null;
             waiting.Clear(); ReleaseDialogue();
             RestoreRetirementPresentation();
             if (warningOpen && dialogue != null) dialogue.Hide();

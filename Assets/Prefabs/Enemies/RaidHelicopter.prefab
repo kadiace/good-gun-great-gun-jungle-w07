@@ -6077,8 +6077,9 @@ MonoBehaviour:
   core: {fileID: 3191988470830902810}
   rotor: {fileID: 8226546224040809493}
   flightSpeed: 12
+  followSmoothTime: 1.2
   hoverHeight: 12
-  hoverDistance: 4
+  hoverDistance: 4.8
   rotorSpeed: 1200
   missileMount: {fileID: 2453673012386139440}
   missilePrefab: {fileID: 7844102423475657868, guid: 0e89889be0e64454f8eb589a52da0b93, type: 3}
@@ -9551,6 +9552,7 @@ GameObject:
   - component: {fileID: 5351619531870944349}
   - component: {fileID: 581240113532005674}
   - component: {fileID: 3191988470830902810}
+  - component: {fileID: 7697331687272000001}
   m_Layer: 0
   m_Name: MainEngineCore
   m_TagString: Untagged
@@ -9567,7 +9569,7 @@ Transform:
   m_GameObject: {fileID: 7757130635462823209}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.3, z: -0.15}
+  m_LocalPosition: {x: 0, y: 0.757, z: 1.068}
   m_LocalScale: {x: 0.42, y: 0.2, z: 0.42}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9629,7 +9631,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eef24cf547a1a48449ab08ac8bca1184, type: 2}
+  - {fileID: 2100000, guid: 92fcba17a89e4cde88a014f859e88d23, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9682,9 +9684,22 @@ MonoBehaviour:
   enemyRoot: {fileID: 4593036630455093574}
   slotTicketReward: 1
   ticketPickupPrefab: {fileID: 114002, guid: 02731a79b24c457a8990d0c56fca2752, type: 3}
-  destroyAtLostRatio: 0.8
+  destroyAtLostRatio: 0.5
   breakBurstPrefab: {fileID: 0}
   breakBurstScale: 1.5
+--- !u!114 &7697331687272000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7757130635462823209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94df3e84dbe84b84bb779b10a2610d53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rayMaterial: {fileID: 2100000, guid: a81f8756bbcf4acd8e0d2abc9cd8ba16, type: 2}
 --- !u!1 &7767733901148726638
 GameObject:
   m_ObjectHideFlags: 0

@@ -45,6 +45,7 @@ namespace WeaponWorkshop
             if (wallet == null || !weapon.DisposeTo(disposalPoint != null ? disposalPoint : transform, wallet)) return false;
             holder.TakeWeapon();
             WorkshopSoundEffects.RaiseWeaponDisposed(disposalPoint != null ? disposalPoint.position : transform.position);
+            TutorialManager.Instance?.NotifySignal("raid-weapon-disposed", this);
             busy = true;
             lidMovement = StartCoroutine(DisposeAnimation(weapon));
             return true;

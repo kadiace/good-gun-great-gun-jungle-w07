@@ -3,10 +3,10 @@ using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
-    // Simplified site plans based on the four raid scenes, rather than a shared invented city.
+    // Simplified site plans based on the five raid scenes, rather than a shared invented city.
     public sealed class RaidAreaMapGraphic : Graphic
     {
-        [SerializeField, Range(0, 3)] private int region;
+        [SerializeField, Range(0, 4)] private int region;
         public void SetRegion(int index) { region = index; SetVerticesDirty(); }
         private VertexHelper mesh;
         private Color stroke;
@@ -22,7 +22,8 @@ namespace WeaponWorkshop
                 case 0: House(); break;
                 case 1: Bank(); break;
                 case 2: Base(); break;
-                case 3: Campus(); break;
+                case 3: Airport(); break;
+                case 4: Campus(); break;
             }
             Entry(region == 1 ? -112 : 0, -66);
         }
@@ -74,9 +75,21 @@ namespace WeaponWorkshop
             for (int x = -150; x <= 150; x += 300)
                 for (int y = -59; y <= 61; y += 120) Frame(x - 5, y - 4, x + 5, y + 4);
         }
+        private void Airport()
+        {
+            Building(-132, -35, -21, 17);
+            Frame(-124, -28, -29, 10);
+            for (int x = -113; x <= -38; x += 15) Line(x, -19, x, -12);
+            for (int y = -24; y <= 7; y += 15) Frame(-21, y, 8, y + 5);
+            Building(-132, 44, -82, 63);
+            Frame(-150, -7, -137, 19);
+            Frame(57, -55, 112, 68);
+            Line(79, -55, 79, 68); Line(89, -55, 89, 68);
+            for (int y = -44; y <= 60; y += 19) Line(83, y, 86, y + 5);
+            Dash(-82, -57, -82, -35);
+        }
         private void Campus()
         {
-            // One central three-floor building in an enclosed campus, south approach.
             Frame(-140, -57, 140, 63);
             Building(-77, -24, 75, 43);
             Frame(-69, -17, 66, 36); Frame(-61, -10, 58, 29);

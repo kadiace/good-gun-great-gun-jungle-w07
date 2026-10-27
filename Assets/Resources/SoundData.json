@@ -4,7 +4,7 @@
     { "id": "Night", "label": "Night", "unlockScene": "", "unlockRaid": -1, "selectableInMain": false },
     { "id": "DaySecond", "label": "day-second", "unlockScene": "", "unlockRaid": -1, "selectableInMain": false },
     { "id": "DayThird", "label": "day-second", "unlockScene": "NightRaid_BankGrand", "unlockRaid": 2, "selectableInMain": true },
-    { "id": "DayFourth", "label": "day-third", "unlockScene": "NightRaid_JungleCampus", "unlockRaid": 3, "selectableInMain": true },
+    { "id": "DayFourth", "label": "day-third", "unlockScene": "NightRaid_Airport", "unlockRaid": 3, "selectableInMain": true },
     { "id": "DayAttack0", "label": "day-attack0", "unlockScene": "", "unlockRaid": -1, "selectableInMain": false },
     { "id": "DayAttack1", "label": "day-attack1", "unlockScene": "", "unlockRaid": -1, "selectableInMain": false },
     { "id": "DayAttack2", "label": "day-attack2", "unlockScene": "", "unlockRaid": -1, "selectableInMain": false },
@@ -14,7 +14,7 @@
   "raids": [
     { "scene": "NightRaid_WoodenHouse", "number": 1 },
     { "scene": "NightRaid_BankGrand", "number": 2 },
-    { "scene": "NightRaid_JungleCampus", "number": 3 },
+    { "scene": "NightRaid_Airport", "number": 3 },
     { "scene": "NightRaid_Millitary_base", "number": 4 }
   ]
 }

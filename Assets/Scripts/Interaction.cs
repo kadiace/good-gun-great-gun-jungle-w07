@@ -19,6 +19,7 @@ namespace WeaponWorkshop
         private InputAction point;
         private IInteractable aimedTarget;
         public FirstPersonPlayer Player => player;
+        public float InteractionDistance => interactionDistance;
         public IInteractable AimedTarget => aimedTarget;
         public bool CanInteractTarget => aimedTarget is MonoBehaviour component && component.isActiveAndEnabled &&
             (TutorialManager.Instance == null || TutorialManager.Instance.AllowsInteraction(aimedTarget)) && aimedTarget.CanInteract(this);
@@ -68,7 +69,8 @@ namespace WeaponWorkshop
             IInteractable target = null;
             hitTransform.GetComponentsInParent(false, targetComponents);
             foreach (MonoBehaviour component in targetComponents)
-                if (component != null && component is IInteractable interactable)
+                // Disabled behaviours cannot receive input and must not hide an active parent/peer target.
+                if (component != null && component.isActiveAndEnabled && component is IInteractable interactable)
                 { target = interactable; break; }
             if (target == null) return;
             aimedTarget = target;

@@ -66,7 +66,7 @@ namespace WeaponWorkshop
         // 기존 판정과 훈련 이동 중의 정적 상태를 함께 확인해 씬 생성 순서의 틈도 막는다.
         public static bool IsTutorialMusicContext => TutorialManager.TrainingRaidPending || TutorialManager.TrainingReturnPending ||
             SceneManager.GetActiveScene().name == TutorialManager.TrainingScene ||
-            (TutorialManager.Instance != null && (TutorialManager.Instance.IsTutorialActive || TutorialManager.Instance.IsGuidedDayZero));
+            (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero);
 
         private void LoadSoundSettings()
         {
@@ -173,6 +173,38 @@ namespace WeaponWorkshop
             // 첫 벽 파괴 곡은 전투 중 첫 파괴 프레임에 바뀌므로 출발 때 미리 올려 그 프레임의 로드 스파이크(약 360ms)를 없앤다.
             AudioClip firstWall = GetMusicClip(RaidMusicId(raidNumber, RaidBgmPhase.FirstWall));
             if (firstWall != null && firstWall.loadState == AudioDataLoadState.Unloaded) firstWall.LoadAudioData();
+        }
+
+        /// <summary>
+        /// 습격 진입 커버가 떠 있는 동안 전투 BGM 데이터를 미리 올린다.
+        /// 재생 상태(activeRaidScene/currentBgm/musicTransition)는 바꾸지 않는다.
+        /// </summary>
+        public static bool PreloadRaidMusic(string scene)
+        {
+            if (instance == null) return false;
+            if (scene == TutorialManager.TrainingScene)
+            {
+                AudioClip night = instance.GetMusicClip(BgmId.Night);
+                if (night == null || night.loadState != AudioDataLoadState.Unloaded) return false;
+                night.LoadAudioData();
+                return true;
+            }
+
+            int raidNumber = SoundInfo.Raid(scene)?.number ?? 0;
+            AudioClip travel = instance.GetMusicClip(RaidMusicId(raidNumber, RaidBgmPhase.Travel)) ?? instance.defaultMusicClip;
+            AudioClip firstWall = instance.GetMusicClip(RaidMusicId(raidNumber, RaidBgmPhase.FirstWall));
+            bool loaded = false;
+            if (travel != null && travel.loadState == AudioDataLoadState.Unloaded)
+            {
+                travel.LoadAudioData();
+                loaded = true;
+            }
+            if (firstWall != null && firstWall.loadState == AudioDataLoadState.Unloaded)
+            {
+                firstWall.LoadAudioData();
+                loaded = true;
+            }
+            return loaded;
         }
 
         // 첫 벽 파괴 여부는 씬의 NightRaidController가 소유한다.

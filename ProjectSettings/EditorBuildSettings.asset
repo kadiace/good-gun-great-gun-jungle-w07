@@ -21,8 +21,8 @@ EditorBuildSettings:
     path: Assets/Scenes/NightRaid/NightRaid_Millitary_base.unity
     guid: 2d39d493e5cc4df44afc29ff57645944
   - enabled: 1
-    path: Assets/Scenes/NightRaid/NightRaid_JungleCampus.unity
-    guid: 62d83eff23eee4e42952354ad582cf0d
+    path: Assets/Scenes/NightRaid/NightRaid_Airport.unity
+    guid: df1bcc7c283aaa645bdb8059fc992a0b
   - enabled: 1
     path: Assets/Scenes/NightRaid/NightRaid_BankGrand.unity
     guid: 95cdda1f17bc4564ba6f0df132ea7d4e
@@ -32,6 +32,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/NightRaid/NightRaid_JungleCampus_improve.unity
     guid: 611ad354b5a60e04ca1c188e79a2d9be
+  - enabled: 1
+    path: Assets/Scenes/NightRaid/NightRaid_JungleCampus.unity
+    guid: 62d83eff23eee4e42952354ad582cf0d
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

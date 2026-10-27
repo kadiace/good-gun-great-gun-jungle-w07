@@ -2,7 +2,9 @@ using UnityEngine;
 
 namespace WeaponWorkshop
 {
-    public sealed class AimUI : MonoBehaviour
+    // 전투 HUD 브리지. 기존 직렬화 참조·public API를 유지하고 실효 참조를 AimHudView로 전달한다.
+    // 무기·스코프·유도 상태 판정은 AimHudPresenter가 맡는다.
+    public sealed class AimUI : MonoBehaviour, IUIScreen
     {
         [SerializeField] private UIManager uiManager;
         [SerializeField] private GameObject dot;
@@ -10,125 +12,101 @@ namespace WeaponWorkshop
         [SerializeField] private HomingLockGraphic homingLockMarker;
         [SerializeField] private HomingRetentionRing homingRetentionRing;
         [SerializeField] private DamageDirectionIndicator damageDirectionIndicator;
-        private PlayerHomingLock homingLock;
-        private WeaponScope scopeCache;
-        // 컴포넌트 조회는 홀더가 바뀔 때만 한다. 매 프레임 없는 컴포넌트를 찾으면(에디터 전용 오류 경로) 비용과 GC가 크다.
-        private WeaponHolder scopeOwner;
-        private WeaponHolder homingLockOwner;
+        [SerializeField] private AimHudView m_view;
+
+        private AimHudPresenter m_presenter;
+        private bool m_hasLoggedViewError;
+        private bool m_hasInitializationFailed;
+
+        public void InitializeScreen(UIContext _context) => Initialize(_context?.Ui);
 
         public void Initialize(UIManager owner)
         {
             uiManager = owner;
-            Hide();
-            // Hidden presentation containers must not prevent the controller from running.
-            ActivateParents(dot != null ? dot.transform : null);
-            ActivateParents(crosshair != null ? crosshair.transform : null);
-            ActivateParents(homingLockMarker != null ? homingLockMarker.transform : null);
-            ActivateParents(homingRetentionRing != null ? homingRetentionRing.transform : null);
-            ActivateParents(damageDirectionIndicator != null ? damageDirectionIndicator.transform : null);
-            if (damageDirectionIndicator != null) damageDirectionIndicator.Initialize(owner);
+            m_hasInitializationFailed = false;
+            DisposePresenter();
+            EnsurePresenter();
             enabled = true;
-            gameObject.SetActive(true);
-        }
-        private void ActivateParents(Transform element)
-        {
-            if (element == null) return;
-            for (var parent = element.parent; parent != null && parent.IsChildOf(transform); parent = parent.parent)
-                parent.gameObject.SetActive(true);
-        }
-        private void Awake() => Hide();
-        private void OnDisable() => Hide();
-        private void Hide()
-        {
-            SetActive(dot, false);
-            if (crosshair != null) { crosshair.SetState(false, null, null); SetActive(crosshair.gameObject, false); }
-            if (damageDirectionIndicator != null) damageDirectionIndicator.Hide();
-            HideHomingLock();
+            if (!gameObject.activeSelf)
+            {
+                gameObject.SetActive(true);
+            }
         }
 
-        // 이미 같은 상태의 SetActive는 걸러 쓴다.
-        private static void SetActive(GameObject target, bool state)
+        private void Awake()
         {
-            if (target != null && target.activeSelf != state) target.SetActive(state);
+            EnsurePresenter();
+        }
+
+        private void OnDisable()
+        {
+            m_view?.HideAll();
+            m_presenter?.Suspend();
+        }
+
+        private void OnDestroy()
+        {
+            DisposePresenter();
         }
 
         private void LateUpdate()
         {
-            var holder = uiManager != null ? uiManager.PlayerWeaponHolder : null;
-            var player = uiManager != null ? uiManager.Player : null;
-            bool available = player != null && player.isActiveAndEnabled && !GameManager.GameplayBlocked;
-            var scope = ScopeOf(holder);
-            bool aiming = scope != null && scope.IsAiming;
-            SetActive(dot, available && !aiming);
-            var weapon = holder != null ? holder.EquippedWeapon : null;
-            var view = holder != null ? holder.AimCamera : null;
-            if (crosshair != null)
+            if (m_presenter != null)
             {
-                bool show = available && !aiming && weapon != null && weapon.IsEquipped && view != null;
-                SetActive(crosshair.gameObject, show);
-                crosshair.SetState(show, weapon, view);
+                m_presenter.Refresh();
+                return;
             }
-            UpdateHomingLock();
-        }
-        // 스코프·유도 잠금은 홀더에 항상 붙은 컴포넌트라, 없으면 매 프레임 조회해도 실패한다. 홀더가 같은 동안은 결과만 쓴다.
-        private WeaponScope ScopeOf(WeaponHolder holder)
-        {
-            if (holder == null) return null;
-            if (ReferenceEquals(scopeOwner, holder)) return scopeCache;
-            scopeOwner = holder;
-            if (!holder.TryGetComponent(out scopeCache)) scopeCache = null;
-            return scopeCache;
+
+            if (!m_hasInitializationFailed)
+            {
+                EnsurePresenter();
+            }
         }
 
-        private PlayerHomingLock HomingLockOf(WeaponHolder holder)
+        private void EnsurePresenter()
         {
-            if (holder == null) return null;
-            if (ReferenceEquals(homingLockOwner, holder)) return homingLock;
-            homingLockOwner = holder;
-            if (!holder.TryGetComponent(out homingLock)) homingLock = null;
-            return homingLock;
+            if (m_presenter != null)
+            {
+                return;
+            }
+
+            if (m_view == null)
+            {
+                if (!m_hasLoggedViewError)
+                {
+                    m_hasLoggedViewError = true;
+                    Debug.LogError(
+                        "[AimUI] 초기화 실패: m_view에 AimHudView 참조가 필요합니다. " +
+                        "Tools/UI/Authoring/CombatHud/Author 실행 결과를 확인하세요.", this);
+                }
+
+                return;
+            }
+
+            // UIManager.Awake가 Initialize(owner)로 넘겨주기 전에는 도메인 참조가 없을 수 있다.
+            if (uiManager == null)
+            {
+                return;
+            }
+
+            m_view.Configure(dot, crosshair, homingLockMarker, homingRetentionRing, damageDirectionIndicator);
+            m_presenter = new AimHudPresenter(m_view, uiManager, damageDirectionIndicator);
+            if (!m_presenter.Initialize())
+            {
+                m_presenter = null;
+                m_hasInitializationFailed = true;
+            }
         }
 
-        private void UpdateHomingLock()
+        private void DisposePresenter()
         {
-            var holder = uiManager != null ? uiManager.PlayerWeaponHolder : null;
-            if (homingLockMarker == null || holder == null || holder.AimCamera == null ||
-                GameManager.GameplayBlocked || holder.EquippedWeapon == null || !holder.EquippedWeapon.HasHoming)
-            { HideHomingLock(); return; }
-            homingLock = HomingLockOf(holder);
-            var position = Vector2.zero;
-            float progress = 0f;
-            if (homingLock != null && homingLock.Target != null)
+            if (m_presenter == null)
             {
-                Vector3 screen = holder.AimCamera.WorldToScreenPoint(homingLock.AimPoint);
-                if (screen.z > 0f && screen.x >= 0f && screen.x <= Screen.width && screen.y >= 0f && screen.y <= Screen.height)
-                {
-                    var canvas = homingLockMarker.canvas;
-                    Camera uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(homingLockMarker.rectTransform.parent as RectTransform,
-                        screen, uiCamera, out position);
-                    progress = homingLock.Progress;
-                }
+                return;
             }
-            SetActive(homingLockMarker.gameObject, true);
-            homingLockMarker.rectTransform.anchoredPosition = position;
-            homingLockMarker.SetProgress(progress);
-            if (homingRetentionRing != null)
-            {
-                bool locked = homingLock != null && homingLock.LockedTarget != null;
-                SetActive(homingRetentionRing.gameObject, locked);
-                if (locked)
-                {
-                    var canvas = homingRetentionRing.canvas;
-                    float scale = canvas != null ? Mathf.Max(0.001f, canvas.scaleFactor) : 1f;
-                    homingRetentionRing.SetRadius(homingLock.RetentionRadiusPixels / scale);
-                }
-            }
-        }
-        private void HideHomingLock()
-        {
-            if (homingLockMarker != null) SetActive(homingLockMarker.gameObject, false);
-            if (homingRetentionRing != null) SetActive(homingRetentionRing.gameObject, false);
+
+            m_presenter.Dispose();
+            m_presenter = null;
         }
     }
 }

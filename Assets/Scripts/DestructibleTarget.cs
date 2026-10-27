@@ -39,9 +39,10 @@ namespace WeaponWorkshop
         [SerializeField, Tooltip("차량/몹에 붙은 부품은 코어 파괴 전까지 건물 지지 계산에서 제외합니다.")]
         private bool attachedToMovingBody;
         internal bool AttachedToMovingBody => attachedToMovingBody;
-        [SerializeField, Tooltip("독립 소품은 건물 전체의 지지 연결과 자동 붕괴 판정에서 제외합니다. 피격 파괴는 유지합니다.")]
+        [SerializeField, Tooltip("독립 소품은 건물 전체의 지지 연결과 자동 붕괴 판정에서 제외합니다. 단, 물리 중력을 쓰지 않는 정적 소품(디딤판 등)은 받침을 잃으면 파츠째 떨어집니다. 피격 파괴는 유지합니다.")]
         private bool standaloneProp;
-        internal bool ParticipatesInStructuralSupport => !attachedToMovingBody && !standaloneProp;
+        // 물리 중력 소품(상자 등)은 종전대로 그래프 밖이고, 정적 소품은 다른 구조 파츠처럼 지지 판정에 참여한다.
+        internal bool ParticipatesInStructuralSupport => !attachedToMovingBody && (!standaloneProp || !UsesPhysicalGravity);
         [SerializeField, Tooltip("파괴할 메시와 콜라이더가 있는 자식 오브젝트. 비어 있으면 자식 메시를 찾습니다.")]
         private MeshFilter targetMesh;
         [SerializeField, Tooltip("빌드에도 포함할 투명 GPU 인스턴싱 파편 머테리얼.")]
@@ -97,7 +98,7 @@ namespace WeaponWorkshop
             heatResistance = Mathf.Max(0f, heat);
             waterResistance = Mathf.Max(0f, water);
             if (targetMesh == null) targetMesh = GetComponentInChildren<MeshFilter>(true);
-            intactGridReady = false;
+            InvalidateOccupancyTemplate();
             targetMesh.transform.localScale = size;
             targetMesh.transform.localPosition = new Vector3(0f, size.y * 0.5f, 0f);
             MarkDebrisIndexDirty();
@@ -279,6 +280,7 @@ namespace WeaponWorkshop
         private bool[] dirtyColumnFlags;
         private readonly List<int> dirtyColumns = new List<int>();
         private bool allColumnsDirty = true;
+        private int collisionColumnCursor;
         private readonly List<int> impactCells = new List<int>();
         // Reused snapshots for the per-hit removal loops so repeated hits do not allocate a list each call.
         private readonly List<int> absorbedCells = new List<int>();
@@ -359,8 +361,8 @@ namespace WeaponWorkshop
                 // 미분할 상태에서 맞는 원본 콜라이더도 조회 때 부모 탐색 없이 바로 풀리도록 등록한다.
                 if (registersColliders) ColliderTargetIndex.RegisterStructure(collider, this);
             }
-            // Collision colliders grow on demand (AcquireCollisionCollider) and stay pooled; a worst-case prewarm
-            // here would add hundreds of BoxColliders per target at scene load.
+            // The updater prewarm builds only the cell occupancy table (0.75ms per LateUpdate frame);
+            // collision colliders are never pre-created and grow the pool on first use.
             CacheTransformMovement();
             StructuralSupportGraph.Register(this);
         }
@@ -419,12 +421,15 @@ namespace WeaponWorkshop
             debrisIndexDirty = false;
         }
 
-        internal void ProcessLateUpdate()
+        internal bool SupportPending => structureDirty;
+
+        // allowSupport가 false면 지지 판정을 다음 프레임으로 미룬다(structureDirty를 남겨 갱신 대상에 남긴다).
+        internal void ProcessLateUpdate(bool allowSupport)
         {
             UploadDamageAppearance();
             UpdatePenetrationFeedback();
             RefreshDebrisIndex();
-            if (structureDirty)
+            if (structureDirty && allowSupport)
             {
                 structureDirty = false;
                 ResolveSupport();
@@ -915,6 +920,8 @@ namespace WeaponWorkshop
             foreach (var target in targets)
                 if (target != null)
                 {
+                    // Leave the rest queued; ProcessLateUpdate re-queues targets still collision-dirty.
+                    if (DestructionFrameBudget.IsExhausted) break;
                     changed |= target.UpdateCollisionRunsCore();
                     if (!hasScene) { scene = target.gameObject.scene; hasScene = true; }
                 }
@@ -991,6 +998,7 @@ namespace WeaponWorkshop
                 Detach(cellIndex, outward * 1.5f + direction.normalized * 0.5f + Vector3.up * 0.5f);
             }
             structureDirty = false;
+            InvalidateCollisionShape();
             UpdateCollisionRuns();
         }
 
@@ -1002,6 +1010,7 @@ namespace WeaponWorkshop
             System.Array.Clear(grid, 0, grid.Length);
             MarkDebrisIndexDirty();
             InvalidateAllCollisionColumns();
+            InvalidateCollisionShape();
             UpdateCollisionRuns();
             debrisCloud?.ClearDebris();
             structureDirty = false;
@@ -1082,6 +1091,10 @@ namespace WeaponWorkshop
             }
             MarkDebrisIndexDirty();
             InvalidateRenderChunks();
+            // 복원으로 칸 집합이 통째로 바뀌면 멈춰 둔 국소 탐색의 방문 기록과 외부 지지 캐시는 쓸 수 없다.
+            ResetLocalSupportProgress();
+            InvalidateExternalSupportCache();
+            InvalidateCollisionShape();
             changedBoundary.Clear();
             if (supportValidated)
                 foreach (int cellIndex in cells) changedBoundary.Add(preparedCells[cellIndex].coordinate);
@@ -1137,7 +1150,7 @@ namespace WeaponWorkshop
         private void DropUnsupported()
         {
             supportValidated = false;
-            CollectExternalSupport();
+            RefreshExternalSupport();
             // Newly created/moved cell bounds must be current before checking floor support.
             var supported = supportedCells; supported.Clear();
             var pending = supportQueue; pending.Clear();
@@ -1192,7 +1205,7 @@ namespace WeaponWorkshop
 
         private void DropUnsupportedNearRemovedBoundary()
         {
-            CollectExternalSupport();
+            RefreshExternalSupport();
             changedBoundary.RemoveWhere(coordinate => !HasCell(coordinate));
             localSupportVisited.Clear();
             localSupportQueue.Clear();
@@ -1254,29 +1267,20 @@ namespace WeaponWorkshop
         private void Subdivide(bool createCollisions = true)
         {
             if (subdivided) return;
-            long start = System.Diagnostics.Stopwatch.GetTimestamp();
-            try { using (subdivideMarker.Auto()) SubdivideCore(createCollisions); }
-            finally { RecordSubdivisionTime(System.Diagnostics.Stopwatch.GetTimestamp() - start); }
+            using (subdivideMarker.Auto()) SubdivideCore(createCollisions);
         }
         private void SubdivideCore(bool createCollisions)
         {
+            // Occupancy is normally built during load; this only covers runtime-configured targets.
+            if (!occupancyPrepared) PrepareOccupancyTemplate();
             subdivided = true;
+            // 분할 직후에는 원본 콜라이더 대신 열 콜라이더를 쓴다. 이웃의 외부 지지 캐시도 함께 무효화한다.
+            InvalidateExternalSupportCache();
+            InvalidateCollisionShape();
             Material material = originalRenderer.sharedMaterial;
             instancedMaterial = new Material(material) { enableInstancing = true };
             // Retain the original broad-phase shape until the deferred collision rebuild.
             originalRenderer.enabled = false;
-            Bounds bounds = targetMesh.sharedMesh.bounds;
-            Vector3 axisScale = new Vector3(CellRoot.TransformVector(Vector3.right).magnitude,
-                CellRoot.TransformVector(Vector3.up).magnitude, CellRoot.TransformVector(Vector3.forward).magnitude);
-            float size = Mathf.Max(0.01f, partSize);
-            Vector3 step = new Vector3(size / Mathf.Max(axisScale.x, 0.00001f),
-                size / Mathf.Max(axisScale.y, 0.00001f), size / Mathf.Max(axisScale.z, 0.00001f));
-            gridOrigin = bounds.min;
-            gridStep = step;
-            divisions = new Vector3Int(Mathf.Max(1, Mathf.CeilToInt(bounds.size.x / step.x - 0.00001f)),
-                Mathf.Max(1, Mathf.CeilToInt(bounds.size.y / step.y - 0.00001f)),
-                Mathf.Max(1, Mathf.CeilToInt(bounds.size.z / step.z - 0.00001f)));
-            totalCellCount = divisions.x * divisions.y * divisions.z;
             cells.Clear();
             cells.Capacity = Mathf.Max(cells.Capacity, totalCellCount);
             impactCells.Clear();
@@ -1285,8 +1289,12 @@ namespace WeaponWorkshop
             fallingCells.Capacity = Mathf.Max(fallingCells.Capacity, Mathf.Min(totalCellCount, 256));
             boxBreakCells.Capacity = Mathf.Max(boxBreakCells.Capacity, Mathf.Min(totalCellCount, 256));
             dirtyColumns.Capacity = Mathf.Max(dirtyColumns.Capacity, divisions.x * divisions.y);
-            preparedCells = new Cell[totalCellCount];
+            // Take ownership of the prebuilt table instead of walking the grid again.
+            preparedCells = occupancyCells;
+            occupancyCells = System.Array.Empty<Cell>();
+            occupancyPrepared = false;
             grid = new bool[totalCellCount];
+            for (int index = 0; index < totalCellCount; index++) grid[index] = true;
             if (cellMesh == null)
             {
                 var primitive = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -1294,27 +1302,15 @@ namespace WeaponWorkshop
                 cellMesh = primitive.GetComponent<MeshFilter>().sharedMesh;
                 Destroy(primitive);
             }
-            for (int x = 0; x < divisions.x; x++)
-                for (int y = 0; y < divisions.y; y++)
-                    for (int z = 0; z < divisions.z; z++)
-                    {
-                        Vector3 offset = new Vector3(x * step.x, y * step.y, z * step.z);
-                        Vector3 cellSize = Vector3.Min(step, bounds.size - offset);
-                        var coordinate = new Vector3Int(x, y, z);
-                        int index = CellIndex(coordinate);
-                        Vector3 localPosition = bounds.min + offset + cellSize * 0.5f;
-                        Cell cell = new Cell
-                        {
-                            root = CellRoot, slot = cells.Count, coordinate = coordinate,
-                            explosionHealth = 1d, explosionHitTime = -1000f,
-                            localPosition = localPosition, localScale = cellSize
-                        };
-                        if (intactDamage.TryGetValue(index, out var damage))
-                        { cell.explosionHealth = damage.explosionHealth; cell.explosionHitTime = damage.explosionHitTime; }
-                        preparedCells[index] = cell;
-                        cells.Add(index);
-                        grid[index] = true;
-                    }
+            for (int index = 0; index < totalCellCount; index++)
+            {
+                Cell cell = preparedCells[index];
+                if (intactDamage.TryGetValue(index, out var damage))
+                { cell.explosionHealth = damage.explosionHealth; cell.explosionHitTime = damage.explosionHitTime; }
+                cell.slot = cells.Count;
+                preparedCells[index] = cell;
+                cells.Add(index);
+            }
             intactDamage.Clear();
             renderDirty = true;
             InvalidateAllCollisionColumns();
@@ -1351,48 +1347,79 @@ namespace WeaponWorkshop
         // Collider identities stay within their X/Y column; a hole only rebuilds that column.
         private void InvalidateAllCollisionColumns()
         {
-            collisionDirty = true; allColumnsDirty = true; dirtyColumns.Clear();
+            collisionDirty = true; allColumnsDirty = true; dirtyColumns.Clear(); collisionColumnCursor = 0;
             if (dirtyColumnFlags != null) System.Array.Clear(dirtyColumnFlags, 0, dirtyColumnFlags.Length);
         }
         private void MarkCollisionColumn(int column)
         {
             collisionDirty = true;
-            if (allColumnsDirty) return;
+            // 아직 처리하지 않은 열은 전체 갱신에서 반영하고, 이미 지난 열의 추가 삭제는 다시 갱신한다.
+            if (allColumnsDirty && (collisionColumns == null || column >= collisionColumnCursor)) return;
             if (!dirtyColumnFlags[column])
             { dirtyColumnFlags[column] = true; dirtyColumns.Add(column); }
         }
-        private void UpdateCollisionRuns()
+        // Bullet queries meet dirty targets while the shared budget still trickles columns across
+        // frames; they finish the remaining columns at once instead of sweeping pending cells.
+        internal void CompletePendingCollisionRebuild() => UpdateCollisionRuns(true);
+        private void UpdateCollisionRuns(bool ignoreBudget = false)
         {
-            if (!UpdateCollisionRunsCore()) return;
+            if (!UpdateCollisionRunsCore(ignoreBudget)) return;
             // Opt-in scenes coalesce the per-event sync into one flush per frame.
             bool synced = DestructionCollisionBatch.RequestSync(gameObject.scene);
             StructuralSupportGraph.Changed(this);
             if (synced) StructuralSupportGraph.NotifyPhysicsSynchronized();
         }
-        private bool UpdateCollisionRunsCore()
+        private bool UpdateCollisionRunsCore(bool ignoreBudget = false)
         {
-            using (collisionMarker.Auto()) return RebuildCollisionRuns();
+            using (collisionMarker.Auto()) return RebuildCollisionRuns(ignoreBudget);
         }
-        private bool RebuildCollisionRuns()
+        private bool RebuildCollisionRuns(bool ignoreBudget = false)
         {
             if (!subdivided || !collisionDirty) return false;
             if (collisionColumns == null)
             {
                 foreach (Collider collider in originalColliders.Keys) collider.enabled = false;
+                InvalidateCollisionShape();
                 collisionColumns = new List<BoxCollider>[divisions.x * divisions.y];
                 dirtyColumnFlags = new bool[collisionColumns.Length];
                 allColumnsDirty = true;
+                collisionColumnCursor = 0;
             }
+            int processed = 0;
             if (allColumnsDirty)
-                for (int column = 0; column < collisionColumns.Length; column++) UpdateCollisionColumn(column);
-            else
-                foreach (int column in dirtyColumns) UpdateCollisionColumn(column);
-            foreach (int column in dirtyColumns) dirtyColumnFlags[column] = false;
-            dirtyColumns.Clear(); allColumnsDirty = false; collisionDirty = false;
+            {
+                while (collisionColumnCursor < collisionColumns.Length)
+                {
+                    // One column per call keeps progress; the rest resumes at the same cursor.
+                    if (processed > 0 && !ignoreBudget && DestructionFrameBudget.IsExhausted) return false;
+                    UpdateCollisionColumn(collisionColumnCursor++);
+                    processed++;
+                }
+                collisionColumnCursor = 0;
+                allColumnsDirty = false;
+            }
+            // 전체 갱신 도중 이미 처리한 열에서 발생한 변경도 끝내야 완료로 본다.
+            int index = 0;
+            while (index < dirtyColumns.Count)
+            {
+                if (processed > 0 && !ignoreBudget && DestructionFrameBudget.IsExhausted) break;
+                int column = dirtyColumns[index++];
+                UpdateCollisionColumn(column);
+                dirtyColumnFlags[column] = false;
+                processed++;
+            }
+            if (index < dirtyColumns.Count)
+            {
+                dirtyColumns.RemoveRange(0, index);
+                return false;
+            }
+            dirtyColumns.Clear(); collisionDirty = false;
             return true;
         }
         private void UpdateCollisionColumn(int column)
         {
+            // 열 콜라이더의 경계·활성 구성이 바뀌었다. 이웃은 이 버전으로 외부 지지 캐시를 검증한다.
+            InvalidateCollisionShape();
             var runs = collisionColumns[column];
             if (runs == null)
             {

@@ -1,34 +1,42 @@
 {
-    "tests": [
-        {
-            "id": "around-cover",
-            "requiredModules": [{"kind": "Ricochet", "count": 1}],
-            "name": "엄폐 뒤 표적 테스트",
-            "instructions": "엄폐 뒤 초록 표적 2개를 파괴하세요. 밝은 벽에서 반사하거나 범위 공격을 활용하세요.",
-            "failureHint": "엄폐물은 파괴할 수 없습니다. 반사각과 폭발 범위를 조절하고 붉은 상자를 피해 보세요.",
-            "enabled": true,
-            "timeLimit": 30.0,
-            "requiredDestruction": 0.699999988079071
-        },
-        {
-            "id": "behind-barrier",
-            "requiredModules": [{"kind": "Ricochet", "count": 1}],
-            "name": "장애물 뒤 표적 테스트",
-            "instructions": "저항판 뒤 초록 표적 3개를 파괴하세요. 붉은 상자는 보호 대상입니다.",
-            "failureHint": "앞 저항판의 관통 저항은 2입니다. 관통·차지와 뒤쪽 폭발 범위를 조절해 보세요.",
-            "enabled": true,
-            "timeLimit": 30.0,
-            "requiredDestruction": 0.699999988079071
-        },
-        {
-            "id": "wide-targets",
-            "requiredModules": [{"kind": "Ricochet", "count": 1}],
-            "name": "넓게 흩어진 표적 테스트",
-            "instructions": "좌우 초록 표적 3개를 파괴하세요. 총열 배치·분기·산탄·회전을 활용해 보세요.",
-            "failureHint": "표적 사이 간격이 넓습니다. 총구 위치·분기·산탄 범위를 조절하거나 불필요한 파츠를 줄여 보세요.",
-            "enabled": true,
-            "timeLimit": 30.0,
-            "requiredDestruction": 0.699999988079071
-        }
-    ]
+  "tests": [
+    {
+      "id": "around-cover",
+      "requiredModules": [],
+      "name": "정면 사격 테스트",
+      "instructions": "10초 안에 표적에 총알을 3회 명중시키세요.",
+      "failureHint": "명중 횟수를 확인하고 조준이나 연사를 조절하세요.",
+      "enabled": true,
+      "timeLimit": 10,
+      "goalType": "HitCount",
+      "requiredHits": 3,
+      "requiredUnlockModules": []
+    },
+    {
+      "id": "behind-barrier",
+      "requiredModules": [],
+      "name": "관통 사격 테스트",
+      "goalType": "Destruction",
+      "instructions": "표적 1개를 15초 안에 70% 이상 파괴하세요.",
+      "failureHint": "내성을 확인하고 반복 명중으로 표적을 파괴하세요.",
+      "enabled": true,
+      "timeLimit": 15,
+      "requiredDestruction": 0.7,
+      "requiredUnlockModules": []
+    },
+    {
+      "id": "wide-targets",
+      "requiredModules": [],
+      "name": "폭발 사격 테스트",
+      "goalType": "Destruction",
+      "instructions": "표적 3개를 10초 안에 각각 70% 이상 파괴하세요. 따로 파괴해도 됩니다.",
+      "failureHint": "각 표적의 파괴율과 폭발 범위를 확인하세요.",
+      "enabled": true,
+      "timeLimit": 10,
+      "requiredDestruction": 0.7,
+      "requiredUnlockModules": [
+        "Explosion"
+      ]
+    }
+  ]
 }

@@ -23,6 +23,14 @@ namespace WeaponWorkshop
             public int walletModuleCredits;
         }
 
+        private enum PlacementLoanOfferResult
+        {
+            NotNeeded,
+            Offered,
+            DailyLimit,
+            Unavailable
+        }
+
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField] private int selectedSlot = 1;
         [SerializeField] private bool deleteMode;
@@ -34,12 +42,17 @@ namespace WeaponWorkshop
         private bool paletteOpen;
         private int hoveredPaletteModule;
         private bool favoriteDragActive;
+        public event System.Action<int> FavoriteSelected;
         public void SetHoveredPaletteModule(int moduleId) => hoveredPaletteModule = moduleId;
+        public int HoveredPaletteModule => hoveredPaletteModule;
         private void HandleFavoriteKey(int index)
         {
             if (GameManager.GameplayBlocked || favoriteDragActive || !TutorialManager.TryAction("select-module")) return;
             if (PaletteOpen && hoveredPaletteModule > 0) { SetFavorite(index, hoveredPaletteModule); return; }
-            SelectModule(GetFavorite(index));
+            if (SelectModule(GetFavorite(index)))
+            {
+                FavoriteSelected?.Invoke(index);
+            }
         }
         private InputActionMap controls;
         private Camera view;
@@ -162,6 +175,15 @@ namespace WeaponWorkshop
         public int SelectedSlot => selectedSlot;
         public bool DeleteMode => deleteMode;
         public bool PaletteOpen => paletteOpen && isActiveAndEnabled;
+        public void TogglePalette()
+        {
+            if (!isActiveAndEnabled || GameManager.GameplayBlocked || paintingMode) return;
+            if (!TutorialManager.TryAction("palette")) return;
+            CancelPreview();
+            paletteOpen = !paletteOpen;
+            hoveredPaletteModule = 0;
+            if (paletteOpen && TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("palette-opened");
+        }
         public void ClosePalette()
         {
             paletteOpen = false;
@@ -225,18 +247,19 @@ namespace WeaponWorkshop
                 TutorialManager.Instance?.NotifySignal($"quickslot-{index + 1}-module-{moduleId}", this);
         }
 
+        public bool IsFavoriteDragging => favoriteDragActive;
         public void SetFavoriteDrag(bool active)
         {
             favoriteDragActive = active;
             if (active) CancelPreview();
         }
 
-        public void SelectModule(int moduleId)
+        public bool SelectModule(int moduleId)
         {
-            if (GameManager.GameplayBlocked || paintingMode || !TutorialManager.TryAction("select-module")) return;
+            if (GameManager.GameplayBlocked || paintingMode || !TutorialManager.TryAction("select-module")) return false;
             CancelPreview();
             int slot = ValidModuleOrBlocker(moduleId);
-            if (IsModuleLocked(slot)) return;
+            if (IsModuleLocked(slot)) return false;
             // Color module: pick the color first (ColorPickerUI shows while ColorPickerOpen); placing waits.
             if (IsColorModule(slot))
             {
@@ -247,6 +270,7 @@ namespace WeaponWorkshop
             selectedSlot = slot;
             deleteMode = false;
             UpdateEraseModeUI();
+            return true;
         }
 
         // Every color module placed after this gets the confirmed color, until it is picked again.
@@ -304,17 +328,11 @@ namespace WeaponWorkshop
                 int index = i - 1;
                 controls.FindAction("Select" + (i % 10), true).performed += _ => HandleFavoriteKey(index);
             }
-            controls.FindAction("TogglePalette", true).performed += _ =>
-            {
-                if (GameManager.GameplayBlocked || paintingMode) return;
-                if (!TutorialManager.TryAction("palette")) return;
-                CancelPreview();
-                paletteOpen = !paletteOpen; hoveredPaletteModule = 0;
-                if (paletteOpen && TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("palette-opened");
-            };
+            controls.FindAction("TogglePalette", true).performed += _ => TogglePalette();
             InputAction attach = controls.FindAction("Attach", true);
             attach.started += _ =>
             {
+                if (controls.FindAction("Pan", true).IsPressed()) return;
                 if (TryBeginPlanarStroke()) return;
                 paintPointerHeld = false;
                 bool canUseSurface = paintingMode && !GameManager.GameplayBlocked &&
@@ -349,7 +367,7 @@ namespace WeaponWorkshop
             {
                 if (strokeActive) return;
                 if (GameManager.GameplayBlocked || favoriteDragActive ||
-                    (UsingPlanarView && (planarView.IsPanning || controls.FindAction("Pan", true).IsPressed())) ||
+                    controls.FindAction("Pan", true).IsPressed() || (UsingPlanarView && planarView.IsPanning) ||
                     IsPointerOverUI(AimPoint())) return;
                 if (!paintingMode && (paletteOpen || colorPickerOpen))
                 { TutorialManager.Instance?.NotifyBlockedAction(); return; }
@@ -365,6 +383,13 @@ namespace WeaponWorkshop
             };
             controls.FindAction("ToggleDelete", true).performed += _ =>
             {
+                if (TutorialManager.Instance != null && TutorialManager.Instance.CanShortcutDeleteModeGuide(out bool targetDeleteMode))
+                {
+                    if (paintingMode) return;
+                    TutorialManager.Instance.CompleteDeleteModeGuideShortcut(this, targetDeleteMode);
+                    return;
+                }
+
                 if (GameManager.GameplayBlocked || paintingMode) return;
                 // 기존 단계에서는 켜진 삭제 모드를 끌 수 있지만, 엄격 제한 단계는 이 예외도 적용하지 않는다.
                 if (!TutorialManager.ActionAllowed("delete") &&
@@ -413,6 +438,22 @@ namespace WeaponWorkshop
             controls?.Disable();
             UpdateEraseModeUI();
         }
+        /// <summary>
+        /// 작업대의 삭제 모드 활성화 상태를 명시적으로 설정합니다.
+        /// 미리보기를 정리하고 지우기 모드 안내 UI를 갱신합니다.
+        /// </summary>
+        /// <param name="enabled">삭제 모드 활성화 여부입니다.</param>
+        public void SetDeleteMode(bool enabled)
+        {
+            if (deleteMode == enabled) return;
+            CancelPreview();
+            CancelModuleColor();
+            deleteMode = enabled;
+            UpdateEraseModeUI();
+            if (TutorialManager.Instance != null)
+                TutorialManager.Instance.NotifySignal(deleteMode ? "delete-mode-enabled" : "delete-mode-disabled");
+        }
+
         private void UpdateEraseModeUI()
         {
             if (eraseModeUI != null) eraseModeUI.SetActive(isActiveAndEnabled && deleteMode);
@@ -445,11 +486,18 @@ namespace WeaponWorkshop
             if (GameManager.GameplayBlocked)
             {
                 paintPointerHeld = false;
+                if (preview != null && OnboardingManager.IsChoosingModuleDirection(this))
+                {
+                    if (pendingAssembly == null || !pendingAssembly.gameObject.activeInHierarchy ||
+                        !pendingAssembly.CanAttach(pendingCell, pendingSlot)) CancelPreview();
+                    else UpdatePreview();
+                }
                 return;
             }
             if (paintingMode && !stickerToolActive && paintPointerHeld)
             {
-                if (controls.FindAction("Rotate", true).IsPressed() || IsPointerOverUI(AimPoint()))
+                if (controls.FindAction("Rotate", true).IsPressed() || controls.FindAction("Pan", true).IsPressed() ||
+                    IsPointerOverUI(AimPoint()))
                 {
                     paintPointerHeld = false;
                     return;
@@ -469,7 +517,8 @@ namespace WeaponWorkshop
             if (UsingPlanarView) return;
             if (paintingMode || paletteOpen || colorPickerOpen || favoriteDragActive || preview != null ||
                 GameManager.GameplayBlocked || view == null || controls == null ||
-                controls.FindAction("Rotate", true).IsPressed() || IsPointerOverUI(AimPoint())) return;
+                controls.FindAction("Rotate", true).IsPressed() || controls.FindAction("Pan", true).IsPressed() ||
+                IsPointerOverUI(AimPoint())) return;
             var pointer = AimPoint();
             if (!view.pixelRect.Contains(pointer) || !TryGetSurfaceHit(pointer, out var hit)) return;
             var assembly = hit.collider.GetComponentInParent<CubeAssembly>();
@@ -620,6 +669,70 @@ namespace WeaponWorkshop
                 WorkshopSoundEffects.RaiseBlockRemoved(soundPosition);
         }
 
+        private PlacementLoanOfferResult TryOfferPlacementLoan(int _dollars, int _credits, out string _unavailableReason)
+        {
+            _unavailableReason = null;
+            if (wallet == null)
+            {
+                _unavailableReason = "지갑을 사용할 수 없습니다";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.Balance >= _dollars)
+            {
+                return PlacementLoanOfferResult.NotNeeded;
+            }
+            if (!wallet.isActiveAndEnabled)
+            {
+                _unavailableReason = "지갑을 사용할 수 없습니다";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.ModuleCredits < _credits)
+            {
+                _unavailableReason = "부품이 부족합니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            FeedbackUI feedback = FeedbackUI.For(this);
+            _DayManager dayManager = FindFirstObjectByType<_DayManager>();
+            if (dayManager == null)
+            {
+                _unavailableReason = "대출을 받을 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (dayManager.DayNumber < 0 ||
+                wallet.OutstandingLoans == int.MaxValue ||
+                wallet.Balance > int.MaxValue - PlayerWallet.LoanAmount)
+            {
+                _unavailableReason = "대출을 받을 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (wallet.LastLoanDay == dayManager.DayNumber)
+            {
+                _unavailableReason = "대출은 하루에 한 번만 받을 수 있습니다.";
+                return PlacementLoanOfferResult.DailyLimit;
+            }
+            int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
+            TutorialManager tutorial = TutorialManager.Instance;
+            bool offered = feedback != null && feedback.ShowChoice(this, $"${PlayerWallet.LoanAmount:N0} 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
+                () =>
+                {
+                    if (wallet.TryTakeLoan(dayManager.DayNumber))
+                    {
+                        TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench);
+                    }
+                },
+                null, "대출받기", "취소");
+            if (!offered)
+            {
+                _unavailableReason = "대출 안내를 표시할 수 없습니다.";
+                return PlacementLoanOfferResult.Unavailable;
+            }
+            if (tutorial != null && tutorial.CurrentStep?.requiredSignal == "loan-taken")
+            {
+                tutorial.ShowLoanGuide(feedback);
+            }
+            return PlacementLoanOfferResult.Offered;
+        }
+
         private bool TryPurchaseAttach(CubeAssembly assembly, Vector3Int cell, int slot,
             Vector3Int direction, Vector3Int normal)
         {
@@ -638,22 +751,9 @@ namespace WeaponWorkshop
             string partKind = PartLogName(assembly, slot);
             if (wallet.Balance < dollars)
             {
-                if (wallet.CanAffordModuleCredits(materials))
+                if (TryOfferPlacementLoan(dollars, materials, out string reason) == PlacementLoanOfferResult.DailyLimit)
                 {
-                    var feedback = FeedbackUI.For(this);
-                    var dayManager = FindFirstObjectByType<_DayManager>();
-                    if (dayManager != null && wallet.LastLoanDay != dayManager.DayNumber)
-                    {
-                        int interest = (int)((long)dayManager.NextSettlementRent * (wallet.OutstandingLoans + 1) / 5);
-                        var tutorial = TutorialManager.Instance;
-                        if (feedback != null && feedback.ShowChoice(this, $"$3,000 대출을 받으시겠습니까? 예상 이자 ${interest:N0}",
-                            () => { if (wallet.TryTakeLoan(dayManager.DayNumber))
-                                TutorialManager.Instance?.NotifySignal("loan-taken", TutorialManager.Instance.TutorialWorkbench); },
-                            null, "대출받기", "취소") && tutorial != null &&
-                            tutorial.CurrentStep?.requiredSignal == "loan-taken")
-                            tutorial.ShowLoanGuide(feedback);
-                    }
-                    else if (dayManager != null) feedback?.ShowNotification("대출은 하루에 한 번만 받을 수 있습니다.");
+                    FeedbackUI.For(this)?.ShowNotification(reason);
                 }
                 return false;
             }
@@ -712,6 +812,26 @@ namespace WeaponWorkshop
             PlaceAtCell(assembly, cell, face);
         }
 
+        public bool CompleteOnboardingPlacement(int slot)
+        {
+            if (preview == null || pendingAssembly == null || pendingSlot != slot || GameManager.GameplayBlocked) return false;
+            if (!CanSelectDirection(pendingDirection)) return false;
+            if (!ExecuteUndoableEdit(pendingAssembly,
+                    () => TryPurchaseAttach(pendingAssembly, pendingCell, pendingSlot,
+                        pendingDirection, -pendingAttachmentDirection))) return false;
+            CancelPreview();
+            return true;
+        }
+
+        public void CancelOnboardingPlacement(int slot)
+        {
+            if (preview != null && pendingSlot == slot && IsTrigger(pendingAssembly, slot))
+                CancelPreview();
+        }
+
+        private static bool IsTrigger(CubeAssembly assembly, int slot) =>
+            assembly != null && assembly.IsTriggerModuleSlot(slot);
+
         // 3D 표면 선택과 2D 그리드 선택은 같은 설치·결제·되돌리기 경로를 사용한다.
         private void PlaceAtCell(CubeAssembly assembly, Vector3Int cell, Vector3Int face)
         {
@@ -729,7 +849,7 @@ namespace WeaponWorkshop
             Vector3Int feed = face;
             if (followsFeed && !assembly.TryGetFeedDirection(cell, out feed))
             {
-                GameManager.Instance?.UI?.ShowNotification("총구에만 설치할 수 있습니다.");
+                FeedbackUI.For(this)?.ShowNotification("총구에만 설치할 수 있습니다.");
                 return;
             }
             if (!singleOutput && selectedSlot != 3)
@@ -740,7 +860,8 @@ namespace WeaponWorkshop
             // Stat modules (5+) place in one click: output continues straight from the feed,
             // falling back to any other allowed direction when that one is blocked.
             // Scopes choose their lens direction like an extension (arrow = lens, opposite face = eyepiece).
-            if (selectedSlot >= 5 && !IsScope(assembly, selectedSlot))
+            if (selectedSlot >= 5 && !IsScope(assembly, selectedSlot) &&
+                !(assembly.IsTriggerModuleSlot(selectedSlot) && OnboardingManager.NeedsModuleOnboarding(selectedSlot)))
             {
                 if (ExecuteUndoableEdit(assembly,
                         () => TryPurchaseAttach(assembly, cell, selectedSlot, feed, feed))) return;
@@ -773,6 +894,7 @@ namespace WeaponWorkshop
                 renderer.SetPropertyBlock(tint);
             }
             UpdatePreview();
+            OnboardingManager.NotifyModulePlacementAttempt(selectedSlot, this);
         }
 
         public int GetNextModuleCreditCost(int slot)
@@ -1131,13 +1253,13 @@ namespace WeaponWorkshop
         {
             if (target.GetComponentInParent<PlacedBlock>() != null ||
                 target.GetComponentInParent<PowerCore>() == null) return false;
-            GameManager.Instance?.UI?.ShowNotification("코어는 커스텀할 수 없습니다");
+            FeedbackUI.For(this)?.ShowNotification("코어는 커스텀할 수 없습니다");
             return true;
         }
 
         private void ShowCustomLimitMessage(string message)
         {
-            GameManager.Instance?.UI?.ShowNotification(message);
+            FeedbackUI.For(this)?.ShowNotification(message);
             WorkshopSoundEffects.RaiseCustomLimitReached(view != null ? view.transform.position : transform.position);
         }
 

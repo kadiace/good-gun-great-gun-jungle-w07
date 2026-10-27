@@ -1,15 +1,20 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace WeaponWorkshop
 {
+    /// <summary>
+    /// UIManager의 플레이어에서 WorkshopSession·CubeBuilder를 늦게 찾아 공방 보기 UI를 구동하는 브리지입니다.
+    /// 세션 탐색, Session.LateUpdate 이후의 최종 자세 읽기, 그리드·방향·층 표시 Bind는 여기에 남고
+    /// 모드·축 버튼과 축 그래픽 갱신은 WorkshopOrientationView/Presenter로 위임합니다.
+    /// </summary>
     [DefaultExecutionOrder(100)]
     public sealed class WorkshopViewUI : MonoBehaviour
     {
-        [SerializeField] private UIManager owner;
+        // 아래 직렬화 필드는 씬 오버라이드를 포함한 실효 참조 원본이다(FormerlySerializedAs extentUI 포함).
+        // Awake에서 m_view.Configure로 View에 옮겨지고, 그리드·방향·층 표시는 브리지가 계속 직접 갱신한다.
         [SerializeField] private GameObject controlsRoot;
         [SerializeField] private Button modeButton;
         [SerializeField] private TMP_Text modeLabel;
@@ -27,144 +32,147 @@ namespace WeaponWorkshop
         [SerializeField] private GameObject axisMenuRoot;
         [SerializeField] private Button[] axisMenuButtons;
         [SerializeField] private Color inactiveColor = new Color(.08f, .1f, .11f, .75f);
+        [SerializeField] private WorkshopOrientationView m_view;
+
         private WorkshopSession session;
         private CubeBuilder builder;
-        private WorkshopPlanarView view;
-        private Button[] buttons;
-        private TMP_Text[] labels, menuLabels;
-        private UnityAction[] selectActions;
-        private static readonly string[] Captions = { "+FRONT", "+UP", "+RIGHT", "-FRONT", "-UP", "-RIGHT" };
+        private WorkshopOrientationPresenter m_presenter;
+        private bool m_hasLoggedViewMissing;
 
         private void Awake()
         {
-            controlsRoot.SetActive(false);
-            grid.gameObject.SetActive(false);
-            axisMenuRoot.SetActive(false);
-            directionsGraphic.Bind(null, false);
-            axesGraphic.ClearOrientation();
-            modeLabel.text = "2D 모드";
-            buttons = new[] { frontButton, upButton, rightButton, backButton, downButton, leftButton };
-            labels = new[] { frontLabel, upLabel, rightLabel, backLabel, downLabel, leftLabel };
-            menuLabels = new TMP_Text[6];
-            selectActions = new UnityAction[6];
-            for (int i = 0; i < 6; i++)
+            // 원래 숨김 초기화 중 그리드·방향 표시는 브리지 참조로 끄고, 나머지는 View 초기화가 끝낸다.
+            if (grid != null)
             {
-                int index = i;
-                selectActions[i] = () => SelectAxis(index);
-                buttons[i].onClick.AddListener(selectActions[i]);
-                axisMenuButtons[i].onClick.AddListener(selectActions[i]);
-                menuLabels[i] = axisMenuButtons[i].GetComponentInChildren<TMP_Text>(true);
+                grid.gameObject.SetActive(false);
             }
-            modeButton.onClick.AddListener(Toggle);
-            axisMenuButton.onClick.AddListener(ToggleAxisMenu);
-        }
 
-        private void Toggle() { axisMenuRoot.SetActive(false); view?.ToggleMode(); }
-        private void SelectAxis(int index)
-        {
-            axisMenuRoot.SetActive(false);
-            view?.SelectAxis((WorkshopViewAxis)index);
-        }
-        private void ToggleAxisMenu()
-        {
-            if (view != null && view.CanChangeView) axisMenuRoot.SetActive(!axisMenuRoot.activeSelf);
+            if (directionsGraphic != null)
+            {
+                directionsGraphic.Bind(null, false);
+            }
+
+            if (m_view == null)
+            {
+                if (!m_hasLoggedViewMissing)
+                {
+                    m_hasLoggedViewMissing = true;
+                    Debug.LogError("[WorkshopViewUI] Initialize 실패: 필수 참조 누락 (m_view=False)", this);
+                }
+
+                return;
+            }
+
+            // 씬 오버라이드가 반영된 실효 참조를 View 먼저 넘기고 초기화한다. View 초기화는 지연 숨김 없이 여기서 끝난다.
+            m_view.Configure(controlsRoot, modeButton, modeLabel,
+                frontButton, upButton, rightButton, backButton, downButton, leftButton,
+                frontLabel, upLabel, rightLabel, backLabel, downLabel, leftLabel,
+                axesGraphic, axisMenuButton, axisMenuRoot, axisMenuButtons, inactiveColor);
+            m_presenter = new WorkshopOrientationPresenter(m_view);
+            m_presenter.Initialize();
         }
 
         private void LateUpdate()
         {
-            if (session == null && owner != null && owner.Player != null)
+            if (session == null && GameManager.Instance != null && GameManager.Instance.Player != null)
             {
-                session = owner.Player.GetComponent<WorkshopSession>();
-                builder = owner.Player.GetComponentInChildren<CubeBuilder>(true);
+                session = GameManager.Instance.Player.GetComponent<WorkshopSession>();
+                builder = GameManager.Instance.Player.GetComponentInChildren<CubeBuilder>(true);
             }
-            view = session != null ? session.PlanarView : null;
+
+            WorkshopPlanarView planarView = session != null ? session.PlanarView : null;
             bool visible = session != null && session.IsEditing && builder != null && !builder.IsCustomMode;
-            if (controlsRoot.activeSelf != visible) controlsRoot.SetActive(visible);
-            bool planar = visible && view != null && view.Is2D;
-            directionsGraphic.Bind(view, planar);
-            if (layerPresentation != null) layerPresentation.Bind(view, planar);
-            if (layerUI != null) layerUI.Bind(view, builder, layerPresentation, planar);
-            if (grid.gameObject.activeSelf != planar) grid.gameObject.SetActive(planar);
-            if (!visible) { HideOrientation(); return; }
-            grid.Bind(view, builder, layerPresentation);
-            string caption = planar ? "3D 모드" : "2D 모드";
-            if (modeLabel.text != caption) modeLabel.text = caption;
-            modeButton.interactable = view != null && view.CanChangeView;
+            bool planar = visible && planarView != null && planarView.Is2D;
+            if (directionsGraphic != null)
+            {
+                var guideCore = visible && session.ActiveWorkbench != null ? session.ActiveWorkbench.CurrentCore : null;
+                CubeAssembly guideAssembly = guideCore != null && guideCore.TryGetComponent<CubeAssembly>(out var target) ? target : null;
+                directionsGraphic.Bind(planarView, guideAssembly, session != null ? session.WorkshopCamera : null,
+                    visible && !GameManager.GameplayBlocked);
+            }
+
+            if (layerPresentation != null)
+            {
+                layerPresentation.Bind(planarView, planar);
+            }
+
+            if (layerUI != null)
+            {
+                layerUI.Bind(planarView, builder, layerPresentation, planar);
+            }
+
+            if (grid != null && grid.gameObject.activeSelf != planar)
+            {
+                grid.gameObject.SetActive(planar);
+            }
+
+            if (m_presenter == null)
+            {
+                return;
+            }
+
+            if (!visible)
+            {
+                m_presenter.Refresh(default);
+                return;
+            }
+
+            if (grid != null)
+            {
+                grid.Bind(planarView, builder, layerPresentation);
+            }
+
+            Quaternion relativeRotation = Quaternion.identity;
+            bool hasPose = false;
             var core = session.ActiveWorkbench != null ? session.ActiveWorkbench.CurrentCore : null;
-            if (core == null || session.WorkshopCamera == null) { HideOrientation(); return; }
-            if (!axesGraphic.gameObject.activeSelf) axesGraphic.gameObject.SetActive(true);
-
-            // Session.LateUpdate 이후의 최종 자세를 읽는다. 입력 delta나 Euler 각을 UI에 누적하지 않는다.
-            Quaternion relative = Quaternion.Inverse(session.WorkshopCamera.transform.rotation) * core.transform.rotation;
-            int selected = -1;
-            if (planar) selected = (int)view.Axis;
-            else
-                for (int i = 0; i < 6; i++)
-                    if (Quaternion.Angle(relative, WorkshopPlanarView.CoreRotationInView((WorkshopViewAxis)i)) < .5f)
-                    { selected = i; break; }
-            axesGraphic.SetOrientation(relative, selected);
-            bool interactable = view != null && view.CanChangeView;
-            axisMenuButton.interactable = interactable;
-            if (!interactable) axisMenuRoot.SetActive(false);
-            Rect bounds = axesGraphic.rectTransform.rect;
-            if (bounds.width <= 0f || bounds.height <= 0f) return;
-            for (int i = 0; i < 6; i++)
+            if (core != null && session.WorkshopCamera != null)
             {
-                var projected = axesGraphic.GetAxis(i);
-                var rect = (RectTransform)buttons[i].transform;
-                Vector2 center = new Vector2((projected.Point.x - bounds.xMin) / bounds.width,
-                    (projected.Point.y - bounds.yMin) / bounds.height);
-                // CoreAxes의 좌표계에서 같은 투영 결과로 그림과 클릭 영역을 배치한다.
-                rect.anchorMin = center - new Vector2(.17f, .07f);
-                rect.anchorMax = center + new Vector2(.17f, .07f);
-                rect.offsetMin = rect.offsetMax = Vector2.zero;
-                SetAxis(buttons[i], labels[i], i, selected, projected.Tint, interactable);
-                SetAxis(axisMenuButtons[i], menuLabels[i], i, selected,
-                    WorkshopAxesGraphic.AxisColor((WorkshopViewAxis)i), interactable);
+                // Session.LateUpdate 이후의 최종 자세를 읽는다. 입력 delta나 Euler 각을 UI에 누적하지 않는다.
+                relativeRotation = Quaternion.Inverse(session.WorkshopCamera.transform.rotation) * core.transform.rotation;
+                hasPose = true;
             }
-            // 그리기와 클릭 순서를 깊이 순으로 일치시킨다. 겹친 축은 앞쪽이 입력을 받는다.
-            for (int order = 0; order < 6; order++)
+
+            m_presenter.Refresh(new WorkshopOrientationState
             {
-                Transform button = buttons[axesGraphic.GetDrawOrder(order)].transform;
-                if (button.GetSiblingIndex() != order) button.SetSiblingIndex(order);
-            }
+                PlanarView = planarView,
+                ControlsVisible = true,
+                Planar = planar,
+                HasWorkshopPose = hasPose,
+                RelativeRotation = relativeRotation
+            });
         }
 
-        private void SetAxis(Button button, TMP_Text label, int index, int selected, Color tint, bool interactable)
-        {
-            bool active = index == selected;
-            button.interactable = interactable;
-            button.image.color = active ? WorkshopAxesGraphic.AxisColor((WorkshopViewAxis)index) : inactiveColor;
-            label.color = active ? Color.black : tint;
-            string text = active ? "● " + Captions[index] : Captions[index];
-            if (label.text != text) label.text = text;
-        }
-
-        private void HideOrientation()
-        {
-            if (axisMenuRoot != null) axisMenuRoot.SetActive(false);
-            if (axesGraphic == null) return;
-            axesGraphic.ClearOrientation();
-            axesGraphic.gameObject.SetActive(false);
-        }
         private void OnDisable()
         {
-            if (layerPresentation != null) layerPresentation.Bind(null, false);
-            if (layerUI != null) layerUI.Bind(null, null, null, false);
-            if (directionsGraphic != null) directionsGraphic.Bind(null, false);
-            if (controlsRoot != null) controlsRoot.SetActive(false);
-            if (grid != null) grid.gameObject.SetActive(false);
-            HideOrientation();
+            if (layerPresentation != null)
+            {
+                layerPresentation.Bind(null, false);
+            }
+
+            if (layerUI != null)
+            {
+                layerUI.Bind(null, null, null, false);
+            }
+
+            if (directionsGraphic != null)
+            {
+                directionsGraphic.Bind(null, false);
+            }
+
+            if (grid != null)
+            {
+                grid.gameObject.SetActive(false);
+            }
+
+            m_presenter?.Refresh(default);
         }
+
         private void OnDestroy()
         {
-            modeButton.onClick.RemoveListener(Toggle);
-            axisMenuButton.onClick.RemoveListener(ToggleAxisMenu);
-            if (selectActions == null) return;
-            for (int i = 0; i < 6; i++)
+            if (m_presenter != null)
             {
-                buttons[i].onClick.RemoveListener(selectActions[i]);
-                axisMenuButtons[i].onClick.RemoveListener(selectActions[i]);
+                m_presenter.Dispose();
+                m_presenter = null;
             }
         }
     }

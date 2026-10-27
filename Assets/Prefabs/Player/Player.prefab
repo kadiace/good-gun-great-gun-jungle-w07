@@ -256,7 +256,7 @@ MonoBehaviour:
   deleteMode: 0
   eraseModeUI: {fileID: 0}
   moduleCatalog: {fileID: 11400000, guid: 9ba20ad561a32444ba7c6c150b2af8ea, type: 2}
-  favorites: 010000000200000003000000040000000500000006000000
+  favorites: 010000000200000003000000040000000500000006000000080000000c0000000e00000011000000
   hoverPreviewMaterial: {fileID: 2100000, guid: 2244735490d61c14c8f8442ee35a6429, type: 2}
   erasePreviewMaterial: {fileID: 2100000, guid: 14bfe90ac585a344fa85af8e7f4efa26, type: 2}
 --- !u!1 &5674124453514101819
@@ -647,7 +647,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaults:
   - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   - {fileID: 7072533542750884013, guid: dedd8c0e65baf9f4c99cec0e7974b6fc, type: 3}
+  - {fileID: 0}
   - {fileID: 5289095822269353493, guid: 7bbe612ef5fe0804985e7bb33baacbd6, type: 3}
 --- !u!114 &4157956253638915225
 MonoBehaviour:
@@ -661,6 +664,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f7eba6625b9a4e4388635c01f46284d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponWorkshop.PlayerShootingTest
+  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!114 &7057880918029420426
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -17,7 +17,7 @@ namespace WeaponWorkshop
         private float spawnInterval = 30f;
         private bool alerted;
         [SerializeField, Min(1)] private int helicoptersPerWave = 1;
-        [SerializeField, Min(1)] private int tanksPerWave = 1;
+        [SerializeField, Min(0)] private int tanksPerWave = 1;
         [SerializeField, Min(1)] private int maximumHelicopters = 4;
         [SerializeField, Min(1)] private int maximumTanks = 4;
         private float spawnRemaining;
@@ -30,6 +30,8 @@ namespace WeaponWorkshop
             if (alerted || target == null || target.gameObject.scene != gameObject.scene ||
                 RaidEnemyCore.FindForPart(target.transform) != null || player == null ||
                 ((helicopterPrefab == null || !helicopterEnabled) && tankTransportPrefab == null)) return;
+            if (TutorialManager.TrainingRaidPending && gameObject.scene.name == TutorialManager.TrainingScene &&
+                (TutorialManager.Instance == null || !TutorialManager.Instance.TrainingTankStageReached)) return;
             // 공격과 연쇄 붕괴 알림이 겹쳐도 최초 출격은 한 번만 시작한다.
             alerted = true;
             spawnRemaining = Mathf.Max(1f, spawnInterval);
@@ -94,6 +96,18 @@ namespace WeaponWorkshop
                 point = raidArea.GetTankDropPoint(nextDropPoint++, out outward);
             var transport = Instantiate(tankTransportPrefab);
             return transport.Initialize(player, point, outward, enemyId, cargoPrefabOverride);
+        }
+        /// <summary>
+        /// 연습 습격 진행 중 적어도 1대의 탱크가 현장에 존재(수송 중 포함)하도록 보장합니다.
+        /// </summary>
+        /// <returns>이미 살아있는 탱크가 있거나 새 탱크가 성공적으로 소환되면 true, 연습 습격 조건 불충족 또는 소환 실패 시 false.</returns>
+        public bool EnsureTrainingTankSpawned()
+        {
+            if (!TutorialManager.TrainingRaidPending || gameObject.scene.name != TutorialManager.TrainingScene)
+                return false;
+            if (CountLiving<RaidTank>() > 0)
+                return true;
+            return SpawnTank($"{gameObject.scene.name}_Training_Tank");
         }
         private void Update()
         {

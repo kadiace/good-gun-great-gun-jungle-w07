@@ -12,7 +12,7 @@ namespace WeaponWorkshop
         SplitTwoBlocks,  // 총에 달린 2방향 분할 블록 개수 (stat 무시)
         SplitFourBlocks, // 총에 달린 4방향 분할 블록 개수 (stat 무시)
         Muzzles,          // 실제로 발사되는 총구(경로) 수 (stat 무시)
-        ConstructionCost, Shape, PaintedFaces, PaintedColorFaces, ColorModules
+        ConstructionCost, Shape, PaintedFaces, PaintedColorFaces, ColorModules, StickerFaces, Keyrings, BasicCore
     }
 
     [System.Serializable]
@@ -118,9 +118,8 @@ namespace WeaponWorkshop
         public bool EndsClear { get => Order.endsClear; set => Writable.endsClear = value; }
         public string HappyLine { get => Order.happyLine; set => Writable.happyLine = value; }
         public string AngryLine { get => Order.angryLine; set => Writable.angryLine = value; }
-        public int Price { get => Order.price; set => Writable.price = value; }
+        public bool IsDifficult => Order.isDifficult;
         public int UnlockDay => Order.unlockDay;
-        public int SaleBonusCount() => Order.SaleBonusCount();
         // Instantiate는 직렬화 필드만 복사하므로 런타임 주문 값은 여기서 옮긴다.
         public void CopyRuntimeOrderFrom(CustomerProfile source)
             => runtimeOrder = source != null && source.runtimeOrder != null ? CustomerOrderInfo.Copy(source.runtimeOrder) : null;

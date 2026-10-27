@@ -15,11 +15,19 @@ namespace WeaponWorkshop
             var candidates = CollectPenetrationCells(start, rotation, halfExtents, distance);
             PrepareCellQuery(start, rotation, halfExtents, out var query, out _, out _, out _);
             Vector3 direction = rotation * Vector3.forward;
+            // Cheap reject before the 15-axis SAT: the cell bounding sphere versus the swept box
+            // bounding sphere anywhere along the travel segment. Conservative only; cells that pass
+            // keep the exact SAT result.
+            float boxRadius = query.a.magnitude + query.b.magnitude + query.c.magnitude;
             foreach (int index in candidates)
             {
                 var cell = preparedCells[index];
                 Vector3 x = query.cellX * cell.localScale.x, y = query.cellY * cell.localScale.y, z = query.cellZ * cell.localScale.z;
                 Vector3 offset = query.matrix.MultiplyPoint3x4(cell.localPosition) - start;
+                float reach = boxRadius + x.magnitude + y.magnitude + z.magnitude;
+                float along = Vector3.Dot(offset, direction);
+                if (along < 0f) along = 0f; else if (along > distance) along = distance;
+                if ((offset - direction * along).sqrMagnitude > reach * reach) continue;
                 float enter = 0f, exit = distance;
                 Vector3 normal = -direction;
                 bool intersects = true;

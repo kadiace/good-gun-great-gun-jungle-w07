@@ -31,6 +31,7 @@ namespace WeaponWorkshop
         }
         public void NotifyAssemblyChanged()
         {
+            InvalidateJudgement();
             passedTestIds.Clear(); certifiedAssemblyKey = null; currentAssemblyKey = null;
             AssemblyChanged?.Invoke();
         }
@@ -43,6 +44,7 @@ namespace WeaponWorkshop
             if (certifiedAssemblyKey != actual) passedTestIds.Clear();
             certifiedAssemblyKey = actual;
             passedTestIds.Add(testId);
+            InvalidateJudgement();
             return true;
         }
         public bool HasPassedTest(string testId) => TableManager.Instance.ShootingTestTable.IsAvailable(testId) &&
@@ -62,6 +64,7 @@ namespace WeaponWorkshop
         }
         public void RestorePassedTests(string[] ids, string assemblyKey)
         {
+            InvalidateJudgement();
             passedTestIds.Clear(); certifiedAssemblyKey = null; currentAssemblyKey = ReadAssemblyKey();
             if (ids == null || string.IsNullOrEmpty(assemblyKey) || currentAssemblyKey != assemblyKey) return;
             foreach (string id in ids) if (TableManager.Instance.ShootingTestTable.IsAvailable(id)) passedTestIds.Add(id);
@@ -137,12 +140,13 @@ namespace WeaponWorkshop
         public int PaidConstructionCost { get; private set; }
         public void RecordConstructionPurchase(int amount)
         {
-            if (amount > 0) PaidConstructionCost += amount;
+            if (amount > 0) { PaidConstructionCost += amount; InvalidateJudgement(); }
         }
 
         public void RestoreConstructionPurchaseCost(int amount)
         {
             PaidConstructionCost = Mathf.Max(0, amount);
+            InvalidateJudgement();
         }
 
         public int RefundModulePurchases(int amount, PlayerWallet wallet)
@@ -150,6 +154,7 @@ namespace WeaponWorkshop
             if (wallet == null || amount <= 0) return 0;
             int refund = Mathf.Min(amount, PaidConstructionCost);
             PaidConstructionCost -= refund;
+            InvalidateJudgement();
             wallet.RefundConstruction(refund);
             return refund;
         }
@@ -163,9 +168,12 @@ namespace WeaponWorkshop
             foreach (PlacedBlock block in GetComponentsInChildren<PlacedBlock>(true))
                 wallet.CreditModuleCredits(block.TakeModuleCreditCost());
             PaidConstructionCost = 0;
+            InvalidateJudgement();
             wallet.RefundConstruction(refund);
         }
         private Vector3 targetPosition;
+        private void InvalidateJudgement()
+            => GetComponentInChildren<CubeAssembly>(true)?.InvalidateJudgement();
         private Quaternion targetRotation;
         private Vector3 targetScale;
         public Transform OutlineRoot => transform;
@@ -257,6 +265,7 @@ namespace WeaponWorkshop
 
         // Charge weapons fire on release instead of while held.
         public bool UsesCharge => statsSource != null && statsSource.UsesCharge;
+        public bool IsBursting => powerCore != null && powerCore.IsBursting;
         public void HoldCharge(float deltaTime)
         {
             if (IsEquipped && !IsMoving && statsSource != null) statsSource.HoldCharge(deltaTime);
@@ -264,12 +273,21 @@ namespace WeaponWorkshop
         public bool ReleaseCharge()
         {
             if (statsSource == null) return false;
-            if (!IsEquipped || IsMoving) { statsSource.ResetCharge(); return false; }
+            if (!IsEquipped || IsMoving) { CancelCharge(); return false; }
             return statsSource.ReleaseCharge();
         }
-        public void CancelCharge() => statsSource?.ResetCharge();
+        public void CancelCharge()
+        {
+            if (statsSource != null) statsSource.ResetCharge();
+            else if (powerCore != null) powerCore.CancelCharge();
+        }
         public bool IsCharging => IsEquipped && statsSource != null && statsSource.IsCharging;
         public float ChargeProgress => statsSource != null ? statsSource.ChargeProgress : 0f;
+        public void GetChargeState(out float progress, out int level, out int maximum)
+        {
+            progress = 0f; level = maximum = 0;
+            if (statsSource != null) statsSource.GetChargeState(out progress, out level, out maximum);
+        }
         public int ChargeLevel => statsSource != null ? statsSource.CurrentChargeLevel : 0;
         public int MaxChargeLevel => statsSource != null ? statsSource.MaxChargeLevel : 0;
         public float ChargeShakeDistance => statsSource != null ? statsSource.Tuning.chargeShakeDistance : 0f;
@@ -467,6 +485,7 @@ namespace WeaponWorkshop
         public void ReturnToWorkbench()
         {
             if (!IsEquipped) return;
+            CancelCharge();
             if (workbench != null && workbench.CurrentWeapon != null && workbench.CurrentWeapon != this)
             {
                 // A swapped weapon must not return on top of the weapon now occupying its old bench.
@@ -485,6 +504,7 @@ namespace WeaponWorkshop
 
         public void PlaceOnWorkbench(Transform parent)
         {
+            CancelCharge();
             SetDroppedCollisionLayer(false);
             Vector3 scale = IsEquipped || colliderStates.Count > 0 ? originalScale : transform.localScale;
             IsEquipped = false;
@@ -502,6 +522,7 @@ namespace WeaponWorkshop
         public bool Drop(Vector3 aimPoint, float speed)
         {
             if (!IsEquipped || IsMoving) return false;
+            CancelCharge();
             IsEquipped = false;
             equippedGripPoint = null;
             dropped = true;
@@ -554,17 +575,90 @@ namespace WeaponWorkshop
             IgnorePlayerCollisions();
         }
 
+        /// <summary>
+        /// 무기를 지정된 경유 지점으로 이동시킵니다.
+        /// </summary>
+        /// <param name="destination">이동할 목표 Transform입니다.</param>
+        /// <returns>이동을 시작했으면 true, 이미 이동 중이거나 대상이 유효하지 않으면 false입니다.</returns>
+        public bool MoveToPoint(Transform destination)
+        {
+            if (IsMoving || destination == null || destination.IsChildOf(transform)) return false;
+            CancelCharge();
+            SetDroppedCollisionLayer(false);
+            if (originalWorldScale == Vector3.zero) originalWorldScale = transform.lossyScale;
+            if (originalScale == Vector3.zero) originalScale = transform.localScale;
+            IsEquipped = false;
+            equippedGripPoint = null;
+            dropped = false;
+            workbench = null;
+            // 이동이 끝나기 전에 중단돼도 RestorePhysics로 복구할 수 있게 원래 물리 상태를 먼저 기록한다.
+            colliderStates.Clear();
+            triggerStates.Clear();
+            foreach (Collider collider in GetComponentsInChildren<Collider>(true))
+            {
+                colliderStates.Add(collider, collider.enabled);
+                triggerStates.Add(collider, collider.isTrigger);
+                collider.enabled = false;
+            }
+            rigidbodyStates.Clear();
+            foreach (Rigidbody body in GetComponentsInChildren<Rigidbody>(true))
+            {
+                rigidbodyStates.Add(body, body.isKinematic);
+                body.isKinematic = true;
+            }
+            MoveTo(destination, Vector3.zero, Quaternion.identity, originalWorldScale);
+            return true;
+        }
+
+        /// <summary>
+        /// 무기를 지정된 폐기 지점으로 이동시킨 뒤 제작비를 환불하고 파괴합니다.
+        /// </summary>
+        /// <param name="destination">폐기 지점 Transform입니다.</param>
+        /// <param name="refundWallet">제작비 환불을 수령할 지갑입니다.</param>
+        /// <returns>폐기 이동을 시작했으면 true, 이동 중이거나 대상이 유효하지 않으면 false입니다.</returns>
         public bool DisposeTo(Transform destination, PlayerWallet refundWallet = null)
         {
-            if (!IsEquipped || IsMoving || destination == null) return false;
+            if (IsMoving || destination == null || destination.IsChildOf(transform)) return false;
+            CancelCharge();
             IsEquipped = false;
             equippedGripPoint = null;
             disposing = true;
             disposalRefundWallet = refundWallet;
+            if (originalWorldScale == Vector3.zero) originalWorldScale = transform.lossyScale;
             foreach (Collider collider in GetComponentsInChildren<Collider>(true))
                 collider.enabled = false;
             MoveTo(destination, Vector3.zero, Quaternion.identity, originalWorldScale);
             return true;
+        }
+
+        /// <summary>
+        /// 이동 연출 없이 즉시 제작비를 환불하고 무기 오브젝트를 파괴합니다.
+        /// </summary>
+        /// <param name="refundWallet">제작비 환불을 수령할 플레이어 지갑입니다.</param>
+        /// <returns>즉시 폐기 처리를 완료했으면 true, 대상이 유효하지 않거나 이미 폐기 중이면 false입니다.</returns>
+        public bool DisposeImmediately(PlayerWallet refundWallet)
+        {
+            if (this == null || disposing) return false;
+            if (movement != null) StopCoroutine(movement);
+            movement = null;
+            IsMoving = false;
+            IsEquipped = false;
+            equippedGripPoint = null;
+            FinalizeDisposal(refundWallet);
+            return true;
+        }
+
+        /// <summary>
+        /// 설정된 환불 지갑으로 제작비를 정산하고 무기 게임오브젝트를 파괴합니다.
+        /// </summary>
+        /// <param name="refundWallet">지정할 경우 기존 환불 지갑을 갱신할 플레이어 지갑입니다.</param>
+        private void FinalizeDisposal(PlayerWallet refundWallet = null)
+        {
+            CancelCharge();
+            if (refundWallet != null) disposalRefundWallet = refundWallet;
+            disposing = false;
+            RefundConstructionCost();
+            Destroy(gameObject);
         }
 
         private void MoveTo(Transform parent, Vector3 position, Quaternion rotation, Vector3 scale)
@@ -607,9 +701,7 @@ namespace WeaponWorkshop
             IsMoving = false;
             if (disposing)
             {
-                disposing = false;
-                RefundConstructionCost();
-                Destroy(gameObject);
+                FinalizeDisposal();
                 return;
             }
             if (!IsEquipped) RestorePhysics();
@@ -617,6 +709,7 @@ namespace WeaponWorkshop
 
         private void OnDisable()
         {
+            CancelCharge();
             if (!IsMoving) return;
             if (movement != null) StopCoroutine(movement);
             FinishMovement();

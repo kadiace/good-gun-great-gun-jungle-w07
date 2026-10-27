@@ -26,6 +26,8 @@ namespace WeaponWorkshop
         public CustomerOrderData CustomerOrder { get; private set; }
         public CustomerSoundData CustomerSound { get; private set; }
         public SoundData Sound { get; private set; }
+        public OnboardingData Onboarding { get; private set; }
+        public PresetDefaultData PresetDefault { get; private set; }
 
         private TableManager()
         {
@@ -43,6 +45,8 @@ namespace WeaponWorkshop
             CustomerSoundInfo.Validate(CustomerSound);
             // 사운드 규칙과 곡 경로도 기존 테이블 저장 방식을 따른다.
             Sound = Load<SoundData>(nameof(SoundData));
+            Onboarding = Load<OnboardingData>(nameof(OnboardingData));
+            PresetDefault = Load<PresetDefaultData>(nameof(PresetDefaultData));
         }
 
         /// <summary>반복 호출해도 테이블을 다시 읽지 않는다.</summary>

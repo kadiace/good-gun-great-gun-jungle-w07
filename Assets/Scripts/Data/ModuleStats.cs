@@ -8,5 +8,6 @@ namespace WeaponWorkshop
     {
         [SerializeField] private ModuleData data;
         public ModuleData Data => data;
+        private void OnValidate() => WeaponAnalysis.NotifyConfigurationChanged();
     }
 }

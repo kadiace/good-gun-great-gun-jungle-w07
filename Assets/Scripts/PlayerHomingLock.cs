@@ -59,11 +59,13 @@ namespace WeaponWorkshop
         }
         public static bool IsAlive(Component target)
         {
-            if (!(target is TargetHealth health) || !health.gameObject.activeInHierarchy || health.IsDead) return false;
+            // A destroyed Unity component still matches a C# type pattern; check Unity null before native access.
+            if (target == null || !(target is TargetHealth health) || !health.gameObject.activeInHierarchy || health.IsDead) return false;
             var core = health.GetComponent<RaidEnemyCore>();
             return core != null && core.isActiveAndEnabled && !core.IsDestroyed;
         }
         public static Vector3 GetAimPoint(Component target, Vector3 localPoint)
-            => target is TargetHealth health ? health.AimPoint : target != null ? target.transform.TransformPoint(localPoint) : Vector3.zero;
+            => target == null ? Vector3.zero : target is TargetHealth health
+                ? health.AimPoint : target.transform.TransformPoint(localPoint);
     }
 }

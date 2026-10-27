@@ -145,10 +145,12 @@ namespace WeaponWorkshop
             Changed?.Invoke();
         }
 
+        public bool CanTakeLoan(int day) => isActiveAndEnabled && day >= 0 && LastLoanDay != day &&
+            Balance <= int.MaxValue - LoanAmount && OutstandingLoans < int.MaxValue;
+
         public bool TryTakeLoan(int day)
         {
-            if (!isActiveAndEnabled || day < 0 || LastLoanDay == day ||
-                Balance > int.MaxValue - LoanAmount || OutstandingLoans == int.MaxValue) return false;
+            if (!CanTakeLoan(day)) return false;
             OutstandingLoans++;
             LastLoanDay = day;
             Credit(LoanAmount);

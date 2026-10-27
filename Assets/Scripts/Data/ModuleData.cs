@@ -12,6 +12,7 @@ namespace WeaponWorkshop
 #if UNITY_EDITOR
         private void OnValidate()
         {
+            WeaponAnalysis.NotifyConfigurationChanged();
             var path = UnityEditor.AssetDatabase.GetAssetPath(this);
             if (!string.IsNullOrEmpty(path)) codeId = UnityEditor.AssetDatabase.AssetPathToGUID(path);
         }

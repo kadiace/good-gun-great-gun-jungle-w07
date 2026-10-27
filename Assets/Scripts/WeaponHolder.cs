@@ -26,6 +26,7 @@ namespace WeaponWorkshop
         private InputAction attack;
         private InputAction drop;
         private bool _attackStartedWhileBlocked;
+        private bool exchangingWeapon;
         [SerializeField, Min(0f), InspectorName("던지는 힘"), Tooltip("총을 던질 때 즉시 적용할 초기 속도(m/s)")] private float throwSpeed = 5f;
         public EquipableWeapon EquippedWeapon { get; private set; }
         public event System.Action<EquipableWeapon, EquipableWeapon> EquippedWeaponChanged;
@@ -39,7 +40,7 @@ namespace WeaponWorkshop
             EquippedWeaponChanged?.Invoke(previous, next);
         }
         public Camera AimCamera => aimCamera;
-        public bool CanEquip => isActiveAndEnabled && handPoint != null;
+        public bool CanEquip => isActiveAndEnabled && handPoint != null && !exchangingWeapon;
 
         private void Awake()
         {
@@ -59,15 +60,21 @@ namespace WeaponWorkshop
         private void OnEnable() { attack?.Enable(); drop?.Enable(); }
         private void OnDisable()
         {
+            // Cancel before disabling Attack: its canceled callback must not release a charged shot.
+            EquippedWeapon?.CancelCharge();
             attack?.Disable();
             drop?.Disable();
             _attackStartedWhileBlocked = false;
-            EquippedWeapon?.CancelCharge();
             ResetRecoil();
         }
         private void OnDestroy() => controls?.Dispose();
         private void Update()
         {
+            if (!HasFocus || player == null || !player.isActiveAndEnabled)
+            {
+                EquippedWeapon?.CancelCharge();
+                return;
+            }
             if (GameManager.GameplayBlocked)
             {
                 if (attack != null && attack.IsPressed()) _attackStartedWhileBlocked = true;
@@ -84,7 +91,8 @@ namespace WeaponWorkshop
             if (attack == null || !attack.IsPressed()) return;
             // Normal muzzles keep firing while held; charge muzzles charge until release.
             TryAttack();
-            if (EquippedWeapon != null && EquippedWeapon.UsesCharge) EquippedWeapon.HoldCharge(Time.deltaTime);
+            if (TutorialManager.ActionAllowed("fire") && EquippedWeapon != null && EquippedWeapon.UsesCharge)
+                EquippedWeapon.HoldCharge(Time.deltaTime);
         }
 
         private void UpdateAim()
@@ -174,6 +182,8 @@ namespace WeaponWorkshop
             if (_attackStartedWhileBlocked) return;
             if (!TutorialManager.TryAction("fire")) return;
             AttackInput?.Invoke(EquippedWeapon);
+            // Register even sub-frame taps. Locked charge muzzles are ignored inside PowerCore.
+            if (EquippedWeapon != null && EquippedWeapon.UsesCharge) EquippedWeapon.HoldCharge(0f);
             TryAttack();
         }
 
@@ -192,7 +202,8 @@ namespace WeaponWorkshop
         private void ReleaseCharge()
         {
             if (EquippedWeapon == null || !EquippedWeapon.UsesCharge) return;
-            if (GameManager.GameplayBlocked || !HasFocus || player == null || !player.isActiveAndEnabled)
+            if (!isActiveAndEnabled || _attackStartedWhileBlocked || !TutorialManager.ActionAllowed("fire") ||
+                GameManager.GameplayBlocked || !HasFocus || player == null || !player.isActiveAndEnabled)
             {
                 EquippedWeapon.CancelCharge();
                 return;
@@ -201,6 +212,7 @@ namespace WeaponWorkshop
             EquipableWeapon weapon = EquippedWeapon;
             if (weapon.ReleaseCharge())
             {
+                // One notification/hand kick for the release; deferred burst rounds do not repeat it.
                 ShotFired?.Invoke(weapon);
                 recoilOffset = recoilDistance;
                 ApplyRecoil();
@@ -230,14 +242,57 @@ namespace WeaponWorkshop
             ApplyRecoil();
         }
 
+        // 일반 장착의 작업대 반환 정책은 프리셋 교체와 분리한다.
         public bool Equip(EquipableWeapon weapon)
         {
-            if (weapon == null || weapon.IsEquipped || handPoint == null) return false;
+            if (exchangingWeapon || weapon == null || weapon.IsEquipped || handPoint == null) return false;
             ReturnWeapon();
             if (!weapon.Equip(handPoint)) return false;
             SetEquippedWeapon(weapon);
             WorkshopSoundEffects.RaiseWeaponEquipped(handPoint.position);
             return true;
+        }
+
+        // 새 총의 장착 준비가 실패하면 기존 총은 손에 남는다. 전시 총이 아닌 새로 제작한 총을 전달한다.
+        public bool TryEquipWithDrop(EquipableWeapon weapon)
+        {
+            if (!CanEquip || GameManager.GameplayBlocked || player == null || !player.isActiveAndEnabled ||
+                weapon == null || !weapon.isActiveAndEnabled || weapon.IsEquipped || weapon.IsMoving) return false;
+            var previous = EquippedWeapon;
+            if (previous != null && (!previous.IsEquipped || previous.IsMoving)) return false;
+
+            var parent = weapon.transform.parent;
+            var position = weapon.transform.localPosition;
+            var rotation = weapon.transform.localRotation;
+            var scale = weapon.transform.localScale;
+            var body = weapon.GetComponent<Rigidbody>();
+            bool dynamicBody = body != null && !body.isKinematic;
+            bool gravity = body != null && body.useGravity;
+            var velocity = dynamicBody ? body.linearVelocity : Vector3.zero;
+            var angularVelocity = dynamicBody ? body.angularVelocity : Vector3.zero;
+            bool prepared = false, committed = false;
+            exchangingWeapon = true;
+            try
+            {
+                // EquipableWeapon.Equip은 기존 총을 반환하지 않는다. 실패할 수 있는 준비를 먼저 끝낸다.
+                if (!weapon.Equip(handPoint)) return false;
+                prepared = true;
+                // 손 위치에서 초속 0으로 떨어뜨린다. 투척 속도나 벽/선반 안으로의 강제 배치는 사용하지 않는다.
+                if (previous != null && !previous.Drop(previous.transform.position + transform.forward, 0f)) return false;
+                previous?.CancelCharge();
+                committed = true;
+                SetEquippedWeapon(weapon);
+                ResetRecoil();
+                if (previous != null) WorkshopSoundEffects.RaiseWeaponDropped(previous.transform.position);
+                WorkshopSoundEffects.RaiseWeaponEquipped(handPoint.position);
+                return true;
+            }
+            finally
+            {
+                if (prepared && !committed)
+                    weapon.RestorePlacement(parent, position, rotation, scale, dynamicBody, gravity, velocity, angularVelocity);
+                exchangingWeapon = false;
+            }
         }
 
         // 반납 없이 손에서 떼어 넘김 (판매용).

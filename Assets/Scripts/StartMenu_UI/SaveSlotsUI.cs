@@ -1,13 +1,20 @@
-using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 
 namespace WeaponWorkshop
 {
-    public sealed class SaveSlotsUI : MonoBehaviour
+    /// <summary>
+    /// 저장 슬롯 패널의 호환 브리지입니다. 기존 직렬화 필드 이름(panel·slotButtons·confirmDelete 등)과
+    /// UIManager.prefab·StartUI_Manager.prefab의 persistent 호출(Open·Close·SelectSlot·DeleteSlot·DeleteAutoSave),
+    /// 씬 오버라이드(Main의 saveController, Intro의 deleteButtons·panel 비활성)를 그대로 유지하고
+    /// 실제 표시·판정은 SaveSlotsView·SaveSlotsPresenter로 위임합니다.
+    /// 카드·삭제 버튼과 SaveSlotCardView·SaveSlotsView 참조는
+    /// Tools/UI/Authoring/SaveSlots/Author 저작 명령이 프리팹에 만들어 연결합니다.
+    /// </summary>
+    public sealed class SaveSlotsUI : MonoBehaviour, IUIScreen
     {
+        // 아래 직렬화 필드 이름은 기존 UIManager.prefab·StartUI_Manager.prefab·씬 오버라이드와의 호환을 위해 유지한다.
         [SerializeField] private GameObject panel;
         [SerializeField] private GameObject mainPanel;
         [SerializeField] private GameObject openSaveSlotsButton;
@@ -21,362 +28,254 @@ namespace WeaponWorkshop
         [SerializeField] private Button[] deleteButtons;
         [SerializeField] private Button autoSaveDeleteButton;
         [SerializeField] private bool confirmDelete = true;
+        [SerializeField] private SaveSlotsView m_view;
+
+        private SaveSlotsPresenter m_presenter;
+        private bool m_hasLoggedMissingView;
+
+        public bool IsOpen
+        {
+            get
+            {
+                if (m_presenter != null)
+                {
+                    return m_presenter.IsOpen;
+                }
+
+                return panel != null && panel.activeInHierarchy;
+            }
+        }
+
+        public void InitializeScreen(UIContext _context)
+        {
+            var previous = saveController;
+            ResolveSaveController(_context);
+            if (m_presenter != null && previous == null && saveController != null)
+            {
+                m_presenter.Dispose();
+                m_presenter = null;
+                EnsureInitialized();
+            }
+
+            Initialize();
+        }
+
+        private void ResolveSaveController(UIContext _context = null)
+        {
+            if (saveController != null)
+            {
+                return;
+            }
+
+            if (_context != null && _context.Game != null)
+            {
+                saveController = _context.Game.GetComponentInChildren<GameSaveController>(true);
+            }
+
+            if (saveController == null)
+            {
+                saveController = FindFirstObjectByType<GameSaveController>();
+            }
+        }
+
         private void Awake()
         {
+            ResolveSaveController();
             ResolveStartMenu();
-            EnsureAutoSaveSlot();
-            FitSlotLayout();
-            EnsureDeleteButtons();
-            FitDeleteButtons();
-            Refresh();
-            if (panel != gameObject) Close();
+            EnsureInitialized();
+            // 기존 Awake와 같이 컴포넌트가 패널 본체가 아니면(인트로의 SlotMenu) 시작 때 패널을 닫는다.
+            if (m_presenter != null)
+            {
+                if (panel != gameObject)
+                {
+                    m_presenter.Close();
+                }
+            }
+            else if (panel != gameObject)
+            {
+                FallbackClose();
+            }
         }
 
-        private void ResolveStartMenu()
+        private void OnDisable()
         {
-            if (startMenu != null) return;
-            var menus = FindObjectsByType<Start_UI>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                .Where(menu => menu.gameObject.scene == gameObject.scene).ToArray();
-            if (menus.Length == 1) startMenu = menus[0];
+            if (m_presenter != null && m_presenter.IsInitialized)
+            {
+                m_presenter.Close();
+            }
         }
-        public void Initialize() => Close();
-        private void OnDisable() { Close(); }
+
+        private void OnDestroy()
+        {
+            if (m_presenter != null)
+            {
+                m_presenter.Dispose();
+                m_presenter = null;
+            }
+        }
+
+        /// <summary>기존과 같이 닫힌 화면으로 시작한다.</summary>
+
+        public void Initialize()
+        {
+            EnsureInitialized();
+            if (m_presenter != null)
+            {
+                m_presenter.Close();
+            }
+            else
+            {
+                FallbackClose();
+            }
+        }
+
         public void Open()
         {
-            if (saveController == null && startMenu == null)
+            if (!EnsureInitialized())
             {
-                FeedbackUI.For(this)?.ShowNotification("저장 관리자 연결이 없습니다.");
                 return;
             }
-            if(NightRaidController.Instance != null && NightRaidController.Instance.IsBusy)
-            {
-                FeedbackUI.For(this)?.ShowNotification("공방에 귀환한 뒤 저장하세요.");
-                return;
-            }
-            if (title != null) title.text = saveController != null ? "게임 저장" : "게임 불러오기";
-            if (panel != null) panel.SetActive(true);
-            Canvas.ForceUpdateCanvases();
-            FitSlotLayout();
-            FitDeleteButtons();
-            Refresh();
-            if (mainPanel != null) mainPanel.SetActive(false);
-            if (panel != null && openSaveSlotsButton != null) openSaveSlotsButton.SetActive(false);
+
+            m_presenter.Open();
         }
+
         public void Close()
         {
-            FeedbackUI.For(this)?.CancelChoice(this);
-            if (panel != null) panel.SetActive(false);
-            if (mainPanel != null) mainPanel.SetActive(true);
-            if (openSaveSlotsButton != null) openSaveSlotsButton.SetActive(true);
+            if (!EnsureInitialized())
+            {
+                return;
+            }
+
+            m_presenter.Close();
         }
 
-        // 찾았다 십색기 이거야
-        
+        /// <summary>UICancelRouter가 ESC로 호출하는 Pause 하위 저장 닫기 경로다.</summary>
+        public bool TryCloseForCancel()
+        {
+            if (!EnsureInitialized())
+            {
+                return false;
+            }
+
+            return m_presenter.TryCloseForCancel();
+        }
+
+        /// <summary>저장 파일 상태로 카드 표시를 다시 읽어온다. 기존 public API를 유지한다.</summary>
         public void Refresh()
         {
-            bool hasAutoSave = GameSaveFiles.TryReadAutoSave(out _); // 자동 저장 슬롯이 존재하는지 확인하는 변수임
-            if (autoSaveText != null)
-                autoSaveText.text = "자동 저장\n" + GameSaveFiles.AutoSaveDescription();
-            if (autoSaveButton != null)
+            if (!EnsureInitialized())
             {
-                autoSaveButton.gameObject.SetActive(hasAutoSave); // 화면 띄우는거 
-                autoSaveButton.interactable = saveController == null && startMenu != null && hasAutoSave; // 버튼 못만지게 하는거
-            }
-            if (autoSaveDeleteButton != null)
-            {
-                autoSaveDeleteButton.gameObject.SetActive(saveController == null && startMenu != null && hasAutoSave); // 위랑 조건 같게 ㅇㅇ
-                autoSaveDeleteButton.interactable = GameSaveFiles.AutoSaveExists;
-            }
-
-            for (int i = 0; i < GameSaveFiles.SlotCount; i++)
-            {
-                if (deleteButtons != null && i < deleteButtons.Length && deleteButtons[i] != null)
-                {
-                    deleteButtons[i].gameObject.SetActive(saveController == null && startMenu != null);
-                    deleteButtons[i].interactable = saveController == null && startMenu != null && GameSaveFiles.Exists(i);
-                }
-                if (slotTexts != null && i < slotTexts.Length && slotTexts[i] != null)
-                    slotTexts[i].text = $"슬롯 {i + 1}\n{GameSaveFiles.Description(i)}";
-                if (slotButtons != null && i < slotButtons.Length && slotButtons[i] != null)
-                    slotButtons[i].interactable = saveController != null || GameSaveFiles.TryRead(i, out _);
-            }
-
-            FitSlotLayout(); // 갱신해서 안깨지게
-        }
-
-        private void EnsureAutoSaveSlot()
-        {
-            if (autoSaveButton != null || slotButtons == null || slotButtons.Length == 0 || slotButtons[0] == null)
-                return;
-
-            Button template = slotButtons[0];
-            Transform parent = template.transform.parent;
-            if (parent == null) return;
-
-            int siblingIndex = template.transform.GetSiblingIndex();
-            GameObject autoSlot = Instantiate(template.gameObject, parent, false);
-            autoSlot.name = "AutoSaveSlot";
-            autoSaveButton = autoSlot.GetComponent<Button>();
-            if (autoSaveButton == null)
-            {
-                Destroy(autoSlot);
                 return;
             }
 
-            for (int i = 0; i < autoSaveButton.onClick.GetPersistentEventCount(); i++)
-                autoSaveButton.onClick.SetPersistentListenerState(i, UnityEngine.Events.UnityEventCallState.Off);
-            autoSaveButton.onClick.AddListener(LoadAutoSave);
-            autoSaveText = autoSlot.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
-            autoSaveButton.transform.SetSiblingIndex(siblingIndex);
-
-            if (parent.GetComponent<LayoutGroup>() == null && slotButtons.Length > 1 && slotButtons[1] != null)
-            {
-                RectTransform firstManual = slotButtons[0].transform as RectTransform;
-                RectTransform secondManual = slotButtons[1].transform as RectTransform;
-                RectTransform autoRect = autoSaveButton.transform as RectTransform;
-                float halfSpacing = Mathf.Abs(secondManual.anchoredPosition.x - firstManual.anchoredPosition.x) * 0.5f;
-                if (halfSpacing > 0f)
-                {
-                    for (int i = 0; i < slotButtons.Length; i++)
-                    {
-                        RectTransform manualRect = slotButtons[i] != null ? slotButtons[i].transform as RectTransform : null;
-                        if (manualRect != null) manualRect.anchoredPosition += Vector2.right * halfSpacing;
-                    }
-                    autoRect.anchoredPosition = firstManual.anchoredPosition - Vector2.right * (halfSpacing * 2f);
-                }
-            }
+            m_presenter.Refresh();
         }
 
-        private void EnsureDeleteButtons()
+        /// <summary>슬롯 카드 persistent 호출(SelectSlot N) 경로다. 저장·불러오기 모드 판정은 Presenter가 한다.</summary>
+        public void SelectSlot(int _slot)
         {
-            if (deleteButtons == null || deleteButtons.Length != GameSaveFiles.SlotCount)
-                Array.Resize(ref deleteButtons, GameSaveFiles.SlotCount);
-
-            for (int i = 0; i < deleteButtons.Length; i++)
+            if (!EnsureInitialized())
             {
-                if (deleteButtons[i] == null && slotButtons != null && i < slotButtons.Length && slotButtons[i] != null)
-                    deleteButtons[i] = CreateDeleteButton(slotButtons[i].transform.parent, $"DeleteSlot{i + 1}",
-                        slotTexts != null && i < slotTexts.Length && slotTexts[i] != null ? slotTexts[i].font : null);
-
-                if (deleteButtons[i] != null)
-                {
-                    for (int listener = 0; listener < deleteButtons[i].onClick.GetPersistentEventCount(); listener++)
-                        deleteButtons[i].onClick.SetPersistentListenerState(listener, UnityEngine.Events.UnityEventCallState.Off);
-                    deleteButtons[i].onClick.RemoveAllListeners();
-                    int slot = i;
-                    deleteButtons[i].onClick.AddListener(() => DeleteSlot(slot));
-                }
-            }
-
-            if (autoSaveButton != null && autoSaveDeleteButton == null)
-                autoSaveDeleteButton = CreateDeleteButton(autoSaveButton.transform.parent, "DeleteAutoSave",
-                    autoSaveText != null ? autoSaveText.font : slotTexts != null && slotTexts.Length > 0 && slotTexts[0] != null ? slotTexts[0].font : null);
-            if (autoSaveDeleteButton != null)
-            {
-                for (int listener = 0; listener < autoSaveDeleteButton.onClick.GetPersistentEventCount(); listener++)
-                    autoSaveDeleteButton.onClick.SetPersistentListenerState(listener, UnityEngine.Events.UnityEventCallState.Off);
-                autoSaveDeleteButton.onClick.RemoveAllListeners();
-                autoSaveDeleteButton.onClick.AddListener(DeleteAutoSave);
-            }
-        }
-
-        private static Button CreateDeleteButton(Transform parent, string objectName, TMPro.TMP_FontAsset font)
-        {
-            if (parent == null) return null;
-
-            var buttonObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-            buttonObject.layer = parent.gameObject.layer;
-            var rect = (RectTransform)buttonObject.transform;
-            rect.SetParent(parent, false);
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = new Vector2(0f, -155f);
-            rect.sizeDelta = new Vector2(340f, 48f);
-
-            var layout = parent.GetComponent<LayoutGroup>();
-            if (layout != null) buttonObject.AddComponent<LayoutElement>().ignoreLayout = true;
-
-            var image = buttonObject.GetComponent<Image>();
-            image.color = new Color(0.48f, 0.12f, 0.13f, 1f);
-            var button = buttonObject.GetComponent<Button>();
-            button.targetGraphic = image;
-            button.navigation = new Navigation { mode = Navigation.Mode.None };
-            button.colors = new ColorBlock
-            {
-                normalColor = new Color(0.48f, 0.12f, 0.13f, 1f),
-                highlightedColor = new Color(0.68f, 0.16f, 0.17f, 1f),
-                pressedColor = new Color(0.32f, 0.08f, 0.09f, 1f),
-                selectedColor = new Color(0.56f, 0.14f, 0.15f, 1f),
-                disabledColor = new Color(0.25f, 0.22f, 0.22f, 0.65f),
-                colorMultiplier = 1f,
-                fadeDuration = 0.12f
-            };
-
-            var labelObject = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TMPro.TextMeshProUGUI));
-            labelObject.layer = buttonObject.layer;
-            var labelRect = (RectTransform)labelObject.transform;
-            labelRect.SetParent(rect, false);
-            labelRect.anchorMin = Vector2.zero;
-            labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = labelRect.offsetMax = Vector2.zero;
-            var label = labelObject.GetComponent<TMPro.TextMeshProUGUI>();
-            label.font = font;
-            label.text = "삭제";
-            label.fontSize = parent.GetComponentInParent<UIManager>(true) != null ? 28f : 24f;
-            label.fontStyle = TMPro.FontStyles.Bold;
-            label.alignment = TMPro.TextAlignmentOptions.Center;
-            label.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
-            label.color = Color.white;
-            label.raycastTarget = false;
-
-            buttonObject.SetActive(false);
-            return button;
-        }
-
-        private void FitDeleteButtons()
-        {
-            float rowY = GetDeleteRowY();
-            if (slotButtons != null && deleteButtons != null)
-                for (int i = 0; i < deleteButtons.Length && i < slotButtons.Length; i++)
-                    AlignDeleteButton(deleteButtons[i], slotButtons[i], rowY);
-            AlignDeleteButton(autoSaveDeleteButton, autoSaveButton, rowY);
-        }
-
-        private float GetDeleteRowY()
-        {
-            if (deleteButtons != null)
-                foreach (var button in deleteButtons)
-                    if (button != null && button.transform is RectTransform rect) return rect.anchoredPosition.y;
-            if (slotButtons != null && slotButtons.Length > 0 && slotButtons[0] != null && slotButtons[0].transform is RectTransform card)
-                return card.anchoredPosition.y - card.rect.height * 0.5f - 40f;
-            return -155f;
-        }
-
-        private static void AlignDeleteButton(Button deleteButton, Button slotButton, float rowY)
-        {
-            if (deleteButton == null || slotButton == null || !(deleteButton.transform is RectTransform deleteRect) ||
-                !(slotButton.transform is RectTransform slotRect)) return;
-            deleteRect.anchoredPosition = new Vector2(slotRect.anchoredPosition.x, rowY);
-            float width = slotRect.rect.width > 0f ? slotRect.rect.width : slotRect.sizeDelta.x;
-            if (width > 0f) deleteRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-        }
-
-        // 슬롯 위치 조정 ㅇㅇ
-        private void FitSlotLayout()
-        {
-            if (slotButtons == null || autoSaveButton == null || slotButtons.Length == 0)
-            {
-                FitDeleteButtons();
-                return;
-            }
-            var parent = autoSaveButton.transform.parent;
-            var layout = parent != null ? parent.GetComponent<HorizontalLayoutGroup>() : null;
-            var parentRect = parent as RectTransform;
-            if (layout == null || parentRect == null || parentRect.rect.width <= 0f)
-            {
-                FitDeleteButtons();
                 return;
             }
 
-            bool hasAutoSaveSlot = autoSaveButton.gameObject.activeSelf;
-            int count = slotButtons.Length + (hasAutoSaveSlot ? 1 : 0); // 있는지 없는지 체크하기 
-            float available = parentRect.rect.width - layout.padding.horizontal - layout.spacing * (count - 1);
-            if (available <= 0f) { FitDeleteButtons(); return; }
-            float width = available / count;
-            foreach (Button slot in slotButtons)
-            {
-                if (slot == null) continue;
-                var rect = slot.transform as RectTransform;
-                if (rect != null) rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            }
-            var autoRect = autoSaveButton.transform as RectTransform;
-            if (hasAutoSaveSlot && autoRect != null) autoRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            FitDeleteButtons(); // 애도 뭐 잘보이게 조절하는놈
+            m_presenter.SelectSlot(_slot);
         }
 
-        private void LoadAutoSave()
+        /// <summary>삭제 버튼 persistent 호출(DeleteSlot N) 경로다. Intro 씬에 추가된 삭제 버튼도 이 메서드를 호출한다.</summary>
+        public void DeleteSlot(int _slot)
         {
-            if (saveController != null || startMenu == null || !GameSaveFiles.TryReadAutoSave(out _)) return;
-            startMenu.LoadSlot(GameSaveFiles.AutoSaveSlotIndex);
-        }
-        public void DeleteSlot(int slot)
-        {
-            if (saveController != null || startMenu == null || slot < 0 || slot >= GameSaveFiles.SlotCount || !GameSaveFiles.Exists(slot)) return;
-            if (confirmDelete)
+            if (!EnsureInitialized())
             {
-                var feedback = FeedbackUI.For(this);
-                if (feedback != null && feedback.IsChoiceOpen) return;
-                if (feedback != null && feedback.ShowChoice(this, $"슬롯 {slot + 1}을 삭제하시겠습니까?", () => DeleteConfirmed(slot)))
-                {
-                    return;
-                }
+                return;
             }
-            DeleteConfirmed(slot);
+
+            m_presenter.DeleteSlot(_slot);
         }
 
+        /// <summary>자동저장 삭제 버튼 persistent 호출(DeleteAutoSave) 경로다.</summary>
         public void DeleteAutoSave()
         {
-            if (saveController != null || startMenu == null || !GameSaveFiles.AutoSaveExists) return;
-            if (confirmDelete)
+            if (!EnsureInitialized())
             {
-                var feedback = FeedbackUI.For(this);
-                if (feedback != null && feedback.IsChoiceOpen) return;
-                if (feedback != null && feedback.ShowChoice(this, "자동 저장 파일을 삭제하시겠습니까?", DeleteAutoSaveConfirmed))
-                {
-                    return;
-                }
-            }
-            DeleteAutoSaveConfirmed();
-        }
-
-        private void DeleteAutoSaveConfirmed()
-        {
-            try
-            {
-                GameSaveFiles.DeleteAutoSave();
-                Refresh();
-                startMenu?.RefreshSaveAvailability();
-                FeedbackUI.For(this)?.ShowNotification("자동 저장 파일을 삭제했습니다.");
-            }
-            catch (Exception e) when (e is System.IO.IOException || e is UnauthorizedAccessException)
-            {
-                FeedbackUI.For(this)?.ShowNotification("자동 저장 파일을 삭제하지 못했습니다. " + e.Message);
-            }
-        }
-        private void DeleteConfirmed(int slot)
-        {
-            try
-            {
-                GameSaveFiles.Delete(slot);
-                Refresh();
-                if (startMenu != null) startMenu.RefreshSaveAvailability();
-                FeedbackUI.For(this)?.ShowNotification($"슬롯 {slot + 1}을 삭제했습니다.");
-            }
-            catch (Exception e) when (e is System.IO.IOException || e is UnauthorizedAccessException)
-            {
-                FeedbackUI.For(this)?.ShowNotification("저장 파일을 삭제하지 못했습니다. " + e.Message);
-            }
-        }
-        public void SelectSlot(int slot)
-        {
-            if (slot < 0 || slot >= GameSaveFiles.SlotCount) return;
-            if (saveController == null) { if (startMenu != null) startMenu.LoadSlot(slot); return; }
-            if (saveController.ConfirmOverwrite && GameSaveFiles.Exists(slot))
-            {
-                FeedbackUI.For(this)?.ShowChoice(this, $"슬롯 {slot + 1}을 덮어쓰시겠습니까?", () => SaveConfirmed(slot));
                 return;
             }
-            SaveConfirmed(slot);
+
+            m_presenter.DeleteAutoSave();
         }
-        private void SaveConfirmed(int slot)
+
+        private bool EnsureInitialized()
         {
-            if (saveController.Save(slot, out string error))
+            if (m_presenter != null)
             {
-                Refresh();
-                FeedbackUI.For(this)?.ShowNotification($"슬롯 {slot + 1}에 저장했습니다.");
+                return true;
             }
-            else FeedbackUI.For(this)?.ShowNotification(error);
+
+            if (m_view == null)
+            {
+                if (!m_hasLoggedMissingView)
+                {
+                    m_hasLoggedMissingView = true;
+                    Debug.LogError(
+                        $"[{nameof(SaveSlotsUI)}] Initialize 실패: m_view에 SaveSlotsView 참조가 필요합니다. " +
+                        "SaveSlots 저작 명령(Tools/UI/Authoring/SaveSlots/Author)으로 프리팹에 View를 추가하고 연결하세요.",
+                        this);
+                }
+
+                return false;
+            }
+
+            // 씬 오버라이드가 반영된 브리지 유효 참조를 View에 먼저 전달한다.
+            m_view.BindReferences(panel, mainPanel, openSaveSlotsButton, title,
+                autoSaveButton, autoSaveText, slotButtons, slotTexts, deleteButtons, autoSaveDeleteButton);
+            ResolveSaveController();
+            var domain = new SaveSlotsDomain(saveController, startMenu, this, confirmDelete);
+            m_presenter = new SaveSlotsPresenter(m_view, domain);
+            if (!m_presenter.Initialize())
+            {
+                m_presenter = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>기존 ResolveStartMenu와 같이 같은 씬의 Start_UI를 찾아 불러오기 문맥을 채운다.</summary>
+        private void ResolveStartMenu()
+        {
+            if (startMenu != null)
+            {
+                return;
+            }
+
+            var menus = FindObjectsByType<Start_UI>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Where(menu => menu.gameObject.scene == gameObject.scene).ToArray();
+            if (menus.Length == 1)
+            {
+                startMenu = menus[0];
+            }
+        }
+
+        /// <summary>
+        /// 초기화에 실패했을 때도 기존 Initialize·Close와 같은 표시 상태(패널 닫힘, 메인 패널·여는 버튼 복원)로 시작한다.
+        /// </summary>
+        private void FallbackClose()
+        {
+            FeedbackUI.For(this)?.CancelChoice(this);
+            if (panel != null)
+            {
+                panel.SetActive(false);
+            }
+
+            if (mainPanel != null)
+            {
+                mainPanel.SetActive(true);
+            }
+
+            if (openSaveSlotsButton != null)
+            {
+                openSaveSlotsButton.SetActive(true);
+            }
         }
     }
-
 }

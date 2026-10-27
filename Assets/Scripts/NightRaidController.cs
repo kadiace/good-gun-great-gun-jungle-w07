@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering.Universal;
 using Unity.Profiling;
 using LogKit;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -18,10 +19,13 @@ namespace WeaponWorkshop
         private const double CellLogFrameBudgetMilliseconds = 1.0;
         private readonly System.Collections.Generic.Queue<CellDestroyedLog> pendingCellLogs =
             new System.Collections.Generic.Queue<CellDestroyedLog>();
+        // 셀 로그가 다 쓰인 뒤에 기록할 습격 결과 로그(셀 로그보다 먼저 쓰이지 않게 대기).
+        private string pendingResultMessage;
+        private object pendingResultLog;
         [SerializeField] private _DayManager dayManager;
         [SerializeField] private GameManager gameManager;
         [SerializeField] private UIManager uiManager;
-        private NightRaidUI ui => uiManager != null ? uiManager.RaidUI : null;
+        private NightRaidUI ui => uiManager != null ? uiManager.Screen<NightRaidUI>() : null;
         [SerializeField] private GameSaveController workshopSave;
         // 목적지 목록은 스테이지 테이블에서 읽는다. 씬마다 목적지 배열을 따로 두지 않는다.
         public int RegionCount => TableManager.Instance.RaidMap.Count();
@@ -31,6 +35,7 @@ namespace WeaponWorkshop
         [SerializeField] private string standaloneWorkshopScene = "Main";
         public static NightRaidController Instance { get; private set; }
         public bool IsBusy => mapOpen || transitioning || inRaid;
+        public bool IsMapOpen => mapOpen;
         public bool IsInRaid => inRaid;
         private bool mapOpen, transitioning, inRaid, returnOpen, openedFromPreparation, entryRestoreFailed;
         private bool returningAfterDeath;
@@ -43,12 +48,15 @@ namespace WeaponWorkshop
         private float returnCooldown;
         private NightRaidBoundary extractionExit;
         public bool IsExtracting => extractionExit != null || resultOpen;
+        public bool IsResultFinalizedFor(RaidPlayerHealth _health) =>
+            _health != null && inRaid && resultOpen && ReferenceEquals(_health, playerHealth);
         private float extractionElapsed;
         private const float ExtractionDuration = 5f;
         private int[] raidStartingModules;
         private float raidStartedAt;
         private int enemyKills, materialCrateCredits;
         private int raidEarnedDollars;
+        private int raidSlotMachineDollars;
         private int earnedSlotTickets, collectedSlotTickets;
         private int raidEarnedParts, raidEarnedTickets;
         private readonly System.Collections.Generic.List<int> raidEarnedModules = new System.Collections.Generic.List<int>();
@@ -69,33 +77,34 @@ namespace WeaponWorkshop
         public bool HasTrainingModule(int moduleId) => trainingModules.Contains(moduleId);
         public bool TryCollectTrainingModule(int moduleId)
         {
-            if (!inRaid || !TutorialManager.TrainingRaidPending) return false;
+            if (!inRaid || resultOpen || !TutorialManager.TrainingRaidPending)
+            {
+                return false;
+            }
             if (trainingModules.Add(moduleId))
                 FeedbackUI.For(this)?.ShowNotification("튜토리얼 모듈 획득: " + player.GetComponent<PlayerModuleUnlocks>().GetModuleName(moduleId));
             return true;
         }
-        private string RaidRewards()
+        private string RaidRewards(System.Collections.Generic.List<int> modules)
         {
             var unlocks = player.GetComponent<PlayerModuleUnlocks>();
             // 튜토리얼 습격은 복귀 때 출발 상태로 되돌린다(NightRaidTransfer.PrepareReturn). 획득량을 실제 보상처럼 보이지 않게 표시한다.
             bool training = TutorialManager.TrainingRaidPending;
             var text = new System.Text.StringBuilder(training ? "획득 정산 (튜토리얼 연습)\n\n" : "획득 정산\n\n");
             if (training) text.AppendLine("연습 습격의 획득물은 공방에 반영되지 않습니다.").AppendLine();
-            // 지갑 차이는 디버그 재화·무기 환급까지 섞이므로 상자에서 실제로 주운 재료만 보여준다.
-            text.Append("부품  +").Append(materialCrateCredits).AppendLine();
             text.Append("슬롯머신 티켓  +").Append(earnedSlotTickets).AppendLine();
-            int money = raidEarnedDollars;
-            if (money > 0) text.Append("돈  +").Append(money).AppendLine();
-            int count = 0;
+            text.Append("돈  +").Append(raidEarnedDollars - raidSlotMachineDollars).AppendLine();
+            if (raidSlotMachineDollars > 0)
+                text.Append("슬롯 머신 보상  +").Append(raidSlotMachineDollars).AppendLine();
             foreach (int id in unlocks.CaptureUnlockedModules())
                 if (System.Array.IndexOf(raidStartingModules, id) < 0)
-                { text.Append("• ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
+                    if (!modules.Contains(id)) modules.Add(id);
             foreach (int id in raidEarnedModules)
-            { text.Append("• ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
+                if (!modules.Contains(id)) modules.Add(id);
             foreach (int id in trainingModules)
                 if (!raidEarnedModules.Contains(id))
-                { text.Append("• 튜토리얼 모듈: ").Append(unlocks.GetModuleName(id)).AppendLine(); count++; }
-            if (count == 0) text.AppendLine("획득한 신규 모듈 없음");
+                    if (!modules.Contains(id)) modules.Add(id);
+            if (modules.Count == 0) text.AppendLine("획득한 신규 모듈 없음");
             return text.ToString();
         }
         /// <summary>
@@ -104,11 +113,20 @@ namespace WeaponWorkshop
         /// </summary>
         private void ShowRaidResult(bool died)
         {
-            if (!inRaid || transitioning) return;
+            if (!inRaid || transitioning || resultOpen)
+            {
+                return;
+            }
             died |= playerHealth != null && playerHealth.IsDead;
-            if (returningAfterDeath || (resultOpen && !died)) return;
+            if (returningAfterDeath)
+            {
+                return;
+            }
             resultOpen = true;
-            FlushCellLogs();
+            // 쌓인 셀 로그를 이 프레임에 전부 쓰지 않는다. 결과 로그는 셀 로그 뒤에 쓰이도록 대기열 끝에 둔다.
+            // 결과 화면 동안 Update의 예산 기록이 이어서 비우고, 남은 것은 복귀·비활성 시 FlushCellLogs가 쓴다.
+            // 결과 화면은 실제 시간으로 재생되므로 기존 야간 정지 정책으로 게임 진행을 멈춘다.
+            gameManager.SetNight(true);
             if (died)
             {
                 CancelExtraction();
@@ -128,7 +146,8 @@ namespace WeaponWorkshop
             // 확정된 추출/사망 결과를 Main까지 전달한다. 훈련은 기존 복귀만 수행한다.
             if (!SoundManager.IsTutorialMusicContext)
                 NightRaidTransfer.RecordResult(SoundInfo.Raid(gameObject.scene.name)?.number ?? 0, gameObject.scene.name, isClear);
-            GameLogger.Data("Info", "NightRaid", died ? "습격 사망" : "습격 탈출 성공", new RaidResultLog
+            pendingResultMessage = died ? "습격 사망" : "습격 탈출 성공";
+            pendingResultLog = new RaidResultLog
             {
                 scene = gameObject.scene.name, survived = !died,
                 time = Time.timeSinceLevelLoad, duration = Time.timeSinceLevelLoad - raidStartedAt,
@@ -139,8 +158,10 @@ namespace WeaponWorkshop
                 day = RaidDay, training = TutorialManager.TrainingRaidPending,
                 materialPickups = materialPickups, dollarReward = dollarReward,
                 rewardsApplied = isClear && !TutorialManager.TrainingRaidPending
-            });
-            ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(), () =>
+            };
+            if (pendingCellLogs.Count == 0) RecordPendingResultLog();
+            var resultModules = new System.Collections.Generic.List<int>();
+            ui.ShowRaidResult(died, died ? string.Empty : RaidRewards(resultModules), resultModules, () =>
             { returnOpen = true; ReturnHome(); });
         }
         public void ShowDeathResult() => ShowRaidResult(true);
@@ -169,8 +190,11 @@ namespace WeaponWorkshop
         {
             FlushCellLogsWithinBudget();
             // Raid death must not depend on the legacy death UI being active.
-            if (inRaid && !transitioning && !returningAfterDeath && !entryRestoreFailed && playerHealth != null && playerHealth.IsDead)
-            { ShowDeathResult(); return; }
+            if (inRaid && !resultOpen && !transitioning && !returningAfterDeath && !entryRestoreFailed && playerHealth != null && playerHealth.IsDead)
+            {
+                ShowDeathResult();
+                return;
+            }
             if (extractionExit == null || transitioning) return;
             if (!extractionExit.isActiveAndEnabled || !extractionExit.Contains(player) || (playerHealth != null && playerHealth.IsDead))
             { CancelExtraction(); return; }
@@ -226,36 +250,45 @@ namespace WeaponWorkshop
         }
         private void FlushCellLogsWithinBudget()
         {
-            if (pendingCellLogs.Count == 0) return;
+            if (pendingCellLogs.Count == 0)
+            {
+                RecordPendingResultLog();
+                return;
+            }
             using (cellLogFlushMarker.Auto())
             {
-                UnityEngine.Profiling.Profiler.BeginSample("NightRaidController.CellLogQueueCount=" + pendingCellLogs.Count);
                 long started = Stopwatch.GetTimestamp();
-                long budgetTicks = (long)(Stopwatch.Frequency * CellLogFrameBudgetMilliseconds / 1000.0);
-                try
-                {
-                    while (pendingCellLogs.Count > 0 && Stopwatch.GetTimestamp() - started < budgetTicks)
-                        RecordNextCellLog();
-                }
-                finally { UnityEngine.Profiling.Profiler.EndSample(); }
+                double sharedBudgetMilliseconds = System.Math.Min(CellLogFrameBudgetMilliseconds,
+                    DestructionFrameBudget.RemainingMilliseconds);
+                long budgetTicks = (long)(Stopwatch.Frequency * sharedBudgetMilliseconds / 1000.0);
+                // One entry always drains so a spent combat budget cannot stall the queue forever.
+                bool wrote = false;
+                while (pendingCellLogs.Count > 0 &&
+                    (!wrote || Stopwatch.GetTimestamp() - started < budgetTicks))
+                { RecordNextCellLog(); wrote = true; }
             }
         }
         private void FlushCellLogs()
         {
-            if (pendingCellLogs.Count == 0) return;
-            using (cellLogFlushMarker.Auto())
-            {
-                UnityEngine.Profiling.Profiler.BeginSample("NightRaidController.CellLogQueueCount=" + pendingCellLogs.Count);
-                try { while (pendingCellLogs.Count > 0) RecordNextCellLog(); }
-                finally { UnityEngine.Profiling.Profiler.EndSample(); }
-            }
+            if (pendingCellLogs.Count > 0)
+                using (cellLogFlushMarker.Auto())
+                {
+                    while (pendingCellLogs.Count > 0) RecordNextCellLog();
+                }
+            RecordPendingResultLog();
+        }
+        private void RecordPendingResultLog()
+        {
+            if (pendingResultLog == null) return;
+            GameLogger.Data("Info", "NightRaid", pendingResultMessage, pendingResultLog);
+            pendingResultLog = null;
+            pendingResultMessage = null;
         }
         private void RecordNextCellLog()
         {
-            CellDestroyedLog entry = pendingCellLogs.Peek();
+            CellDestroyedLog entry = pendingCellLogs.Dequeue();
             GameLogger.Data("Info", "NightRaid", "블록 파괴", new RaidBlockDestroyedLog
             { stageId = entry.stageId, time = entry.time, blockId = entry.blockId });
-            pendingCellLogs.Dequeue();
         }
         private void OnSceneUnloaded(Scene scene)
         {
@@ -294,6 +327,14 @@ namespace WeaponWorkshop
             return true;
         }
 
+        public bool TryCollectSlotMachineDollar(FirstPersonPlayer collector, int amount)
+        {
+            int before = raidEarnedDollars;
+            if (!TryCollectDollar(collector, amount)) return false;
+            raidSlotMachineDollars += raidEarnedDollars - before;
+            return true;
+        }
+
         public bool TryCollectMaterial(FirstPersonPlayer collector, int amount)
         {
             if (!CanCollectRaidReward(collector, amount)) return false;
@@ -317,7 +358,10 @@ namespace WeaponWorkshop
             (playerHealth == null || !playerHealth.IsDead);
         public void RecordPlayerHit(RaidPlayerHealth health, string enemyId, RaidEnemyType enemyType, float damage)
         {
-            if (!inRaid || health == null || health != playerHealth || health.gameObject.scene != gameObject.scene || damage <= 0f) return;
+            if (!inRaid || resultOpen || health == null || health != playerHealth || health.gameObject.scene != gameObject.scene || damage <= 0f)
+            {
+                return;
+            }
             try
             {
                 GameLogger.Data("Info", "NightRaid", "player_hit", new RaidPlayerHitLog
@@ -543,9 +587,11 @@ namespace WeaponWorkshop
         {
             var area = Object.FindFirstObjectByType<NightRaidArea>();
             if (area == null) return;
-            player = uiManager.Player;
+            player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             playerWeaponHolder = player != null ? player.GetComponent<WeaponHolder>() : null;
             raidCamera = playerWeaponHolder != null ? playerWeaponHolder.AimCamera : null;
+            // Core light rays sample opaque depth to stay hidden behind intact armour, including on mobile URP.
+            if (raidCamera != null) raidCamera.GetUniversalAdditionalCameraData().requiresDepthTexture = true;
             playerHealth = player != null ? player.GetComponent<RaidPlayerHealth>() : null;
             if (player == null || area.SpawnPoint == null)
             { ui.ShowError("습격 플레이어 또는 시작 위치 연결이 없습니다."); return; }
@@ -572,7 +618,7 @@ namespace WeaponWorkshop
             inRaid = true;
             raidStartingModules = player.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? System.Array.Empty<int>();
             raidStartedAt = Time.timeSinceLevelLoad;
-            enemyKills = materialCrateCredits = raidEarnedDollars = 0;
+            enemyKills = materialCrateCredits = raidEarnedDollars = raidSlotMachineDollars = 0;
             raidEarnedParts = raidEarnedTickets = 0;
             pendingMaterialPickups.Clear();
             raidEarnedModules.Clear();
@@ -609,7 +655,8 @@ namespace WeaponWorkshop
             if (!mapOpen || transitioning || index < 0 || index >= RegionCount) return;
             var tutorial = TutorialManager.Instance;
             if (tutorial != null && !tutorial.AllowsRaidRegion(index)) return;
-            player = uiManager.Player;
+            if (!IsRegionUnlocked(index)) return;
+            player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             var holder = player != null ? player.GetComponent<WeaponHolder>() : null;
             var weapon = holder != null ? holder.EquippedWeapon : null;
             if (weapon == null || !weapon.IsEquipped || weapon.IsMoving)
@@ -633,9 +680,21 @@ namespace WeaponWorkshop
             string message = cost > 0 ? $"$ {cost:N0}를 내고 {name}에 입장하시겠습니까?" : $"{name}에 입장하시겠습니까?";
             ui.ShowEntryConfirm(message, () =>
             {
-                if (!mapOpen || transitioning || player == null || (!training && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))) return;
+                if (!mapOpen || transitioning || player == null || !IsRegionUnlocked(index) ||
+                    (!training && !region.CanAffordEntry(player.GetComponent<PlayerWallet>()))) return;
                 BeginRaid(regionScene, cost, training, tutorial);
             });
+        }
+        public bool IsRegionUnlocked(int index)
+        {
+            if (index < 0 || index >= RegionCount) return false;
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsGuidedDayZero) return index == 0;
+            var region = TableManager.Instance.RaidMap.Find(RegionScene(index));
+            if (region == null) return false;
+            if (region.selectionOrder <= 1) return true;
+            string previousScene = TableManager.Instance.RaidMap.SceneAt(region.selectionOrder - 2);
+            var save = FindFirstObjectByType<GameSaveController>();
+            return save != null && save.HasClearedRaid(previousScene);
         }
         // 검사(EnterRegion)·확인창 뒤의 확정 단계(차감+이동).
         private void BeginRaid(string regionScene, int cost, bool training, TutorialManager tutorial)
@@ -648,12 +707,26 @@ namespace WeaponWorkshop
             if (workshopSave == null || !workshopSave.TryCaptureTravel(out checkpoint, out error))
             { wallet?.Credit(cost); ui.ShowError(workshopSave == null ? "공방 저장 관리자가 연결되지 않았습니다." : error); return; }
             checkpoint.settlement = true;
-            if (training && !tutorial.PrepareTrainingRaid()) { wallet?.Credit(cost); return; }
-            // 여기서부터는 실제 진입 확정. 사망·귀환을 포함해 환불하지 않는다.
-            transitioning = true; ui.SetLoading(); PoolManager.ClearActive();
+            // PrepareTrainingRaid는 0.9 도달 뒤 onReady에서 호출한다. 로드 실패 시 튜토리얼 상태를 남기지 않는다.
+            // 여기서부터는 실제 진입 확정. 사망·귀환을 포함해 환불하지 않는다. 로드 실패만 예외로 환불한다.
+            transitioning = true; ui.SetLoading();
             NightRaidTransfer.Begin(checkpoint, cost);
             SoundManager.CaptureRaidDeparture();
-            SceneManager.LoadSceneAsync(regionScene, LoadSceneMode.Single);
+            NightRaidEntryOverlay.BeginEntry(regionScene,
+                () => !training || tutorial.PrepareTrainingRaid(),
+                () => AbortRaidEntry(cost));
+        }
+
+        // 커버가 새 씬을 활성화하기 전에 실패했을 때만 호출된다.
+        private void AbortRaidEntry(int cost)
+        {
+            if (!transitioning || inRaid) return;
+            NightRaidTransfer.Abandon();
+            player?.GetComponent<PlayerWallet>()?.Credit(cost);
+            transitioning = false;
+            ui.ResetBackButton();
+            ui.ShowMap(true);
+            ui.ShowError("습격 진입에 실패해 입장 비용을 환불했습니다.");
         }
         private void Teleport(Vector3 position, Quaternion rotation)
         {
@@ -675,8 +748,11 @@ namespace WeaponWorkshop
         {
             if (!inRaid || transitioning || !returnOpen) return;
             FlushCellLogs();
-            if (!returningAfterDeath && playerHealth != null && playerHealth.IsDead)
-            { ShowDeathResult(); return; }
+            if (!resultOpen && !returningAfterDeath && playerHealth != null && playerHealth.IsDead)
+            {
+                ShowDeathResult();
+                return;
+            }
             var checkpoint = NightRaidTransfer.Workshop;
             string homeScene = checkpoint != null ? checkpoint.sceneName : standaloneWorkshopScene;
             if (!Application.CanStreamedLevelBeLoaded(homeScene))
@@ -702,7 +778,7 @@ namespace WeaponWorkshop
                 NightRaidTransfer.MarkStandaloneReturn(
                     CanCommitRaidRewards() ? raidEarnedDollars : 0,
                     CanCommitRaidRewards() ? raidEarnedParts : 0,
-                    CanCommitRaidRewards() ? earnedSlotTickets : 0,
+                    CanCommitRaidRewards() ? raidEarnedTickets : 0,
                     CanCommitRaidRewards() ? raidEarnedModules.ToArray() : System.Array.Empty<int>());
                 if (CanCommitRaidRewards()) rewardsCommitted = true;
             }
@@ -718,7 +794,7 @@ namespace WeaponWorkshop
         private bool CommitRewardsToWorkshop()
         {
             if (!CanCommitRaidRewards()) return false;
-            NightRaidTransfer.AddRaidRewardsToWorkshop(raidEarnedDollars, raidEarnedParts, earnedSlotTickets,
+            NightRaidTransfer.AddRaidRewardsToWorkshop(raidEarnedDollars, raidEarnedParts, raidEarnedTickets,
                 raidEarnedModules.ToArray());
             rewardsCommitted = true;
             return true;
@@ -730,6 +806,10 @@ namespace WeaponWorkshop
         public void ReturnAfterDeath()
         {
             if (!inRaid || transitioning) return;
+            if (resultOpen && !returningAfterDeath)
+            {
+                return;
+            }
             CancelExtraction();
             returningAfterDeath = true;
             // 기존 사망 UI가 직접 호출하는 경로에서도 성공 결과가 남지 않게 한다.

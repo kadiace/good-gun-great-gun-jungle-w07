@@ -14,5 +14,6 @@ namespace WeaponWorkshop
 
         public WeaponStats Stats => stats;
         public float BaseDamage => baseDamage;
+        private void OnValidate() => WeaponAnalysis.NotifyConfigurationChanged();
     }
 }

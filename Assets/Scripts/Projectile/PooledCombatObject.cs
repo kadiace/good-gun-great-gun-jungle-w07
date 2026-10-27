@@ -58,6 +58,8 @@ namespace WeaponWorkshop
             if (child != null && child != this && !pooledChildren.Contains(child)) pooledChildren.Add(child);
         }
         internal void UnregisterPooledChild(PooledCombatObject child) => pooledChildren.Remove(child);
+        internal void SetScaleMultiplier(float multiplier)
+            => transform.localScale = originalScale * Mathf.Max(1f, multiplier);
         internal void ResetForRent()
         {
             transform.localScale = originalScale;
@@ -72,6 +74,7 @@ namespace WeaponWorkshop
         }
         internal void ResetForReturn()
         {
+            transform.localScale = originalScale;
             autoReturn = playPending = false; age = remaining = 0f; enabled = false;
             foreach (var ps in particles) if (ps != null) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             foreach (var trail in trails) if (trail != null) trail.Clear();

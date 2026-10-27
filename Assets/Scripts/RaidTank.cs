@@ -175,6 +175,11 @@ namespace WeaponWorkshop
         }
         private void FixedUpdate()
         {
+            if (released && transform.position.y <= -100f)
+            {
+                Destroy(gameObject);
+                return;
+            }
             if (released && !destroyed)
             {
                 bool hadSupport = landed;
@@ -187,6 +192,8 @@ namespace WeaponWorkshop
             if ((!landed && !continuingStep) || destroyed || player == null)
             {
                 climbingStep = false;
+                // 압착 가능한 천장은 착지로 기록되지 않으므로, 최초 착지 전에 잠든 탱크도 깨운다.
+                if (IsFalling && !body.isKinematic && body.IsSleeping()) body.WakeUp();
                 if (!destroyed && unstuck != null) unstuck.Tick(false, Vector3.zero, 0f, moveSpeed);
                 SetMovementSoundActive(false);
                 return;

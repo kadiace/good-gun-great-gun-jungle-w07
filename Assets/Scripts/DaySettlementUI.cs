@@ -1,20 +1,12 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using WeaponWorkshop;
 
-public sealed class DaySettlementUI : MonoBehaviour
+// 영업 정산 UI의 기존 연결점(브리지). 직렬화 필드·TutorialConfirmButton 등 외부 공개 API와 씬 오버라이드 호환을 유지한다.
+// 표시는 SettlementView, 정산 진행은 SettlementPresenter가 담당하며 실행 시 원본 참조는 이 컴포넌트가 View로 전달한다.
+public sealed class DaySettlementUI : MonoBehaviour, IUIScreen
 {
     [SerializeField] private UnityEngine.InputSystem.InputActionAsset inputActions;
-    private UnityEngine.InputSystem.InputActionMap confirmControls;
-    private bool confirmRequested;
-    private int openedFrame;
-    private bool CanConfirmWithInput => settlementPanel != null && settlementPanel.activeInHierarchy &&
-        declineButton != null && declineButton.isActiveAndEnabled && declineButton.interactable &&
-        Time.frameCount > openedFrame &&
-        (WeaponWorkshop.DialogueUI.Instance == null || !WeaponWorkshop.DialogueUI.Instance.IsOpen) &&
-        (WeaponWorkshop.GameManager.Instance == null || (!WeaponWorkshop.GameManager.Instance.IsPaused &&
-            !WeaponWorkshop.GameManager.Instance.InDialogue && !WeaponWorkshop.GameManager.Instance.UI.IsChoiceOpen));
-    private static readonly Color NegativeValueColor = new Color(213f / 255f, 68f / 255f, 63f / 255f);
     [SerializeField] private _DayManager dayManager;
     [SerializeField] private WeaponWorkshop.NightRaidController nightRaid;
     [SerializeField] private GameObject settlementPanel;
@@ -32,13 +24,10 @@ public sealed class DaySettlementUI : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI moduleCreditText;
     [SerializeField] private WeaponWorkshop.PlayerWallet wallet;
     [SerializeField] private TMPro.TextMeshProUGUI todayIncomeText;
-    [SerializeField, Min(0f)] private float dailyRentGap = 16f;
-    [SerializeField, Min(1f)] private float dailyRentWidth = 340f;
-    private TMPro.TextMeshProUGUI dailyRentText;
-    private RectTransform slotTicketDisplay;
-    private TMPro.TextMeshProUGUI slotTicketText;
-    private Coroutine morningNotice;
-    public RectTransform TutorialConfirmButton => declineButton != null ? declineButton.transform as RectTransform : null;
+    [SerializeField, Min(0f), Tooltip("자리세 행 위치 저작 전용 값. 런타임에는 프리팹에 저작된 DailyRentDisplay를 쓴다.")]
+    private float dailyRentGap = 12f;
+    [SerializeField, Min(1f), Tooltip("자리세 행 너비 저작 전용 값. 런타임에는 프리팹에 저작된 DailyRentDisplay를 쓴다.")]
+    private float dailyRentWidth = 255f;
     [SerializeField, Min(0f), Tooltip("돈·모듈 재화 숫자 연출 시간(초). 정산 중에도 실제 시간으로 재생합니다.")]
     private float moneyCountDuration = 0.25f;
     [SerializeField, Min(0.01f), Tooltip("사망 귀환 시 획득 모듈 재화를 잃는 슬롯 숫자 회전 시간(초).")]
@@ -46,413 +35,145 @@ public sealed class DaySettlementUI : MonoBehaviour
     [SerializeField, Min(0.01f)] private float insufficientFundsDuration = 1.2f;
     [SerializeField, Min(1)] private int insufficientFundsPulses = 3;
     [SerializeField, Min(1f)] private float insufficientFundsScale = 1.2f;
-    private readonly BalanceDisplay moneyCounter = new BalanceDisplay();
-    private readonly BalanceDisplay moduleCreditCounter = new BalanceDisplay();
-    private readonly BalanceDisplay slotTicketCounter = new BalanceDisplay();
+    [SerializeField] private SettlementView m_view;
+
+    private SettlementPresenter m_presenter;
+    private _DayManager m_configuredDay;
+    private WeaponWorkshop.NightRaidController m_configuredNightRaid;
+    private WeaponWorkshop.PlayerWallet m_configuredWallet;
+
+    public RectTransform TutorialConfirmButton => declineButton != null ? declineButton.transform as RectTransform : null;
+
+    public void InitializeScreen(UIContext _context)
+    {
+        ResolveSceneReferences(_context);
+        if (m_view != null && _context != null && _context.Ui != null)
+        {
+            m_view.SetUIManager(_context.Ui);
+        }
+
+        EnsurePresenter();
+    }
+
+    private void ResolveSceneReferences(UIContext _context)
+    {
+        if (dayManager == null)
+        {
+            if (_context != null && _context.Game != null)
+            {
+                dayManager = _context.Game.GetComponent<_DayManager>() ??
+                             _context.Game.GetComponentInChildren<_DayManager>();
+            }
+
+            if (dayManager == null)
+            {
+                dayManager = FindFirstObjectByType<_DayManager>();
+            }
+        }
+
+        if (nightRaid == null)
+        {
+            if (_context != null && _context.Game != null)
+            {
+                nightRaid = _context.Game.GetComponent<WeaponWorkshop.NightRaidController>() ??
+                            _context.Game.GetComponentInChildren<WeaponWorkshop.NightRaidController>();
+            }
+
+            if (nightRaid == null)
+            {
+                nightRaid = WeaponWorkshop.NightRaidController.Instance != null
+                    ? WeaponWorkshop.NightRaidController.Instance
+                    : FindFirstObjectByType<WeaponWorkshop.NightRaidController>();
+            }
+        }
+
+        if (wallet == null)
+        {
+            wallet = WeaponWorkshop.PlayerWallet.ForScene(this);
+        }
+    }
 
     private void Awake()
     {
-        confirmRequested = false;
-        if (inputActions != null)
+        ResolveSceneReferences(null);
+        if (m_view != null)
         {
-            confirmControls = inputActions.FindActionMap("Workshop", true).Clone();
-            confirmControls.FindAction("Interact", true).performed += _ =>
-            { if (CanConfirmWithInput) confirmRequested = true; };
+            var ui = GetComponentInParent<UIManager>() ?? FindFirstObjectByType<UIManager>();
+            if (ui != null)
+            {
+                m_view.SetUIManager(ui);
+            }
         }
-        if (wallet == null) wallet = WeaponWorkshop.PlayerWallet.ForScene(this);
-        slotTicketDisplay = CreateSlotTicketDisplay();
-        moneyCounter.Initialize(moneyText);
-        moduleCreditCounter.Initialize(moduleCreditText);
-        slotTicketCounter.Initialize(slotTicketText);
-        dailyRentText = CreateDailyRentText();
-        dailyRentText?.gameObject.SetActive(false);
-        slotTicketDisplay?.gameObject.SetActive(false);
-        moneyDisplay?.gameObject.SetActive(false);
-        moduleCreditDisplay?.gameObject.SetActive(false);
-        todayIncomeText?.gameObject.SetActive(false);
-        settlementPanel?.SetActive(false);
-        morningNoticeText?.gameObject.SetActive(false);
-        reopenSettlementButton?.gameObject.SetActive(false);
-        if (questionText != null) questionText.gameObject.SetActive(false);
-        SetButtonLabel(nextDayButton,"다음 날 아침");
-        SetButtonLabel(declineButton,"확인");
-        if (nextDayButton != null) nextDayButton.interactable = false;
-        if (declineButton != null) declineButton.interactable = false;
-        nextDayButton?.onClick.AddListener(StartNextDay);
-        declineButton?.onClick.AddListener(DeclineNextDay);
-        reopenSettlementButton?.onClick.AddListener(ReopenSettlement);
-        closeSettlementButton?.onClick.AddListener(CloseSettlement);
+
+        EnsurePresenter();
+    }
+
+    private void EnsurePresenter()
+    {
+        if (m_view == null)
+        {
+            Debug.LogError(
+                "[DaySettlementUI] Awake 실패: m_view에 SettlementView 참조가 필요합니다. " +
+                "Tools/UI/Authoring/Settlement/Author 실행 결과를 확인하세요.");
+            return;
+        }
+
+        if (m_presenter != null && m_configuredDay == dayManager &&
+            m_configuredNightRaid == nightRaid && m_configuredWallet == wallet)
+        {
+            return;
+        }
+
+        if (m_presenter != null)
+        {
+            m_presenter.Dispose();
+            m_presenter = null;
+        }
+
+        m_view.Configure(settlementPanel, summaryText, receiptTitle, questionText,
+            nextDayButton, declineButton, reopenSettlementButton, closeSettlementButton,
+            morningNoticeText, moneyDisplay, moneyText, moduleCreditDisplay, moduleCreditText,
+            todayIncomeText, inputActions,
+            moneyCountDuration, raidLossRollDuration, insufficientFundsDuration,
+            insufficientFundsPulses, insufficientFundsScale);
+
+        m_configuredDay = dayManager;
+        m_configuredNightRaid = nightRaid;
+        m_configuredWallet = wallet;
+
+        m_presenter = new SettlementPresenter(m_view, dayManager, wallet, nightRaid, this,
+            () => WeaponWorkshop.FeedbackUI.For(this));
+        if (!m_presenter.Initialize())
+        {
+            // 참조 오류는 View가 화면명·필드명으로 기록한다. 이 화면만 초기화를 포기한다.
+            m_presenter = null;
+            return;
+        }
+
+        if (isActiveAndEnabled)
+        {
+            m_presenter.OnEnabled();
+        }
     }
 
     private void OnEnable()
     {
-        confirmControls?.Enable();
-        if (dayManager != null) dayManager.Changed += Refresh;
-        if (wallet != null) wallet.Changed += Refresh;
-        if (wallet != null) wallet.PurchaseFundsInsufficient += ShowInsufficientFunds;
-        if (wallet != null) wallet.ModuleCreditsLost += ShowModuleCreditLoss;
-        Refresh();
+        m_presenter?.OnEnabled();
     }
 
     private void OnDisable()
     {
-        confirmControls?.Disable();
-        confirmRequested = false;
-        if (dayManager != null) dayManager.Changed -= Refresh;
-        if (wallet != null) wallet.Changed -= Refresh;
-        if (wallet != null) wallet.PurchaseFundsInsufficient -= ShowInsufficientFunds;
-        if (wallet != null) wallet.ModuleCreditsLost -= ShowModuleCreditLoss;
-        HideMorningNotice();
-        moneyCounter.Reset();
-        moduleCreditCounter.Reset();
-        slotTicketCounter.Reset();
-        // Hide displays without changing the authored hierarchy or layout.
-        moneyDisplay?.gameObject.SetActive(false);
-        moduleCreditDisplay?.gameObject.SetActive(false);
-        dailyRentText?.gameObject.SetActive(false);
-        slotTicketDisplay?.gameObject.SetActive(false);
-        todayIncomeText?.gameObject.SetActive(false);
-        settlementPanel?.SetActive(false);
-        reopenSettlementButton?.gameObject.SetActive(false);
+        m_presenter?.OnDisabled();
     }
 
     private void OnDestroy()
     {
-        confirmControls?.Dispose();
-        nextDayButton?.onClick.RemoveListener(StartNextDay);
-        declineButton?.onClick.RemoveListener(DeclineNextDay);
-        reopenSettlementButton?.onClick.RemoveListener(ReopenSettlement);
-        closeSettlementButton?.onClick.RemoveListener(CloseSettlement);
+        if (m_presenter == null)
+        {
+            return;
+        }
+
+        m_presenter.Dispose();
+        m_presenter = null;
     }
-
-    private void StartNextDay()
-    {
-        if (dayManager == null || !dayManager.IsSettlementOpen || !dayManager.CanStartNextDay) return;
-        var feedback = WeaponWorkshop.FeedbackUI.For(this);
-        feedback?.ShowChoice(this, "야간 습격을 하지 않고 다음 날로 넘어가시겠습니까?",
-            ConfirmSkipNightRaid, null, "예", "아니오");
-    }
-
-    private void ConfirmSkipNightRaid()
-    {
-        if (dayManager == null || !dayManager.IsSettlementOpen || !dayManager.CanStartNextDay) return;
-        HideMorningNotice();
-        dayManager.StartNextDay(skippedNightRaid: true);
-    }
-
-    private void DeclineNextDay()
-    {
-        HideMorningNotice();
-        if (dayManager != null) dayManager.DeclineNextDay();
-    }
-    private static void SetButtonLabel(Button button,string label)
-    {
-        if(button==null)return;
-        var text=button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
-        if(text!=null)text.text=label;
-    }
-
-    private void ReopenSettlement() => dayManager?.ShowSettlement();
-    private void CloseSettlement() => dayManager?.DeclineNextDay();
-
-    private void ShowInsufficientFunds(bool useModuleCredits)
-    {
-        WeaponWorkshop.FeedbackUI.For(this)?.ShowNotification(useModuleCredits ? "부품이 부족합니다." : "돈이 부족합니다.");
-        (useModuleCredits ? moduleCreditCounter : moneyCounter).PulseInsufficientFunds(
-            insufficientFundsDuration, insufficientFundsPulses, insufficientFundsScale);
-    }
-
-    private void ShowModuleCreditLoss(int previousAmount)
-    {
-        if (wallet == null) return;
-        Refresh();
-        moduleCreditCounter.RollLoss(previousAmount, wallet.ModuleCredits, raidLossRollDuration);
-    }
-
-    private IEnumerator HideMorningNoticeAfterDelay()
-    {
-        yield return new WaitForSecondsRealtime(1.5f);
-        morningNoticeText.gameObject.SetActive(false);
-        morningNotice = null;
-    }
-
-    private void HideMorningNotice()
-    {
-        if (morningNotice != null) StopCoroutine(morningNotice);
-        morningNotice = null;
-        morningNoticeText?.gameObject.SetActive(false);
-    }
-
-    private void Refresh()
-    {
-        bool show = dayManager != null && dayManager.IsNight && dayManager.IsSettlementOpen;
-        if (show && settlementPanel != null && !settlementPanel.activeSelf) openedFrame = Time.frameCount;
-        if (!show) confirmRequested = false;
-        if (!show) WeaponWorkshop.FeedbackUI.For(this)?.CancelChoice(this);
-        moneyDisplay?.gameObject.SetActive(wallet != null);
-        moduleCreditDisplay?.gameObject.SetActive(wallet != null);
-        slotTicketDisplay?.gameObject.SetActive(wallet != null);
-        if (slotTicketText != null && wallet != null)
-            slotTicketCounter.SetTarget(wallet.SlotTickets, moneyCountDuration);
-        bool hasDailyRent = wallet != null && dayManager != null && dayManager.CurrentCustomerDay != null;
-        dailyRentText?.gameObject.SetActive(hasDailyRent);
-        if (hasDailyRent && dailyRentText != null)
-        {
-            int rent = dayManager.IsNight && dayManager.IsSettlementOpen
-                ? dayManager.TodayRent : dayManager.NextSettlementRent;
-            int loans = wallet.OutstandingLoans;
-            long principal = dayManager.IsNight && dayManager.IsSettlementOpen
-                ? dayManager.TodayLoanRepayment : (long)loans * WeaponWorkshop.PlayerWallet.LoanAmount;
-            long interest = dayManager.IsNight && dayManager.IsSettlementOpen
-                ? dayManager.TodayLoanInterest : (long)rent * loans / 5;
-            dailyRentText.text = $"자리세: −$ {rent:N0}";
-            if (principal > 0)
-                dailyRentText.text += $"\n대출 원금: −$ {principal:N0}\n대출 이자: −$ {interest:N0}";
-            dailyRentText.color = rent > 0 || principal > 0 ? NegativeValueColor : Color.white;
-        }
-        if (moduleCreditText != null && wallet != null)
-            moduleCreditCounter.SetTarget(wallet.ModuleCredits, moneyCountDuration);
-        if (moneyText != null && wallet != null)
-        {
-            moneyCounter.SetTarget(wallet.Balance, moneyCountDuration);
-            long due = dayManager != null && !dayManager.IsNight
-                ? (long)dayManager.NextSettlementRent * (5L + wallet.OutstandingLoans) / 5
-                    + (long)wallet.OutstandingLoans * WeaponWorkshop.PlayerWallet.LoanAmount : 0;
-            moneyCounter.SetNegative((long)wallet.Balance - due <= 0);
-        }
-        if (todayIncomeText != null)
-        {
-            todayIncomeText.gameObject.SetActive(show);
-            if (show)
-            {
-                long netIncome = (long)dayManager.TodayIncome + dayManager.TodayLoanIncome - dayManager.TodayRent - dayManager.TodaySoldConstructionCost
-                    - dayManager.TodayLoanRepayment - dayManager.TodayLoanInterest;
-                string amount = netIncome < 0 ? $"−$ {-netIncome:N0}" : $"$ {netIncome:N0}";
-                if (netIncome < 0) amount = $"<color=#D5443F>{amount}</color>";
-                int balance = wallet != null ? wallet.Balance : 0;
-                long previousBalance = (long)balance - netIncome;
-                string previousAmount = previousBalance < 0 ? $"−$ {-previousBalance:N0}" : $"$ {previousBalance:N0}";
-                string settlementAmount = netIncome < 0 ? $"(−$ {-netIncome:N0})" : $"$ {netIncome:N0}";
-                string currentAmount = balance < 0 ? $"−$ {-(long)balance:N0}" : $"$ {balance:N0}";
-                if (balance < 0) currentAmount = $"<color=#D5443F>{currentAmount}</color>";
-                todayIncomeText.text = $"<size=61.11111%>최종 정산액</size>\n{amount}\n" +
-                    $"<size=50%>기존 보유 금액 + 최종 정산액 = 현재 보유 금액</size>\n" +
-                    $"<size=61.11111%>{previousAmount} + {settlementAmount} = {currentAmount}</size>";
-            }
-        }
-        if (show && receiptTitle != null) receiptTitle.text = dayManager.DayNumber == 0 ? "튜토리얼 - 영업 정산" : $"DAY {dayManager.DayNumber:00} - 영업 정산";
-        if (show && summaryText != null)
-        {
-            string rentAmount = dayManager.TodayRent > 0
-                ? $"<color=#D5443F>−$ {dayManager.TodayRent:N0}</color>"
-                : $"$ {dayManager.TodayRent:N0}";
-            int constructionCost = dayManager.TodaySoldConstructionCost;
-            string constructionAmount = constructionCost > 0
-                ? $"<color=#D5443F>−$ {constructionCost:N0}</color>" : "$ 0";
-            summaryText.text = $"완료한 손님<pos=78%>{dayManager.CompletedGuests}명\n" +
-                $"불만족 손님<pos=78%>{dayManager.DissatisfiedGuests}명\n" +
-                $"살해한 손님<pos=78%>{dayManager.KilledGuests}명\n" +
-                 $"수입<pos=65%>+$ {dayManager.TodayIncome:N0}\n" +
-                (dayManager.TodayLoanIncome > 0 ? $"대출 원금<pos=65%>+$ {dayManager.TodayLoanIncome:N0}\n" : "") +
-                 $"총기 제작비<pos=65%>{constructionAmount}\n" +
-                 $"자리세<pos=65%>{rentAmount}";
-            if (dayManager.TodayLoanRepayment > 0)
-                summaryText.text += $"\n대출 원금<pos=65%><color=#D5443F>−$ {dayManager.TodayLoanRepayment:N0}</color>" +
-                    $"\n대출 이자<pos=65%><color=#D5443F>−$ {dayManager.TodayLoanInterest:N0}</color>";
-            if (dayManager.IsBankrupt)
-                summaryText.text += "\n\n<color=#D5443F>자릿세를 낼 돈이 부족합니다.</color>";
-        }
-        if (nextDayButton != null)
-        {
-            nextDayButton.gameObject.SetActive(dayManager == null || !dayManager.IsBankrupt);
-            nextDayButton.interactable = show && dayManager.CanStartNextDay;
-        }
-        if (declineButton != null) declineButton.interactable = show;
-        reopenSettlementButton?.gameObject.SetActive(dayManager != null && dayManager.IsNight && !show &&
-            (nightRaid == null || !nightRaid.IsBusy));
-        if (!show) HideMorningNotice();
-        settlementPanel?.SetActive(show);
-    }
-
-    private TMPro.TextMeshProUGUI CreateDailyRentText()
-    {
-        if (moneyDisplay == null || moneyText == null) return null;
-
-        var textObject = new GameObject("DailyRentDisplay", typeof(RectTransform), typeof(CanvasRenderer),
-            typeof(TMPro.TextMeshProUGUI));
-        RectTransform rect = textObject.GetComponent<RectTransform>();
-        rect.SetParent(moneyDisplay, false);
-        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(moneyDisplay.sizeDelta.x + dailyRentGap, 0f);
-        rect.sizeDelta = new Vector2(dailyRentWidth, moneyDisplay.sizeDelta.y * 3f);
-
-        var text = textObject.GetComponent<TMPro.TextMeshProUGUI>();
-        text.font = moneyText.font;
-        text.fontSize = moneyText.fontSize;
-        text.fontWeight = moneyText.fontWeight;
-        text.fontStyle = moneyText.fontStyle;
-        text.color = moneyText.color;
-        text.alignment = TMPro.TextAlignmentOptions.TopLeft;
-        text.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
-        text.overflowMode = TMPro.TextOverflowModes.Overflow;
-        text.raycastTarget = false;
-        text.text = "자리세: $ 0";
-        return text;
-    }
-
-    private RectTransform CreateSlotTicketDisplay()
-    {
-        if (moduleCreditDisplay == null || moduleCreditText == null) return null;
-        var display = Instantiate(moduleCreditDisplay, moduleCreditDisplay.parent);
-        display.name = "SlotTicketDisplay";
-        display.anchoredPosition = moduleCreditDisplay.anchoredPosition - new Vector2(0f, moduleCreditDisplay.rect.height + 6f);
-        slotTicketText = display.Find("ModuleCreditText")?.GetComponent<TMPro.TextMeshProUGUI>();
-        var icon = display.Find("ModuleIcon")?.GetComponent<Image>();
-        if (icon != null) icon.color = new Color(0.65f, 0.2f, 1f);
-        return display;
-    }
-
-    // Both balances use the same increase counting and decrease digit-roll effects.
-    private sealed class BalanceDisplay
-    {
-        private TMPro.TextMeshProUGUI text;
-        private WeaponWorkshop.MoneyRollDisplay roll;
-        private int displayed, target, start;
-        private float elapsed;
-        private bool initialized;
-        private Color originalColor;
-        private Vector3 originalScale;
-        private float pulseElapsed, pulseDuration, pulseScale;
-        private int pulseCount;
-        private Color displayColor;
-
-        public void Initialize(TMPro.TextMeshProUGUI source)
-        {
-            text = source;
-            if (text == null) return;
-            originalColor = text.color;
-            displayColor = originalColor;
-            originalScale = text.rectTransform.localScale;
-            roll = text.GetComponent<WeaponWorkshop.MoneyRollDisplay>();
-            if (roll == null) roll = text.gameObject.AddComponent<WeaponWorkshop.MoneyRollDisplay>();
-            roll.Initialize(text);
-            roll.Show(0);
-        }
-
-        public void Reset()
-        {
-            RestoreAppearance();
-            initialized = false;
-            roll?.Show(target);
-        }
-
-        public void PulseInsufficientFunds(float duration, int count, float scale)
-        {
-            if (text == null) return;
-            pulseElapsed = 0f;
-            pulseDuration = Mathf.Max(0.01f, duration);
-            pulseCount = Mathf.Max(1, count);
-            pulseScale = Mathf.Max(1f, scale);
-        }
-
-        public void SetNegative(bool negative)
-        {
-            if (text == null) return;
-            displayColor = negative
-                ? new Color(NegativeValueColor.r, NegativeValueColor.g, NegativeValueColor.b, originalColor.a)
-                : originalColor;
-            roll?.SetColor(displayColor);
-        }
-
-        private void RestoreAppearance()
-        {
-            pulseDuration = 0f;
-            if (text == null) return;
-            roll?.SetColor(displayColor);
-            text.rectTransform.localScale = originalScale;
-        }
-
-        private void TickInsufficientFunds()
-        {
-            if (pulseDuration <= 0f || text == null) return;
-            pulseElapsed += Time.unscaledDeltaTime;
-            if (pulseElapsed >= pulseDuration) { RestoreAppearance(); return; }
-            float wave = Mathf.Sin(pulseElapsed / pulseDuration * pulseCount * Mathf.PI);
-            float pulse = wave * wave;
-            Color red = new Color(1f, 0f, 0f, displayColor.a);
-            roll?.SetColor(Color.Lerp(displayColor, red, pulse));
-            text.rectTransform.localScale = originalScale * Mathf.Lerp(1f, pulseScale, pulse);
-        }
-
-        public void SetTarget(int amount, float duration)
-        {
-            if (text == null) return;
-            if (!initialized || duration <= 0f)
-            {
-                initialized = true;
-                displayed = target = amount;
-                Show(amount);
-                return;
-            }
-            if (target == amount) return;
-            if (amount < target)
-            {
-                target = start = displayed = amount;
-                elapsed = 0f;
-                if (roll != null) roll.RollTo(amount, duration);
-                else text.text = amount.ToString("N0");
-                return;
-            }
-            Show(displayed);
-            start = displayed;
-            target = amount;
-            elapsed = 0f;
-        }
-
-        public void RollLoss(int previousAmount, int amount, float duration)
-        {
-            if (text == null || previousAmount <= amount) return;
-            RestoreAppearance();
-            initialized = true;
-            displayed = target = start = amount;
-            elapsed = 0f;
-            Show(previousAmount);
-            if (roll != null) roll.RollTo(amount, duration);
-            else Show(amount);
-        }
-
-        public void Tick(float duration)
-        {
-            TickInsufficientFunds();
-            if (!initialized || text == null || displayed == target) return;
-            elapsed += Time.unscaledDeltaTime;
-            float t = duration > 0f ? Mathf.Clamp01(elapsed / duration) : 1f;
-            double eased = 1d - (1d - t) * (1d - t) * (1d - t);
-            int amount = t >= 1f ? target
-                : (int)System.Math.Round(start + ((double)target - start) * eased);
-            if (amount == displayed) return;
-            displayed = amount;
-            Show(amount);
-        }
-
-        private void Show(int amount)
-        {
-            if (roll != null) roll.Show(amount);
-            else if (text != null) text.text = amount.ToString("N0");
-        }
-    }
-
-    private void LateUpdate()
-    {
-        if (confirmRequested)
-        {
-            confirmRequested = false;
-            if (CanConfirmWithInput) declineButton.onClick.Invoke();
-        }
-        moneyCounter.Tick(moneyCountDuration);
-        moduleCreditCounter.Tick(moneyCountDuration);
-        slotTicketCounter.Tick(moneyCountDuration);
-    }
-
 }

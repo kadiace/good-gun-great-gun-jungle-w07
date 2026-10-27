@@ -18,4 +18,4 @@ MonoBehaviour:
   archetypes: []
   conditions: []
   prefab: {fileID: 0}
-  portrait: {fileID: 21300000, guid: 9a586c2dc1c2a9f409cb2ff254523e98, type: 3}
+  portrait: {fileID: 21300000, guid: 17f85440ed49979409be1d8436dfe8a3, type: 3}

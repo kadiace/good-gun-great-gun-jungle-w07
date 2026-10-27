@@ -7,8 +7,8 @@ namespace WeaponWorkshop
     [RequireComponent(typeof(Outline))]
     public sealed class ButtonHoverOutline : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
-        [SerializeField, Min(0f)] private float normalThickness = 1f;
-        [SerializeField, Min(0f)] private float hoverThickness = 4f;
+        [SerializeField, Min(0f)] private float normalThickness = 0.75f;
+        [SerializeField, Min(0f)] private float hoverThickness = 3f;
         private Outline outline;
         private void Awake() => outline = GetComponent<Outline>();
         private void OnEnable() => SetThickness(normalThickness);

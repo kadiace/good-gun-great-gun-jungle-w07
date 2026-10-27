@@ -1,283 +1,48 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace WeaponWorkshop
 {
     public sealed class UIManager : MonoBehaviour
     {
-        [SerializeField] private FeedbackUI feedback;
-        public FeedbackUI Feedback => feedback;
-        public bool IsChoiceOpen => feedback != null && feedback.IsChoiceOpen;
-        [SerializeField] private TMPro.TextMeshProUGUI notificationText;
-        [SerializeField] private CanvasGroup notificationGroup;
-        [SerializeField, Min(0.01f)] private float notificationEnterDuration = .18f;
-        [SerializeField, Min(0f)] private float notificationHoldDuration = 2f;
-        [SerializeField, Min(0.01f)] private float notificationExitDuration = .4f;
-        private float notificationElapsed = -1f;
-        public void ShowNotification(string message)
-        {
-            if (feedback != null) { feedback.ShowNotification(message); return; }
-            if (!isActiveAndEnabled || notificationText == null || notificationGroup == null) return;
-            if (string.IsNullOrEmpty(message)) { HideNotification(); return; }
-            notificationText.text = message;
-            notificationElapsed = 0f;
-            notificationGroup.alpha = 0f;
-            notificationGroup.transform.localScale = Vector3.one * .92f;
-            notificationGroup.gameObject.SetActive(true);
-        }
-        private void HideNotification()
-        {
-            notificationElapsed = -1f;
-            if (notificationText != null) notificationText.text = string.Empty;
-            if (notificationGroup == null) return;
-            notificationGroup.alpha = 0f;
-            notificationGroup.interactable = notificationGroup.blocksRaycasts = false;
-            notificationGroup.transform.localScale = Vector3.one;
-            if (frontMark != null)
-            {
-                frontGraphics = frontMark.GetComponentsInChildren<UnityEngine.UI.Graphic>(true);
-                frontAlphas = new float[frontGraphics.Length];
-                for (int i = 0; i < frontGraphics.Length; i++) frontAlphas[i] = frontGraphics[i].color.a;
-            }
-            SetWorkshopUI(false);
-            workshopSession = Player != null ? Player.GetComponent<WorkshopSession>() : null;
-            if (workshopSession != null) workshopSession.BindWorkshopUI(this);
-            notificationGroup.gameObject.SetActive(false);
-        }
-        private void UpdateNotification()
-        {
-            if (notificationElapsed < 0f || notificationGroup == null) return;
-            notificationElapsed += Time.unscaledDeltaTime;
-            float enter = Mathf.Max(.01f, notificationEnterDuration);
-            float exit = Mathf.Max(.01f, notificationExitDuration);
-            if (notificationElapsed < enter)
-            {
-                float t = Mathf.SmoothStep(0f, 1f, notificationElapsed / enter);
-                notificationGroup.alpha = t;
-                notificationGroup.transform.localScale = Vector3.one * Mathf.Lerp(.92f, 1f, t);
-            }
-            else if (notificationElapsed < enter + notificationHoldDuration)
-            { notificationGroup.alpha = 1f; notificationGroup.transform.localScale = Vector3.one;
-            if (frontMark != null)
-            {
-                frontGraphics = frontMark.GetComponentsInChildren<UnityEngine.UI.Graphic>(true);
-                frontAlphas = new float[frontGraphics.Length];
-                for (int i = 0; i < frontGraphics.Length; i++) frontAlphas[i] = frontGraphics[i].color.a;
-            }
-            SetWorkshopUI(false);
-            workshopSession = Player != null ? Player.GetComponent<WorkshopSession>() : null;
-            if (workshopSession != null) workshopSession.BindWorkshopUI(this); }
-            else
-            {
-                float t = (notificationElapsed - enter - notificationHoldDuration) / exit;
-                if (t >= 1f) { HideNotification(); return; }
-                notificationGroup.alpha = 1f - Mathf.SmoothStep(0f, 1f, t);
-            }
-        }
         [SerializeField] private GameManager gameManager;
         [SerializeField] private FirstPersonPlayer player;
-        [Header("Workshop UI")]
-        [SerializeField] private RotationCircleGraphic rotationCircle;
-        [SerializeField] private RectTransform frontMark;
-        [SerializeField] private RectTransform upMark;
-        [SerializeField, Range(0f, 1f), Tooltip("이 값보다 확실히 뒤를 향할 때만 표시를 흐리게 합니다.")]
-        private float directionBackThreshold = .05f;
-        private UnityEngine.UI.Graphic[] upGraphics;
-        private float[] upAlphas;
-        private UnityEngine.UI.Graphic[] frontGraphics;
-        private float[] frontAlphas;
-        private void SetFrontOpacity(float opacity)
-        {
-            if (frontGraphics == null) return;
-            for (int i = 0; i < frontGraphics.Length; i++)
-            {
-                if (frontGraphics[i] == null) continue;
-                Color color = frontGraphics[i].color;
-                color.a = frontAlphas[i] * opacity;
-                frontGraphics[i].color = color;
-            }
-        }
-        [SerializeField, Range(0f, 1f)] private float rotationCircleRadius = .5f;
-        private WorkshopSession workshopSession;
-        public float GetWorkshopRotationRadius(Rect viewport) => Mathf.Min(viewport.width, viewport.height) * rotationCircleRadius;
-        public void SetWorkshopUI(bool editing)
-        {
-            if (upMark != null && upGraphics == null)
-            {
-                upGraphics = upMark.GetComponentsInChildren<UnityEngine.UI.Graphic>(true);
-                upAlphas = new float[upGraphics.Length];
-                for (int i = 0; i < upGraphics.Length; i++) upAlphas[i] = upGraphics[i].color.a;
-            }
-            if (upMark != null) upMark.gameObject.SetActive(editing);
-            if (rotationCircle != null) rotationCircle.gameObject.SetActive(editing &&
-                (workshopSession == null || workshopSession.PlanarView == null || !workshopSession.PlanarView.Is2D));
-            if (frontMark != null) frontMark.gameObject.SetActive(editing);
-            if (!editing) SetFrontOpacity(1f);
-        }
+        [SerializeField]
+        private CubeBuilder builder;
+        [SerializeField]
+        private GameObject eraseModeUI;
+        private readonly Dictionary<System.Type, Component> m_screenCache = new Dictionary<System.Type, Component>();
         [SerializeField] private AimUI aimUI;
         [SerializeField] private HoveringUI hoveringUI;
-        private WeaponHolder weaponHolder;
-
-
         [SerializeField] private NightRaidUI nightRaidUI;
-        public NightRaidUI RaidUI => nightRaidUI;
-
-
-        public FirstPersonPlayer Player
+        public T Screen<T>() where T : Component
         {
-            get
-            {
-                if (player == null) player = FindFirstObjectByType<FirstPersonPlayer>();
-                return player;
-            }
+            if (this == null) return null;
+            if (m_screenCache.TryGetValue(typeof(T), out Component cached) && cached != null) return (T)cached;
+            T found = GetComponentInChildren<T>(true);
+            m_screenCache[typeof(T)] = found;
+            return found;
         }
+        public T[] Screens<T>() where T : Component => this != null ? GetComponentsInChildren<T>(true) : System.Array.Empty<T>();
+        private FirstPersonPlayer ResolvePlayer() => player != null ? player : (gameManager != null ? gameManager.Player : null);
 
-        public WeaponHolder PlayerWeaponHolder
-        {
-            get
-            {
-                FirstPersonPlayer currentPlayer = Player;
-                if (currentPlayer == null) return null;
-                if (weaponHolder == null || weaponHolder.gameObject != currentPlayer.gameObject)
-                    weaponHolder = currentPlayer.GetComponent<WeaponHolder>();
-                return weaponHolder;
-            }
-        }
-        [SerializeField, Tooltip("비우면 플레이어 카메라의 CubeBuilder를 찾음.")]
-        private CubeBuilder builder;
-        [SerializeField, Tooltip("삭제 모드 표시. 시작 시 CubeBuilder에 넘겨줌.")]
-        private GameObject eraseModeUI;
-        [SerializeField] private TMPro.TextMeshProUGUI[] moduleLabels;
-        [SerializeField] private Color selectedModuleColor = new Color(1f, 0.8f, 0.2f, 1f);
-        private int lastSelectedSlot = -1;
-        [SerializeField] private GameObject pausePanel;
-        [SerializeField] private UnityEngine.UI.Button resumeButton;
         private void Awake()
         {
-            nightRaidUI?.Initialize();
-            foreach (var slots in GetComponentsInChildren<SaveSlotsUI>(true)) slots.Initialize();
-            // 사운드 설정도 비활성 상태에서 초기 연결하고 닫힌 화면으로 시작한다.
-            foreach (var sound in GetComponentsInChildren<SoundSettingsUI>(true)) sound.Initialize();
-            // CanvasScaler controls UI sizing; a zero authored root scale hides every panel.
             transform.localScale = Vector3.one;
-            if (frontMark != null)
-            {
-                frontGraphics = frontMark.GetComponentsInChildren<UnityEngine.UI.Graphic>(true);
-                frontAlphas = new float[frontGraphics.Length];
-                for (int i = 0; i < frontGraphics.Length; i++) frontAlphas[i] = frontGraphics[i].color.a;
-            }
-            SetWorkshopUI(false);
-            workshopSession = Player != null ? Player.GetComponent<WorkshopSession>() : null;
-            if (workshopSession != null) workshopSession.BindWorkshopUI(this);
-            if (aimUI != null) aimUI.Initialize(this);
-            weaponHolder = PlayerWeaponHolder;
-            if (builder == null && Player != null) builder = Player.GetComponentInChildren<CubeBuilder>(true);
-            foreach (var palette in GetComponentsInChildren<ModulePaletteUI>(true)) palette.Initialize(builder);
+            GameManager contextGame = gameManager != null ? gameManager : GameManager.Instance;
+            FirstPersonPlayer contextPlayer = contextGame != null ? contextGame.Player : player;
+            if (contextPlayer == null) contextPlayer = ResolvePlayer();
+            if (builder == null && contextPlayer != null) builder = contextPlayer.GetComponentInChildren<CubeBuilder>(true);
+            Interaction interaction = contextPlayer != null ? contextPlayer.GetComponentInChildren<Interaction>(true) : null;
+            UIContext context = new UIContext { Game = contextGame, Ui = this, Player = contextPlayer, Builder = builder, Interaction = interaction };
+            foreach (MonoBehaviour component in GetComponentsInChildren<MonoBehaviour>(true))
+                if (component is IUIScreen uiScreen) uiScreen.InitializeScreen(context);
             if (eraseModeUI != null) eraseModeUI.SetActive(false);
             if (builder != null && eraseModeUI != null) builder.SetEraseModeUI(eraseModeUI);
-            if (hoveringUI != null) hoveringUI.Initialize(builder, Player != null ? Player.GetComponentInChildren<Interaction>(true) : null);
-
-            HideNotification();
-            pausePanel?.SetActive(false);
-            UpdateModuleSelection();
         }
-        public void Resume() => gameManager?.Resume();
-        public void Restart() => gameManager?.Restart();
-        public void LeaveWorkshop() => gameManager?.LeaveWorkshop();
-        private void LateUpdate()
+        private void OnDisable()
         {
-            UpdateModuleSelection();
-
-            UpdateWorkshopDirectionUI();
-        }
-        private void UpdateWorkshopDirectionUI()
-        {
-            bool editing = workshopSession != null && workshopSession.IsEditing;
-            PowerCore core = editing && workshopSession.ActiveWorkbench != null ? workshopSession.ActiveWorkbench.CurrentCore : null;
-            Camera view = editing ? workshopSession.WorkshopCamera : null;
-            bool planar = editing && workshopSession.PlanarView != null && workshopSession.PlanarView.Is2D;
-            if (rotationCircle != null && rotationCircle.gameObject.activeSelf != (editing && !planar))
-                rotationCircle.gameObject.SetActive(editing && !planar);
-            if (editing && !planar && rotationCircle != null)
-            {
-                Rect viewport = workshopSession.RotationViewport;
-                rotationCircle.SetGeometry(viewport, GetWorkshopRotationRadius(viewport));
-            }
-            if (core == null || view == null || planar)
-            {
-                if (frontMark != null) frontMark.gameObject.SetActive(false);
-                if (upMark != null) upMark.gameObject.SetActive(false);
-                return;
-            }
-            // 2D와 같은 최외곽 면을 사용한다. 모듈의 출력 방향과는 무관하다.
-            var assembly = core.GetComponent<CubeAssembly>();
-            UpdateDirectionMark(frontMark, Vector3Int.forward, core, view, assembly, frontGraphics, frontAlphas);
-            UpdateDirectionMark(upMark, Vector3Int.up, core, view, assembly, upGraphics, upAlphas);
-        }
-        private void UpdateDirectionMark(RectTransform mark, Vector3Int axis, PowerCore core, Camera view,
-            CubeAssembly assembly, UnityEngine.UI.Graphic[] graphics, float[] alphas)
-        {
-            if (mark == null) return;
-            Vector3 localFace = assembly != null ? assembly.GetOutermostFace(axis) : (Vector3)axis * .501f;
-            Transform space = assembly != null ? assembly.transform : core.transform;
-            Vector3 facePoint = space.TransformPoint(localFace);
-            Vector3 screenPoint = view.WorldToScreenPoint(facePoint);
-            bool visible = screenPoint.z > view.nearClipPlane;
-            mark.gameObject.SetActive(visible);
-            float opacity = Vector3.Dot(view.transform.forward, core.transform.TransformDirection((Vector3)axis)) > directionBackThreshold ? .2f : 1f;
-            if (graphics != null && alphas != null)
-                for (int i = 0; i < graphics.Length; i++)
-                {
-                    if (graphics[i] == null) continue;
-                    var color = graphics[i].color; color.a = alphas[i] * opacity; graphics[i].color = color;
-                }
-            if (!visible) return;
-            if (mark.parent is RectTransform parent)
-            {
-                Canvas canvas = mark.GetComponentInParent<Canvas>();
-                Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPoint, camera, out Vector2 position))
-                    mark.localPosition = new Vector3(position.x, position.y, 0f);
-            }
-        }
-        private void UpdateModuleSelection()
-        {
-            int slot = builder != null && !builder.DeleteMode ? builder.SelectedSlot : 0;
-            if (lastSelectedSlot == slot) return;
-            lastSelectedSlot = slot;
-            if (moduleLabels == null) return;
-            for (int i = 0; i < moduleLabels.Length; i++)
-            {
-                if (moduleLabels[i] == null) continue;
-                bool selected = i + 1 == slot;
-                moduleLabels[i].color = selected ? selectedModuleColor : Color.white;
-                UIFonts.ApplyWeight(moduleLabels[i], selected ? 700 : 400);
-            }
-        }
-        private void OnDisable() { feedback?.Cancel(); SetWorkshopUI(false); }
-        /// <summary>
-        /// 게임 일시정지 상태에 맞춰 일시정지 패널 표시와 캔버스 우선순위를 갱신합니다.
-        /// game 상태를 확인하여 일시정지 메뉴를 최상위(sortingOrder 200)로 올리거나 하위 창을 닫습니다.
-        /// </summary>
-        public void Refresh(GameManager game)
-        {
-            bool pauseChanged = pausePanel != null && pausePanel.activeSelf != game.IsPaused;
-            // 일시정지를 닫으면 하위 설정 화면도 닫아 다음 열기에서 메뉴가 겹치지 않게 한다.
-            if (pauseChanged && !game.IsPaused) GetComponent<SoundSettingsUI>()?.Close();
-            if (game.IsPaused && pausePanel != null)
-            {
-                pausePanel.transform.SetAsLastSibling();
-                var pauseCanvas = pausePanel.GetComponent<Canvas>();
-                if (pauseCanvas == null)
-                {
-                    pauseCanvas = pausePanel.AddComponent<Canvas>();
-                    pausePanel.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-                }
-                pauseCanvas.overrideSorting = true;
-                pauseCanvas.sortingOrder = 200;
-            }
-            pausePanel?.SetActive(game.IsPaused);
-            if (pauseChanged && UnityEngine.EventSystems.EventSystem.current != null)
-                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+            Screen<FeedbackUI>()?.ForceClose();
         }
     }
 }

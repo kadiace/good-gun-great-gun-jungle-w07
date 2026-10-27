@@ -118,6 +118,9 @@ namespace WeaponWorkshop
     {
         public int stage, line, price;
         public bool talked, satisfied;
+        public string[] revealedRequests;
+        public int dialoguePhase;
+        public string dialogueRequestId;
         public Vector3 position;
     }
     [Serializable] public sealed class TimerSave
@@ -154,7 +157,7 @@ namespace WeaponWorkshop
         [NonSerialized] public CustomerDay travelCustomerDay;
         public string testAssemblyKey;
         public string[] passedTestIds = Array.Empty<string>();
-        public int version = 8, day, balance, paidCost;
+        public int version = 11, day, balance, paidCost;
         public int slotMachineSpins;
         public int slotMachineDestructions, slotMachineDestroyedDay = -1;
         public bool slotMachineDestroyedAtNight;
@@ -170,6 +173,7 @@ namespace WeaponWorkshop
         public int todayLoanIncome;
         public int lastLoanDay = -1;
         public int[] unlockedModules = Array.Empty<int>();
+        public string[] experiencedTagIds = Array.Empty<string>();
         public CustomerOrderSave[] dailyOrders;
         public CustomerOrderSave[] deferredCustomers;
         public int dailyRent;
@@ -188,6 +192,7 @@ namespace WeaponWorkshop
         public int workbench = -1;
         public Vector3 playerPosition, playerEuler, viewEuler, benchEuler;
         public TimerSave timer;
+        public float businessRemaining;
         public CustomerSave customer;
         public long savedUtcTicks;
         public bool hasWeapon;
@@ -237,7 +242,7 @@ namespace WeaponWorkshop
             {
                 if (!File.Exists(path)) return false;
                 var read = JsonUtility.FromJson<GameSaveData>(File.ReadAllText(path));
-                if (read == null || (read.version < 2 || read.version > 8) || read.day < 0 ||
+                if (read == null || (read.version < 2 || read.version > 11) || read.day < 0 ||
                     read.paidCost < 0 || read.savedUtcTicks <= 0 || read.savedUtcTicks > DateTime.MaxValue.Ticks ||
                     read.completed < 0 || read.dissatisfied < 0 || read.killed < 0 || read.income < 0 ||
                     read.dissatisfied + read.killed > read.completed || read.nextCustomer < 0 ||

@@ -17,7 +17,7 @@ MonoBehaviour:
   description: "파츠가 늘수록 더 넓은 원에 더 많은 탄환을 방사합니다. 하나라도 장착하면 모든 총구의 폭발·관통·물·불 수치가 50% 감소합니다."
   color: {r: 0.6, g: 0.39999998, b: 0.19999996, a: 1}
   useModuleCredits: 1
-  moduleCreditCost: 50
+  moduleCreditCost: 0
   moduleType: 10
   buyPrice: 300
   bonuses:

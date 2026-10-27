@@ -42,11 +42,13 @@ namespace WeaponWorkshop
             if (button != null) button.gameObject.SetActive(!retired);
         }
         public bool HasClearedRaid(string scene) => !string.IsNullOrEmpty(scene) && clearedRaidScenes.Contains(scene);
+        public float SaleRewardMultiplier => 1f + SaleBonusRatio;
+        // 최초 클리어 보너스만 합산한다. 요청의 초기 50% 이익은 이미 정액에 포함된다.
         public float SaleBonusRatio
         {
             get
             {
-                float bonus = TableManager.Instance.CustomerOrder.sale.tagBonusRatio;
+                float bonus = 0f;
                 var map = TableManager.Instance.RaidMap;
                 if (map?.regions == null) return bonus;
                 foreach (var region in map.regions)
@@ -172,6 +174,7 @@ namespace WeaponWorkshop
                 outstandingLoans = wallet.OutstandingLoans,
                 lastLoanDay = wallet.LastLoanDay,
                 unlockedModules = wallet.GetComponent<PlayerModuleUnlocks>()?.CaptureUnlockedModules() ?? Array.Empty<int>(),
+                experiencedTagIds = TagExperience.Capture(),
                 savedUtcTicks = DateTime.UtcNow.Ticks, hasWeapon = weapon != null, saveId = PlayerIdentity.SaveId };
             var slotMachine = FindUniqueSceneComponent<SlotMachineReels>(gameObject.scene);
             if (slotMachine != null)
@@ -313,7 +316,7 @@ namespace WeaponWorkshop
             }
             if (!dayManager.CanStartNextDay) { dayManager.ShowSettlement(); return; }
             var ui = GameManager.Instance != null ? GameManager.Instance.UI : null;
-            var transition = ui != null ? ui.GetComponent<DayTransitionUI>() : null;
+            var transition = ui != null ? ui.Screen<DayTransitionUI>() : null;
             if (showFade && transition != null && transition.BeginReturn(dayManager)) return;
             dayManager.StartNextDay();
         }
@@ -324,6 +327,7 @@ namespace WeaponWorkshop
         }
         private void Restore(GameSaveData data)
         {
+            TagExperience.Restore(data.experiencedTagIds);
             using (dayManager != null ? dayManager.SuppressShopLogs() : null) RestoreCore(data);
         }
         /// <summary>
@@ -332,7 +336,7 @@ namespace WeaponWorkshop
         /// </summary>
         private void RestoreCore(GameSaveData data)
         {
-            GameManager.Instance?.UI?.GetComponent<ShootingTestHUD>()?.CancelTest();
+            GameManager.Instance?.UI?.Screen<ShootingTestHUD>()?.CancelTest();
             if (data.version >= 3) { RestoreWorldSave(data); return; }
             if (dayManager == null || player == null || !dayManager.CanRestoreSave(data) || player.GetComponent<PlayerWallet>() == null ||
                 (data.inWorkshop && (workbenches == null || data.workbench < 0 || data.workbench >= workbenches.Length || workbenches[data.workbench] == null)))
@@ -406,6 +410,7 @@ namespace WeaponWorkshop
         {
             _unlockedMainTrackIds.Clear();
             _trackUnlocksMigrated = true;
+            TagExperience.Reset();
             SoundManager.SetMainTrackUnlockState(_unlockedMainTrackIds.ToArray());
         }
 

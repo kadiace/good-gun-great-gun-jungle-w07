@@ -66,6 +66,15 @@ namespace WeaponWorkshop
             strokeDelete = false;
             strokeCells.Clear(); strokeRemovalCells.Clear();
         }
+        public bool TryCancelPlanarStroke()
+        {
+            if (!strokeActive)
+            {
+                return false;
+            }
+            CancelStroke();
+            return true;
+        }
         private void UpdatePlanarStroke()
         {
             if (!strokeActive) return;
@@ -91,10 +100,45 @@ namespace WeaponWorkshop
             if (!strokeMoved) { CancelStroke(); TryPlace(); return; }
             RebuildStrokePlan();
             if (!strokePlan.Valid)
-            { GameManager.Instance?.UI?.ShowNotification(strokePlan.Error); CancelStroke(); return; }
+            {
+                WorkshopPlacementFailureReason failure = strokePlan.FailureReason;
+                string error = strokePlan.Error;
+                int dollars = strokePlan.Dollars;
+                int credits = strokePlan.Credits;
+                CancelStroke();
+                if (failure == WorkshopPlacementFailureReason.DollarsInsufficient)
+                {
+                    PlacementLoanOfferResult offer = TryOfferPlacementLoan(dollars, credits, out string reason);
+                    if (offer != PlacementLoanOfferResult.Offered && offer != PlacementLoanOfferResult.NotNeeded &&
+                        !string.IsNullOrEmpty(reason))
+                    {
+                        FeedbackUI.For(this)?.ShowNotification(reason);
+                    }
+                }
+                else
+                {
+                    FeedbackUI.For(this)?.ShowNotification(error);
+                }
+                return;
+            }
+            if (OnboardingManager.NotifyModuleStrokeAttempt(strokeSlot, this))
+            {
+                strokeActive = strokeReleased = false;
+                return;
+            }
             try { CommitStroke(); }
             finally { CancelStroke(); }
         }
+
+        public bool CompleteOnboardingStroke(int slot)
+        {
+            if (strokeAssembly == null || strokeSlot != slot || GameManager.GameplayBlocked)
+            { CancelStroke(); return false; }
+            try { return CommitStroke(); }
+            finally { CancelStroke(); }
+        }
+
+        public void CancelOnboardingStroke() => CancelStroke();
         private void ExtendStroke(Vector3Int target)
         {
             Vector3Int start = strokeLastCell;
@@ -120,7 +164,7 @@ namespace WeaponWorkshop
                 {
                     if (strokeCells.Count >= MaximumStrokeCells)
                     {
-                        GameManager.Instance?.UI?.ShowNotification("한 번에 최대 256셀까지 그릴 수 있습니다");
+                        FeedbackUI.For(this)?.ShowNotification("한 번에 최대 256셀까지 그릴 수 있습니다");
                         CancelStroke(); return;
                     }
                     strokeCells.Add(cell);
@@ -157,13 +201,13 @@ namespace WeaponWorkshop
             finally { assembly.EndPlacementBatch(); }
             if (removed) WorkshopSoundEffects.RaiseBlockRemoved(soundPosition);
         }
-        private void CommitStroke()
+        private bool CommitStroke()
         {
-            if (IsModuleLocked(strokeSlot) || !TutorialManager.ActionAllowed("attach")) return;
+            if (IsModuleLocked(strokeSlot) || !TutorialManager.ActionAllowed("attach")) return false;
             foreach (var part in strokePlan.Parts)
                 if (IsModuleLocked(part.slot) || (TutorialManager.Instance != null &&
-                    !TutorialManager.Instance.TryAuthorizePlacement(strokeAssembly, part.cell, part.slot, part.direction))) return;
-            if (!strokeAssembly.TryCaptureLayout(out var snapshot)) return;
+                    !TutorialManager.Instance.TryAuthorizePlacement(strokeAssembly, part.cell, part.slot, part.direction))) return false;
+            if (!strokeAssembly.TryCaptureLayout(out var snapshot)) return false;
             var assembly = strokeAssembly;
             bool completed = false, layoutChanged = false;
             assembly.BeginPlacementBatch();
@@ -196,7 +240,7 @@ namespace WeaponWorkshop
                 if (!completed && layoutChanged) assembly.RestoreLayout(snapshot);
                 assembly.EndPlacementBatch();
             }
-            if (!completed) return;
+            if (!completed) return false;
             // 선택 모듈과 자동 연장의 구매 기록/알림도 실제 설치 종류별로 합산한다.
             var purchases = new Dictionary<int, (int dollars, int credits)>();
             foreach (var part in strokePlan.Parts)
@@ -207,6 +251,7 @@ namespace WeaponWorkshop
             foreach (var purchase in purchases)
                 wallet.NotifyPartPurchased(PartLogName(assembly, purchase.Key), purchase.Value.dollars, purchase.Value.credits);
             WorkshopSoundEffects.RaiseBlockInstalled(assembly.transform.TransformPoint(strokePlan.Parts[strokePlan.Parts.Count - 1].cell));
+            return true;
         }
     }
 }

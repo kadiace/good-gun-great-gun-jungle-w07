@@ -3,6 +3,8 @@ using UnityEngine.InputSystem;
 
 namespace WeaponWorkshop
 {
+    // 플레이어 매뉴얼 읽기 입력 브리지. 기존 Input System 액션 클론과 수명을 그대로 유지하고
+    // 읽기 세션 상태·닫기 요청·줌·팬 전달은 ManualReadingSessionPresenter에 위임한다.
     [DisallowMultipleComponent, RequireComponent(typeof(FirstPersonPlayer)), DefaultExecutionOrder(40)]
     public sealed class PlayerManualReader : MonoBehaviour
     {
@@ -14,10 +16,8 @@ namespace WeaponWorkshop
         private InputAction dragDeltaAction;
         private GameManager manager;
         private WorkshopSession workshop;
-        private WorkshopManual manual;
-        private int openedFrame;
-        private bool closeRequested;
-        public bool IsReading => manual != null;
+        private ManualReadingSessionPresenter m_presenter;
+        public bool IsReading => m_presenter != null && m_presenter.IsReading;
         public Camera ReadingCamera { get; private set; }
 
         private void Awake()
@@ -25,8 +25,6 @@ namespace WeaponWorkshop
             manager = GameManager.Instance;
             ReadingCamera = GetComponent<FirstPersonPlayer>().ViewPoint.GetComponentInChildren<Camera>();
             workshop = GetComponent<WorkshopSession>();
-            manual = null;
-            closeRequested = false;
             if (manager != null) manager.SetManual(false);
             if (inputActions == null) { enabled = false; return; }
             controls = inputActions.FindActionMap("Workshop", true).Clone();
@@ -35,71 +33,63 @@ namespace WeaponWorkshop
             readingControls = inputActions.FindActionMap("Build", true).Clone();
             dragAction = readingControls.FindAction("Attach", true);
             dragDeltaAction = readingControls.FindAction("Look", true);
+            m_presenter = new ManualReadingSessionPresenter(this, manager, workshop, readingControls,
+                zoomAction, dragAction, dragDeltaAction);
+            if (!m_presenter.Initialize())
+            {
+                m_presenter = null;
+            }
         }
 
         private void OnEnable()
         {
             controls?.Enable();
-            if (manager != null) manager.ManualCloseRequested += RequestClose;
+            m_presenter?.Activate();
         }
 
         private void OnDisable()
         {
             controls?.Disable();
-            readingControls?.Disable();
-            if (manager != null) manager.ManualCloseRequested -= RequestClose;
-            Close();
+            m_presenter?.Deactivate();
         }
 
         private void OnDestroy()
         {
+            m_presenter?.Dispose();
+            m_presenter = null;
             controls?.Dispose();
             readingControls?.Dispose();
         }
 
         private void Update()
         {
-            if (!IsReading || closeRequested || !Application.isFocused || Time.frameCount == openedFrame) return;
-            manual.AdjustReading(zoomAction.ReadValue<Vector2>().y,
-                dragAction.IsPressed() ? dragDeltaAction.ReadValue<Vector2>() : Vector2.zero);
+            m_presenter?.Tick();
         }
 
         private void OnInteract(InputAction.CallbackContext context)
         {
-            // Opening and closing share the existing Interact action, regardless of callback order.
-            if (IsReading && Time.frameCount != openedFrame) RequestClose();
+            m_presenter?.HandleInteract();
         }
 
         public bool Open(WorkshopManual target)
         {
-            if (!isActiveAndEnabled || target == null || ReadingCamera == null || manager == null || IsReading || GameManager.GameplayBlocked ||
-                (workshop != null && (workshop.IsInWorkshop || workshop.IsTransitioning))) return false;
-            manual = target;
-            openedFrame = Time.frameCount;
-            closeRequested = false;
-            manager.SetManual(true);
-            readingControls.Enable();
-            manual.Show(this);
-            return true;
+            return m_presenter != null && m_presenter.Open(target);
         }
 
-        public void RequestClose() => closeRequested = IsReading;
+        public void RequestClose()
+        {
+            m_presenter?.RequestClose();
+        }
 
         private void LateUpdate()
         {
             // Keep the modal gate until all input callbacks finish; F must not also re-open the book.
-            if (closeRequested) Close();
+            m_presenter?.LateTick();
         }
 
         public void Close()
         {
-            bool wasReading = IsReading;
-            var previous = manual;
-            manual = null;
-            closeRequested = false;
-            readingControls?.Disable();
-            if (previous != null) previous.PutDown();
-            if (wasReading && manager != null) manager.SetManual(false);
+            m_presenter?.Close();
         }
     }
 }

@@ -1689,6 +1689,16 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             ""id"": ""77ba29f3-b576-41be-803e-09415619bf9e"",
             ""actions"": [
                 {
+                    ""name"": ""EndShootingTest"",
+                    ""type"": ""Button"",
+                    ""id"": ""cbba3ef4-e335-4de6-8372-0746c16c8a73"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
+                },
+                {
                     ""name"": ""Interact"",
                     ""type"": ""Button"",
                     ""id"": ""21fcaef3-ddeb-4a61-82cb-a393507e7c79"",
@@ -1740,6 +1750,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                 }
             ],
             ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""ba4e4d01-f14a-49a7-82da-578d418904d1"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""EndShootingTest"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
                 {
                     ""name"": """",
                     ""id"": ""8680d34f-126e-4165-9a71-91a129953881"",
@@ -2037,6 +2058,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Build_Select0 = m_Build.FindAction("Select0", throwIfNotFound: true);
         // Workshop
         m_Workshop = asset.FindActionMap("Workshop", throwIfNotFound: true);
+        m_Workshop_EndShootingTest = m_Workshop.FindAction("EndShootingTest", throwIfNotFound: true);
         m_Workshop_Interact = m_Workshop.FindAction("Interact", throwIfNotFound: true);
         m_Workshop_Exit = m_Workshop.FindAction("Exit", throwIfNotFound: true);
         m_Workshop_Point = m_Workshop.FindAction("Point", throwIfNotFound: true);
@@ -2884,6 +2906,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     // Workshop
     private readonly InputActionMap m_Workshop;
     private List<IWorkshopActions> m_WorkshopActionsCallbackInterfaces = new List<IWorkshopActions>();
+    private readonly InputAction m_Workshop_EndShootingTest;
     private readonly InputAction m_Workshop_Interact;
     private readonly InputAction m_Workshop_Exit;
     private readonly InputAction m_Workshop_Point;
@@ -2900,6 +2923,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Construct a new instance of the input action map wrapper class.
         /// </summary>
         public WorkshopActions(@InputSystem_Actions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Workshop/EndShootingTest".
+        /// </summary>
+        public InputAction @EndShootingTest => m_Wrapper.m_Workshop_EndShootingTest;
         /// <summary>
         /// Provides access to the underlying input action "Workshop/Interact".
         /// </summary>
@@ -2946,6 +2973,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         {
             if (instance == null || m_Wrapper.m_WorkshopActionsCallbackInterfaces.Contains(instance)) return;
             m_Wrapper.m_WorkshopActionsCallbackInterfaces.Add(instance);
+            @EndShootingTest.started += instance.OnEndShootingTest;
+            @EndShootingTest.performed += instance.OnEndShootingTest;
+            @EndShootingTest.canceled += instance.OnEndShootingTest;
             @Interact.started += instance.OnInteract;
             @Interact.performed += instance.OnInteract;
             @Interact.canceled += instance.OnInteract;
@@ -2972,6 +3002,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="WorkshopActions" />
         private void UnregisterCallbacks(IWorkshopActions instance)
         {
+            @EndShootingTest.started -= instance.OnEndShootingTest;
+            @EndShootingTest.performed -= instance.OnEndShootingTest;
+            @EndShootingTest.canceled -= instance.OnEndShootingTest;
             @Interact.started -= instance.OnInteract;
             @Interact.performed -= instance.OnInteract;
             @Interact.canceled -= instance.OnInteract;
@@ -3634,6 +3667,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     /// <seealso cref="WorkshopActions.RemoveCallbacks(IWorkshopActions)" />
     public interface IWorkshopActions
     {
+        /// <summary>
+        /// Method invoked when associated input action "EndShootingTest" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEndShootingTest(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

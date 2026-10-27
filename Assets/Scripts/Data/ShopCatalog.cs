@@ -16,6 +16,7 @@ namespace WeaponWorkshop
 
         public IReadOnlyList<ModuleData> Modules => modules;
         public float SellRatio => sellRatio;
+        private void OnValidate() => WeaponAnalysis.NotifyConfigurationChanged();
 
         public float GetTagMultiplier(IEnumerable<WeaponTypeData> tags)
         {

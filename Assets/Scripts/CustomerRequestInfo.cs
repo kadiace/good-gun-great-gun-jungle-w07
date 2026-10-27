@@ -6,6 +6,10 @@ namespace WeaponWorkshop
 {
     public static class CustomerRequestInfo
     {
+        internal static WeaponSnapshot GetSnapshot(PowerCore core)
+            => core != null && core.TryGetComponent<CubeAssembly>(out var assembly)
+                ? assembly.Analysis.Snapshot : new WeaponSnapshot(core);
+
         public sealed class WeaponSnapshot
         {
             private readonly Dictionary<StatType, float> muzzleStats = new Dictionary<StatType, float>();
@@ -19,6 +23,8 @@ namespace WeaponWorkshop
             private readonly CubeAssembly assembly;
             private readonly List<Material> paintedMaterials = new List<Material>();
             private readonly int colorModules;
+            private readonly Dictionary<string, bool> shapeMatches = new Dictionary<string, bool>();
+            private GunShapeData shapeTable;
             public bool HasPassedTest(string id) => weapon != null && weapon.HasPassedTest(id);
             public WeaponSnapshot(EquipableWeapon weapon) : this(weapon != null ? weapon.GetComponentInChildren<PowerCore>(true) : null) { }
             public WeaponSnapshot(PowerCore core)
@@ -26,22 +32,21 @@ namespace WeaponWorkshop
                 if (core == null) return;
                 weapon = core.GetComponentInParent<EquipableWeapon>();
                 HasWeapon = true;
-                assembly = core.GetComponent<CubeAssembly>();
+                core.TryGetComponent(out assembly);
                 if (assembly != null)
-                    foreach (var block in assembly.GetComponentsInChildren<PlacedBlock>())
+                    foreach (var block in assembly.Analysis.Blocks)
                     {
-                        if (block.transform.parent != assembly.transform) continue;
-                        if (block.GetComponent<ColorModule>() != null) colorModules++;
+                        if (block.TryGetComponent<ColorModule>(out _)) colorModules++;
                         foreach (var paint in block.GetComponentsInChildren<ModuleFacePaint>()) paintedMaterials.AddRange(paint.PaintedMaterials);
                     }
-                var collector = core.GetComponent<StatCollector>();
+                core.TryGetComponent<StatCollector>(out var collector);
                 var baseStats = collector != null && collector.BaseStats != null
                     ? collector.BaseStats.Stats : new WeaponStats { fireRate = core.EmissionsPerSecond };
-                whole = WeaponAssemblyStats.Calculate(assembly, baseStats);
+                whole = assembly != null ? assembly.Analysis.GetWholeStats(baseStats) : baseStats.Clamped();
                 var effective = baseStats;
                 var seen = new HashSet<PlacedBlock>();
                 if (assembly == null) return;
-                var paths = assembly.GetProjectilePaths(); muzzles = paths.Count;
+                var paths = assembly.Analysis.Paths; muzzles = paths.Count;
                 foreach (var path in paths)
                 {
                     var stats = core.GetMuzzleStats(path.path);
@@ -58,7 +63,7 @@ namespace WeaponWorkshop
                                 // Count each firing split once, including splits on different branches.
                                 if (kind == ModuleKind.SplitTwo) splitTwoCount++;
                                 else if (kind == ModuleKind.SplitFour) splitFourCount++;
-                                var module = block.GetComponent<ModuleStats>();
+                                block.TryGetComponent<ModuleStats>(out var module);
                                 var bonus = module != null && module.Data != null ? module.Data.GetStats() : block.GetStatContribution();
                                 bonus.weight = 0f; effective.Add(bonus);
                             }
@@ -76,8 +81,20 @@ namespace WeaponWorkshop
                 switch (condition.Measure)
                 {
                     case GunMeasure.ConstructionCost: return weapon != null ? weapon.PaidConstructionCost : 0;
-                    case GunMeasure.Shape: return TableManager.Instance.GunShape.Matches(condition.shapeId, assembly) ? 1 : 0;
+                    case GunMeasure.Shape: return MatchesShape(condition.shapeId) ? 1 : 0;
                     case GunMeasure.PaintedFaces: return paintedMaterials.Count;
+                    case GunMeasure.StickerFaces:
+                        var faces = new HashSet<string>();
+                        foreach (var sticker in weapon.GetComponentsInChildren<StickerOverlay>(true))
+                            if (sticker.gameObject.activeSelf && sticker.transform.parent != null)
+                            {
+                                Vector3 normal = sticker.transform.parent.InverseTransformDirection(sticker.transform.forward);
+                                faces.Add(sticker.transform.parent.GetInstanceID() + ":" +
+                                    Mathf.RoundToInt(normal.x) + ":" + Mathf.RoundToInt(normal.y) + ":" + Mathf.RoundToInt(normal.z));
+                            }
+                        return faces.Count;
+                    case GunMeasure.Keyrings: return weapon != null && weapon.TryGetComponent<WeaponKeyringHistory>(out var keyrings) ? keyrings.Count : 0;
+                    case GunMeasure.BasicCore: return HasWeapon ? 1 : 0;
                     case GunMeasure.ColorModules: return colorModules;
                     case GunMeasure.PaintedColorFaces:
                         if (!ColorUtility.TryParseHtmlString(condition.colorHex, out var target)) return 0;
@@ -98,6 +115,16 @@ namespace WeaponWorkshop
                     default: return muzzleStats.TryGetValue(condition.Stat, out var value) ? value : 0f;
                 }
             }
+            private bool MatchesShape(string id)
+            {
+                var table = TableManager.Instance.GunShape;
+                if (!ReferenceEquals(shapeTable, table)) { shapeTable = table; shapeMatches.Clear(); }
+                if (string.IsNullOrEmpty(id)) return false;
+                if (!shapeMatches.TryGetValue(id, out bool matches))
+                    shapeMatches.Add(id, matches = table.Matches(id, assembly));
+                return matches;
+            }
+
             private static bool TryPaintColor(Material material, out Color color)
             {
                 color = default;
@@ -115,7 +142,8 @@ namespace WeaponWorkshop
             {
                 if (!HasWeapon || !ValidCondition(condition)) return false;
                 float value = Value(condition);
-                return value >= condition.min && (condition.maxExclusive ? value < condition.max : value <= condition.max);
+                return (condition.minExclusive ? value > condition.min : value >= condition.min) &&
+                    (condition.maxExclusive ? value < condition.max : value <= condition.max);
             }
         }
 
@@ -133,6 +161,53 @@ namespace WeaponWorkshop
         {
             if (ids == null) return null;
             return Array.ConvertAll(ids, id => table.FindRequest(id)?.id ?? id);
+        }
+        public static bool HasMuzzleOrSplitCondition(this CustomerRequestData table, CustomerRequestData.Request request)
+        {
+            if (request == null) return false;
+            string id = request.id ?? string.Empty;
+            if (id == "module/double-barrel" || id == "module/nine-barrel" ||
+                id.StartsWith("module/split-two", StringComparison.Ordinal) ||
+                id.StartsWith("module/split-four", StringComparison.Ordinal)) return true;
+            // 요청 자체뿐 아니라 태그 내부의 조건도 포함한다.
+            foreach (var condition in table.Conditions(request))
+            {
+                if (condition == null) continue;
+                if (condition.Measure == GunMeasure.Muzzles && condition.min > 1f ||
+                    condition.Measure == GunMeasure.SplitTwoBlocks && condition.min > 0f ||
+                    condition.Measure == GunMeasure.SplitFourBlocks && condition.min > 0f) return true;
+            }
+            return false;
+        }
+
+        public static bool IsShootingTestRequest(this CustomerRequestData.Request request)
+            => request != null && ((request.requiredTestIds != null && request.requiredTestIds.Length > 0) ||
+                (request.id != null && request.id.StartsWith("shooting-test/", StringComparison.Ordinal)));
+
+        public static bool RequiresWater(this CustomerRequestData table, CustomerRequestData.Request request)
+        {
+            // 스탯을 측정하는 조건만 본다. 분할 개수 등에 남은 Water 값은 물 요구가 아니다.
+            foreach (var condition in table.Conditions(request))
+                if (ValidCondition(condition) && RequiresStat(condition.Measure) && condition.Stat == StatType.Water &&
+                    (condition.min > 0f || (condition.min == 0f && condition.minExclusive))) return true;
+            return false;
+        }
+
+        public static bool IsCustomRequest(this CustomerRequestData table, string id)
+        {
+            foreach (var condition in table.Conditions(table.FindRequest(id)))
+            {
+                if (condition == null || !condition.Parsed) continue;
+                switch (condition.Measure)
+                {
+                    case GunMeasure.PaintedFaces:
+                    case GunMeasure.PaintedColorFaces:
+                    case GunMeasure.StickerFaces:
+                    case GunMeasure.Keyrings:
+                        return true;
+                }
+            }
+            return false;
         }
         public static CustomerRequestData.Tag FindTag(this CustomerRequestData table, string id)
         {
@@ -185,12 +260,6 @@ namespace WeaponWorkshop
         private static bool ValidCondition(CustomerRequestData.Condition condition) => condition != null && condition.Parsed &&
             condition.min <= condition.max && !float.IsNaN(condition.min) && !float.IsNaN(condition.max) &&
             !float.IsInfinity(condition.min) && !float.IsInfinity(condition.max);
-        public static int SaleBonusCount(this CustomerRequestData table, string[] ids)
-        {
-            int count = 0;
-            foreach (string id in ids ?? Array.Empty<string>()) if (table.FindRequest(id)?.saleBonus == true) count++;
-            return count;
-        }
         public static string Phrase(this CustomerRequestData table, string id)
         {
             var row = table.FindRequest(id);
@@ -232,9 +301,9 @@ namespace WeaponWorkshop
             if (includePathScope && scopedModule && condition.Stat != StatType.Scope) label = "한 발사 경로의 " + label;
             string lower = condition.min.ToString("0.##"), upper = condition.max.ToString("0.##");
             if (condition.min == condition.max && !condition.maxExclusive) return label + " 정확히 " + lower;
-            if (condition.max == float.MaxValue) return label + " " + lower + " 이상";
+            if (condition.max == float.MaxValue) return label + " " + lower + (condition.minExclusive ? " 초과" : " 이상");
             if (condition.min <= 0f) return label + " " + upper + (condition.maxExclusive ? " 미만" : " 이하");
-            return label + " " + lower + " 이상 · " + upper + (condition.maxExclusive ? " 미만" : " 이하");
+            return label + " " + lower + (condition.minExclusive ? " 초과 · " : " 이상 · ") + upper + (condition.maxExclusive ? " 미만" : " 이하");
         }
         public static IEnumerable<CustomerRequestData.Condition> Conditions(this CustomerRequestData table, CustomerRequestData.Request request)
         {
@@ -256,6 +325,7 @@ namespace WeaponWorkshop
             foreach (var row in table.requests ?? Array.Empty<CustomerRequestData.Request>())
             {
                 if (row == null || string.IsNullOrEmpty(row.id) || !ids.Add(row.id)) { Debug.LogError("요청 표에 빈/중복 요청 ID가 있습니다."); continue; }
+                if (row.reward < 0 || row.rewardPerDay < 0) Debug.LogError("요청 보상이 음수입니다: " + row.id);
                 if (!string.IsNullOrEmpty(row.tagId) && table.FindTag(row.tagId) == null) Debug.LogError("요청 표의 태그 ID가 없습니다: " + row.id);
                 foreach (string testId in row.requiredTestIds ?? Array.Empty<string>())
                     if (tests.Find(testId) == null) Debug.LogError("요청 표의 사격 테스트 ID가 없습니다: " + row.id);
@@ -270,7 +340,7 @@ namespace WeaponWorkshop
                     if (string.IsNullOrEmpty(alias) || !ids.Add(alias)) Debug.LogError("요청 표에 빈/중복 이전 요청 ID가 있습니다: " + row.id);
             }
         }
-        private static bool RequiresStat(GunMeasure measure) => measure == GunMeasure.WeaponStat || measure == GunMeasure.MuzzleStat || measure == GunMeasure.PathModules || measure == GunMeasure.TotalModules;
+        private static bool RequiresStat(GunMeasure measure) => measure == GunMeasure.WeaponStat || measure == GunMeasure.MuzzleStat || measure == GunMeasure.PathModules;
         private static void Parse(CustomerRequestData.Condition condition, string owner, GunShapeData shapes)
         {
             if (condition == null) return;

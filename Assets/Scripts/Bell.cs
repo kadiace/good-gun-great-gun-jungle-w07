@@ -58,7 +58,7 @@ namespace WeaponWorkshop
         private bool emptyTutorialStarted;
         public bool DayStarted => emptyTutorialStarted || waiting.Count < customers.Count;
         private void Awake() => BeginDay();
-        private void Start() => GameManager.Instance?.UI?.GetComponent<CustomerRequirementsUI>()?.Bind(this);
+        private void Start() => GameManager.Instance?.UI?.Screen<CustomerRequirementsUI>()?.Bind(this);
 
         public void EndDay()
         {
@@ -110,7 +110,7 @@ namespace WeaponWorkshop
         }
 
         private bool CanSpawn() =>
-            isActiveAndEnabled && (dayManager == null || !dayManager.IsNight) && current == null && waiting.Count > 0 && spawnPoint != null && counterPoint != null && exitPoint != null;
+            isActiveAndEnabled && (dayManager == null || dayManager.CanAcceptCustomers) && current == null && waiting.Count > 0 && spawnPoint != null && counterPoint != null && exitPoint != null;
 
         private bool SpawnNext()
         {
@@ -136,7 +136,9 @@ namespace WeaponWorkshop
             ReleaseCustomer();
             dayManager?.CompletedGuest(0, dissatisfied: dissatisfied);
             SaleCompleted?.Invoke(price);
+            dayManager?.CloseShopAfterCustomer();
             dayManager?.RefreshRemainingCustomers();
+            dayManager?.RefillCustomers();
             SpawnNext();
             if (TutorialManager.Instance != null) TutorialManager.Instance.NotifySignal("customer-sold");
         }
@@ -146,7 +148,9 @@ namespace WeaponWorkshop
             ReleaseCustomer();
             dayManager?.CompletedGuest(0, killed: true);
             CustomerKilled?.Invoke();
+            dayManager?.CloseShopAfterCustomer();
             dayManager?.RefreshRemainingCustomers();
+            dayManager?.RefillCustomers();
             SpawnNext();
         }
 

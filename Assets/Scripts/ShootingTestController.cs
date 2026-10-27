@@ -6,11 +6,11 @@ namespace WeaponWorkshop
 {
     public sealed class ShootingTestController : MonoBehaviour
     {
-        public enum TestState { Idle, Prepared, Running, Passed, Failed }
+        public enum TestState { Idle, Prepared, Running, Passed, Failed, Ready }
         [SerializeField] private TargetBell bell;
         [SerializeField] private Transform layoutPoint;
         [SerializeField, Min(.1f)] private float retryDistance = 3f;
-        private ShootingTestData definition;
+        private ShootingTestBinding definition;
         private GameObject layout;
         private ShootingTestTarget[] targets;
         private DestructibleTarget[] destructibles;
@@ -21,29 +21,69 @@ namespace WeaponWorkshop
         private string startedAssemblyKey;
         private Transform shotSource;
         private ShootingTestHUD hud;
+        private Customer requiredOrder;
+        private bool isOrderTest;
         private readonly StringBuilder summary = new StringBuilder();
         private float nextSummary;
         public TargetBell Bell => bell;
         public TestState State { get; private set; }
-        public ShootingTestData Definition => definition;
+        public ShootingTestBinding Definition => definition;
         public float RemainingSeconds { get; private set; }
         public string StatusText { get; private set; } = "";
+        public string ResultReason { get; private set; } = "";
         public int NonForwardMuzzles { get; private set; }
         public bool IsActive => State == TestState.Prepared || State == TestState.Running;
-        public bool CanRetryNearby => State == TestState.Failed && player != null && bell != null &&
+        public bool CanRetryNearby => (State == TestState.Failed || State == TestState.Passed || State == TestState.Ready) && player != null && bell != null &&
             Vector3.Distance(player.transform.position, bell.transform.position) <= retryDistance;
         public bool CanRetryWithWeapon => CanRetryNearby && holder != null && holder.EquippedWeapon != null &&
             holder.EquippedWeapon.IsEquipped && !holder.EquippedWeapon.IsMoving;
 
         private void Awake() { State = TestState.Idle; RemainingSeconds = 0f; }
 
-        public bool Prepare(ShootingTestData data, FirstPersonPlayer sourcePlayer, out string error)
+        // 주문 수신 시에는 총·표적을 생성하지 않고 기존 F 재시도 경로만 연결한다.
+        public bool ReadyForOrder(ShootingTestBinding data, FirstPersonPlayer sourcePlayer, Customer customer, out string error)
+        {
+            error = null;
+            if (data == null || !data.IsAvailable || sourcePlayer == null || customer == null ||
+                !customer.HasActiveOrder || bell == null || !bell.AllowsTest(data.Id))
+            { error = "사격 테스트 주문과 연결을 확인하세요."; return false; }
+            if (definition == data && player == sourcePlayer && requiredOrder == customer && State != TestState.Idle)
+                return true;
+            var sourcePlayerTest = sourcePlayer.GetComponent<PlayerShootingTest>();
+            var sourceHUD = GameManager.Instance?.UI?.Screen<ShootingTestHUD>();
+            if (sourcePlayerTest == null || sourceHUD == null)
+            { error = "플레이어와 사격 테스트 HUD 연결을 확인하세요."; return false; }
+            Cancel();
+            player = sourcePlayer;
+            holder = sourcePlayer.GetComponent<WeaponHolder>();
+            definition = data;
+            requiredOrder = customer;
+            isOrderTest = true;
+            playerTest = sourcePlayerTest;
+            hud = sourceHUD;
+            if (hud.Controller != null && hud.Controller != this) hud.Controller.Cancel();
+            State = TestState.Ready;
+            RemainingSeconds = data.TimeLimit;
+            StatusText = data.Instructions;
+            playerTest.Bind(this);
+            hud.Bind(this);
+            return true;
+        }
+
+        public bool Prepare(ShootingTestBinding data, FirstPersonPlayer sourcePlayer, out string error)
         {
             error = null;
             if (IsActive) { error = "진행 중인 테스트를 먼저 종료하세요."; return false; }
             if (data == null || !data.IsAvailable || data.LayoutPrefab == null || layoutPoint == null || sourcePlayer == null || bell == null ||
                 data.TimeLimit <= 0f || float.IsNaN(data.TimeLimit) || float.IsInfinity(data.TimeLimit))
             { error = "사격 테스트 설정을 확인하세요."; return false; }
+            // 선택창과 실패 후 재시도가 같은 주문 제한을 따른다.
+            if (!bell.AllowsTest(data.Id))
+            { error = "현재 주문에서 요구하는 사격 테스트만 진행할 수 있습니다."; return false; }
+            var tests = TableManager.Instance.ShootingTestTable;
+            var unlocks = sourcePlayer.GetComponent<PlayerModuleUnlocks>();
+            if (!tests.CanStart(data.Id, unlocks))
+            { error = tests.UnlockDescription(data.Id, unlocks); return false; }
             var sourceHolder = sourcePlayer.GetComponent<WeaponHolder>();
             var equipped = sourceHolder != null ? sourceHolder.EquippedWeapon : null;
             if (equipped == null || equipped.IsMoving) { error = "테스트할 총을 손에 들고 시작하세요."; return false; }
@@ -55,7 +95,7 @@ namespace WeaponWorkshop
             if (string.IsNullOrEmpty(assemblyKey)) { error = "총의 구성을 인증할 수 없습니다."; return false; }
             var sourcePlayerTest = sourcePlayer.GetComponent<PlayerShootingTest>();
             var sourceHUD = GameManager.Instance != null && GameManager.Instance.UI != null
-                ? GameManager.Instance.UI.GetComponent<ShootingTestHUD>() : null;
+                ? GameManager.Instance.UI.Screen<ShootingTestHUD>() : null;
             if (sourcePlayerTest == null || sourceHUD == null)
             { error = "플레이어와 사격 테스트 HUD 연결을 확인하세요."; return false; }
             NonForwardMuzzles = 0;
@@ -89,15 +129,20 @@ namespace WeaponWorkshop
             targets = stage.GetComponentsInChildren<ShootingTestTarget>(true);
             destructibles = stage.GetComponentsInChildren<DestructibleTarget>(true);
             int goals = 0;
-            foreach (var target in targets) if (!target.IsProtected && target.gameObject.activeSelf) goals++;
+            foreach (var target in targets)
+            {
+                target.Bind(this);
+                if (!target.IsProtected && target.gameObject.activeSelf) goals++;
+            }
             if (goals == 0) { DestroyLayout(); error = "테스트에 목표 표적이 없습니다."; return false; }
             foreach (var target in destructibles) target.DamageProtected = true;
             layout.SetActive(true);
             RemainingSeconds = data.TimeLimit;
+            ResultReason = "";
             State = TestState.Prepared;
             holder.EquippedWeaponChanged += OnEquippedWeaponChanged;
             weapon.AssemblyChanged += OnAssemblyChanged;
-            StatusText = data.Instructions;
+            BuildSummary(0, goals);
             playerTest.Bind(this); hud.Bind(this);
             return true;
         }
@@ -105,8 +150,10 @@ namespace WeaponWorkshop
         public void Begin()
         {
             if (State != TestState.Prepared || layout == null) return;
+            OnboardingManager.NotifyShootingTestStarted(this);
             if (!HasOriginalWeapon()) { Finish(false, "테스트 중 총을 내려놓거나 교체했습니다."); return; }
-            foreach (var target in destructibles) target.DamageProtected = false;
+            // 명중 시험은 충돌을 유지하고 모든 파괴·범위 피해를 차단한다.
+            foreach (var target in destructibles) target.DamageProtected = definition.CountsHits;
             RemainingSeconds = definition.TimeLimit;
             nextSummary = 0f;
             State = TestState.Running;
@@ -115,13 +162,28 @@ namespace WeaponWorkshop
         public void Retry()
         {
             if (!CanRetryWithWeapon || definition == null) return;
+            if (!OnboardingManager.CanPrepareShootingGuideTest(bell, definition.Id, player, out var guideError))
+            { FeedbackUI.For(this)?.ShowNotification(guideError); return; }
             var retryData = definition;
             if (Prepare(retryData, player, out var error)) Begin();
-            else GameManager.Instance?.UI?.ShowNotification(error);
+            else
+            {
+                ResultReason = error;
+                FeedbackUI.For(this)?.ShowNotification(error);
+            }
+        }
+
+        internal bool CanCountBulletHit(ShootingTestTarget target, Transform weaponSource)
+        {
+            return State == TestState.Running && RemainingSeconds > 0f && definition != null && definition.CountsHits &&
+                shotSource != null && weaponSource == shotSource && HasOriginalWeapon() && target != null &&
+                !target.IsProtected && System.Array.IndexOf(targets, target) >= 0;
         }
 
         private void LateUpdate()
         {
+            if (isOrderTest && (requiredOrder == null || !requiredOrder.HasActiveOrder))
+            { Cancel(); return; }
             if (State != TestState.Running) return;
             if (!HasOriginalWeapon())
             { Finish(false, "테스트 중 총을 내려놓거나 교체했습니다."); return; }
@@ -138,7 +200,8 @@ namespace WeaponWorkshop
                 else
                 {
                     goals++;
-                    if (target.Destruction >= definition.RequiredDestruction) complete++;
+                    if (definition.CountsHits ? target.HitCount >= definition.RequiredHits :
+                        target.Destruction >= definition.RequiredDestruction) complete++;
                 }
             }
             if (Time.time >= nextSummary)
@@ -153,14 +216,17 @@ namespace WeaponWorkshop
         private void BuildSummary(int complete, int goals)
         {
             summary.Clear();
-            summary.Append("목표 ").Append(complete).Append('/').Append(goals).Append(" · 각 목표 ")
-                .Append(Mathf.RoundToInt(definition.RequiredDestruction * 100f)).Append("% 파괴\n");
+            summary.Append("목표 ").Append(complete).Append('/').Append(goals);
             foreach (var target in targets)
             {
                 if (target == null || target.IsProtected) continue;
-                summary.Append(target.DisplayName).Append(' ').Append(Mathf.RoundToInt(target.Destruction * 100f)).Append("%  ");
+                summary.Append('\n').Append(target.DisplayName).Append(' ');
+                if (definition.CountsHits)
+                    summary.Append("명중 ").Append(target.HitCount).Append('/').Append(definition.RequiredHits);
+                else
+                    summary.Append(Mathf.RoundToInt(target.Destruction * 100f)).Append("% (기준 ")
+                        .Append(Mathf.RoundToInt(definition.RequiredDestruction * 100f)).Append("%)");
             }
-            summary.Append("\n").Append(definition.Instructions);
             StatusText = summary.ToString();
         }
 
@@ -171,21 +237,22 @@ namespace WeaponWorkshop
             { passed = false; reason = "총의 구성이 변경되어 다시 테스트해야 합니다."; }
             State = passed ? TestState.Passed : TestState.Failed;
             UnsubscribeWeapon();
-            StatusText = reason + "\n" + StatusText + (passed ? "" : "\n" + definition.FailureHint);
+            ResultReason = reason;
             if (!passed) RemainingSeconds = definition.TimeLimit;
             ClearShots(); DestroyLayout();
-            GameManager.Instance?.UI?.ShowNotification(reason);
+            FeedbackUI.For(this)?.ShowNotification(reason);
+            OnboardingManager.NotifyShootingTestEnded(this, passed);
         }
 
         private bool HasOriginalWeapon() => holder != null && holder.isActiveAndEnabled && weapon != null &&
             holder.EquippedWeapon == weapon && weapon.IsEquipped && !weapon.IsMoving && weapon.gameObject.activeInHierarchy;
         private void OnEquippedWeaponChanged(EquipableWeapon previous, EquipableWeapon next)
         {
-            if (IsActive) Finish(false, "총을 내려놓거나 교체했습니다. 테스트할 총을 들고 F키로 다시 시도하세요.");
+            if (IsActive) Finish(false, "총을 내려놓거나 교체했습니다.");
         }
         private void OnAssemblyChanged()
         {
-            if (IsActive) Finish(false, "모듈 구성이 변경되어 테스트를 종료했습니다. F키로 다시 시도하세요.");
+            if (IsActive) Finish(false, "모듈 구성이 변경되었습니다.");
         }
         private void UnsubscribeWeapon()
         {
@@ -213,6 +280,7 @@ namespace WeaponWorkshop
         public void Cancel()
         {
             bool wasActive = IsActive;
+            if (wasActive) OnboardingManager.NotifyShootingTestEnded(this, false);
             State = TestState.Idle;
             UnsubscribeWeapon();
             if (wasActive) ClearShots();
@@ -221,6 +289,8 @@ namespace WeaponWorkshop
             if (hud != null) hud.Unbind(this);
             definition = null; weapon = null; shotSource = null; player = null; holder = null; startedAssemblyKey = null;
             RemainingSeconds = 0f; NonForwardMuzzles = 0; StatusText = "";
+            ResultReason = "";
+            requiredOrder = null; isOrderTest = false;
         }
         private void OnDisable() => Cancel();
     }

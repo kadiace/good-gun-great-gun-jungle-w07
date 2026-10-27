@@ -16,7 +16,7 @@ namespace WeaponWorkshop
             public string shapeId, colorHex;
             public float colorTolerance;
             public float min, max = float.MaxValue;
-            public bool maxExclusive;
+            public bool maxExclusive, minExclusive;
             [NonSerialized] public GunMeasure Measure;
             [NonSerialized] public StatType Stat;
             [NonSerialized] public bool Parsed;
@@ -25,7 +25,10 @@ namespace WeaponWorkshop
         {
             public string id, name, phrase, tagId;
             public string[] legacyIds = Array.Empty<string>();
-            public bool saleBonus = true;
+            // 기획자가 직접 편집하는 정액. 초기 최소 제작비 × 1.5는 자동 재계산하지 않는다.
+            public int reward;
+            // 테스트 요청은 주문 생성 일차 × 이 값. 일반 요청은 0.
+            public int rewardPerDay;
             public string[] requiredTestIds = Array.Empty<string>();
             public Condition[] conditions = Array.Empty<Condition>();
         }

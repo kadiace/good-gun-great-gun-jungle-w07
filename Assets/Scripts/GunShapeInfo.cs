@@ -54,6 +54,7 @@ namespace WeaponWorkshop
                 return cell.x >= -(s.width / 2) && cell.x < s.width - s.width / 2 &&
                     cell.y >= -(s.height / 2) && cell.y < s.height - s.height / 2 &&
                     cell.z >= -(s.depth / 2) && cell.z < s.depth - s.depth / 2;
+            if (cell.x != 0) return false;
             int col = cell.z + s.anchorColumn, row = s.anchorRow - cell.y;
             return row >= 0 && row < s.rows.Length && col >= 0 && col < s.rows[row].Length && s.rows[row][col] != '.';
         }
@@ -65,7 +66,11 @@ namespace WeaponWorkshop
             if (shape.mode == "bounds") return MatchesBounds(shape, cells);
             var pattern = PatternCells(shape);
             var actual = new HashSet<Vector2Int>();
-            foreach (var cell in cells) actual.Add(new Vector2Int(cell.z, cell.y));
+            foreach (var cell in cells)
+            {
+                if (cell.x != 0) return false;
+                actual.Add(new Vector2Int(cell.z, cell.y));
+            }
             return MatchesSilhouette(shape, pattern, actual, false) ||
                 (shape.allowMirrorZ && MatchesSilhouette(shape, pattern, actual, true));
         }

@@ -15,7 +15,8 @@ namespace WeaponWorkshop
         private readonly HashSet<DestructibleTarget> supported = new HashSet<DestructibleTarget>();
         private readonly HashSet<DestructibleTarget> establishedSupport = new HashSet<DestructibleTarget>();
         private readonly Queue<DestructibleTarget> traversal = new Queue<DestructibleTarget>();
-        private readonly List<DestructibleTarget> detached = new List<DestructibleTarget>();
+        // 낙하 후보. 프레임당 낙하 상한을 넘긴 분은 접점 변화가 없어도 다음 프레임에 이어서 떨어뜨린다.
+        private readonly List<DestructibleTarget> pendingDrops = new List<DestructibleTarget>();
         private readonly List<Collider> colliders = new List<Collider>();
         // 스캔을 시작하기 전의 이웃 목록. 스캔이 끝나고 되살아나지 않은 연결만 그 이웃을 다시 훑게 한다.
         private readonly HashSet<DestructibleTarget> previousLinks = new HashSet<DestructibleTarget>();
@@ -31,9 +32,14 @@ namespace WeaponWorkshop
         private bool needsSync;
         private const float ContactTolerance = 0.015f;
         private const int QueryBudget = 64;
+        private const int MaxDropsPerFrame = 2;
         // Milliseconds one frame spends rebuilding contacts; the dirty queue keeps its place and
         // continues next frame. Tunable in one place only: this static field.
         internal static float QueryBudgetMilliseconds = 3f;
+        // 공유 예산이 다른 작업에 소진돼도 접점 재구성이 굶지 않게 하는 바닥 슬라이스와, 그로 버틸 프레임 한도.
+        private const float MinScanSliceMilliseconds = 1f;
+        private const int MaxScanStarveFrames = 30;
+        private int scanPendingFrames;
         // Resolved once instead of LayerMask.GetMask doing a string lookup for every query.
         // Lazy because GetMask may not run inside a MonoBehaviour's static initializer during load.
         private static int nonEnergyLayers;
@@ -157,11 +163,18 @@ namespace WeaponWorkshop
             if (DestructionCollisionBatch.Flush()) needsSync = false;
             if (needsSync) { Physics.SyncTransforms(); needsSync = false; }
             int budget = QueryBudget;
+            // Share the frame window with explosion, mesh, and log work; a guaranteed slice keeps
+            // support scans moving when destruction consumes the rest of the budget. After starving
+            // for MaxScanStarveFrames the whole window is taken so pending work cannot stall forever.
+            scanPendingFrames = scanning != null || dirty.Count > 0 ? scanPendingFrames + 1 : 0;
+            float floor = scanPendingFrames >= MaxScanStarveFrames ? QueryBudgetMilliseconds : MinScanSliceMilliseconds;
+            float sharedBudgetMilliseconds = Mathf.Max(floor,
+                Mathf.Min(QueryBudgetMilliseconds, DestructionFrameBudget.RemainingMilliseconds));
             long budgetStart = System.Diagnostics.Stopwatch.GetTimestamp();
             while (budget > 0)
             {
                 // Stop at this frame's time budget; the scan resumes at the same collider next frame.
-                if (ElapsedMilliseconds(budgetStart) >= QueryBudgetMilliseconds) break;
+                if (ElapsedMilliseconds(budgetStart) >= sharedBudgetMilliseconds) break;
                 // A scan can span frames, so drop one whose target left the graph in the meantime.
                 if (scanning != null && !targets.Contains(scanning)) { AbandonScan(); continue; }
                 if (scanning == null)
@@ -216,28 +229,42 @@ namespace WeaponWorkshop
                         scanning.structuralAnchor = true;
                 }
             }
-            if (!graphChanged || scanning != null || dirty.Count > 0) return;
-            graphChanged = false;
-            supported.Clear(); traversal.Clear(); detached.Clear();
-            foreach (var target in targets)
-                if (target != null && target.structuralAnchor && supported.Add(target))
-                {
-                    establishedSupport.Add(target);
-                    traversal.Enqueue(target);
-                }
-            while (traversal.Count > 0)
-                foreach (var neighbor in traversal.Dequeue().supportLinks)
-                    if (neighbor != null && targets.Contains(neighbor) && supported.Add(neighbor))
+            if (scanning != null || dirty.Count > 0) return;
+            if (graphChanged)
+            {
+                graphChanged = false;
+                supported.Clear(); traversal.Clear(); pendingDrops.Clear();
+                foreach (var target in targets)
+                    if (target != null && target.structuralAnchor && supported.Add(target))
                     {
-                        establishedSupport.Add(neighbor);
-                        traversal.Enqueue(neighbor);
+                        establishedSupport.Add(target);
+                        traversal.Enqueue(target);
                     }
-            foreach (var target in targets)
-                // Authored gaps are not a destruction event. Collapse only after a real support loss.
-                if (target != null && target.HasStructuralGeometry && establishedSupport.Contains(target) &&
-                    !supported.Contains(target)) detached.Add(target);
-            // Building collapse must not subdivide every large part in one frame.
-            for (int i = 0; i < Mathf.Min(2, detached.Count); i++) detached[i].DropDisconnectedStructure();
+                while (traversal.Count > 0)
+                    foreach (var neighbor in traversal.Dequeue().supportLinks)
+                        if (neighbor != null && targets.Contains(neighbor) && supported.Add(neighbor))
+                        {
+                            establishedSupport.Add(neighbor);
+                            traversal.Enqueue(neighbor);
+                        }
+                foreach (var target in targets)
+                    // Authored gaps are not a destruction event. Collapse only after a real support loss.
+                    if (target != null && target.HasStructuralGeometry && establishedSupport.Contains(target) &&
+                        !supported.Contains(target)) pendingDrops.Add(target);
+            }
+            // Building collapse must not subdivide every large part in one frame. The surplus stays
+            // queued, so the rest keeps falling even when the dropped parts left no contact behind
+            // to re-trigger the pass. Stale entries are revalidated against the latest BFS result.
+            int dropped = 0;
+            while (pendingDrops.Count > 0 && dropped < MaxDropsPerFrame)
+            {
+                var target = pendingDrops[pendingDrops.Count - 1];
+                pendingDrops.RemoveAt(pendingDrops.Count - 1);
+                if (target == null || !targets.Contains(target) || supported.Contains(target) ||
+                    !target.HasStructuralGeometry) continue;
+                target.DropDisconnectedStructure();
+                dropped++;
+            }
         }
 
         internal static bool IsSupported(DestructibleTarget target) =>

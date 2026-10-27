@@ -1,89 +1,67 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
+/// <summary>
+/// 인트로 시작 메뉴의 씬 연결 브리지입니다. 기존 직렬화 참조와 버튼 persistent 호출 대상 public 메서드를 유지하고
+/// 실제 동작은 StartMenuView·StartMenuPresenter로 위임합니다. 버튼 onClick을 여기서 다시 구독하지 않습니다.
+/// </summary>
 public sealed class Start_UI : MonoBehaviour
 {
     [SerializeField] private GameObject menuPanel;
     [SerializeField] private string gameSceneName = "Main";
     [SerializeField] private WeaponWorkshop.SaveSlotsUI loadSlotsUI;
     [SerializeField] private UnityEngine.UI.Button keepStartGameButton;
-    private bool loading;
+    [SerializeField] private WeaponWorkshop.StartMenuView m_view;
+
+    private WeaponWorkshop.StartMenuPresenter m_presenter;
+    private bool m_hasLoggedMissingView;
 
     private void Awake()
     {
-        loading = false;
-        Time.timeScale = 1f;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        if (menuPanel != null) menuPanel.SetActive(true);
-        RefreshSaveAvailability();
+        // 인트로 초기 정책 유지: 시간 배율 복원과 커서 표시.
+        WeaponWorkshop.UIInputPolicy.ApplyLobbyPolicy();
+        EnsurePresenter();
     }
 
     // LogKit 자동 초기화(AfterSceneLoad)가 Awake보다 늦으므로 세션 시작 기록은 Start에서 한다.
     private void Start() => WeaponWorkshop.PlayerIdentity.LogSessionStart();
 
-    // 세이브 파일 읽고 지 상태 결정하는쪽으로 로직 바꿈요
+    private void OnDestroy()
+    {
+        if (m_presenter != null)
+        {
+            m_presenter.Dispose();
+            m_presenter = null;
+        }
+    }
+
     public void RefreshSaveAvailability()
     {
-        if (keepStartGameButton == null) return;
-        bool hasAvailableSave = WeaponWorkshop.GameSaveFiles.LatestSlot() >= 0;
-        keepStartGameButton.gameObject.SetActive(hasAvailableSave);
+        EnsurePresenter();
+        m_presenter?.RefreshSaveAvailability();
     }
 
     public void KeepStartGame()
     {
-        if (loading) return;
-        int slot = WeaponWorkshop.GameSaveFiles.LatestSlot();
-        if (slot < 0)
-        {
-            WeaponWorkshop.GameSaveFiles.PendingLoad = null;
-            RefreshSaveAvailability();
-            WeaponWorkshop.FeedbackUI.For(this)?.ShowNotification("불러올 수 있는 저장 파일이 없습니다.");
-            return;
-        }
-        LoadSlot(slot);
+        EnsurePresenter();
+        m_presenter?.ContinueGame();
     }
 
-    public void OpenLoadPanel() => loadSlotsUI?.Open();
+    public void OpenLoadPanel()
+    {
+        EnsurePresenter();
+        m_presenter?.OpenLoadPanel();
+    }
 
     public void LoadSlot(int slot)
     {
-        if (loading) return;
-        if (!WeaponWorkshop.GameSaveFiles.TryReadSlot(slot, out var data)) return;
-        WeaponWorkshop.GameSaveFiles.PendingLoad = data;
-        WeaponWorkshop.PlayerIdentity.Adopt(data.saveId);
-        BeginGame(string.IsNullOrEmpty(data.sceneName) ? gameSceneName : data.sceneName);
+        EnsurePresenter();
+        m_presenter?.LoadSlot(slot);
     }
 
     public void GameStart()
     {
-        if (loading) return;
-        WeaponWorkshop.GameSaveFiles.PendingLoad = null;
-        WeaponWorkshop.GameSaveFiles.ClearRaidRecovery();
-        WeaponWorkshop.PlayerIdentity.BeginNewSave();
-        BeginGame();
-    }
-
-    private void BeginGame(string savedScene = null)
-    {
-        if (loading) return;
-        string sceneToLoad = string.IsNullOrEmpty(savedScene) ? gameSceneName : savedScene;
-        if (!Application.CanStreamedLevelBeLoaded(sceneToLoad))
-        {
-            WeaponWorkshop.GameSaveFiles.PendingLoad = null;
-            Debug.LogError($"시작할 씬을 빌드 목록에 등록하세요: {gameSceneName}", this);
-            return;
-        }
-        loading = true;
-        LogKit.GameLogger.Data("Info", "System", string.IsNullOrEmpty(savedScene) ? "새 게임 시작" : $"저장 게임 시작({savedScene})",
-            new WeaponWorkshop.GameStartLog
-            {
-                installId = WeaponWorkshop.PlayerIdentity.InstallId, saveId = WeaponWorkshop.PlayerIdentity.SaveId,
-                savedScene = savedScene ?? "", newGame = string.IsNullOrEmpty(savedScene),
-                retired = WeaponWorkshop.GameSaveFiles.PendingLoad?.retired == true,
-                endChestOpened = WeaponWorkshop.GameSaveFiles.PendingLoad?.endChestOpened == true
-            });
-        SceneManager.LoadSceneAsync(sceneToLoad);
+        EnsurePresenter();
+        m_presenter?.StartNewGame();
     }
 
     public void QuitGame()
@@ -93,5 +71,30 @@ public sealed class Start_UI : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    private void EnsurePresenter()
+    {
+        if (m_presenter != null)
+        {
+            return;
+        }
+
+        if (m_view == null)
+        {
+            if (!m_hasLoggedMissingView)
+            {
+                m_hasLoggedMissingView = true;
+                Debug.LogError($"[{nameof(Start_UI)}] StartMenuView 참조(m_view)가 비어 있습니다. StartUI_Manager 프리팹에 StartMenuView를 추가하고 연결하세요.", this);
+            }
+
+            return;
+        }
+
+        // 씬 오버라이드가 반영된 브리지 유효 참조를 View에 먼저 라우팅한다.
+        m_view.BindReferences(menuPanel, keepStartGameButton);
+        var domain = new WeaponWorkshop.StartMenuDomainAdapter(loadSlotsUI, this);
+        m_presenter = new WeaponWorkshop.StartMenuPresenter(m_view, domain, gameSceneName);
+        m_presenter.Initialize();
     }
 }

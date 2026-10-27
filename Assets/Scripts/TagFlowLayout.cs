@@ -4,9 +4,9 @@ namespace WeaponWorkshop
 {
     public sealed class TagFlowLayout : UnityEngine.UI.LayoutGroup
     {
-        [SerializeField] private Vector2 spacing = new Vector2(8f, 8f);
-        [SerializeField] private Vector2 textPadding = new Vector2(14f, 6f);
-        [SerializeField] private float minimumHeight = 32f;
+        [SerializeField] private Vector2 spacing = new Vector2(6f, 6f);
+        [SerializeField] private Vector2 textPadding = new Vector2(10.5f, 4.5f);
+        [SerializeField] private float minimumHeight = 24f;
 
         public override void CalculateLayoutInputHorizontal()
         {

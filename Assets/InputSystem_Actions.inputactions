@@ -1558,6 +1558,15 @@
             "id": "77ba29f3-b576-41be-803e-09415619bf9e",
             "actions": [
                 {
+                    "name": "EndShootingTest",
+                    "type": "Button",
+                    "id": "cbba3ef4-e335-4de6-8372-0746c16c8a73",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Interact",
                     "type": "Button",
                     "id": "21fcaef3-ddeb-4a61-82cb-a393507e7c79",
@@ -1604,6 +1613,17 @@
                 }
             ],
             "bindings": [
+                {
+                    "name": "",
+                    "id": "ba4e4d01-f14a-49a7-82da-578d418904d1",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "EndShootingTest",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
                 {
                     "name": "",
                     "id": "8680d34f-126e-4165-9a71-91a129953881",
